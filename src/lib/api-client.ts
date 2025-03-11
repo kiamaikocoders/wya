@@ -20,6 +20,13 @@ export const EVENT_ENDPOINTS = {
   SINGLE: (id: number) => `${XANO_EVENT_API_URL}/event/${id}`,
 };
 
+// Review endpoints
+export const REVIEW_ENDPOINTS = {
+  ALL: `${XANO_EVENT_API_URL}/review`,
+  EVENT_REVIEWS: (eventId: number) => `${XANO_EVENT_API_URL}/event/${eventId}/reviews`,
+  SINGLE: (id: number) => `${XANO_EVENT_API_URL}/review/${id}`,
+};
+
 // Default request headers
 const defaultHeaders = {
   "Content-Type": "application/json",
