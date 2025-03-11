@@ -1,61 +1,13 @@
 
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
 import EventCard from '@/components/ui/EventCard';
 import { Calendar, Filter, Search } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Sample data for events
-const eventsData = [
-  {
-    id: '1',
-    title: 'Nairobi International Trade Fair',
-    category: 'Business',
-    date: '2023-10-02',
-    location: 'Nairobi',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Trade+Fair',
-  },
-  {
-    id: '2',
-    title: 'Lamu Cultural Festival',
-    category: 'Culture',
-    date: '2023-11-15',
-    location: 'Lamu',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Cultural+Festival',
-  },
-  {
-    id: '3',
-    title: 'Magical Kenya Open',
-    category: 'Sports',
-    date: '2024-03-10',
-    location: 'Nairobi',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Kenya+Open',
-  },
-  {
-    id: '4',
-    title: 'Koroga Festival',
-    category: 'Music',
-    date: '2023-09-25',
-    location: 'Naivasha',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Koroga+Festival',
-  },
-  {
-    id: '5',
-    title: 'Nairobi Tech Week',
-    category: 'Technology',
-    date: '2023-11-05',
-    location: 'Nairobi',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Tech+Week',
-  },
-  {
-    id: '6',
-    title: 'Maralal International Camel Derby',
-    category: 'Sports',
-    date: '2023-08-20',
-    location: 'Samburu',
-    image: 'https://placehold.co/600x400/3A3027/FFFFFF?text=Camel+Derby',
-  },
-];
+import { eventService, Event } from '@/lib/event-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // Sample locations and categories for filters
 const locations = ['All Locations', 'Nairobi', 'Lamu', 'Naivasha', 'Samburu'];
@@ -67,6 +19,15 @@ const Events = () => {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedDate, setSelectedDate] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Fetch events data
+  const { data: events, isLoading, error } = useQuery({
+    queryKey: ['events'],
+    queryFn: eventService.getAllEvents,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -79,8 +40,38 @@ const Events = () => {
   };
 
   const handleCreateEvent = () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to create an event');
+      navigate('/login');
+      return;
+    }
+    
+    if (user?.user_type !== 'organizer') {
+      toast.error('Only organizers can create events');
+      return;
+    }
+    
+    // Navigate to create event page (to be implemented)
     toast.info('Create Event functionality would open here');
   };
+
+  // Filter events based on search query and filters
+  const filteredEvents = events?.filter(event => {
+    const matchesSearch = searchQuery === '' || 
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    const matchesLocation = selectedLocation === 'All Locations' || 
+      event.location === selectedLocation;
+      
+    const matchesCategory = selectedCategory === 'All Categories' || 
+      event.category === selectedCategory;
+      
+    const matchesDate = selectedDate === '' || 
+      event.date.includes(selectedDate);
+      
+    return matchesSearch && matchesLocation && matchesCategory && matchesDate;
+  });
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
@@ -157,11 +148,35 @@ const Events = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
-        {eventsData.map((event) => (
-          <EventCard key={event.id} {...event} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
+        </div>
+      ) : error ? (
+        <div className="text-center text-kenya-orange p-8">
+          <p>Failed to load events. Please try again.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+          {filteredEvents && filteredEvents.length > 0 ? (
+            filteredEvents.map((event: Event) => (
+              <EventCard 
+                key={event.id} 
+                id={String(event.id)}
+                title={event.title}
+                category={event.category}
+                date={event.date}
+                location={event.location}
+                image={event.image_url}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center text-kenya-brown-light p-8">
+              <p>No events found. Try adjusting your search or filters.</p>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="fixed bottom-24 right-6 z-40">
         <button 
