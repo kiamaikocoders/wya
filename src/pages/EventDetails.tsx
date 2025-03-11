@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '@/lib/event-service';
-import { Calendar, MapPin, User, Tag, Clock, ArrowLeft, Edit, Trash } from 'lucide-react';
+import { storyService, CreateStoryDto } from '@/lib/story-service';
+import { Calendar, MapPin, User, Tag, Clock, ArrowLeft, Edit, Trash, MessageSquare, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistance } from 'date-fns';
@@ -12,14 +13,50 @@ const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   
-  const { data: event, isLoading, error } = useQuery({
+  const [storyContent, setStoryContent] = useState('');
+  const [storyMedia, setStoryMedia] = useState<string | undefined>(undefined);
+  
+  const { data: event, isLoading: eventLoading, error: eventError } = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => eventService.getEventById(Number(eventId)),
     enabled: !!eventId,
   });
 
-  const handleDelete = async () => {
+  const { data: stories, isLoading: storiesLoading } = useQuery({
+    queryKey: ['stories', eventId],
+    queryFn: () => storyService.getStoriesByEventId(Number(eventId)),
+    enabled: !!eventId,
+  });
+
+  const createStoryMutation = useMutation({
+    mutationFn: (newStory: CreateStoryDto) => storyService.createStory(newStory),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stories', eventId] });
+      setStoryContent('');
+      setStoryMedia(undefined);
+      toast.success('Story posted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to post story');
+      console.error('Error posting story:', error);
+    },
+  });
+
+  const deleteStoryMutation = useMutation({
+    mutationFn: (storyId: number) => storyService.deleteStory(storyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stories', eventId] });
+      toast.success('Story deleted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete story');
+      console.error('Error deleting story:', error);
+    },
+  });
+
+  const handleDeleteEvent = async () => {
     if (!eventId) return;
     
     if (window.confirm('Are you sure you want to delete this event?')) {
@@ -32,9 +69,34 @@ const EventDetails: React.FC = () => {
     }
   };
 
+  const handleSubmitStory = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!storyContent.trim()) {
+      toast.error('Story content cannot be empty');
+      return;
+    }
+    
+    if (!eventId) return;
+    
+    const newStory: CreateStoryDto = {
+      event_id: Number(eventId),
+      content: storyContent,
+      media_url: storyMedia,
+    };
+    
+    createStoryMutation.mutate(newStory);
+  };
+
+  const handleDeleteStory = (storyId: number) => {
+    if (window.confirm('Are you sure you want to delete this story?')) {
+      deleteStoryMutation.mutate(storyId);
+    }
+  };
+
   const isOwner = user?.id === event?.organizer_id;
 
-  if (isLoading) {
+  if (eventLoading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
@@ -42,7 +104,7 @@ const EventDetails: React.FC = () => {
     );
   }
 
-  if (error || !event) {
+  if (eventError || !event) {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <h1 className="text-white text-xl font-bold mb-4">Event not found</h1>
@@ -138,6 +200,119 @@ const EventDetails: React.FC = () => {
           </div>
         )}
         
+        {/* Stories Section */}
+        <div className="mt-8 mb-6">
+          <h2 className="text-white text-xl font-semibold mb-4">Event Stories</h2>
+          
+          {/* Story Form */}
+          {isAuthenticated && (
+            <form onSubmit={handleSubmitStory} className="mb-6 bg-kenya-brown bg-opacity-20 p-4 rounded-xl">
+              <div className="mb-3">
+                <textarea
+                  className="w-full bg-kenya-dark bg-opacity-50 border border-kenya-brown-light border-opacity-30 rounded-lg p-3 text-white placeholder:text-kenya-brown-light"
+                  rows={3}
+                  placeholder="Share your experience..."
+                  value={storyContent}
+                  onChange={(e) => setStoryContent(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => toast.info('Media upload coming soon')}
+                  className="flex items-center gap-2 bg-kenya-brown text-white py-2 px-4 rounded-lg"
+                >
+                  <Image size={16} />
+                  Add Media
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-kenya-orange text-white py-2 px-4 rounded-lg font-medium"
+                  disabled={createStoryMutation.isPending}
+                >
+                  {createStoryMutation.isPending ? 'Posting...' : 'Post Story'}
+                </button>
+              </div>
+            </form>
+          )}
+          
+          {/* Stories List */}
+          {storiesLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-kenya-orange"></div>
+            </div>
+          ) : stories && stories.length > 0 ? (
+            <div className="space-y-4">
+              {stories.map((story) => (
+                <div key={story.id} className="bg-kenya-brown bg-opacity-20 p-4 rounded-xl">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-kenya-brown rounded-full flex items-center justify-center">
+                        {story.user_image ? (
+                          <img 
+                            src={story.user_image} 
+                            alt={story.user_name || 'User'} 
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User size={20} className="text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{story.user_name || 'Anonymous'}</p>
+                        <p className="text-kenya-brown-light text-xs">
+                          {formatDistance(new Date(story.created_at), new Date(), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {user?.id === story.user_id && (
+                      <button 
+                        onClick={() => handleDeleteStory(story.id)}
+                        className="text-kenya-brown-light hover:text-white"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <p className="text-white mb-3">{story.content}</p>
+                  
+                  {story.media_url && (
+                    <div className="mb-3 rounded-lg overflow-hidden">
+                      <img 
+                        src={story.media_url} 
+                        alt="Story media" 
+                        className="w-full h-auto"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-kenya-brown-light">
+                    <button 
+                      onClick={() => toast.info('Like functionality coming soon')}
+                      className="flex items-center gap-1 hover:text-white"
+                    >
+                      <span className="text-sm">{story.likes_count || 0} Likes</span>
+                    </button>
+                    <button 
+                      onClick={() => toast.info('Comment functionality coming soon')}
+                      className="flex items-center gap-1 hover:text-white"
+                    >
+                      <MessageSquare size={14} />
+                      <span className="text-sm">{story.comments_count || 0} Comments</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-kenya-brown-light">No stories yet. Be the first to share your experience!</p>
+            </div>
+          )}
+        </div>
+        
         {/* Owner Actions */}
         {isAuthenticated && isOwner && (
           <div className="flex gap-3 mt-6">
@@ -149,7 +324,7 @@ const EventDetails: React.FC = () => {
               Edit Event
             </button>
             <button 
-              onClick={handleDelete}
+              onClick={handleDeleteEvent}
               className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white py-3 rounded-lg"
             >
               <Trash size={16} />

@@ -20,6 +20,12 @@ export const EVENT_ENDPOINTS = {
   SINGLE: (id: number) => `${XANO_EVENT_API_URL}/event/${id}`,
 };
 
+// Story endpoints
+export const STORY_ENDPOINTS = {
+  ALL: `${XANO_EVENT_API_URL}/story`,
+  SINGLE: (id: number) => `${XANO_EVENT_API_URL}/story/${id}`,
+};
+
 // Default request headers
 const defaultHeaders = {
   "Content-Type": "application/json",
