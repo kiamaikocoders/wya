@@ -56,6 +56,12 @@ export interface SubmitSurveyResponseDto {
   responses: Omit<QuestionResponse, 'id'>[];
 }
 
+// Survey response endpoints
+const SURVEY_RESPONSE_ENDPOINTS = {
+  ALL: `${SURVEY_ENDPOINTS.ALL}_response`,
+  SINGLE: (id: number) => `${SURVEY_ENDPOINTS.ALL}_response/${id}`,
+};
+
 // Survey service
 export const surveyService = {
   // Get all surveys
@@ -91,11 +97,32 @@ export const surveyService = {
 
   // Submit survey response
   submitSurveyResponse: async (responseData: SubmitSurveyResponseDto): Promise<SurveyResponse> => {
-    return apiClient.post<SurveyResponse>(`${SURVEY_ENDPOINTS.ALL}/response`, responseData);
+    return apiClient.post<SurveyResponse>(SURVEY_RESPONSE_ENDPOINTS.ALL, responseData);
+  },
+
+  // Get all survey responses
+  getAllSurveyResponses: async (): Promise<SurveyResponse[]> => {
+    return apiClient.get<SurveyResponse[]>(SURVEY_RESPONSE_ENDPOINTS.ALL);
+  },
+
+  // Get survey response by ID
+  getSurveyResponseById: async (id: number): Promise<SurveyResponse> => {
+    return apiClient.get<SurveyResponse>(SURVEY_RESPONSE_ENDPOINTS.SINGLE(id));
   },
 
   // Get survey responses by survey ID
   getSurveyResponses: async (surveyId: number): Promise<SurveyResponse[]> => {
-    return apiClient.get<SurveyResponse[]>(`${SURVEY_ENDPOINTS.SINGLE(surveyId)}/responses`);
+    const allResponses = await apiClient.get<SurveyResponse[]>(SURVEY_RESPONSE_ENDPOINTS.ALL);
+    return allResponses.filter(response => response.survey_id === surveyId);
   },
+
+  // Update survey response
+  updateSurveyResponse: async (id: number, responseData: Partial<SubmitSurveyResponseDto>): Promise<SurveyResponse> => {
+    return apiClient.patch<SurveyResponse>(SURVEY_RESPONSE_ENDPOINTS.SINGLE(id), responseData);
+  },
+
+  // Delete survey response
+  deleteSurveyResponse: async (id: number): Promise<void> => {
+    return apiClient.delete<void>(SURVEY_RESPONSE_ENDPOINTS.SINGLE(id));
+  }
 };
