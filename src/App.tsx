@@ -19,6 +19,10 @@ import SurveyResultsPage from "./pages/SurveyResultsPage";
 import Forum from "./pages/Forum";
 import PostDetail from "./pages/PostDetail";
 import Profile from "./pages/Profile";
+import Search from "./pages/Search";
+import MyTickets from "./pages/MyTickets";
+import TicketDetail from "./pages/TicketDetail";
+import EventAnalytics from "./pages/EventAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,7 @@ const App = () => (
               <Route path="/events/:eventId" element={<EventDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/search" element={<Search />} />
               
               {/* Survey routes */}
               <Route path="/surveys/:surveyId" element={
@@ -70,30 +75,26 @@ const App = () => (
                   <Profile />
                 </ProtectedRoute>
               } />
-
-              {/* Protected routes */}
+              
+              {/* Tickets */}
               <Route path="/tickets" element={
                 <ProtectedRoute>
-                  <div className="min-h-screen flex items-center justify-center">
-                    <h1 className="text-white text-2xl">Tickets Page - Coming Soon</h1>
-                  </div>
+                  <MyTickets />
                 </ProtectedRoute>
               } />
-              <Route path="/friends" element={
+              <Route path="/tickets/:ticketId" element={
                 <ProtectedRoute>
-                  <div className="min-h-screen flex items-center justify-center">
-                    <h1 className="text-white text-2xl">Friends Page - Coming Soon</h1>
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/wishlist" element={
-                <ProtectedRoute>
-                  <div className="min-h-screen flex items-center justify-center">
-                    <h1 className="text-white text-2xl">Wishlist Page - Coming Soon</h1>
-                  </div>
+                  <TicketDetail />
                 </ProtectedRoute>
               } />
               
+              {/* Analytics */}
+              <Route path="/analytics/events/:eventId?" element={
+                <ProtectedRoute>
+                  <EventAnalytics />
+                </ProtectedRoute>
+              } />
+
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

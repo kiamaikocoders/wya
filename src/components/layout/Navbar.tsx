@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bell, LogOut, User } from 'lucide-react';
+import { LogOut, User, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   DropdownMenu,
@@ -11,9 +11,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
+    }
+  };
   
   return (
     <header className="bg-kenya-orange py-3 px-4 flex items-center justify-between transition-all duration-300 animate-fade-in">
@@ -27,10 +43,17 @@ const Navbar = () => {
         <NavLink to="/forum">Forum</NavLink>
       </nav>
       
-      <div className="flex items-center space-x-4">
-        <button className="text-white p-2 rounded-full hover:bg-white/10 transition-colors">
-          <Bell size={20} />
-        </button>
+      <div className="flex items-center space-x-2">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-white/10"
+          onClick={() => setSearchOpen(true)}
+        >
+          <Search size={20} />
+        </Button>
+        
+        {isAuthenticated && <NotificationsDropdown />}
         
         {isAuthenticated ? (
           <DropdownMenu>
@@ -79,6 +102,25 @@ const Navbar = () => {
           </Link>
         )}
       </div>
+      
+      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Search</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSearch} className="grid gap-4">
+            <Input
+              type="search"
+              placeholder="Search for events, venues, organizers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="col-span-2"
+              autoFocus
+            />
+            <Button type="submit" className="col-span-2">Search</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
