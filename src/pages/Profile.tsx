@@ -126,7 +126,15 @@ const Profile: React.FC = () => {
               {userEvents.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
                   {userEvents.map(event => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard 
+                      key={event.id}
+                      id={event.id.toString()}
+                      title={event.title}
+                      category={event.category}
+                      date={new Date(event.date).toLocaleDateString()}
+                      location={event.location}
+                      image={event.image_url}
+                    />
                   ))}
                 </div>
               ) : (
