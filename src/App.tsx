@@ -15,6 +15,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SurveyPage from "./pages/SurveyPage";
 import CreateSurveyPage from "./pages/CreateSurveyPage";
+import SurveyResultsPage from "./pages/SurveyResultsPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,11 @@ const App = () => (
               <Route path="/events/:eventId/create-survey" element={
                 <ProtectedRoute>
                   <CreateSurveyPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/surveys/:surveyId/results" element={
+                <ProtectedRoute>
+                  <SurveyResultsPage />
                 </ProtectedRoute>
               } />
 

@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Survey, QuestionResponse, surveyService } from "@/lib/survey-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import SurveyQuestion from "@/components/survey/SurveyQuestion";
 import { toast } from "sonner";
+import { BarChart3 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SurveyPage: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [responses, setResponses] = useState<Map<number, string | string[] | number>>(new Map());
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -66,6 +69,9 @@ const SurveyPage: React.FC = () => {
     });
   };
 
+  // Check if the current user is the survey creator
+  const isCreator = user && survey?.creator_id === user.id;
+
   if (isLoading) {
     return (
       <div className="container py-8">
@@ -98,10 +104,25 @@ const SurveyPage: React.FC = () => {
     <div className="container py-8">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{survey.title}</CardTitle>
-          {survey.description && (
-            <CardDescription className="text-lg">{survey.description}</CardDescription>
-          )}
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl">{survey.title}</CardTitle>
+              {survey.description && (
+                <CardDescription className="text-lg">{survey.description}</CardDescription>
+              )}
+            </div>
+            
+            {isCreator && (
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/surveys/${survey.id}/results`)}
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Results
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {survey.questions.map((question) => (
