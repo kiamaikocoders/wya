@@ -78,7 +78,7 @@ const QuestionSummary: React.FC<QuestionSummaryProps> = ({ question, responses, 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {renderQuestionChart(question, answerData, isMobile)}
+        {renderQuestionChart(question, answerData, isMobile, responses)}
       </CardContent>
     </Card>
   );
@@ -123,7 +123,8 @@ const renderQuestionChart = (
     total: number; 
     chartData: { name: string; value: number; percent: number }[] 
   },
-  isMobile: boolean
+  isMobile: boolean,
+  responses: SurveyResponse[]
 ) => {
   const { chartData } = answerData;
 

@@ -47,6 +47,10 @@ const getAuthHeaders = () => {
 
 // API client with common fetch methods
 export const apiClient = {
+  // Expose the API URLs
+  XANO_BASE_URL,
+  XANO_EVENT_API_URL,
+  
   get: async <T>(url: string): Promise<T> => {
     const response = await fetch(url, {
       method: "GET",

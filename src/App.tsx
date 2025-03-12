@@ -16,6 +16,9 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SurveyPage from "./pages/SurveyPage";
 import CreateSurveyPage from "./pages/CreateSurveyPage";
 import SurveyResultsPage from "./pages/SurveyResultsPage";
+import Forum from "./pages/Forum";
+import PostDetail from "./pages/PostDetail";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -49,14 +52,26 @@ const App = () => (
                 </ProtectedRoute>
               } />
 
-              {/* Protected routes */}
+              {/* Forum routes */}
               <Route path="/forum" element={
                 <ProtectedRoute>
-                  <div className="min-h-screen flex items-center justify-center">
-                    <h1 className="text-white text-2xl">Forum Page - Coming Soon</h1>
-                  </div>
+                  <Forum />
                 </ProtectedRoute>
               } />
+              <Route path="/forum/:postId" element={
+                <ProtectedRoute>
+                  <PostDetail />
+                </ProtectedRoute>
+              } />
+
+              {/* User Profile */}
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected routes */}
               <Route path="/tickets" element={
                 <ProtectedRoute>
                   <div className="min-h-screen flex items-center justify-center">
@@ -75,13 +90,6 @@ const App = () => (
                 <ProtectedRoute>
                   <div className="min-h-screen flex items-center justify-center">
                     <h1 className="text-white text-2xl">Wishlist Page - Coming Soon</h1>
-                  </div>
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <div className="min-h-screen flex items-center justify-center">
-                    <h1 className="text-white text-2xl">Profile Page - Coming Soon</h1>
                   </div>
                 </ProtectedRoute>
               } />
