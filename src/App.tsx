@@ -13,6 +13,8 @@ import Signup from "./pages/Signup";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import SurveyPage from "./pages/SurveyPage";
+import CreateSurveyPage from "./pages/CreateSurveyPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,18 @@ const App = () => (
               <Route path="/events/:eventId" element={<EventDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              
+              {/* Survey routes */}
+              <Route path="/surveys/:surveyId" element={
+                <ProtectedRoute>
+                  <SurveyPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/events/:eventId/create-survey" element={
+                <ProtectedRoute>
+                  <CreateSurveyPage />
+                </ProtectedRoute>
+              } />
 
               {/* Protected routes */}
               <Route path="/forum" element={

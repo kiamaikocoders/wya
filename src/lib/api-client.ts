@@ -26,6 +26,12 @@ export const STORY_ENDPOINTS = {
   SINGLE: (id: number) => `${XANO_EVENT_API_URL}/story/${id}`,
 };
 
+// Survey endpoints
+export const SURVEY_ENDPOINTS = {
+  ALL: `${XANO_EVENT_API_URL}/survey`,
+  SINGLE: (id: number) => `${XANO_EVENT_API_URL}/survey/${id}`,
+};
+
 // Default request headers
 const defaultHeaders = {
   "Content-Type": "application/json",
