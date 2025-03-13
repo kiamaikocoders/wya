@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { forumService, CreateForumPostDto } from "@/lib/forum-service";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { eventService } from "@/lib/event-service";
-import { useQuery } from "@tanstack/react-query";
 
 interface NewPostFormProps {
   onSuccess: () => void;
@@ -25,15 +24,24 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
   const [mediaUrl, setMediaUrl] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<number | null>(eventId || null);
   
-  const { data: events } = useQuery({
+  // Fetch events for the dropdown
+  const { data: events, isLoading: eventsLoading } = useQuery({
     queryKey: ["events"],
     queryFn: eventService.getAllEvents,
   });
+  
+  // Set the event ID when the component loads or when eventId prop changes
+  useEffect(() => {
+    if (eventId) {
+      setSelectedEventId(eventId);
+    }
+  }, [eventId]);
   
   const createPostMutation = useMutation({
     mutationFn: forumService.createPost,
     onSuccess: () => {
       onSuccess();
+      toast.success("Post created successfully!");
     },
     onError: (error) => {
       toast.error("Failed to create post. Please try again.");
@@ -110,31 +118,49 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
       {!eventId && (
         <div className="space-y-2">
           <Label htmlFor="event">Related Event</Label>
-          <Select 
-            value={selectedEventId?.toString() || ""} 
-            onValueChange={(value) => setSelectedEventId(Number(value))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select an event" />
-            </SelectTrigger>
-            <SelectContent>
-              {events?.map(event => (
-                <SelectItem key={event.id} value={event.id.toString()}>
-                  {event.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {eventsLoading ? (
+            <div className="h-10 w-full bg-kenya-brown animate-pulse rounded-md"></div>
+          ) : events && events.length > 0 ? (
+            <Select 
+              value={selectedEventId?.toString() || ""} 
+              onValueChange={(value) => setSelectedEventId(Number(value))}
+            >
+              <SelectTrigger className="w-full bg-kenya-brown text-white border-kenya-brown-dark">
+                <SelectValue placeholder="Select an event" />
+              </SelectTrigger>
+              <SelectContent className="bg-kenya-brown text-white border-kenya-brown-dark">
+                {events.map(event => (
+                  <SelectItem 
+                    key={event.id} 
+                    value={event.id.toString()}
+                    className="hover:bg-kenya-brown-dark focus:bg-kenya-brown-dark"
+                  >
+                    {event.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="text-kenya-brown-light p-2">
+              No events available. Please check back later.
+            </div>
+          )}
         </div>
       )}
       
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          className="border-kenya-brown-light text-kenya-brown-light hover:bg-kenya-brown hover:text-white"
+        >
           Cancel
         </Button>
         <Button 
           type="submit" 
           disabled={createPostMutation.isPending}
+          className="bg-kenya-orange text-white hover:bg-kenya-orange/90"
         >
           {createPostMutation.isPending ? "Posting..." : "Post"}
         </Button>

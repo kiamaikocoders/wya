@@ -48,6 +48,11 @@
     @apply bg-kenya-dark text-foreground antialiased font-sans overflow-x-hidden min-h-screen;
   }
 
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans; /* Using the custom font for headings */
+    letter-spacing: 0.02em;
+  }
+
   html {
     @apply scroll-smooth;
   }
@@ -96,4 +101,18 @@
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
+}
+
+/* Custom font adjustments for better typography */
+.font-sans {
+  font-feature-settings: "ss01", "ss02", "cv01";
+}
+
+/* Make select dropdowns visible with proper colors */
+.select-content {
+  @apply bg-kenya-brown border border-kenya-brown-dark text-white z-50;
+}
+
+.select-item {
+  @apply hover:bg-kenya-brown-dark focus:bg-kenya-brown-dark text-white;
 }
