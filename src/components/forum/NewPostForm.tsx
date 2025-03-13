@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { eventService } from "@/lib/event-service";
-import { Loader2 } from "lucide-react";
+import { Loader2, Image, Film, Link2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface NewPostFormProps {
   onSuccess: () => void;
@@ -23,7 +24,22 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video" | "link">("image");
   const [selectedEventId, setSelectedEventId] = useState<number | null>(eventId || null);
+  
+  // Sample images and videos for easy insertion
+  const sampleImages = [
+    "https://images.unsplash.com/photo-1638210574160-1181932279e3?q=80&w=2070",
+    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070",
+    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=2070",
+    "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?q=80&w=2070"
+  ];
+  
+  const sampleVideos = [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.youtube.com/watch?v=9bZkp7q19f0",
+    "https://youtu.be/jNQXAC9IVRw"
+  ];
   
   // Fetch events for the dropdown
   const { data: events, isLoading: eventsLoading } = useQuery({
@@ -96,6 +112,10 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
     
     createPostMutation.mutate(postData);
   };
+
+  const handleSampleMediaSelect = (url: string) => {
+    setMediaUrl(url);
+  };
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -125,14 +145,81 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="media-url">Media URL (optional)</Label>
-        <Input
-          id="media-url"
-          value={mediaUrl}
-          onChange={(e) => setMediaUrl(e.target.value)}
-          placeholder="Add image URL"
-          disabled={createPostMutation.isPending}
-        />
+        <Label>Media</Label>
+        <Tabs defaultValue="image" onValueChange={(value) => setMediaType(value as "image" | "video" | "link")}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="image" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Image
+            </TabsTrigger>
+            <TabsTrigger value="video" className="flex items-center gap-2">
+              <Film className="h-4 w-4" />
+              Video
+            </TabsTrigger>
+            <TabsTrigger value="link" className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Link
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="image" className="space-y-3">
+            <Input
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+              placeholder="Enter image URL"
+              disabled={createPostMutation.isPending}
+            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {sampleImages.map((img, index) => (
+                <div 
+                  key={index} 
+                  className="cursor-pointer rounded-md overflow-hidden h-20 border-2 hover:border-kenya-orange transition-colors"
+                  onClick={() => handleSampleMediaSelect(img)}
+                >
+                  <img src={img} alt={`Sample ${index}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="video" className="space-y-3">
+            <Input
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+              placeholder="Enter YouTube or video URL"
+              disabled={createPostMutation.isPending}
+            />
+            <div className="space-y-2">
+              {sampleVideos.map((video, index) => (
+                <Button 
+                  key={index}
+                  type="button"
+                  variant="outline"
+                  className="flex justify-between w-full"
+                  onClick={() => handleSampleMediaSelect(video)}
+                >
+                  <span className="truncate">{video}</span>
+                  <Film className="h-4 w-4 ml-2 flex-shrink-0" />
+                </Button>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="link">
+            <Input
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+              placeholder="Enter link URL"
+              disabled={createPostMutation.isPending}
+            />
+          </TabsContent>
+        </Tabs>
+        
+        {mediaUrl && mediaType === "image" && (
+          <div className="mt-2 p-2 border rounded-md">
+            <img src={mediaUrl} alt="Preview" className="max-h-40 object-contain mx-auto" />
+          </div>
+        )}
       </div>
       
       {!eventId && (

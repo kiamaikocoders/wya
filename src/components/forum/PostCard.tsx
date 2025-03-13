@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ForumPost } from "@/lib/forum-service";
-import { MessageCircle, ThumbsUp, Calendar, User } from "lucide-react";
+import { MessageCircle, ThumbsUp, Calendar, User, Play } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,6 +14,73 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const formattedDate = format(new Date(post.created_at), "MMM d, yyyy 'at' h:mm a");
+  
+  // Function to determine if a URL is a video
+  const isVideoUrl = (url: string) => {
+    return url.match(/\.(mp4|webm|ogg)$/) || 
+           url.includes('youtube.com') || 
+           url.includes('youtu.be') || 
+           url.includes('vimeo.com');
+  };
+  
+  // Function to get YouTube embed URL
+  const getYoutubeEmbedUrl = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    return (match && match[2].length === 11)
+      ? `https://www.youtube.com/embed/${match[2]}`
+      : null;
+  };
+  
+  // Render media content based on URL
+  const renderMedia = () => {
+    if (!post.media_url) return null;
+    
+    if (isVideoUrl(post.media_url)) {
+      // Handle YouTube videos
+      if (post.media_url.includes('youtube.com') || post.media_url.includes('youtu.be')) {
+        const embedUrl = getYoutubeEmbedUrl(post.media_url);
+        if (embedUrl) {
+          return (
+            <div className="relative pt-[56.25%] mt-4 overflow-hidden rounded-md">
+              <iframe 
+                className="absolute top-0 left-0 w-full h-full border-0"
+                src={embedUrl}
+                title="Video content"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          );
+        }
+      }
+      
+      // Handle direct video files
+      return (
+        <div className="mt-4 relative rounded-md overflow-hidden">
+          <video 
+            className="w-full max-h-96 object-contain" 
+            controls
+          >
+            <source src={post.media_url} />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      );
+    }
+    
+    // Default to image
+    return (
+      <div className="mt-4">
+        <img 
+          src={post.media_url} 
+          alt="Post attachment" 
+          className="rounded-md max-h-80 object-cover w-full" 
+        />
+      </div>
+    );
+  };
   
   return (
     <Card>
@@ -54,15 +121,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       <CardContent>
         <p className="whitespace-pre-wrap">{post.content}</p>
         
-        {post.media_url && (
-          <div className="mt-4">
-            <img 
-              src={post.media_url} 
-              alt="Post attachment" 
-              className="rounded-md max-h-64 object-cover" 
-            />
-          </div>
-        )}
+        {renderMedia()}
       </CardContent>
       
       <CardFooter className="flex justify-between">

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Play } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
-import type { UseEmblaCarouselType } from 'embla-carousel-react';
 
 export interface CarouselImage {
   id: string;
@@ -35,9 +34,10 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, className }) => {
           loop: true,
         }}
         className="w-full"
-        onSelect={(api) => {
-          if (api) {
-            setActiveIndex(api.selectedScrollSnap());
+        onSelect={(index) => {
+          // Update active index when carousel is navigated
+          if (typeof index === 'number') {
+            setActiveIndex(index);
           }
         }}
       >
