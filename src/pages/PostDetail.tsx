@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -63,17 +62,14 @@ const PostDetail: React.FC = () => {
     });
   };
 
-  // Function to determine if a URL is a video
-  const isVideoUrl = (url: string) => {
-    return url && (
-      url.match(/\.(mp4|webm|ogg)$/) || 
-      url.includes('youtube.com') || 
-      url.includes('youtu.be') || 
-      url.includes('vimeo.com')
-    );
+  const isVideoUrl = (url: string | undefined) => {
+    if (!url) return false;
+    return url.match(/\.(mp4|webm|ogg)$/) || 
+           url.includes('youtube.com') || 
+           url.includes('youtu.be') || 
+           url.includes('vimeo.com');
   };
   
-  // Function to get YouTube embed URL
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -84,14 +80,12 @@ const PostDetail: React.FC = () => {
       : null;
   };
   
-  // Render media content based on URL
-  const renderMedia = (mediaUrl: string | undefined) => {
-    if (!mediaUrl) return null;
+  const renderMedia = () => {
+    if (!post.media_url) return null;
     
-    if (isVideoUrl(mediaUrl)) {
-      // Handle YouTube videos
-      if (mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be')) {
-        const embedUrl = getYoutubeEmbedUrl(mediaUrl);
+    if (isVideoUrl(post.media_url)) {
+      if (post.media_url.includes('youtube.com') || post.media_url.includes('youtu.be')) {
+        const embedUrl = getYoutubeEmbedUrl(post.media_url);
         if (embedUrl) {
           return (
             <div className="relative pt-[56.25%] mt-4 overflow-hidden rounded-md">
@@ -107,25 +101,23 @@ const PostDetail: React.FC = () => {
         }
       }
       
-      // Handle direct video files
       return (
         <div className="mt-4 relative rounded-md overflow-hidden">
           <video 
             className="w-full max-h-96 object-contain" 
             controls
           >
-            <source src={mediaUrl} />
+            <source src={post.media_url} />
             Your browser does not support the video tag.
           </video>
         </div>
       );
     }
     
-    // Default to image
     return (
       <div className="mt-4">
         <img 
-          src={mediaUrl} 
+          src={post.media_url} 
           alt="Media attachment" 
           className="rounded-md max-h-96 object-contain w-full" 
         />
@@ -201,7 +193,7 @@ const PostDetail: React.FC = () => {
         <CardContent>
           <p className="whitespace-pre-wrap">{post.content}</p>
           
-          {renderMedia(post.media_url)}
+          {renderMedia()}
         </CardContent>
         
         <CardFooter>
@@ -303,17 +295,14 @@ interface CommentCardProps {
 const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
   const formattedDate = format(new Date(comment.created_at), "MMM d, yyyy 'at' h:mm a");
   
-  // Function to determine if a URL is a video
-  const isVideoUrl = (url: string) => {
-    return url && (
-      url.match(/\.(mp4|webm|ogg)$/) || 
-      url.includes('youtube.com') || 
-      url.includes('youtu.be') || 
-      url.includes('vimeo.com')
-    );
+  const isVideoUrl = (url: string | undefined) => {
+    if (!url) return false;
+    return url.match(/\.(mp4|webm|ogg)$/) || 
+           url.includes('youtube.com') || 
+           url.includes('youtu.be') || 
+           url.includes('vimeo.com');
   };
   
-  // Function to get YouTube embed URL
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -324,12 +313,10 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
       : null;
   };
   
-  // Render media content
   const renderMedia = () => {
     if (!comment.media_url) return null;
     
     if (isVideoUrl(comment.media_url)) {
-      // Handle YouTube videos
       if (comment.media_url.includes('youtube.com') || comment.media_url.includes('youtu.be')) {
         const embedUrl = getYoutubeEmbedUrl(comment.media_url);
         if (embedUrl) {
@@ -347,7 +334,6 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
         }
       }
       
-      // Handle direct video files
       return (
         <div className="mt-3 relative rounded-md overflow-hidden">
           <video 
@@ -361,7 +347,6 @@ const CommentCard: React.FC<CommentCardProps> = ({ comment }) => {
       );
     }
     
-    // Default to image
     return (
       <div className="mt-3">
         <img 

@@ -1,4 +1,3 @@
-
 import { apiClient } from "./api-client";
 import { toast } from 'sonner';
 
@@ -31,6 +30,7 @@ export interface ForumComment {
   post_id: number;
   user_id: number;
   content: string;
+  media_url?: string;
   created_at: string;
   updated_at: string;
   user_name?: string;
@@ -53,6 +53,7 @@ export interface UpdateForumPostDto {
 export interface CreateCommentDto {
   post_id: number;
   content: string;
+  media_url?: string;
 }
 
 // Forum service
