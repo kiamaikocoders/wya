@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Play } from 'lucide-react';
+import { type CarouselApi } from 'embla-carousel-react';
 
 export interface CarouselImage {
   id: string;
@@ -33,7 +34,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, className }) => {
           loop: true,
         }}
         className="w-full"
-        onSelect={(api) => {
+        onSelect={(api: CarouselApi) => {
           if (api) {
             setActiveIndex(api.selectedScrollSnap());
           }

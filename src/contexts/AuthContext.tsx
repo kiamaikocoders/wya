@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +10,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string, userType: 'attendee' | 'organizer') => Promise<void>;
   logout: () => void;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      // Only logout if it's an auth error, not a network error
       if (error instanceof Error && error.message.includes('authentication')) {
         authService.logout();
       }
@@ -40,9 +39,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshAuth = async () => {
+    try {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+      return currentUser;
+    } catch (error) {
+      console.error('Failed to refresh auth:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     checkAuth();
-    // Add event listener for storage changes (for multi-tab logout)
     window.addEventListener('storage', (event) => {
       if (event.key === 'auth_token' && !event.newValue) {
         setUser(null);
@@ -97,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
+        refreshAuth,
       }}
     >
       {children}
