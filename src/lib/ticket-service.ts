@@ -39,6 +39,18 @@ export const ticketService = {
     }
   },
   
+  // Get event tickets - Added for analytics
+  getEventTickets: async (eventId: number): Promise<Ticket[]> => {
+    try {
+      const response = await apiClient.get<Ticket[]>(`${TICKET_ENDPOINT}/event/${eventId}`);
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to fetch tickets for event #${eventId}`;
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+  
   // Get ticket by ID
   getTicketById: async (id: number): Promise<Ticket> => {
     try {

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Share2, Download, ArrowLeft } from 'lucide-react';
 import { ticketService } from '@/lib/ticket-service';
 import { toast } from 'sonner';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const TicketDetail = () => {
   const { ticketId } = useParams();
@@ -111,7 +111,7 @@ const TicketDetail = () => {
             <div className="border-dashed border-t-2 border-muted w-full mb-6"></div>
             
             <div className="mb-6 p-3 bg-white rounded-lg">
-              <QRCode 
+              <QRCodeSVG 
                 value={`TICKET:${ticket.id}:${ticket.reference_code}`}
                 size={180}
                 level="H"

@@ -69,10 +69,15 @@ export const surveyService = {
     return apiClient.get<Survey[]>(SURVEY_ENDPOINTS.ALL);
   },
 
-  // Get surveys by event ID
+  // Get surveys by event ID (renamed from getSurveysByEventId for consistency)
   getSurveysByEventId: async (eventId: number): Promise<Survey[]> => {
     const allSurveys = await apiClient.get<Survey[]>(SURVEY_ENDPOINTS.ALL);
     return allSurveys.filter(survey => survey.event_id === eventId);
+  },
+  
+  // Alias for getSurveysByEventId for EventAnalytics.tsx
+  getEventSurveys: async (eventId: number): Promise<Survey[]> => {
+    return surveyService.getSurveysByEventId(eventId);
   },
 
   // Get survey by ID
