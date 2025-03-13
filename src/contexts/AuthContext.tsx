@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
@@ -39,11 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const refreshAuth = async () => {
+  const refreshAuth = async (): Promise<void> => {
     try {
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
-      return currentUser;
     } catch (error) {
       console.error('Failed to refresh auth:', error);
       throw error;

@@ -101,8 +101,28 @@ export const forumService = {
   // Create a new post
   createPost: async (postData: CreateForumPostDto): Promise<ForumPost> => {
     try {
-      return await apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
+      console.log('Creating post with data:', postData);
+      // Validate post data
+      if (!postData.event_id) {
+        throw new Error('Event ID is required');
+      }
+      if (!postData.title || !postData.title.trim()) {
+        throw new Error('Title is required');
+      }
+      if (!postData.content || !postData.content.trim()) {
+        throw new Error('Content is required');
+      }
+      
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('You must be logged in to create a post');
+      }
+      
+      const result = await apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
+      console.log('Post created successfully:', result);
+      return result;
     } catch (error) {
+      console.error('Error creating post:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create post';
       toast.error(errorMessage);
       throw error;

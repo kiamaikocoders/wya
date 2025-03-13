@@ -47,10 +47,13 @@ const getAuthHeaders = () => {
 
 // Helper to process response and handle API errors
 const processResponse = async (response: Response) => {
+  console.log(`API response from ${response.url}:`, response.status);
+  
   // Handle HTTP error status
   if (!response.ok) {
     try {
       const errorData = await response.json();
+      console.error('Error data from API:', errorData);
       
       // Xano returns error messages in a specific format
       if (errorData && errorData.message) {
@@ -94,6 +97,7 @@ export const apiClient = {
   XANO_EVENT_API_URL,
   
   get: async <T>(url: string): Promise<T> => {
+    console.log(`API GET request to: ${url}`);
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
@@ -103,6 +107,7 @@ export const apiClient = {
   },
   
   post: async <T>(url: string, data: any): Promise<T> => {
+    console.log(`API POST request to: ${url}`, data);
     const response = await fetch(url, {
       method: "POST",
       headers: getAuthHeaders(),
@@ -113,6 +118,7 @@ export const apiClient = {
   },
   
   put: async <T>(url: string, data: any): Promise<T> => {
+    console.log(`API PUT request to: ${url}`, data);
     const response = await fetch(url, {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -123,6 +129,7 @@ export const apiClient = {
   },
   
   patch: async <T>(url: string, data: any): Promise<T> => {
+    console.log(`API PATCH request to: ${url}`, data);
     const response = await fetch(url, {
       method: "PATCH",
       headers: getAuthHeaders(),
@@ -133,6 +140,7 @@ export const apiClient = {
   },
   
   delete: async <T>(url: string): Promise<T> => {
+    console.log(`API DELETE request to: ${url}`);
     const response = await fetch(url, {
       method: "DELETE",
       headers: getAuthHeaders(),

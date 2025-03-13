@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { eventService } from "@/lib/event-service";
+import { Loader2 } from "lucide-react";
 
 interface NewPostFormProps {
   onSuccess: () => void;
@@ -18,7 +19,7 @@ interface NewPostFormProps {
 }
 
 const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
@@ -36,21 +37,37 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
       setSelectedEventId(eventId);
     }
   }, [eventId]);
+
+  // Check authentication
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to create a post");
+    }
+  }, [isAuthenticated]);
   
   const createPostMutation = useMutation({
     mutationFn: forumService.createPost,
     onSuccess: () => {
       onSuccess();
       toast.success("Post created successfully!");
+      setTitle("");
+      setContent("");
+      setMediaUrl("");
     },
     onError: (error) => {
-      toast.error("Failed to create post. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create post. Please try again.";
+      toast.error(errorMessage);
       console.error("Error creating post:", error);
     },
   });
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast.error("You must be logged in to create a post");
+      return;
+    }
     
     if (!title.trim()) {
       toast.error("Please enter a title for your post");
@@ -90,6 +107,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter post title"
           required
+          disabled={createPostMutation.isPending}
         />
       </div>
       
@@ -102,6 +120,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
           placeholder="Share your thoughts..."
           rows={5}
           required
+          disabled={createPostMutation.isPending}
         />
       </div>
       
@@ -112,6 +131,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
           value={mediaUrl}
           onChange={(e) => setMediaUrl(e.target.value)}
           placeholder="Add image URL"
+          disabled={createPostMutation.isPending}
         />
       </div>
       
@@ -124,6 +144,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
             <Select 
               value={selectedEventId?.toString() || ""} 
               onValueChange={(value) => setSelectedEventId(Number(value))}
+              disabled={createPostMutation.isPending}
             >
               <SelectTrigger className="w-full bg-kenya-brown text-white border-kenya-brown-dark">
                 <SelectValue placeholder="Select an event" />
@@ -154,15 +175,21 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
           variant="outline" 
           onClick={onCancel}
           className="border-kenya-brown-light text-kenya-brown-light hover:bg-kenya-brown hover:text-white"
+          disabled={createPostMutation.isPending}
         >
           Cancel
         </Button>
         <Button 
           type="submit" 
-          disabled={createPostMutation.isPending}
+          disabled={createPostMutation.isPending || !isAuthenticated}
           className="bg-kenya-orange text-white hover:bg-kenya-orange/90"
         >
-          {createPostMutation.isPending ? "Posting..." : "Post"}
+          {createPostMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Posting...
+            </>
+          ) : "Post"}
         </Button>
       </div>
     </form>

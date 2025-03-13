@@ -8,6 +8,7 @@ import { Calendar, MapPin, User, Tag, Clock, ArrowLeft, Edit, Trash, MessageSqua
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistance } from 'date-fns';
+import StoryCarousel from '@/components/stories/StoryCarousel';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -126,6 +127,9 @@ const EventDetails: React.FC = () => {
     { addSuffix: true }
   );
 
+  // Format stories for the carousel
+  const hasStories = stories && stories.length > 0;
+
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
       <div className="relative">
@@ -203,6 +207,13 @@ const EventDetails: React.FC = () => {
         {/* Stories Section */}
         <div className="mt-8 mb-6">
           <h2 className="text-white text-xl font-semibold mb-4">Event Stories</h2>
+          
+          {/* Stories Carousel */}
+          {hasStories && !storiesLoading && (
+            <div className="mb-6">
+              <StoryCarousel stories={stories} />
+            </div>
+          )}
           
           {/* Story Form */}
           {isAuthenticated && (
