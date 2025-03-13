@@ -25,6 +25,7 @@ import MyTickets from "./pages/MyTickets";
 import TicketDetail from "./pages/TicketDetail";
 import EventAnalytics from "./pages/EventAnalytics";
 import CreateEvent from "./pages/CreateEvent";
+import Stories from "./pages/Stories";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,10 +46,11 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:eventId" element={<EventDetails />} />
-              <Route path="/categories/:slug" element={<Categories />} /> {/* Add the new route */}
+              <Route path="/categories/:slug" element={<Categories />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/stories" element={<Stories />} />
               
               {/* Create Event route */}
               <Route path="/create-event" element={

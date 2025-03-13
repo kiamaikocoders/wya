@@ -1,3 +1,4 @@
+
 import { apiClient } from "./api-client";
 import { toast } from 'sonner';
 
@@ -119,6 +120,17 @@ export const forumService = {
         throw new Error('You must be logged in to create a post');
       }
       
+      // Check if the endpoint exists before trying to create a post
+      try {
+        // Try to fetch posts first to check if endpoint exists
+        await apiClient.get<ForumPost[]>(FORUM_ENDPOINTS.ALL);
+      } catch (endpointError) {
+        if (endpointError instanceof Error && endpointError.message.includes('404')) {
+          console.error('Forum endpoint not available', endpointError);
+          throw new Error('The forum feature is not available at this time. Please try again later.');
+        }
+      }
+      
       const result = await apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
       console.log('Post created successfully:', result);
       return result;
@@ -157,6 +169,12 @@ export const forumService = {
     try {
       return await apiClient.get<ForumComment[]>(FORUM_ENDPOINTS.COMMENTS(postId));
     } catch (error) {
+      // Check if it's a 404 error (endpoint not found)
+      if (error instanceof Error && error.message.includes('404')) {
+        console.warn('Comments endpoint not available. Returning empty array.');
+        return [];
+      }
+      
       const errorMessage = error instanceof Error ? error.message : `Failed to fetch comments for post #${postId}`;
       toast.error(errorMessage);
       return [];
@@ -166,8 +184,19 @@ export const forumService = {
   // Create a comment
   createComment: async (commentData: CreateCommentDto): Promise<ForumComment> => {
     try {
+      // Check if comments endpoint exists before trying to create
+      try {
+        await apiClient.get<ForumComment[]>(FORUM_ENDPOINTS.COMMENTS(commentData.post_id));
+      } catch (endpointError) {
+        if (endpointError instanceof Error && endpointError.message.includes('404')) {
+          console.error('Comments endpoint not available', endpointError);
+          throw new Error('The commenting feature is not available at this time. Please try again later.');
+        }
+      }
+      
       return await apiClient.post<ForumComment>(FORUM_ENDPOINTS.COMMENTS(commentData.post_id), commentData);
     } catch (error) {
+      console.error('Error creating comment:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create comment';
       toast.error(errorMessage);
       throw error;
