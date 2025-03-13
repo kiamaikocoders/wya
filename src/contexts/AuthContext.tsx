@@ -31,7 +31,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
     } catch (error) {
       console.error('Failed to fetch user:', error);
-      authService.logout(); // Clean up invalid session
+      // Only logout if it's an auth error, not a network error
+      if (error instanceof Error && error.message.includes('authentication')) {
+        authService.logout();
+      }
     } finally {
       setLoading(false);
     }
@@ -39,6 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     checkAuth();
+    // Add event listener for storage changes (for multi-tab logout)
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'auth_token' && !event.newValue) {
+        setUser(null);
+      }
+    });
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -77,7 +86,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     authService.logout();
     setUser(null);
-    navigate('/');
   };
 
   return (

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
 import EventCard from '@/components/ui/EventCard';
-import { Calendar, Filter, Search } from 'lucide-react';
+import { Calendar, Filter, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { eventService, Event } from '@/lib/event-service';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +26,6 @@ const Events = () => {
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events'],
     queryFn: eventService.getAllEvents,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const handleSearch = (query: string) => {
@@ -42,7 +41,7 @@ const Events = () => {
   const handleCreateEvent = () => {
     if (!isAuthenticated) {
       toast.error('Please login to create an event');
-      navigate('/login');
+      navigate('/login', { state: { from: '/create-event' } });
       return;
     }
     
@@ -51,8 +50,8 @@ const Events = () => {
       return;
     }
     
-    // Navigate to create event page (to be implemented)
-    toast.info('Create Event functionality would open here');
+    // Navigate to the create event page
+    navigate('/create-event');
   };
 
   // Filter events based on search query and filters
@@ -182,8 +181,10 @@ const Events = () => {
         <button 
           onClick={handleCreateEvent}
           className="bg-kenya-orange text-white h-14 w-14 rounded-full flex items-center justify-center shadow-lg hover:bg-opacity-90 transition-transform hover:scale-105"
+          aria-label="Create event"
+          title="Create new event"
         >
-          <span className="text-2xl font-bold">+</span>
+          <Plus size={24} />
         </button>
       </div>
     </div>

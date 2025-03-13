@@ -1,15 +1,23 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    // Show toast message if user is redirected to login
+    if (!loading && !isAuthenticated) {
+      toast.error('Please log in to access this page');
+    }
+  }, [loading, isAuthenticated]);
 
   // Show loading state
   if (loading) {

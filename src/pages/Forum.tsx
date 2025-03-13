@@ -5,12 +5,8 @@ import { forumService, ForumPost } from "@/lib/forum-service";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, MessageCircle, Calendar, ThumbsUp, User } from "lucide-react";
-import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { PlusCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import PostCard from "@/components/forum/PostCard";
 import NewPostForm from "@/components/forum/NewPostForm";
@@ -20,9 +16,21 @@ const Forum: React.FC = () => {
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
 
-  const { data: posts, isLoading, error, refetch } = useQuery({
+  const { data: posts = [], isLoading, error, refetch } = useQuery({
     queryKey: ["forumPosts"],
     queryFn: forumService.getAllPosts,
+    // Set retries to 0 for 404 responses
+    retry: (failureCount, error) => {
+      if (error instanceof Error && error.message.includes('404')) {
+        return false;
+      }
+      return failureCount < 2;
+    }
+  });
+
+  const { data: events } = useQuery({
+    queryKey: ["events"],
+    queryFn: () => import('@/lib/event-service').then(module => module.eventService.getAllEvents()),
   });
 
   const handleNewPostSuccess = () => {
@@ -30,6 +38,33 @@ const Forum: React.FC = () => {
     setShowNewPostForm(false);
     toast.success("Post created successfully!");
   };
+
+  // API endpoint is not available
+  if (error && error instanceof Error && error.message.includes('not found')) {
+    return (
+      <div className="container py-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center text-amber-500 mb-2">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              <CardTitle>Forum Feature Unavailable</CardTitle>
+            </div>
+            <CardDescription>
+              The forum feature is currently unavailable. This could be because the API endpoints haven't been set up yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              The forum feature requires the backend API to be fully configured. Please check with your administrator.
+            </p>
+            <div className="mt-4">
+              <Button onClick={() => window.history.back()}>Go Back</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -43,7 +78,7 @@ const Forum: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !(error instanceof Error && error.message.includes('not found'))) {
     return (
       <div className="container py-8">
         <Card>
@@ -51,6 +86,7 @@ const Forum: React.FC = () => {
             <div className="text-center p-8">
               <h2 className="text-xl mb-2">Error loading forum</h2>
               <p>Could not load forum posts. Please try again later.</p>
+              <Button onClick={() => refetch()} className="mt-4">Retry</Button>
             </div>
           </CardContent>
         </Card>

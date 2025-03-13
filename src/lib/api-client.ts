@@ -45,6 +45,48 @@ const getAuthHeaders = () => {
     : defaultHeaders;
 };
 
+// Helper to process response and handle API errors
+const processResponse = async (response: Response) => {
+  // Handle HTTP error status
+  if (!response.ok) {
+    try {
+      const errorData = await response.json();
+      
+      // Xano returns error messages in a specific format
+      if (errorData && errorData.message) {
+        throw new Error(errorData.message);
+      }
+      
+      if (errorData && errorData.code) {
+        if (errorData.code === 'ERROR_CODE_ACCESS_DENIED') {
+          throw new Error(`Authentication error: ${errorData.message || 'Access denied'}`);
+        }
+        
+        if (errorData.code === 'ERROR_CODE_NOT_FOUND') {
+          throw new Error(`API endpoint not found: ${response.url}`);
+        }
+        
+        throw new Error(`API error (${errorData.code}): ${errorData.message || 'Unknown error'}`);
+      }
+      
+      throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+    } catch (parseError) {
+      if (parseError instanceof Error) {
+        throw parseError;
+      }
+      throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+    }
+  }
+  
+  // For successful empty responses
+  if (response.status === 204) {
+    return null;
+  }
+  
+  // Parse JSON for normal responses
+  return response.json();
+};
+
 // API client with common fetch methods
 export const apiClient = {
   // Expose the API URLs
@@ -57,12 +99,7 @@ export const apiClient = {
       headers: getAuthHeaders(),
     });
     
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Network response was not ok");
-    }
-    
-    return response.json() as Promise<T>;
+    return processResponse(response) as Promise<T>;
   },
   
   post: async <T>(url: string, data: any): Promise<T> => {
@@ -72,12 +109,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     });
     
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Network response was not ok");
-    }
-    
-    return response.json() as Promise<T>;
+    return processResponse(response) as Promise<T>;
   },
   
   put: async <T>(url: string, data: any): Promise<T> => {
@@ -87,12 +119,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     });
     
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Network response was not ok");
-    }
-    
-    return response.json() as Promise<T>;
+    return processResponse(response) as Promise<T>;
   },
   
   patch: async <T>(url: string, data: any): Promise<T> => {
@@ -102,12 +129,7 @@ export const apiClient = {
       body: JSON.stringify(data),
     });
     
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Network response was not ok");
-    }
-    
-    return response.json() as Promise<T>;
+    return processResponse(response) as Promise<T>;
   },
   
   delete: async <T>(url: string): Promise<T> => {
@@ -116,11 +138,6 @@ export const apiClient = {
       headers: getAuthHeaders(),
     });
     
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || "Network response was not ok");
-    }
-    
-    return response.json() as Promise<T>;
+    return processResponse(response) as Promise<T>;
   },
 };

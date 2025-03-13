@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LogOut, User, Search } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LogOut, User, Search, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   DropdownMenu,
@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -28,7 +27,22 @@ const Navbar = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
+      setSearchQuery('');
     }
+  };
+  
+  const handleCreateEvent = () => {
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/create-event' } });
+      return;
+    }
+    
+    if (user?.user_type !== 'organizer') {
+      navigate('/events');
+      return;
+    }
+    
+    navigate('/create-event');
   };
   
   return (
@@ -41,6 +55,9 @@ const Navbar = () => {
         <NavLink to="/">Home</NavLink>
         <NavLink to="/events">Events</NavLink>
         <NavLink to="/forum">Forum</NavLink>
+        {isAuthenticated && user?.user_type === 'organizer' && (
+          <NavLink to="/analytics/events">Analytics</NavLink>
+        )}
       </nav>
       
       <div className="flex items-center space-x-2">
@@ -52,6 +69,18 @@ const Navbar = () => {
         >
           <Search size={20} />
         </Button>
+        
+        {isAuthenticated && user?.user_type === 'organizer' && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10"
+            onClick={handleCreateEvent}
+            title="Create Event"
+          >
+            <Plus size={20} />
+          </Button>
+        )}
         
         {isAuthenticated && <NotificationsDropdown />}
         
@@ -127,7 +156,7 @@ const Navbar = () => {
 
 const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
   
   return (
     <Link

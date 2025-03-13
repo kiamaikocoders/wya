@@ -1,5 +1,6 @@
 
 import { apiClient } from "./api-client";
+import { toast } from 'sonner';
 
 // Define the API endpoint for forum
 const FORUM_ENDPOINTS = {
@@ -58,47 +59,108 @@ export interface CreateCommentDto {
 export const forumService = {
   // Get all forum posts
   getAllPosts: async (): Promise<ForumPost[]> => {
-    return apiClient.get<ForumPost[]>(FORUM_ENDPOINTS.ALL);
+    try {
+      return await apiClient.get<ForumPost[]>(FORUM_ENDPOINTS.ALL);
+    } catch (error) {
+      // Check if the error is a 404 (endpoint not found)
+      if (error instanceof Error && error.message.includes('404')) {
+        console.warn('Forum API endpoint not available. Returning empty array.');
+        return [];
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch forum posts';
+      toast.error(errorMessage);
+      console.error('Error fetching forum posts:', error);
+      return [];
+    }
   },
 
   // Get posts by event ID
   getPostsByEventId: async (eventId: number): Promise<ForumPost[]> => {
-    const allPosts = await apiClient.get<ForumPost[]>(FORUM_ENDPOINTS.ALL);
-    return allPosts.filter(post => post.event_id === eventId);
+    try {
+      const allPosts = await forumService.getAllPosts();
+      return allPosts.filter(post => post.event_id === eventId);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to fetch posts for event #${eventId}`;
+      toast.error(errorMessage);
+      return [];
+    }
   },
 
   // Get post by ID
   getPostById: async (id: number): Promise<ForumPost> => {
-    return apiClient.get<ForumPost>(FORUM_ENDPOINTS.SINGLE(id));
+    try {
+      return await apiClient.get<ForumPost>(FORUM_ENDPOINTS.SINGLE(id));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to fetch post #${id}`;
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 
   // Create a new post
   createPost: async (postData: CreateForumPostDto): Promise<ForumPost> => {
-    return apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
+    try {
+      return await apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create post';
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 
   // Update post
   updatePost: async (id: number, postData: UpdateForumPostDto): Promise<ForumPost> => {
-    return apiClient.patch<ForumPost>(FORUM_ENDPOINTS.SINGLE(id), postData);
+    try {
+      return await apiClient.patch<ForumPost>(FORUM_ENDPOINTS.SINGLE(id), postData);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to update post #${id}`;
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 
   // Delete post
   deletePost: async (id: number): Promise<void> => {
-    return apiClient.delete<void>(FORUM_ENDPOINTS.SINGLE(id));
+    try {
+      return await apiClient.delete<void>(FORUM_ENDPOINTS.SINGLE(id));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to delete post #${id}`;
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 
   // Get comments for a post
   getComments: async (postId: number): Promise<ForumComment[]> => {
-    return apiClient.get<ForumComment[]>(FORUM_ENDPOINTS.COMMENTS(postId));
+    try {
+      return await apiClient.get<ForumComment[]>(FORUM_ENDPOINTS.COMMENTS(postId));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to fetch comments for post #${postId}`;
+      toast.error(errorMessage);
+      return [];
+    }
   },
 
   // Create a comment
   createComment: async (commentData: CreateCommentDto): Promise<ForumComment> => {
-    return apiClient.post<ForumComment>(FORUM_ENDPOINTS.COMMENTS(commentData.post_id), commentData);
+    try {
+      return await apiClient.post<ForumComment>(FORUM_ENDPOINTS.COMMENTS(commentData.post_id), commentData);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create comment';
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 
   // Delete a comment
   deleteComment: async (postId: number, commentId: number): Promise<void> => {
-    return apiClient.delete<void>(`${FORUM_ENDPOINTS.COMMENTS(postId)}/${commentId}`);
+    try {
+      return await apiClient.delete<void>(`${FORUM_ENDPOINTS.COMMENTS(postId)}/${commentId}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to delete comment #${commentId}`;
+      toast.error(errorMessage);
+      throw error;
+    }
   },
 };

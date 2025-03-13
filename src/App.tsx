@@ -23,8 +23,16 @@ import Search from "./pages/Search";
 import MyTickets from "./pages/MyTickets";
 import TicketDetail from "./pages/TicketDetail";
 import EventAnalytics from "./pages/EventAnalytics";
+import CreateEvent from "./pages/CreateEvent";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -39,6 +47,13 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/search" element={<Search />} />
+              
+              {/* Create Event route */}
+              <Route path="/create-event" element={
+                <ProtectedRoute>
+                  <CreateEvent />
+                </ProtectedRoute>
+              } />
               
               {/* Survey routes */}
               <Route path="/surveys/:surveyId" element={

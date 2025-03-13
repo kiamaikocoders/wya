@@ -34,17 +34,21 @@ export const authService = {
   // Login user
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post<AuthResponse>(
+      const response = await apiClient.post<{ authToken: string }>(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
       
       // Store token in localStorage
-      if (response.token) {
-        localStorage.setItem('auth_token', response.token);
+      if (response.authToken) {
+        localStorage.setItem('auth_token', response.authToken);
+        
+        // After storing token, fetch the user details
+        const user = await authService.getCurrentUser();
+        return { token: response.authToken, user };
       }
       
-      return response;
+      throw new Error('No auth token received');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       toast.error(errorMessage);
@@ -55,17 +59,21 @@ export const authService = {
   // Register new user
   signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post<AuthResponse>(
+      const response = await apiClient.post<{ authToken: string }>(
         AUTH_ENDPOINTS.SIGNUP,
         credentials
       );
       
       // Store token in localStorage
-      if (response.token) {
-        localStorage.setItem('auth_token', response.token);
+      if (response.authToken) {
+        localStorage.setItem('auth_token', response.authToken);
+        
+        // After storing token, fetch the user details
+        const user = await authService.getCurrentUser();
+        return { token: response.authToken, user };
       }
       
-      return response;
+      throw new Error('No auth token received');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Signup failed';
       toast.error(errorMessage);
@@ -81,9 +89,10 @@ export const authService = {
         throw new Error('No authentication token found');
       }
       
-      const response = await apiClient.get<{ user: User }>(AUTH_ENDPOINTS.ME);
-      return response.user;
+      const response = await apiClient.get<User>(AUTH_ENDPOINTS.ME);
+      return response;
     } catch (error) {
+      console.error('Error fetching current user:', error);
       throw error;
     }
   },
@@ -92,6 +101,8 @@ export const authService = {
   logout: (): void => {
     localStorage.removeItem('auth_token');
     toast.success('Logged out successfully');
+    
+    // Navigate to home page
     window.location.href = '/';
   },
   
