@@ -1,19 +1,35 @@
 
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type SearchBarProps = {
   placeholder?: string;
   onSearch?: (query: string) => void;
   className?: string;
+  defaultQuery?: string;
 };
 
-const SearchBar = ({ placeholder = "Search for events, venues, users", onSearch, className = "" }: SearchBarProps) => {
-  const [query, setQuery] = useState('');
+const SearchBar = ({ 
+  placeholder = "Search for events, venues, users", 
+  onSearch, 
+  className = "",
+  defaultQuery = ""
+}: SearchBarProps) => {
+  const [query, setQuery] = useState(defaultQuery);
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSearch) onSearch(query);
+    
+    if (query.trim()) {
+      if (onSearch) {
+        onSearch(query.trim());
+      } else {
+        // Default behavior - navigate to search page
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
+    }
   };
 
   return (
@@ -29,6 +45,12 @@ const SearchBar = ({ placeholder = "Search for events, venues, users", onSearch,
           onChange={(e) => setQuery(e.target.value)}
           className="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-none bg-kenya-brown focus:border-none h-full placeholder:text-kenya-brown-light px-4 py-2 text-base font-normal"
         />
+        <button 
+          type="submit"
+          className="bg-kenya-orange text-white px-4 flex items-center justify-center"
+        >
+          Search
+        </button>
       </div>
     </form>
   );

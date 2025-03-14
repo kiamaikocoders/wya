@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -33,6 +34,7 @@ const Signup = () => {
     
     try {
       setIsSubmitting(true);
+      console.log('Signing up with user type:', userType);
       await signup(name, email, password, userType);
     } catch (error) {
       console.error('Signup failed:', error);
@@ -119,7 +121,10 @@ const Signup = () => {
               </label>
               <RadioGroup 
                 value={userType} 
-                onValueChange={(value) => setUserType(value as 'attendee' | 'organizer')}
+                onValueChange={(value) => {
+                  console.log('Setting user type to:', value);
+                  setUserType(value as 'attendee' | 'organizer');
+                }}
                 className="flex space-x-4"
               >
                 <div className="flex items-center space-x-2">
@@ -131,6 +136,14 @@ const Signup = () => {
                   <Label htmlFor="organizer" className="text-white">Organizer</Label>
                 </div>
               </RadioGroup>
+              
+              <div className="mt-2 p-2 bg-kenya-brown-dark/50 rounded text-sm text-kenya-brown-light">
+                {userType === 'organizer' ? (
+                  <p>As an <strong>organizer</strong>, you can create events, manage attendees, and analyze event performance.</p>
+                ) : (
+                  <p>As an <strong>attendee</strong>, you can discover events, purchase tickets, and interact with other attendees.</p>
+                )}
+              </div>
             </div>
             
             <Button 
@@ -138,7 +151,12 @@ const Signup = () => {
               className="w-full bg-kenya-orange hover:bg-opacity-90"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </div>
+              ) : 'Create Account'}
             </Button>
           </form>
         </CardContent>

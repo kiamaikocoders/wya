@@ -45,6 +45,13 @@ export const authService = {
         
         // After storing token, fetch the user details
         const user = await authService.getCurrentUser();
+        
+        // Make sure user_type is correctly set
+        if (!user.user_type) {
+          console.error('User type not set in response', user);
+          toast.error('User account error: User type not set');
+        }
+        
         return { token: response.authToken, user };
       }
       
@@ -59,6 +66,14 @@ export const authService = {
   // Register new user
   signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
     try {
+      console.log('Signup with credentials:', credentials);
+      
+      // Make sure user_type is explicitly set
+      if (!credentials.user_type) {
+        toast.error('Please select a user type (attendee or organizer)');
+        throw new Error('User type not specified');
+      }
+      
       const response = await apiClient.post<{ authToken: string }>(
         AUTH_ENDPOINTS.SIGNUP,
         credentials
@@ -70,6 +85,16 @@ export const authService = {
         
         // After storing token, fetch the user details
         const user = await authService.getCurrentUser();
+        
+        // Verify user_type was set correctly
+        if (user.user_type !== credentials.user_type) {
+          console.error('User type mismatch', {
+            requested: credentials.user_type,
+            received: user.user_type
+          });
+          toast.error(`Account created as ${user.user_type} instead of ${credentials.user_type}`);
+        }
+        
         return { token: response.authToken, user };
       }
       
@@ -90,6 +115,13 @@ export const authService = {
       }
       
       const response = await apiClient.get<User>(AUTH_ENDPOINTS.ME);
+      
+      // Validate user has a user_type
+      if (!response.user_type) {
+        console.error('User data missing user_type property:', response);
+        throw new Error('User data incomplete: missing user type');
+      }
+      
       return response;
     } catch (error) {
       console.error('Error fetching current user:', error);
