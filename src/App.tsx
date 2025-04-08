@@ -8,9 +8,12 @@ import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
-import Categories from "./pages/Categories"; // Add the new Categories page
+import Categories from "./pages/Categories";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AdminLogin from "./pages/AdminLogin";
+import Admin from "./pages/Admin";
+import RequestEvent from "./pages/RequestEvent";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -24,7 +27,6 @@ import Search from "./pages/Search";
 import MyTickets from "./pages/MyTickets";
 import TicketDetail from "./pages/TicketDetail";
 import EventAnalytics from "./pages/EventAnalytics";
-import CreateEvent from "./pages/CreateEvent";
 import Stories from "./pages/Stories";
 
 const queryClient = new QueryClient({
@@ -49,13 +51,15 @@ const App = () => (
               <Route path="/categories/:slug" element={<Categories />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/request-event" element={<RequestEvent />} />
               <Route path="/search" element={<Search />} />
               <Route path="/stories" element={<Stories />} />
               
-              {/* Create Event route */}
-              <Route path="/create-event" element={
-                <ProtectedRoute>
-                  <CreateEvent />
+              {/* Admin routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly={true}>
+                  <Admin />
                 </ProtectedRoute>
               } />
               
@@ -63,11 +67,6 @@ const App = () => (
               <Route path="/surveys/:surveyId" element={
                 <ProtectedRoute>
                   <SurveyPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/events/:eventId/create-survey" element={
-                <ProtectedRoute>
-                  <CreateSurveyPage />
                 </ProtectedRoute>
               } />
               <Route path="/surveys/:surveyId/results" element={
@@ -109,7 +108,7 @@ const App = () => (
               
               {/* Analytics */}
               <Route path="/analytics/events/:eventId?" element={
-                <ProtectedRoute>
+                <ProtectedRoute adminOnly={true}>
                   <EventAnalytics />
                 </ProtectedRoute>
               } />

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, User, Search, Plus } from 'lucide-react';
+import { LogOut, User, Search, PlusCircle, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   DropdownMenu,
@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -31,20 +31,6 @@ const Navbar = () => {
     }
   };
   
-  const handleCreateEvent = () => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: '/create-event' } });
-      return;
-    }
-    
-    if (user?.user_type !== 'organizer') {
-      navigate('/events');
-      return;
-    }
-    
-    navigate('/create-event');
-  };
-  
   return (
     <header className="bg-kenya-orange py-3 px-4 flex items-center justify-between transition-all duration-300 animate-fade-in">
       <Link to="/" className="text-white font-bold text-2xl tracking-tight">
@@ -55,8 +41,9 @@ const Navbar = () => {
         <NavLink to="/">Home</NavLink>
         <NavLink to="/events">Events</NavLink>
         <NavLink to="/forum">Forum</NavLink>
-        {isAuthenticated && user?.user_type === 'organizer' && (
-          <NavLink to="/analytics/events">Analytics</NavLink>
+        <NavLink to="/request-event">Request Event</NavLink>
+        {isAdmin && (
+          <NavLink to="/admin">Admin</NavLink>
         )}
       </nav>
       
@@ -69,18 +56,6 @@ const Navbar = () => {
         >
           <Search size={20} />
         </Button>
-        
-        {isAuthenticated && user?.user_type === 'organizer' && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white hover:bg-white/10"
-            onClick={handleCreateEvent}
-            title="Create Event"
-          >
-            <Plus size={20} />
-          </Button>
-        )}
         
         {isAuthenticated && <NotificationsDropdown />}
         
@@ -100,16 +75,22 @@ const Navbar = () => {
                   Profile
                 </Link>
               </DropdownMenuItem>
-              {user?.user_type === 'organizer' && (
+              {isAdmin && (
                 <DropdownMenuItem asChild>
-                  <Link to="/create-event" className="text-white hover:bg-kenya-brown-dark cursor-pointer">
-                    Create Event
+                  <Link to="/admin" className="text-white hover:bg-kenya-brown-dark cursor-pointer">
+                    Admin Dashboard
                   </Link>
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem asChild>
                 <Link to="/tickets" className="text-white hover:bg-kenya-brown-dark cursor-pointer">
                   My Tickets
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/request-event" className="text-white hover:bg-kenya-brown-dark cursor-pointer flex items-center gap-2">
+                  <Calendar size={16} />
+                  <span>Request Event</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-kenya-brown-dark" />

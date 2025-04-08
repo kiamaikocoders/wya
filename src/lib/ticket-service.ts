@@ -1,6 +1,7 @@
 
 import { apiClient } from './api-client';
 import { toast } from 'sonner';
+import { mpesaService, MpesaPaymentRequest } from './mpesa-service';
 
 // Ticket endpoint
 const TICKET_ENDPOINT = `${apiClient.XANO_EVENT_API_URL}/tickets`;
@@ -17,12 +18,16 @@ export interface Ticket {
   status: 'confirmed' | 'pending' | 'cancelled';
   ticket_type: string;
   price: number;
+  payment_method?: string;
+  payment_id?: string;
 }
 
 export interface PurchaseTicketPayload {
   event_id: number;
   ticket_type: string;
   quantity: number;
+  phone_number?: string;
+  payment_method: 'mpesa' | 'card' | 'cash';
 }
 
 // Ticket service methods
@@ -66,6 +71,37 @@ export const ticketService = {
   // Purchase ticket
   purchaseTicket: async (purchaseData: PurchaseTicketPayload): Promise<Ticket> => {
     try {
+      // Handle M-Pesa payment if selected
+      if (purchaseData.payment_method === 'mpesa') {
+        if (!purchaseData.phone_number) {
+          throw new Error('Phone number is required for M-Pesa payments');
+        }
+        
+        // First create a pending ticket
+        const pendingTicket = await apiClient.post<Ticket>(`${TICKET_ENDPOINT}/pending`, purchaseData);
+        
+        // Then initiate M-Pesa payment
+        const paymentRequest: MpesaPaymentRequest = {
+          phone: purchaseData.phone_number,
+          amount: pendingTicket.price * purchaseData.quantity,
+          reference: pendingTicket.reference_code,
+          description: `Ticket for ${pendingTicket.event_title}`
+        };
+        
+        const paymentResponse = await mpesaService.initiatePayment(paymentRequest);
+        
+        if (!paymentResponse.success) {
+          // If payment failed, update ticket status to cancelled
+          await apiClient.put(`${TICKET_ENDPOINT}/${pendingTicket.id}/cancel`);
+          throw new Error(paymentResponse.message);
+        }
+        
+        // Return the pending ticket (will be confirmed by webhook)
+        toast.success('Payment initiated! Check your phone to complete the transaction.');
+        return pendingTicket;
+      }
+      
+      // For other payment methods, proceed with regular ticket creation
       const response = await apiClient.post<Ticket>(TICKET_ENDPOINT, purchaseData);
       toast.success('Ticket purchased successfully!');
       return response;
@@ -83,6 +119,18 @@ export const ticketService = {
       toast.success('Ticket cancelled successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to cancel ticket #${id}`;
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+  
+  // Check payment status for pending tickets
+  checkTicketPaymentStatus: async (ticketId: number): Promise<Ticket> => {
+    try {
+      const response = await apiClient.get<Ticket>(`${TICKET_ENDPOINT}/${ticketId}/payment-status`);
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `Failed to check payment status for ticket #${ticketId}`;
       toast.error(errorMessage);
       throw error;
     }

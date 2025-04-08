@@ -7,10 +7,11 @@ import { authService } from '@/lib/auth-service';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  adminOnly?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading, refreshAuth } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
+  const { isAuthenticated, isAdmin, loading, refreshAuth } = useAuth();
   const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
 
@@ -35,7 +36,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     if (!loading && !isChecking && !isAuthenticated) {
       toast.error('Please log in to access this page');
     }
-  }, [loading, isChecking, isAuthenticated]);
+    
+    // Show toast message if admin access is required
+    if (!loading && !isChecking && isAuthenticated && adminOnly && !isAdmin) {
+      toast.error('You need admin privileges to access this page');
+    }
+  }, [loading, isChecking, isAuthenticated, adminOnly, isAdmin]);
 
   // Show loading state
   if (loading || isChecking) {
@@ -50,8 +56,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+  
+  // Redirect to home if authenticated but not admin and route requires admin
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
-  // Render children if authenticated
+  // Render children if authenticated (and has admin privileges if required)
   return <>{children}</>;
 };
 
