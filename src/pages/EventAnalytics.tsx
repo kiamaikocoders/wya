@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
@@ -27,7 +26,6 @@ import { surveyService } from '@/lib/survey-service';
 import { ticketService } from '@/lib/ticket-service';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Colors for charts
 const CHART_COLORS = ["#FFBB28", "#FF8042", "#0088FE", "#00C49F", "#8884d8"];
 
 const EventAnalytics = () => {
@@ -35,28 +33,24 @@ const EventAnalytics = () => {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('month');
   
-  // Fetch event details
   const { data: event, isLoading: eventLoading } = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => eventId ? eventService.getEventById(Number(eventId)) : Promise.reject('No event ID'),
     enabled: !!eventId,
   });
   
-  // Fetch survey results for the event
   const { data: surveyResults } = useQuery({
     queryKey: ['eventSurveys', eventId],
     queryFn: () => eventId ? surveyService.getEventSurveys(Number(eventId)) : Promise.reject('No event ID'),
     enabled: !!eventId,
   });
   
-  // Fetch ticket data
   const { data: ticketData } = useQuery({
     queryKey: ['eventTickets', eventId],
     queryFn: () => eventId ? ticketService.getEventTickets(Number(eventId)) : Promise.reject('No event ID'),
     enabled: !!eventId,
   });
   
-  // Example data for visualizations
   const registrationData = [
     { name: 'Week 1', registrations: 20 },
     { name: 'Week 2', registrations: 35 },
@@ -77,7 +71,6 @@ const EventAnalytics = () => {
     { name: 'Age 45+', value: 10 },
   ];
   
-  // Check if user is authorized to view analytics
   const isAuthorized = user?.user_type === 'organizer' && (!event || event.organizer_id === user.id);
   
   if (eventLoading) {
@@ -378,7 +371,6 @@ const EventAnalytics = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Example survey comments */}
                   <div className="bg-accent/50 p-4 rounded-lg">
                     <p className="italic text-muted-foreground">
                       "Amazing event! The speakers were fantastic and the venue was perfect. Looking forward to next year!"

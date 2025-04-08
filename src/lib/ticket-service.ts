@@ -92,7 +92,7 @@ export const ticketService = {
         
         if (!paymentResponse.success) {
           // If payment failed, update ticket status to cancelled
-          await apiClient.put(`${TICKET_ENDPOINT}/${pendingTicket.id}/cancel`);
+          await apiClient.put<any>(`${TICKET_ENDPOINT}/${pendingTicket.id}/cancel`, {});
           throw new Error(paymentResponse.message);
         }
         

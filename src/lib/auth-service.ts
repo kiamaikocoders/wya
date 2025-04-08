@@ -13,14 +13,14 @@ export interface SignupCredentials {
   email: string;
   password: string;
   name: string;
-  user_type: 'attendee' | 'admin';
+  user_type: 'attendee' | 'admin' | 'organizer';
 }
 
 export interface User {
   id: number;
   name: string;
   email: string;
-  user_type: 'attendee' | 'admin';
+  user_type: 'attendee' | 'admin' | 'organizer';
   created_at: string;
   // Add other fields from your Xano user schema as needed
 }

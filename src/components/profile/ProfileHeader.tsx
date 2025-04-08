@@ -33,7 +33,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onLogout }) 
           {user.email}
         </CardDescription>
         <div className="text-center mt-2 text-sm font-medium">
-          {user.user_type === "organizer" ? "Event Organizer" : "Attendee"}
+          {user.user_type === "organizer" ? "Event Organizer" : user.user_type === "admin" ? "Administrator" : "Attendee"}
         </div>
       </CardHeader>
       <CardContent>
