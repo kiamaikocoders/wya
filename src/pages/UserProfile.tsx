@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +16,6 @@ const UserProfile = () => {
   const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("events");
   
-  // Mock user data - in a real app, fetch this from your API
   const userData = {
     id: parseInt(userId || "0"),
     name: "Jane Doe",
@@ -35,19 +33,16 @@ const UserProfile = () => {
     }
   };
   
-  // Fetch user's events
   const { data: events } = useQuery({
     queryKey: ["userEvents", userId],
     queryFn: () => eventService.getAllEvents(),
   });
   
-  // Fetch user's posts
   const { data: posts } = useQuery({
     queryKey: ["userPosts", userId],
     queryFn: () => forumService.getAllPosts(),
   });
   
-  // Filter events and posts by user ID
   const userEvents = events?.filter(event => event.organizer_id === userData.id) || [];
   const userPosts = posts?.filter(post => post.user_id === userData.id) || [];
   
@@ -56,7 +51,6 @@ const UserProfile = () => {
   return (
     <div className="container py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Profile Sidebar */}
         <div className="md:col-span-1">
           <Card className="dark:bg-kenya-brown-dark animate-fade-in">
             <CardHeader className="text-center">
@@ -144,7 +138,6 @@ const UserProfile = () => {
           </Card>
         </div>
         
-        {/* Profile Content */}
         <div className="md:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
@@ -234,7 +227,7 @@ const UserProfile = () => {
                             <span>{new Date(post.created_at).toLocaleDateString()}</span>
                             <span className="mx-2">•</span>
                             <MessageCircle size={14} className="mr-1" />
-                            <span>{post.comment_count || 0} comments</span>
+                            <span>{post.comments_count || 0} comments</span>
                           </div>
                         </CardContent>
                       </Card>
