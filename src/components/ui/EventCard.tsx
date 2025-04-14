@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin } from 'lucide-react';
+import FavoriteButton from './FavoriteButton';
 
 const sampleEventImages = [
   "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=2070", // Festival
@@ -32,10 +33,15 @@ const EventCard = ({ id, title, category, date, location, image }: EventCardProp
 
   return (
     <div className="flex flex-col bg-white bg-opacity-5 rounded-xl overflow-hidden border border-kenya-brown transition-transform hover:scale-[1.02] animate-fade-in-up">
-      <div 
-        className="w-full h-40 aspect-video bg-kenya-brown-dark bg-center bg-no-repeat bg-cover rounded-t-xl"
-        style={{ backgroundImage: `url(${getDefaultImage()})` }}
-      />
+      <div className="relative">
+        <div 
+          className="w-full h-40 aspect-video bg-kenya-brown-dark bg-center bg-no-repeat bg-cover rounded-t-xl"
+          style={{ backgroundImage: `url(${getDefaultImage()})` }}
+        />
+        <div className="absolute top-2 right-2">
+          <FavoriteButton eventId={parseInt(id, 10)} variant="icon" />
+        </div>
+      </div>
       <div className="p-4 flex flex-col gap-2">
         <div className="bg-kenya-orange text-kenya-dark text-xs font-medium py-1 px-2 rounded-full self-start">
           {category}
@@ -51,12 +57,14 @@ const EventCard = ({ id, title, category, date, location, image }: EventCardProp
             <span className="text-sm">{location}</span>
           </div>
         </div>
-        <Link 
-          to={`/events/${id}`} 
-          className="mt-3 bg-kenya-orange text-white py-2 px-4 rounded-lg text-center font-medium hover:bg-opacity-90 transition-colors"
-        >
-          View Details
-        </Link>
+        <div className="flex items-center justify-between mt-3">
+          <Link 
+            to={`/events/${id}`} 
+            className="bg-kenya-orange text-white py-2 px-4 rounded-lg text-center font-medium hover:bg-opacity-90 transition-colors flex-1 mr-2"
+          >
+            View Details
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -9,8 +9,8 @@ const BottomNav = () => {
   const navItems = [
     { name: 'Explore', icon: Home, path: '/' },
     { name: 'Tickets', icon: Ticket, path: '/tickets' },
-    { name: 'Friends', icon: Users, path: '/friends' },
-    { name: 'Wishlist', icon: Bookmark, path: '/wishlist' },
+    { name: 'Community', icon: Users, path: '/forum' },
+    { name: 'Favorites', icon: Bookmark, path: '/favorites' },
     { name: 'Profile', icon: User, path: '/profile' },
   ];
   

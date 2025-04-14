@@ -28,6 +28,7 @@ import MyTickets from "./pages/MyTickets";
 import TicketDetail from "./pages/TicketDetail";
 import EventAnalytics from "./pages/EventAnalytics";
 import Stories from "./pages/Stories";
+import Favorites from "./pages/Favorites";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,11 @@ const App = () => (
               <Route path="/request-event" element={<RequestEvent />} />
               <Route path="/search" element={<Search />} />
               <Route path="/stories" element={<Stories />} />
+              <Route path="/favorites" element={
+                <ProtectedRoute>
+                  <Favorites />
+                </ProtectedRoute>
+              } />
               
               {/* Admin routes */}
               <Route path="/admin" element={
