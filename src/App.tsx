@@ -23,12 +23,15 @@ import SurveyResultsPage from "./pages/SurveyResultsPage";
 import Forum from "./pages/Forum";
 import PostDetail from "./pages/PostDetail";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import Search from "./pages/Search";
 import MyTickets from "./pages/MyTickets";
 import TicketDetail from "./pages/TicketDetail";
 import EventAnalytics from "./pages/EventAnalytics";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import Stories from "./pages/Stories";
 import Favorites from "./pages/Favorites";
+import ChatPage from "./pages/ChatPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +65,26 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
+              {/* User Profiles */}
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/users/:userId" element={<UserProfile />} />
+              
+              {/* Chat */}
+              <Route path="/chat" element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/chat/:conversationId" element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              } />
+              
               {/* Admin routes */}
               <Route path="/admin" element={
                 <ProtectedRoute adminOnly={true}>
@@ -92,13 +115,6 @@ const App = () => (
                   <PostDetail />
                 </ProtectedRoute>
               } />
-
-              {/* User Profile */}
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
               
               {/* Tickets */}
               <Route path="/tickets" element={
@@ -113,8 +129,18 @@ const App = () => (
               } />
               
               {/* Analytics */}
-              <Route path="/analytics/events/:eventId?" element={
-                <ProtectedRoute adminOnly={true}>
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <AnalyticsDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics/events/:eventId" element={
+                <ProtectedRoute>
+                  <AnalyticsDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics/event/:eventId" element={
+                <ProtectedRoute>
                   <EventAnalytics />
                 </ProtectedRoute>
               } />
