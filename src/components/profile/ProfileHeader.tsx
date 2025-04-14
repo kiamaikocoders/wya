@@ -22,7 +22,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onLogout }) 
       <CardHeader>
         <div className="flex justify-center mb-4">
           <Avatar className="h-24 w-24">
-            <AvatarImage src="/placeholder.svg" alt={user.name} />
+            <AvatarImage src={user.profile_picture || "/placeholder.svg"} alt={user.name} />
             <AvatarFallback className="text-2xl">
               {user.name.charAt(0).toUpperCase()}
             </AvatarFallback>
@@ -32,9 +32,11 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onLogout }) 
         <CardDescription className="text-center">
           {user.email}
         </CardDescription>
-        <div className="text-center mt-2 text-sm font-medium">
-          {user.user_type === "organizer" ? "Event Organizer" : user.user_type === "admin" ? "Administrator" : "Attendee"}
-        </div>
+        {user.user_type === "admin" && (
+          <div className="text-center mt-2 text-sm font-medium">
+            Administrator
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -54,6 +56,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, stats, onLogout }) 
             <span className="text-muted-foreground">Surveys</span>
             <span>{stats.surveys}</span>
           </div>
+          {user.bio && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <span className="text-muted-foreground block mb-1">Bio</span>
+              <p className="text-sm">{user.bio}</p>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>

@@ -22,6 +22,8 @@ export interface User {
   email: string;
   user_type: 'attendee' | 'admin' | 'organizer';
   created_at: string;
+  bio?: string;
+  profile_picture?: string;
   // Add other fields from your Xano user schema as needed
 }
 
@@ -157,6 +159,32 @@ export const authService = {
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;
+    }
+  },
+  
+  // Update user profile
+  updateUserProfile: async (userData: Partial<User>): Promise<User> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      // In a real app, you would call an API endpoint to update the user profile
+      // For now, we'll simulate a successful response with the updated user data
+      const currentUser = await authService.getCurrentUser();
+      const updatedUser = {
+        ...currentUser,
+        ...userData
+      };
+      
+      // Store the updated user data in local storage for persistence
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
     }
   }
 };

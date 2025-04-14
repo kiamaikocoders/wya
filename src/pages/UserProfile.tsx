@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -25,6 +26,7 @@ const UserProfile = () => {
     joined: "January 2023",
     followers: 120,
     following: 85,
+    profile_picture: "/placeholder.svg",
     interests: ["Music", "Technology", "Food", "Art", "Culture"],
     social: {
       twitter: "janedoe",
@@ -55,7 +57,7 @@ const UserProfile = () => {
           <Card className="dark:bg-kenya-brown-dark animate-fade-in">
             <CardHeader className="text-center">
               <Avatar className="h-24 w-24 mx-auto">
-                <AvatarImage src="/placeholder.svg" alt={userData.name} />
+                <AvatarImage src={userData.profile_picture || "/placeholder.svg"} alt={userData.name} />
                 <AvatarFallback className="bg-kenya-orange text-white text-2xl">
                   {userData.name.charAt(0)}
                 </AvatarFallback>
@@ -198,11 +200,6 @@ const UserProfile = () => {
                   <p className="text-muted-foreground">
                     {isCurrentUser ? "You haven't organized any events yet." : `${userData.name} hasn't organized any events yet.`}
                   </p>
-                  {isCurrentUser && (
-                    <Link to="/request-event">
-                      <Button className="mt-4">Create an Event</Button>
-                    </Link>
-                  )}
                 </div>
               )}
             </TabsContent>

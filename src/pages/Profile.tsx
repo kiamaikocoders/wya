@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,10 +12,15 @@ import { ticketService } from "@/lib/ticket-service";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import AttendeeContent from "@/components/profile/AttendeeContent";
 import OrganizerContent from "@/components/profile/OrganizerContent";
+import EditProfileForm from "@/components/profile/EditProfileForm";
+import { toast } from "sonner";
+import { User } from "@/lib/auth-service";
 
 const Profile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState("events");
+  const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
   
   const { data: events } = useQuery({
     queryKey: ["events"],
@@ -35,8 +40,31 @@ const Profile: React.FC = () => {
   const { data: tickets } = useQuery({
     queryKey: ["tickets"],
     queryFn: ticketService.getUserTickets,
-    enabled: !!user && user.user_type === "attendee",
+    enabled: !!user,
   });
+  
+  const updateProfileMutation = useMutation({
+    mutationFn: async (userData: Partial<User>) => {
+      // In a real app, you would send this data to your backend
+      // For now, we'll just update the local state
+      if (updateUser) {
+        await updateUser(userData);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    },
+    onError: (error) => {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    },
+  });
+  
+  const handleUpdateProfile = async (data: Partial<User>) => {
+    updateProfileMutation.mutate(data);
+  };
   
   if (!user) {
     return (
@@ -76,11 +104,28 @@ const Profile: React.FC = () => {
     <div className="container py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <ProfileHeader 
-            user={user}
-            stats={stats}
-            onLogout={logout}
-          />
+          {isEditing ? (
+            <EditProfileForm 
+              user={user}
+              onUpdate={handleUpdateProfile}
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              <ProfileHeader 
+                user={user}
+                stats={stats}
+                onLogout={logout}
+              />
+              <Button 
+                onClick={() => setIsEditing(true)} 
+                variant="outline" 
+                className="w-full mt-4"
+              >
+                Edit Profile
+              </Button>
+            </>
+          )}
         </div>
         
         <div className="md:col-span-2">

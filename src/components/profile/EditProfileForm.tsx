@@ -1,0 +1,170 @@
+
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { User } from "@/lib/auth-service";
+import { Loader2, Upload, Image } from "lucide-react";
+
+interface EditProfileFormProps {
+  user: User;
+  onUpdate: (data: Partial<User>) => Promise<void>;
+  onCancel: () => void;
+}
+
+type FormValues = {
+  name: string;
+  bio: string;
+  profile_picture: string;
+};
+
+const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCancel }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(user.profile_picture || null);
+  
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+    defaultValues: {
+      name: user.name,
+      bio: user.bio || "",
+      profile_picture: user.profile_picture || "",
+    },
+  });
+  
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      await onUpdate(data);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    
+    if (file) {
+      // In a real app, you would upload the file to a server and get a URL back
+      // For now, we'll just create a local object URL as a preview
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewImage(objectUrl);
+    }
+  };
+  
+  const sampleAvatars = [
+    "/placeholder.svg",
+    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    "public/lovable-uploads/d4d9e0c4-5ef3-4aa4-9e7c-5e8391af678e.png"
+  ];
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit Profile</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="profilePicture">Profile Picture</Label>
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={previewImage || "/placeholder.svg"} alt={user.name} />
+                <AvatarFallback className="text-2xl">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              {sampleAvatars.map((avatar, index) => (
+                <div 
+                  key={index}
+                  className={`cursor-pointer rounded-full overflow-hidden h-16 w-16 border-2 ${previewImage === avatar ? 'border-kenya-orange' : 'border-transparent'}`}
+                  onClick={() => setPreviewImage(avatar)}
+                >
+                  <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4">
+              <Label htmlFor="custom-image" className="block mb-2">Or upload your own</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="custom-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <label htmlFor="custom-image" className="cursor-pointer">
+                  <div className="flex items-center gap-2 bg-muted p-2 rounded-md hover:bg-muted/80 transition-colors">
+                    <Upload size={16} />
+                    <span>Choose file</span>
+                  </div>
+                </label>
+                {previewImage && previewImage !== user.profile_picture && (
+                  <span className="text-xs text-muted-foreground">New image selected</span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="name">Display Name</Label>
+            <Input
+              id="name"
+              type="text"
+              {...register("name", { required: "Display name is required" })}
+            />
+            {errors.name && (
+              <p className="text-destructive text-sm">{errors.name.message}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              placeholder="Tell us about yourself..."
+              className="min-h-[100px]"
+              {...register("bio")}
+            />
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : "Save Changes"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default EditProfileForm;

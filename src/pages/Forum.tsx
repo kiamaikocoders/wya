@@ -4,9 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { forumService, ForumPost } from "@/lib/forum-service";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, AlertTriangle } from "lucide-react";
+import { PlusCircle, AlertTriangle, MessageSquarePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import PostCard from "@/components/forum/PostCard";
 import NewPostForm from "@/components/forum/NewPostForm";
@@ -101,18 +101,26 @@ const Forum: React.FC = () => {
         <Button 
           onClick={() => setShowNewPostForm(!showNewPostForm)}
           className="flex items-center gap-2"
+          variant={showNewPostForm ? "outline" : "default"}
         >
-          {showNewPostForm ? "Cancel" : <>
-            <PlusCircle className="h-4 w-4" />
-            New Post
-          </>}
+          {showNewPostForm ? (
+            <>
+              <X className="h-4 w-4" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <MessageSquarePlus className="h-4 w-4" />
+              New Post
+            </>
+          )}
         </Button>
       </div>
 
       {showNewPostForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Create New Post</CardTitle>
+        <Card className="mb-6 border bg-card/40 backdrop-blur-sm">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-xl">Create New Post</CardTitle>
             <CardDescription>Share your thoughts with the community</CardDescription>
           </CardHeader>
           <CardContent>
@@ -140,6 +148,13 @@ const Forum: React.FC = () => {
                 <div className="text-center p-8">
                   <h3 className="text-lg font-medium mb-2">No posts yet</h3>
                   <p className="text-muted-foreground">Be the first to create a post!</p>
+                  <Button 
+                    onClick={() => setShowNewPostForm(true)} 
+                    className="mt-4 flex items-center gap-2"
+                  >
+                    <MessageSquarePlus className="h-4 w-4" />
+                    Create a Post
+                  </Button>
                 </div>
               </CardContent>
             </Card>
