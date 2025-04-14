@@ -27,7 +27,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(user.profile_picture || null);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormValues>({
     defaultValues: {
       name: user.name,
       bio: user.bio || "",
@@ -38,6 +38,9 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
+      // Make sure profile_picture is set to the preview image
+      data.profile_picture = previewImage || "";
+      
       await onUpdate(data);
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -56,7 +59,13 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
       // For now, we'll just create a local object URL as a preview
       const objectUrl = URL.createObjectURL(file);
       setPreviewImage(objectUrl);
+      setValue("profile_picture", objectUrl);
     }
+  };
+  
+  const handleAvatarSelect = (avatarUrl: string) => {
+    setPreviewImage(avatarUrl);
+    setValue("profile_picture", avatarUrl);
   };
   
   const sampleAvatars = [
@@ -65,7 +74,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
     "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
     "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    "public/lovable-uploads/d4d9e0c4-5ef3-4aa4-9e7c-5e8391af678e.png"
+    "public/lovable-uploads/5a8a8680-15e8-4a23-b3d5-10e7c024f961.png"
   ];
   
   return (
@@ -91,7 +100,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
                 <div 
                   key={index}
                   className={`cursor-pointer rounded-full overflow-hidden h-16 w-16 border-2 ${previewImage === avatar ? 'border-kenya-orange' : 'border-transparent'}`}
-                  onClick={() => setPreviewImage(avatar)}
+                  onClick={() => handleAvatarSelect(avatar)}
                 >
                   <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
                 </div>
@@ -142,6 +151,11 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
               {...register("bio")}
             />
           </div>
+          
+          <input 
+            type="hidden" 
+            {...register("profile_picture")} 
+          />
           
           <div className="flex justify-end gap-2">
             <Button
