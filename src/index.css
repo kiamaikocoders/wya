@@ -37,6 +37,36 @@
 
     --radius: 0.75rem;
   }
+
+  .dark {
+    --background: 24 18% 4%;
+    --foreground: 0 0% 100%;
+
+    --card: 24 18% 5%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 24 18% 5%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 29 100% 50%;
+    --primary-foreground: 24 18% 8%;
+
+    --secondary: 24 18% 12%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 24 18% 10%;
+    --muted-foreground: 28 20% 67%;
+
+    --accent: 24 18% 10%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 24 12% 15%;
+    --input: 24 12% 15%;
+    --ring: 29 100% 50%;
+  }
 }
 
 @layer base {
@@ -75,6 +105,10 @@
   .glass-effect {
     @apply backdrop-blur-md bg-white/5 border border-white/10;
   }
+  
+  .text-gradient {
+    @apply bg-gradient-to-br from-kenya-orange via-kenya-orange/90 to-kenya-orange/70 bg-clip-text text-transparent;
+  }
 }
 
 #root {
@@ -110,9 +144,57 @@
 
 /* Make select dropdowns visible with proper colors */
 .select-content {
-  @apply bg-kenya-brown border border-kenya-brown-dark text-white z-50;
+  @apply bg-kenya-brown border border-kenya-brown-dark text-white z-50 dark:bg-kenya-dark;
 }
 
 .select-item {
   @apply hover:bg-kenya-brown-dark focus:bg-kenya-brown-dark text-white;
 }
+
+/* Calendar specific styling */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-caption-font-size: 18px;
+  --rdp-accent-color: #FF8000;
+  --rdp-background-color: rgba(255, 128, 0, 0.15);
+  --rdp-accent-color-dark: #FF8000;
+  --rdp-background-color-dark: rgba(255, 128, 0, 0.3);
+}
+
+.rdp-day_selected, 
+.rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+}
+
+.rdp-day:hover {
+  background-color: var(--rdp-background-color);
+}
+
+.dark .rdp-day_selected, 
+.dark .rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color-dark);
+}
+
+.dark .rdp-day:hover {
+  background-color: var(--rdp-background-color-dark);
+}
+
+/* Drawer animation */
+.drawer-content-enter {
+  transform: translateY(100%);
+}
+
+.drawer-content-enter-active {
+  transform: translateY(0);
+  transition: transform 300ms ease-out;
+}
+
+.drawer-content-exit {
+  transform: translateY(0);
+}
+
+.drawer-content-exit-active {
+  transform: translateY(100%);
+  transition: transform 300ms ease-in;
+}
+

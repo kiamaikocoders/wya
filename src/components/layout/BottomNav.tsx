@@ -2,9 +2,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Ticket, Users, Bookmark, User } from 'lucide-react';
+import NotificationBell from '@/components/notifications/NotificationBell';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BottomNav = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   
   const navItems = [
     { name: 'Explore', icon: Home, path: '/' },
@@ -15,7 +18,7 @@ const BottomNav = () => {
   ];
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 border-t border-kenya-brown-dark bg-kenya-brown z-50 animate-fade-in">
+    <div className="fixed bottom-0 left-0 right-0 border-t border-kenya-brown-dark bg-kenya-brown z-50 animate-fade-in dark:bg-kenya-dark dark:border-kenya-brown">
       <nav className="flex gap-2 px-4 pt-2 pb-3">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -30,7 +33,16 @@ const BottomNav = () => {
           );
         })}
       </nav>
-      <div className="h-5 bg-kenya-brown"></div>
+      <div className="h-5 bg-kenya-brown dark:bg-kenya-dark"></div>
+      
+      {/* Notification indicator for mobile - fixed to bottom right above the navigation */}
+      {isAuthenticated && (
+        <div className="fixed bottom-20 right-4 z-50">
+          <div className="bg-kenya-brown rounded-full p-1 shadow-lg dark:bg-kenya-brown-dark">
+            <NotificationBell />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
