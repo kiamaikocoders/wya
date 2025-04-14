@@ -32,6 +32,7 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import Stories from "./pages/Stories";
 import Favorites from "./pages/Favorites";
 import ChatPage from "./pages/ChatPage";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/request-event" element={<RequestEvent />} />
               <Route path="/search" element={<Search />} />
               <Route path="/stories" element={<Stories />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/favorites" element={
                 <ProtectedRoute>
                   <Favorites />

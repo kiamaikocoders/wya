@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
 import EventCard from '@/components/ui/EventCard';
-import { Calendar, Filter, Plus, MapPin, SlidersHorizontal, X } from 'lucide-react';
+import { Calendar, Filter, MapPin, SlidersHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { eventService, Event } from '@/lib/event-service';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,22 +42,6 @@ const Events = () => {
   const handleApplyFilters = () => {
     toast.success('Filters applied successfully!');
     setIsFilterOpen(false);
-  };
-
-  const handleCreateEvent = () => {
-    if (!isAuthenticated) {
-      toast.error('Please login to create an event');
-      navigate('/login', { state: { from: '/create-event' } });
-      return;
-    }
-    
-    if (user?.user_type !== 'organizer') {
-      toast.error('Only organizers can create events');
-      return;
-    }
-    
-    // Navigate to the create event page
-    navigate('/create-event');
   };
 
   const resetFilters = () => {
@@ -263,17 +247,6 @@ const Events = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
-      
-      <div className="fixed bottom-24 right-6 z-40">
-        <button 
-          onClick={handleCreateEvent}
-          className="bg-kenya-orange text-white h-14 w-14 rounded-full flex items-center justify-center shadow-lg hover:bg-opacity-90 transition-transform hover:scale-105"
-          aria-label="Create event"
-          title="Create new event"
-        >
-          <Plus size={24} />
-        </button>
       </div>
     </div>
   );
