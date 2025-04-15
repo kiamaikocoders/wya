@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { storyService } from '@/lib/story-service';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import AIStoryGenerator from '@/components/stories/AIStoryGenerator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Event background images for stories
 const eventBackgrounds = [
@@ -46,6 +48,8 @@ const eventBackgrounds = [
 const Stories: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const [aiGeneratedContent, setAiGeneratedContent] = useState<string>("");
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   
   // Fetch all stories
   const { data: stories, isLoading, error } = useQuery({
@@ -63,19 +67,50 @@ const Stories: React.FC = () => {
     // Navigate to event selection or directly to story creation
     toast.info('Story creation coming soon!');
   };
+  
+  const handleAIGenerate = (text: string) => {
+    setAiGeneratedContent(text);
+    setIsAIDialogOpen(false);
+    toast.success('AI content ready to use in your story!');
+    
+    // In a complete implementation, we would open a story creation form
+    // with the AI-generated content pre-filled
+    navigator.clipboard.writeText(text);
+    toast.info('Content copied to clipboard! You can paste it when creating your story.');
+  };
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-white text-2xl md:text-3xl font-bold">Event Stories</h1>
-          <Button 
-            onClick={handleCreateStory}
-            className="bg-kenya-orange text-white hover:bg-kenya-orange/90 flex items-center gap-2"
-          >
-            <PlusCircle size={16} />
-            Share Story
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="bg-kenya-brown/20 text-white border-kenya-orange/50 hover:bg-kenya-brown/30 flex items-center gap-2"
+                >
+                  <Sparkles size={16} className="text-kenya-orange" />
+                  AI Assist
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>AI Story Assistant</DialogTitle>
+                </DialogHeader>
+                <AIStoryGenerator onGenerate={handleAIGenerate} />
+              </DialogContent>
+            </Dialog>
+            
+            <Button 
+              onClick={handleCreateStory}
+              className="bg-kenya-orange text-white hover:bg-kenya-orange/90 flex items-center gap-2"
+            >
+              <PlusCircle size={16} />
+              Share Story
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -92,6 +127,30 @@ const Stories: React.FC = () => {
             <div className="mb-12">
               <StoryCarousel stories={stories || []} />
             </div>
+
+            {/* AI Content Preview Section (if generated) */}
+            {aiGeneratedContent && (
+              <div className="mb-8 bg-kenya-orange/10 p-4 rounded-lg border border-kenya-orange/30">
+                <h3 className="text-white text-lg font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles size={16} className="text-kenya-orange" />
+                  Your AI-Generated Content
+                </h3>
+                <p className="text-white/80">{aiGeneratedContent}</p>
+                <div className="mt-2 flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-kenya-orange border-kenya-orange/50 hover:bg-kenya-orange/10"
+                    onClick={() => {
+                      navigator.clipboard.writeText(aiGeneratedContent);
+                      toast.success('Copied to clipboard!');
+                    }}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Event Background Sections */}
             <div className="space-y-16">
