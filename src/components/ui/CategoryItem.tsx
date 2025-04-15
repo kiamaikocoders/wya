@@ -13,8 +13,10 @@ type CategoryItemProps = {
 
 const CategoryItem = ({ name, image, slug, icon, isActive, onClick }: CategoryItemProps) => {
   const Component = onClick ? 'button' : slug ? Link : 'div';
+  
+  // Create the props object but explicitly type the button type as "button"
   const props = onClick 
-    ? { onClick, type: 'button' } 
+    ? { onClick, type: "button" as "button" } 
     : slug 
       ? { to: `/categories/${slug}` } 
       : {};
@@ -36,4 +38,3 @@ const CategoryItem = ({ name, image, slug, icon, isActive, onClick }: CategoryIt
 };
 
 export default CategoryItem;
-
