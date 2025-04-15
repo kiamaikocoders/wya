@@ -11,7 +11,7 @@ interface AIEventRecommendationsProps {
   onSelectCategory: (category: string) => void;
 }
 
-const AIEventRecommendationsProps: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory }) => {
+const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory }) => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -111,4 +111,5 @@ const AIEventRecommendationsProps: React.FC<AIEventRecommendationsProps> = ({ on
   );
 };
 
-export default AIEventRecommendationsProps;
+export default AIEventRecommendations;
+
