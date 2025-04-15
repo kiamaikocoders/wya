@@ -11,6 +11,18 @@ interface AIEventRecommendationsProps {
   onSelectCategory: (category: string) => void;
 }
 
+interface UserPreferences {
+  interests?: string[];
+}
+
+interface EnhancedUser {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  preferences?: UserPreferences;
+}
+
 const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory }) => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<string>('');
@@ -18,8 +30,9 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
   
   // Sample interests based on user profile or default ones
   const getUserInterests = () => {
-    if (user?.preferences?.interests) {
-      return user.preferences.interests;
+    const enhancedUser = user as EnhancedUser;
+    if (enhancedUser?.preferences?.interests) {
+      return enhancedUser.preferences.interests;
     }
     // Default interests if user has none
     return ['music', 'food', 'sports', 'technology', 'culture'];
@@ -112,4 +125,3 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
 };
 
 export default AIEventRecommendations;
-

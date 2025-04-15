@@ -24,26 +24,7 @@ const AIStoryGenerator: React.FC<AIStoryGeneratorProps> = ({ onGenerate }) => {
     setIsGenerating(true);
     try {
       // Use the aiService to get a story recommendation
-      const promptText = `Write a short, engaging story or caption about this event experience (60-100 words): ${prompt}`;
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyBRF6q949E70yC36OvT-BYsGBeP7Jfux9Y'}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: promptText
-              }]
-            }]
-          })
-        }
-      );
-
-      const data = await response.json();
-      const generatedText = data.candidates[0].content.parts[0].text;
+      const generatedText = await aiService.generateStoryContent(prompt);
       
       onGenerate(generatedText);
       setPrompt('');
