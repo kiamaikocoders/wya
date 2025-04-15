@@ -5,7 +5,6 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { aiService } from '@/lib/ai-service';
 import { toast } from 'sonner';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 
 interface AIPostEnhancerProps {
   initialContent: string;
