@@ -9,6 +9,7 @@ import CategoryItem from '@/components/ui/CategoryItem';
 import EventCard from '@/components/ui/EventCard';
 import SearchBar from '@/components/ui/SearchBar';
 import AIEventRecommendations from '@/components/events/AIEventRecommendations';
+import { Brain, Sparkles } from 'lucide-react';
 
 // Sample categories
 const categories = [
@@ -64,7 +65,7 @@ const Home: React.FC = () => {
             <SearchBar onSearch={handleSearch} />
           </div>
           
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-3 justify-center">
             <Button 
               onClick={() => navigate('/events')}
               className="bg-kenya-orange text-white hover:bg-kenya-orange/90"
@@ -78,12 +79,32 @@ const Home: React.FC = () => {
             >
               Request an Event
             </Button>
+            <Button 
+              onClick={() => navigate('/ai-assistance')}
+              className="bg-kenya-brown text-white hover:bg-kenya-brown/90 flex items-center gap-2"
+            >
+              <Brain size={18} className="text-kenya-orange" />
+              AI Assistance
+            </Button>
           </div>
         </div>
       </div>
       
       {/* AI Recommendations Section */}
       <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-kenya-orange" />
+            <h2 className="text-white text-xl font-semibold">AI Recommendations</h2>
+          </div>
+          <Button 
+            variant="link" 
+            onClick={() => navigate('/ai-assistance')}
+            className="text-kenya-orange"
+          >
+            More AI Features
+          </Button>
+        </div>
         <AIEventRecommendations onSelectCategory={handleCategorySelect} />
       </div>
       
@@ -169,4 +190,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-
