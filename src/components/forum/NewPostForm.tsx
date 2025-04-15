@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { eventService } from "@/lib/event-service";
-import { Loader2, Image as ImageIcon, X, Camera } from "lucide-react";
+import { Loader2, Image as ImageIcon, X, Camera, Sparkles } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import AIPostEnhancer from "./AIPostEnhancer";
 
 interface NewPostFormProps {
   onSuccess: () => void;
@@ -24,6 +25,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
   const [mediaUrl, setMediaUrl] = useState("");
   const [selectedEventId, setSelectedEventId] = useState<number | null>(eventId || null);
   const [previewMedia, setPreviewMedia] = useState<string | null>(null);
+  const [showAITools, setShowAITools] = useState(false);
   
   // Sample images for easy insertion
   const sampleImages = [
@@ -130,6 +132,10 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
     setPreviewMedia(null);
   };
   
+  const handleEnhancedContent = (enhancedContent: string) => {
+    setContent(enhancedContent);
+  };
+  
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-4">
@@ -152,6 +158,28 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
               rows={4}
               disabled={createPostMutation.isPending}
             />
+            
+            {/* AI Tools Toggle */}
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAITools(!showAITools)}
+                className="text-kenya-orange hover:text-kenya-orange/80 hover:bg-transparent"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {showAITools ? "Hide AI Tools" : "Show AI Tools"}
+              </Button>
+            </div>
+            
+            {/* AI Post Enhancer */}
+            {showAITools && (
+              <AIPostEnhancer
+                initialContent={content}
+                onEnhance={handleEnhancedContent}
+              />
+            )}
             
             {previewMedia && (
               <div className="relative">

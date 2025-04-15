@@ -1,190 +1,166 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import SearchBar from '@/components/ui/SearchBar';
+import { Link, useNavigate } from 'react-router-dom';
 import Section from '@/components/ui/Section';
-import EventCard from '@/components/ui/EventCard';
+import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { eventService } from '@/lib/event-service';
 import CategoryItem from '@/components/ui/CategoryItem';
-import ImageCarousel, { CarouselImage } from '@/components/ui/ImageCarousel';
-import { eventService, Event } from '@/lib/event-service';
-import { toast } from 'sonner';
+import EventCard from '@/components/ui/EventCard';
+import SearchBar from '@/components/ui/SearchBar';
+import AIEventRecommendations from '@/components/events/AIEventRecommendations';
 
-// Categories for the application
+// Sample categories
 const categories = [
-  { name: 'Food & Drink', slug: 'food-drink', image: 'https://placehold.co/600x600/3A3027/FFFFFF?text=Food+%26+Drink' },
-  { name: 'Music', slug: 'music', image: 'https://placehold.co/600x600/3A3027/FFFFFF?text=Music' },
-  { name: 'Art', slug: 'art', image: 'https://placehold.co/600x600/3A3027/FFFFFF?text=Art' },
-  { name: 'Sports', slug: 'sports', image: 'https://placehold.co/600x600/3A3027/FFFFFF?text=Sports' },
+  { id: 1, name: 'Music', icon: '🎵' },
+  { id: 2, name: 'Sports', icon: '⚽' },
+  { id: 3, name: 'Food', icon: '🍔' },
+  { id: 4, name: 'Art', icon: '🎨' },
+  { id: 5, name: 'Technology', icon: '💻' },
+  { id: 6, name: 'Culture', icon: '🏛️' },
 ];
 
-// Featured stories for the carousel
-const featuredStories: CarouselImage[] = [
-  {
-    id: '1',
-    src: 'https://placehold.co/1200x800/FF8000/FFFFFF?text=Nairobi+Festival',
-    alt: 'Nairobi Festival',
-    title: 'Nairobi Festival',
-    subtitle: 'A celebration of culture and diversity',
-    link: '/events/1'
-  },
-  {
-    id: '2',
-    src: 'https://placehold.co/1200x800/3A3027/FFFFFF?text=Lamu+Cultural+Festival',
-    alt: 'Lamu Cultural Festival',
-    title: 'Lamu Cultural Festival',
-    subtitle: 'Experience traditional Swahili culture',
-    link: '/events/2'
-  },
-  {
-    id: '3',
-    src: 'https://placehold.co/1200x800/FF8000/FFFFFF?text=Kenya+Open',
-    alt: 'Magical Kenya Open',
-    title: 'Magical Kenya Open',
-    subtitle: 'International golf tournament',
-    link: '/events/3'
-  },
-  {
-    id: '4',
-    src: 'https://placehold.co/1200x800/3A3027/FFFFFF?text=Restaurant+Week',
-    alt: 'Nairobi Restaurant Week',
-    title: 'Nairobi Restaurant Week',
-    subtitle: 'Explore the best dining experiences',
-    link: '/events/4'
-  },
-  {
-    id: '5',
-    src: 'https://placehold.co/1200x800/FF8000/FFFFFF?text=Music+Festival',
-    alt: 'Kilifi New Year Festival',
-    title: 'Kilifi New Year Festival',
-    subtitle: 'Ring in the new year with music',
-    link: '/events/5'
-  }
-];
-
-const Home = () => {
-  const [email, setEmail] = useState('');
-
-  // Fetch events data
-  const { data: events, isLoading } = useQuery({
+const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Fetch all events
+  const { data: events, isLoading: eventsLoading } = useQuery({
     queryKey: ['events'],
     queryFn: eventService.getAllEvents,
   });
-
-  // Filter featured events
-  const featuredEvents = events?.filter(event => event.is_featured) || 
-                         events?.slice(0, 3) || [];
-
+  
+  const featuredEvents = events?.filter(event => event.is_featured) || [];
+  
+  // Filter events by selected category
+  const filteredEvents = selectedCategory
+    ? events?.filter(event => event.category.toLowerCase() === selectedCategory.toLowerCase())
+    : events || [];
+  
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    // Could also navigate to the category page
+    // navigate(`/categories/${category.toLowerCase()}`);
+  };
+  
   const handleSearch = (query: string) => {
-    console.log('Searching for:', query);
-    toast.info(`Searching for: ${query}`);
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
-
-  const handleDiscoverEvents = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      toast.error('Please enter your email address');
-      return;
-    }
-    toast.success('Thanks for subscribing!');
-    setEmail('');
-  };
-
+  
   return (
-    <div className="min-h-screen animate-fade-in">
-      <div className="px-4 py-3">
-        <SearchBar onSearch={handleSearch} />
+    <div className="min-h-screen pb-20 animate-fade-in">
+      {/* Hero Section */}
+      <div className="relative bg-kenya-dark">
+        <div className="absolute inset-0 bg-gradient-to-b from-kenya-dark to-transparent opacity-90"></div>
+        <div className="relative container mx-auto px-4 py-12 md:py-20 flex flex-col items-center">
+          <h1 className="text-white text-center text-3xl md:text-5xl font-bold mb-4">
+            Discover Amazing Events in Kenya
+          </h1>
+          <p className="text-white/80 text-center max-w-2xl mb-8">
+            Find and attend the best events happening around you. From music festivals to cultural exhibitions, we've got you covered.
+          </p>
+          
+          <div className="w-full max-w-2xl mb-8">
+            <SearchBar onSearch={handleSearch} />
+          </div>
+          
+          <div className="flex space-x-4">
+            <Button 
+              onClick={() => navigate('/events')}
+              className="bg-kenya-orange text-white hover:bg-kenya-orange/90"
+            >
+              Explore Events
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/request-event')}
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              Request an Event
+            </Button>
+          </div>
+        </div>
       </div>
       
-      {/* Logo and Heading */}
-      <div className="flex flex-col items-center justify-center pt-8 pb-5">
-        <img 
-          src="/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7.png" 
-          alt="WYA Logo" 
-          className="w-28 h-28 mb-4" 
-        />
-        <h1 className="text-white tracking-tight text-[28px] font-bold leading-tight">
-          Discover Kenyan Events
-        </h1>
-        <p className="text-kenya-brown-light mt-2">
-          Find exciting happenings across the nation!
-        </p>
+      {/* AI Recommendations Section */}
+      <div className="container mx-auto px-4 py-8">
+        <AIEventRecommendations onSelectCategory={handleCategorySelect} />
       </div>
-
-      {/* Stories Carousel */}
-      <Section title="Featured Stories">
-        <div className="py-2">
-          <ImageCarousel images={featuredStories} />
+      
+      {/* Categories Section */}
+      <Section title="Browse Categories" subtitle="Find events by category">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+          {categories.map(category => (
+            <CategoryItem 
+              key={category.id}
+              name={category.name}
+              icon={category.icon}
+              isActive={selectedCategory === category.name}
+              onClick={() => handleCategorySelect(category.name)}
+            />
+          ))}
         </div>
       </Section>
-
-      {/* Featured Events */}
-      <Section title="Find your next experience">
-        {isLoading ? (
-          <div className="flex justify-center py-8">
+      
+      {/* Featured Events Section */}
+      <Section 
+        title="Featured Events" 
+        subtitle="Don't miss out on these amazing events"
+        action={
+          <Link to="/events">
+            <Button variant="link" className="text-kenya-orange">
+              View All
+            </Button>
+          </Link>
+        }
+      >
+        {eventsLoading ? (
+          <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : featuredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
-            {featuredEvents.map((event: Event) => (
-              <EventCard
-                key={event.id}
-                id={String(event.id)}
-                title={event.title}
-                category={event.category}
-                date={event.date}
-                location={event.location}
-                image={event.image_url}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredEvents.map(event => (
+              <EventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (
-          <div className="text-center text-kenya-brown-light p-8">
-            <p>No featured events at the moment.</p>
+          <p className="text-center text-kenya-brown-light py-4">No featured events available.</p>
+        )}
+      </Section>
+      
+      {/* Filtered Events or Upcoming Events */}
+      <Section 
+        title={selectedCategory ? `${selectedCategory} Events` : "Upcoming Events"} 
+        subtitle={selectedCategory ? `Explore ${selectedCategory} events` : "Check out these upcoming events"}
+      >
+        {eventsLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
+          </div>
+        ) : filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.slice(0, 6).map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-kenya-brown-light py-4">
+            {selectedCategory ? `No ${selectedCategory} events available.` : "No upcoming events available."}
+          </p>
+        )}
+        
+        {filteredEvents.length > 6 && (
+          <div className="flex justify-center mt-8">
+            <Button 
+              onClick={() => navigate('/events')}
+              className="bg-kenya-orange text-white hover:bg-kenya-orange/90"
+            >
+              Load More
+            </Button>
           </div>
         )}
       </Section>
-
-      {/* Categories */}
-      <Section title="Categories">
-        <div className="flex overflow-y-auto scrollbar-none px-4">
-          <div className="flex items-stretch gap-4 pb-2">
-            {categories.map((category) => (
-              <CategoryItem key={category.slug} {...category} />
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* Join Community */}
-      <div className="container px-4 py-10 md:py-16">
-        <div className="bg-kenya-brown bg-opacity-20 rounded-xl p-6 md:p-10 flex flex-col items-center text-center">
-          <h2 className="text-white text-2xl md:text-3xl font-bold mb-4">
-            Join the Community
-          </h2>
-          <p className="text-kenya-brown-light mb-6 max-w-md">
-            Connect with event-goers and organizers across Kenya
-          </p>
-          
-          <form onSubmit={handleDiscoverEvents} className="w-full max-w-md">
-            <div className="flex w-full rounded-xl h-12 overflow-hidden">
-              <input
-                type="email"
-                placeholder="Email address"
-                className="flex-1 bg-kenya-brown text-white px-4 py-2 border-none placeholder:text-kenya-brown-light"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <button 
-                type="submit"
-                className="bg-kenya-orange text-white px-4 py-2 font-medium hover:bg-opacity-90 transition-colors"
-              >
-                Discover events
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   );
 };
