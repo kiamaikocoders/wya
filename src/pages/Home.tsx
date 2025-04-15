@@ -88,8 +88,11 @@ const Home: React.FC = () => {
       </div>
       
       {/* Categories Section */}
-      <Section title="Browse Categories" subtitle="Find events by category">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+      <Section 
+        title="Browse Categories" 
+        subtitle="Find events by category"
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 px-4">
           {categories.map(category => (
             <CategoryItem 
               key={category.id}
@@ -119,7 +122,7 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : featuredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
             {featuredEvents.map(event => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -139,13 +142,13 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
             {filteredEvents.slice(0, 6).map(event => (
               <EventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (
-          <p className="text-center text-kenya-brown-light py-4">
+          <p className="text-center text-kenya-brown-light py-4 px-4">
             {selectedCategory ? `No ${selectedCategory} events available.` : "No upcoming events available."}
           </p>
         )}
@@ -166,3 +169,4 @@ const Home: React.FC = () => {
 };
 
 export default Home;
+

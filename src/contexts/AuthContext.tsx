@@ -1,7 +1,13 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { User, authService } from '@/lib/auth-service';
+import { User as BaseUser, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
+
+interface User extends BaseUser {
+  preferences?: {
+    interests?: string[];
+    [key: string]: any;
+  };
+}
 
 interface AuthContextType {
   user: User | null;

@@ -1,12 +1,12 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Share2 } from 'lucide-react';
 import FavoriteButton from './FavoriteButton';
 import { Button } from './button';
 import { toast } from 'sonner';
+import { Event } from '@/lib/event-service';
 
-// Event category image mapping for more consistent and relevant images
+// Category image mapping for more consistent and relevant images
 const categoryImages = {
   "Business": [
     "https://images.unsplash.com/photo-1573164574572-cb89e39749b4?q=80&w=2069", 
@@ -55,14 +55,15 @@ const defaultImages = [
 ];
 
 type EventCardProps = {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  location: string;
+  id?: string;
+  title?: string;
+  category?: string;
+  date?: string;
+  location?: string;
   image?: string;
   capacity?: number;
   attendees?: number;
+  event?: Event;
 };
 
 const EventCard = ({ 
@@ -73,27 +74,36 @@ const EventCard = ({
   location, 
   image,
   capacity = 100,
-  attendees = 0
+  attendees = 0,
+  event
 }: EventCardProps) => {
   const navigate = useNavigate();
+  
+  // Use event object if provided, otherwise use individual props
+  const eventId = event ? event.id.toString() : id;
+  const eventTitle = event ? event.title : title;
+  const eventCategory = event ? event.category : category;
+  const eventDate = event ? event.date : date;
+  const eventLocation = event ? event.location : location;
+  const eventImage = event ? event.image_url : image;
   
   // Get an image based on category or use a default one
   const getEventImage = () => {
     // If image is provided, use it
-    if (image && !image.includes("placehold.co")) {
-      return image;
+    if (eventImage && !eventImage.includes("placehold.co")) {
+      return eventImage;
     }
     
     // Try to get an image for the category
-    const categoryImageArray = categoryImages[category as keyof typeof categoryImages];
+    const categoryImageArray = categoryImages[eventCategory as keyof typeof categoryImages];
     if (categoryImageArray) {
       // Use ID to ensure consistent image for same event ID
-      const categoryIndex = parseInt(id, 10) % categoryImageArray.length;
+      const categoryIndex = parseInt(eventId, 10) % categoryImageArray.length;
       return categoryImageArray[categoryIndex >= 0 ? categoryIndex : 0];
     }
     
     // Fall back to default images if no category match
-    const index = parseInt(id, 10) % defaultImages.length;
+    const index = parseInt(eventId, 10) % defaultImages.length;
     return defaultImages[index >= 0 ? index : 0];
   };
 
@@ -106,15 +116,15 @@ const EventCard = ({
     
     if (navigator.share) {
       navigator.share({
-        title: title,
-        text: `Check out this event: ${title}`,
-        url: `${window.location.origin}/events/${id}`
+        title: eventTitle,
+        text: `Check out this event: ${eventTitle}`,
+        url: `${window.location.origin}/events/${eventId}`
       })
       .then(() => toast.success('Shared successfully'))
       .catch((error) => console.log('Error sharing', error));
     } else {
       // Fallback - copy link to clipboard
-      navigator.clipboard.writeText(`${window.location.origin}/events/${id}`)
+      navigator.clipboard.writeText(`${window.location.origin}/events/${eventId}`)
         .then(() => toast.success('Link copied to clipboard'))
         .catch((error) => console.log('Error copying link', error));
     }
@@ -125,11 +135,11 @@ const EventCard = ({
     e.stopPropagation();
     
     // Format the date for calendar
-    const eventDate = new Date(date);
+    const eventDate = new Date(eventDate);
     const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000); // Assuming 2 hours duration
     
     // Google Calendar URL
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${eventDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=${encodeURIComponent(`At ${location}`)}&location=${encodeURIComponent(location)}`;
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${eventDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=${encodeURIComponent(`At ${eventLocation}`)}&location=${encodeURIComponent(eventLocation)}`;
     
     window.open(googleCalendarUrl, '_blank');
     toast.success('Opening Google Calendar');
@@ -150,7 +160,7 @@ const EventCard = ({
           >
             <Share2 size={18} />
           </button>
-          <FavoriteButton eventId={parseInt(id, 10)} variant="icon" />
+          <FavoriteButton eventId={parseInt(eventId || "0", 10)} variant="icon" />
         </div>
         
         {capacity > 0 && (
@@ -175,22 +185,22 @@ const EventCard = ({
       </div>
       <div className="p-4 flex flex-col gap-2">
         <div className="bg-kenya-orange text-kenya-dark text-xs font-medium py-1 px-2 rounded-full self-start">
-          {category}
+          {eventCategory}
         </div>
-        <h3 className="text-white text-lg font-bold leading-tight">{title}</h3>
+        <h3 className="text-white text-lg font-bold leading-tight">{eventTitle}</h3>
         <div className="flex flex-col gap-1 mt-1">
           <div className="flex items-center gap-2 text-kenya-brown-light">
             <Calendar size={16} />
-            <span className="text-sm">{date}</span>
+            <span className="text-sm">{eventDate}</span>
           </div>
           <div className="flex items-center gap-2 text-kenya-brown-light">
             <MapPin size={16} />
-            <span className="text-sm">{location}</span>
+            <span className="text-sm">{eventLocation}</span>
           </div>
         </div>
         <div className="flex items-center justify-between mt-3">
           <Link 
-            to={`/events/${id}`} 
+            to={`/events/${eventId}`} 
             className="bg-kenya-orange text-white py-2 px-4 rounded-lg text-center font-medium hover:bg-opacity-90 transition-colors flex-1 mr-2"
           >
             View Details
