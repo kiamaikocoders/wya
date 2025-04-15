@@ -11,16 +11,16 @@ interface AIEventRecommendationsProps {
   onSelectCategory: (category: string) => void;
 }
 
-interface UserPreferences {
-  interests?: string[];
-}
-
+// Updated type definition to be compatible with the User type from AuthContext
 interface EnhancedUser {
-  id?: string;
+  id: number | string; // Allow both number and string types for id
   name?: string;
   email?: string;
   role?: string;
-  preferences?: UserPreferences;
+  preferences?: {
+    interests?: string[];
+    [key: string]: any;
+  };
 }
 
 const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory }) => {
@@ -30,7 +30,8 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
   
   // Sample interests based on user profile or default ones
   const getUserInterests = () => {
-    const enhancedUser = user as EnhancedUser;
+    // Cast user to EnhancedUser type since we've made the types compatible
+    const enhancedUser = user as unknown as EnhancedUser;
     if (enhancedUser?.preferences?.interests) {
       return enhancedUser.preferences.interests;
     }
