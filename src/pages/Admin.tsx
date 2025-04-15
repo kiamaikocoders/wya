@@ -5,12 +5,12 @@ import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Calendar, Users, CreditCard } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar, Users, CreditCard, CheckCircle2, XCircle, Settings, MessageSquare, ActivitySquare } from 'lucide-react';
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
 
-  // Redirect if not an admin
   if (!loading && (!user || !isAdmin)) {
     return <Navigate to="/admin-login" />;
   }
@@ -34,44 +34,76 @@ const Admin = () => {
         <TabsList>
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Events
+            Event Management
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="payments" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Payments
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <ActivitySquare className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="moderation" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Content Moderation
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="events" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Manage Events</h2>
-            <Button className="flex items-center gap-2">
-              <PlusCircle className="h-4 w-4" />
-              Add New Event
-            </Button>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-kenya-orange" />
+                  Pending Event Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Sample event request - replace with actual data */}
+                  <div className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Tech Conference 2024</h3>
+                      <p className="text-sm text-muted-foreground">From: John Doe</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" className="flex items-center gap-1">
+                        <XCircle className="h-4 w-4" />
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-kenya-orange" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Button className="w-full justify-start" variant="outline">
+                    Review Featured Events
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline">
+                    Manage Categories
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline">
+                    View Reports
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">No pending event requests.</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Published Events</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">No events published yet.</p>
-            </CardContent>
-          </Card>
         </TabsContent>
         
         <TabsContent value="users" className="space-y-4">
@@ -80,32 +112,29 @@ const Admin = () => {
               <CardTitle>User Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">User management tools coming soon.</p>
+              <p className="text-muted-foreground">User management tools and reports will appear here.</p>
             </CardContent>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="payments" className="space-y-4">
+
+        <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>M-Pesa Integration</CardTitle>
+              <CardTitle>Platform Analytics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium">Consumer Key</h3>
-                  <p className="font-mono text-sm bg-muted p-2 rounded">
-                    CstL0SgMf7ZXUAmhGGqcfRMHizmEUBZTzS8joyKEKwm7YrFj
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-medium">Consumer Secret</h3>
-                  <p className="font-mono text-sm bg-muted p-2 rounded">
-                    QuTSinGBkkKbAkQpCHRavgrG4RnPOE0BL054ykqVmMu6P37osdoZLKmGAHHftRnh
-                  </p>
-                </div>
-                <Button>Test M-Pesa Connection</Button>
-              </div>
+              <p className="text-muted-foreground">Analytics dashboard will appear here.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="moderation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Content Moderation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Content moderation tools will appear here.</p>
             </CardContent>
           </Card>
         </TabsContent>
