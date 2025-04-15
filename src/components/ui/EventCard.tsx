@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Share2 } from 'lucide-react';
@@ -134,12 +135,12 @@ const EventCard = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Format the date for calendar
-    const eventDate = new Date(eventDate);
-    const endDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000); // Assuming 2 hours duration
+    // Fix the variable naming conflict by renaming the date variable
+    const calendarEventDate = new Date(eventDate || '');
+    const endDate = new Date(calendarEventDate.getTime() + 2 * 60 * 60 * 1000); // Assuming 2 hours duration
     
     // Google Calendar URL
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${eventDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=${encodeURIComponent(`At ${eventLocation}`)}&location=${encodeURIComponent(eventLocation)}`;
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle || '')}&dates=${calendarEventDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=${encodeURIComponent(`At ${eventLocation || ''}`)}&location=${encodeURIComponent(eventLocation || '')}`;
     
     window.open(googleCalendarUrl, '_blank');
     toast.success('Opening Google Calendar');
