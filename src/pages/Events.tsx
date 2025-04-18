@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
@@ -20,6 +21,25 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Constants for the Events page
+const DEFAULT_ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE_OPTIONS = [6, 12, 24, 48];
+
+// Available locations for filtering
+const locationOptions = ['All Locations', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Lamu', 'Malindi', 'Kilifi', 'Naivasha', 'Samburu'];
+
+// Available categories for filtering
+const categoryOptions = ['All Categories', 'Music', 'Sports', 'Food & Drink', 'Business', 'Technology', 'Art', 'Culture', 'Education', 'Charity', 'Festival'];
+
+// Price range presets for filtering
+const priceRangeOptions = [
+  { label: 'Free', min: 0, max: 0 },
+  { label: 'Under 500', min: 0, max: 500 },
+  { label: '500-2000', min: 500, max: 2000 },
+  { label: '2000-5000', min: 2000, max: 5000 },
+  { label: 'Over 5000', min: 5000, max: Infinity }
+];
 
 const Events = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -307,8 +327,8 @@ const Events = () => {
                         onChange={(e) => setSelectedLocation(e.target.value)}
                         className="w-full bg-kenya-dark text-white rounded-lg p-2 border border-kenya-brown-dark dark:border-kenya-brown"
                       >
-                        {locations.map(location => (
-                          <option key={location} value={location}>{location}</option>
+                        {locationOptions.map(locationOpt => (
+                          <option key={locationOpt} value={locationOpt}>{locationOpt}</option>
                         ))}
                       </select>
                     </div>
@@ -320,8 +340,8 @@ const Events = () => {
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="w-full bg-kenya-dark text-white rounded-lg p-2 border border-kenya-brown-dark dark:border-kenya-brown"
                       >
-                        {categories.map(category => (
-                          <option key={category} value={category}>{category}</option>
+                        {categoryOptions.map(categoryOpt => (
+                          <option key={categoryOpt} value={categoryOpt}>{categoryOpt}</option>
                         ))}
                       </select>
                     </div>
@@ -360,7 +380,7 @@ const Events = () => {
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {priceRanges.map((range, index) => (
+                        {priceRangeOptions.map((range, index) => (
                           <Button
                             key={index}
                             variant="outline"

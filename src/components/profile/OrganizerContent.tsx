@@ -62,6 +62,7 @@ const OrganizerContent: React.FC<OrganizerContentProps> = ({
                 date={new Date(event.date).toLocaleDateString()}
                 location={event.location}
                 image={event.image_url}
+                capacity={100}
               />
             ))}
           </div>
