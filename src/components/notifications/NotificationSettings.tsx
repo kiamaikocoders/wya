@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -32,7 +31,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
     }
   });
   
-  // Load user notification settings
   useEffect(() => {
     const loadSettings = async () => {
       if (!user) return;
@@ -52,10 +50,11 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
   }, [user]);
   
   const handleToggleSetting = (path: string, value: boolean) => {
-    // Update nested settings using path
     const pathParts = path.split('.');
     
     setSettings(prevSettings => {
+      const newSettings = { ...prevSettings };
+      
       if (pathParts.length === 1) {
         return {
           ...prevSettings,
@@ -65,7 +64,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
         return {
           ...prevSettings,
           [pathParts[0]]: {
-            ...prevSettings[pathParts[0] as keyof typeof prevSettings],
+            ...(prevSettings[pathParts[0] as keyof typeof prevSettings] as Record<string, boolean>),
             [pathParts[1]]: value
           }
         };

@@ -8,15 +8,17 @@ type SearchBarProps = {
   onSearch?: (query: string) => void;
   className?: string;
   defaultQuery?: string;
+  initialValue?: string; // Added this property
 };
 
 const SearchBar = ({ 
   placeholder = "Search for events, venues, users", 
   onSearch, 
   className = "",
-  defaultQuery = ""
+  defaultQuery = "",
+  initialValue = "" // Added with default value
 }: SearchBarProps) => {
-  const [query, setQuery] = useState(defaultQuery);
+  const [query, setQuery] = useState(initialValue || defaultQuery);
   const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {

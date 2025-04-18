@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -63,15 +62,12 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // If no initial messages, add a welcome message
   useEffect(() => {
     if (messages.length === 0) {
-      // Add a welcome message
       const welcomeMessage: Message = {
         id: 'welcome-1',
         sender_id: recipientId,
@@ -90,26 +86,22 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     
     setIsLoading(true);
     
-    // Create a new message object
     const message: Message = {
       id: Date.now().toString(),
       sender_id: user?.id || 0,
-      receiver_i: recipientId,
+      receiver_id: recipientId,
       content: newMessage.trim(),
       created_at: new Date().toISOString(),
       is_read: false
     };
     
-    // Add the message to the state
     setMessages([...messages, message]);
     setNewMessage('');
     
-    // Simulate API call delay
     setTimeout(() => {
       setIsLoading(false);
       
-      // Simulate a response for demo purposes
-      if (Math.random() > 0.3) { // 70% chance of getting a response
+      if (Math.random() > 0.3) {
         const responseMessages = [
           "Thanks for reaching out! How can I assist you with this event?",
           "I'll check and get back to you on this shortly.",
@@ -138,7 +130,6 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
   const handleAttachImage = () => {
     const imageUrl = prompt('Enter image URL:');
     if (imageUrl && imageUrl.trim()) {
-      // Create a new message with image attachment
       const message: Message = {
         id: Date.now().toString(),
         sender_id: user?.id || 0,
@@ -157,7 +148,6 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
   const handleAttachLocation = () => {
     const location = prompt('Enter location:');
     if (location && location.trim()) {
-      // Create a new message with location
       const message: Message = {
         id: Date.now().toString(),
         sender_id: user?.id || 0,
@@ -173,7 +163,6 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
   };
 
   const handleShareEvent = () => {
-    // In a real app, you would have a proper UI for selecting events
     const eventData = {
       event_id: 123,
       title: 'Nairobi International Jazz Festival',
@@ -181,7 +170,6 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
       location: 'Carnivore Grounds, Nairobi'
     };
     
-    // Create a new message with event
     const message: Message = {
       id: Date.now().toString(),
       sender_id: user?.id || 0,
@@ -209,13 +197,13 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {
-      return format(date, 'h:mm a'); // Today: 3:42 PM
+      return format(date, 'h:mm a');
     } else if (diffDays === 1) {
-      return 'Yesterday ' + format(date, 'h:mm a'); // Yesterday 3:42 PM
+      return 'Yesterday ' + format(date, 'h:mm a');
     } else if (diffDays < 7) {
-      return format(date, 'EEEE h:mm a'); // Monday 3:42 PM
+      return format(date, 'EEEE h:mm a');
     } else {
-      return format(date, 'MMM d, h:mm a'); // Jan 1, 3:42 PM
+      return format(date, 'MMM d, h:mm a');
     }
   };
 
@@ -241,10 +229,8 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
               : 'bg-kenya-brown-dark/80 text-white rounded-tl-lg rounded-tr-lg rounded-br-lg'
           } p-3 shadow`}
         >
-          {/* Render message content */}
           {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
           
-          {/* Render image attachment */}
           {message.attachment_type === 'image' && message.attachment_url && (
             <div className="mt-2">
               <img 
@@ -259,7 +245,6 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
             </div>
           )}
           
-          {/* Render event attachment */}
           {message.attachment_type === 'event' && message.event_data && (
             <div className="mt-2 p-3 bg-black/20 rounded-md">
               <h4 className="font-medium">{message.event_data.title}</h4>
