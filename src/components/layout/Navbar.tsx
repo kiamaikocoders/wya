@@ -1,188 +1,169 @@
-
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, User, Search, PlusCircle, Calendar, BarChart, MessageCircle } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
+import { useTheme } from '@/contexts/ThemeContext';
+import { ModeToggle } from '@/components/ui/mode-toggle';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from '@/components/ui/button';
+import {
+  Home,
+  Calendar,
+  Book,
+  Settings,
+  LogOut,
+  LogIn,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import NotificationsDropdown from '@/components/notifications/NotificationsDropdown';
-import DarkModeToggle from '@/components/ui/DarkModeToggle';
-import ChatButton from '@/components/ui/ChatButton';
+} from "@/components/ui/dropdown-menu"
+import { useQuery } from '@tanstack/react-query';
+import { chatService } from '@/lib/chat-service';
 
 const Navbar = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { theme } = useTheme();
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
-  
+  const { data: unreadCount } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: chatService.getUnreadCount,
+  });
+
+  const navigationItems = [
+    {
+      icon: Home,
+      label: 'Home',
+      href: '/',
+    },
+    {
+      icon: Calendar,
+      label: 'Events',
+      href: '/events',
+    },
+    {
+      icon: Book,
+      label: 'Forum',
+      href: '/forum',
+    },
+    {
+      icon: Users,
+      label: 'Users',
+      href: '/users',
+    },
+  ];
+
   return (
-    <header className="bg-kenya-orange py-3 px-4 flex items-center justify-between transition-all duration-300 animate-fade-in dark:bg-kenya-brown-dark">
-      <Link to="/" className="text-white font-bold text-2xl tracking-tight">
-        WYA Kenya
-      </Link>
-      
-      <nav className="hidden md:flex items-center space-x-6">
-        <NavLink to="/">Home</NavLink>
-        <NavLink to="/events">Events</NavLink>
-        <NavLink to="/forum">Forum</NavLink>
-        {isAuthenticated && <NavLink to="/chat">Chat</NavLink>}
-        <NavLink to="/request-event">Request Event</NavLink>
-        {isAdmin && (
-          <NavLink to="/admin">Admin</NavLink>
-        )}
-        {(isAdmin || user?.user_type === 'organizer') && (
-          <NavLink to="/analytics">Analytics</NavLink>
-        )}
-      </nav>
-      
-      <div className="flex items-center space-x-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-white/10"
-          onClick={() => setSearchOpen(true)}
-        >
-          <Search size={20} />
-        </Button>
-        
-        <DarkModeToggle />
-        
-        {isAuthenticated && (
-          <>
-            <div className="hidden md:block">
-              <ChatButton variant="ghost" showLabel={false} />
-            </div>
-            <NotificationsDropdown />
-          </>
-        )}
-        
-        {isAuthenticated ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center space-x-2 bg-kenya-dark text-white px-3 py-2 rounded-md font-medium hover:bg-opacity-90 transition-all dark:bg-kenya-brown">
-                <span className="hidden sm:inline">{user?.name?.split(' ')[0]}</span>
-                <User size={18} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-kenya-brown border-kenya-brown-dark dark:bg-kenya-dark dark:border-kenya-brown">
-              <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-kenya-brown-dark dark:bg-kenya-brown" />
-              <DropdownMenuItem asChild>
-                <Link to="/profile" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown">
-                  Profile
+    <nav className="bg-kenya-brown-dark border-b border-kenya-brown-light sticky top-0 z-50">
+      <div className="container flex items-center justify-between py-4">
+        <Link to="/" className="font-bold text-2xl text-white">
+          EventHub
+        </Link>
+
+        <div className="flex items-center space-x-4">
+          <ModeToggle />
+
+          {isAuthenticated() ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profile_picture || "/placeholder.svg"} alt={user?.name} />
+                    <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-sm font-medium leading-none">{user?.name}</span>
+                    <span className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <Link to="/profile">
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
                 </Link>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link to="/admin" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown">
-                    Admin Dashboard
-                  </Link>
+                <Link to="/chat">
+                  <DropdownMenuItem>
+                    <MessageIcon className="mr-2 h-4 w-4" />
+                    <span>Messages</span>
+                    {unreadCount > 0 && (
+                      <div className="ml-auto flex items-center justify-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        {unreadCount}
+                      </div>
+                    )}
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem asChild>
-                <Link to="/tickets" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown">
-                  My Tickets
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/favorites" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown">
-                  Favorites
-                </Link>
-              </DropdownMenuItem>
-              {(isAdmin || user?.user_type === 'organizer') && (
-                <DropdownMenuItem asChild>
-                  <Link to="/analytics" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown flex items-center gap-2">
-                    <BarChart size={16} />
-                    <span>Analytics</span>
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem asChild>
-                <Link to="/chat" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown flex items-center gap-2">
-                  <MessageCircle size={16} />
-                  <span>Messages</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/request-event" className="text-white hover:bg-kenya-brown-dark cursor-pointer dark:hover:bg-kenya-brown flex items-center gap-2">
-                  <Calendar size={16} />
-                  <span>Request Event</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-kenya-brown-dark dark:bg-kenya-brown" />
-              <DropdownMenuItem 
-                onClick={logout}
-                className="text-white hover:bg-kenya-brown-dark cursor-pointer flex items-center space-x-2 dark:hover:bg-kenya-brown"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Link
-            to="/login"
-            className="bg-kenya-dark text-white px-4 py-2 rounded-md font-medium hover:bg-opacity-90 transition-all dark:bg-kenya-brown"
-          >
-            Login
-          </Link>
-        )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
-      
-      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Search</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSearch} className="grid gap-4">
-            <Input
-              type="search"
-              placeholder="Search for events, venues, organizers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="col-span-2"
-              autoFocus
-            />
-            <Button type="submit" className="col-span-2">Search</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </header>
+      <div className="bg-kenya-brown">
+        <div className="container flex justify-center space-x-6 py-2 text-sm">
+          {navigationItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.href}
+              className="text-kenya-brown-light hover:text-white transition-colors flex items-center"
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </nav>
   );
 };
 
-const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
-  
-  return (
-    <Link
-      to={to}
-      className={`text-white font-medium relative after:absolute after:bottom-[-4px] after:left-0 after:h-[2px] after:bg-white after:transition-all ${
-        isActive ? 'after:w-full' : 'after:w-0 hover:after:w-full'
-      }`}
-    >
-      {children}
-    </Link>
-  );
-};
+// Custom message icon
+const MessageIcon = ({ size = 24, className = '' }: { size?: number, className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  </svg>
+);
 
 export default Navbar;

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +36,7 @@ import AIAssistance from "./pages/AIAssistance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CreateEvent from "./pages/CreateEvent";
+import UsersDirectory from '@/pages/UsersDirectory';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -178,6 +178,8 @@ const App = () => (
                   <EventAnalytics />
                 </ProtectedRoute>
               } />
+
+              <Route path="/users" element={<UsersDirectory />} />
 
               <Route path="*" element={<NotFound />} />
             </Route>
