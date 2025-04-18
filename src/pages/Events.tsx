@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
@@ -20,24 +19,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-
-// Sample locations and categories for filters
-const locations = ['All Locations', 'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Lamu', 'Naivasha', 'Samburu', 'Kilifi', 'Turkana'];
-const categories = ['All Categories', 'Business', 'Culture', 'Sports', 'Music', 'Technology', 'Food & Drink', 'Art', 'Education', 'Social'];
-
-// Price ranges
-const priceRanges = [
-  { min: 0, max: 0, label: 'Free' },
-  { min: 1, max: 500, label: 'Under 500 KES' },
-  { min: 500, max: 1000, label: '500 - 1,000 KES' },
-  { min: 1000, max: 3000, label: '1,000 - 3,000 KES' },
-  { min: 3000, max: 5000, label: '3,000 - 5,000 KES' },
-  { min: 5000, max: Infinity, label: 'Above 5,000 KES' }
-];
-
-// Items per page options
-const ITEMS_PER_PAGE_OPTIONS = [12, 24, 48];
-const DEFAULT_ITEMS_PER_PAGE = 12;
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Events = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,12 +27,10 @@ const Events = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
 
-  // Extract filter values from URL params
   const getInitialParam = (paramName: string, defaultValue: string) => {
     return searchParams.get(paramName) || defaultValue;
   };
-  
-  // State for filters
+
   const [searchQuery, setSearchQuery] = useState(getInitialParam('q', ''));
   const [selectedLocation, setSelectedLocation] = useState(getInitialParam('location', 'All Locations'));
   const [selectedCategory, setSelectedCategory] = useState(getInitialParam('category', 'All Categories'));
@@ -67,7 +47,7 @@ const Events = () => {
   const [itemsPerPage, setItemsPerPage] = useState(
     parseInt(getInitialParam('limit', DEFAULT_ITEMS_PER_PAGE.toString()))
   );
-  
+
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'map'>(
     getInitialParam('view', 'grid') as 'grid' | 'map'
@@ -77,13 +57,11 @@ const Events = () => {
   );
   const [availableTags, setAvailableTags] = useState<string[]>([]);
 
-  // Fetch events data
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['events'],
     queryFn: eventService.getAllEvents,
   });
 
-  // Extract all unique tags when events data is loaded
   useEffect(() => {
     if (events) {
       const tags = new Set<string>();
@@ -96,7 +74,6 @@ const Events = () => {
     }
   }, [events]);
 
-  // Update URL params when filters change
   useEffect(() => {
     const params = new URLSearchParams();
     
@@ -122,13 +99,13 @@ const Events = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1); // Reset to first page on new search
+    setCurrentPage(1);
   };
 
   const handleApplyFilters = () => {
     toast.success('Filters applied successfully!');
     setIsFilterOpen(false);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const resetFilters = () => {
@@ -144,7 +121,7 @@ const Events = () => {
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
-    setCurrentPage(1); // Reset to first page when sort changes
+    setCurrentPage(1);
   };
 
   const toggleTag = (tag: string) => {
@@ -153,15 +130,14 @@ const Events = () => {
         ? prev.filter(t => t !== tag) 
         : [...prev, tag]
     );
-    setCurrentPage(1); // Reset to first page when tags change
+    setCurrentPage(1);
   };
 
   const toggleFeaturedFilter = () => {
     setShowFeaturedOnly(prev => !prev);
-    setCurrentPage(1); // Reset to first page when featured filter changes
+    setCurrentPage(1);
   };
 
-  // Filter events based on all criteria
   const filteredEvents = events?.filter(event => {
     const matchesSearch = searchQuery === '' || 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -189,7 +165,6 @@ const Events = () => {
            matchesDate && matchesTags && matchesPrice && matchesFeatured;
   });
 
-  // Sort events
   const sortedEvents = filteredEvents ? [...filteredEvents].sort((a, b) => {
     switch (sortBy) {
       case 'date-asc':
@@ -209,7 +184,6 @@ const Events = () => {
     }
   }) : [];
 
-  // Paginate events
   const totalPages = sortedEvents ? Math.ceil(sortedEvents.length / itemsPerPage) : 0;
   const paginatedEvents = sortedEvents ? sortedEvents.slice(
     (currentPage - 1) * itemsPerPage, 
@@ -221,13 +195,11 @@ const Events = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Generate pagination items
   const generatePaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;
     
     if (totalPages <= maxVisiblePages) {
-      // Show all pages if we have fewer than maxVisiblePages
       for (let i = 1; i <= totalPages; i++) {
         items.push(
           <PaginationItem key={i}>
@@ -241,7 +213,6 @@ const Events = () => {
         );
       }
     } else {
-      // Always show first page
       items.push(
         <PaginationItem key={1}>
           <PaginationLink 
@@ -253,7 +224,6 @@ const Events = () => {
         </PaginationItem>
       );
       
-      // Add ellipsis if current page is not close to first page
       if (currentPage > 3) {
         items.push(
           <PaginationItem key="ellipsis-1">
@@ -262,7 +232,6 @@ const Events = () => {
         );
       }
       
-      // Show pages around current page
       const startPage = Math.max(2, currentPage - 1);
       const endPage = Math.min(totalPages - 1, currentPage + 1);
       
@@ -279,7 +248,6 @@ const Events = () => {
         );
       }
       
-      // Add ellipsis if current page is not close to last page
       if (currentPage < totalPages - 2) {
         items.push(
           <PaginationItem key="ellipsis-2">
@@ -288,7 +256,6 @@ const Events = () => {
         );
       }
       
-      // Always show last page
       items.push(
         <PaginationItem key={totalPages}>
           <PaginationLink 
@@ -616,7 +583,7 @@ const Events = () => {
               value={itemsPerPage.toString()} 
               onValueChange={(value) => {
                 setItemsPerPage(parseInt(value));
-                setCurrentPage(1); // Reset to first page when items per page changes
+                setCurrentPage(1);
               }}
             >
               <SelectTrigger className="w-[90px] h-9">
@@ -670,7 +637,7 @@ const Events = () => {
                         capacity={100}
                         price={event.price}
                         isFeatured={event.is_featured}
-                        attendees={Math.floor(Math.random() * 100)} // For demonstration
+                        attendees={Math.floor(Math.random() * 100)}
                       />
                     ))
                   ) : (

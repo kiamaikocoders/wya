@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,7 +72,6 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
     if (initialReviews.length > 0) {
       setReviews(initialReviews);
     } else {
-      // Example reviews for demo
       const demoReviews: Review[] = [
         {
           id: 1,
@@ -81,7 +79,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
           event_id: eventId,
           rating: 5,
           content: "Absolutely amazing event! The atmosphere was electric and everything was well organized. Would definitely attend again next year.",
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
+          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
           user_name: "Jane Doe",
           user_avatar: "https://i.pravatar.cc/150?img=1",
           helpful_count: 7,
@@ -100,7 +98,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
           event_id: eventId,
           rating: 3,
           content: "The event was okay. Good music but the venue was a bit crowded and hot. The food stands were overpriced for what they were offering.",
-          created_at: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago
+          created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
           user_name: "John Smith",
           user_avatar: "https://i.pravatar.cc/150?img=2",
           helpful_count: 3,
@@ -119,7 +117,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
           event_id: eventId,
           rating: 4,
           content: "Really enjoyed it! The performers were excellent and the staff were very helpful. Just wish there were more restrooms available.",
-          created_at: new Date(Date.now() - 86400000 * 10).toISOString(), // 10 days ago
+          created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
           user_name: "Mike Johnson",
           user_avatar: "https://i.pravatar.cc/150?img=3",
           helpful_count: 5,
@@ -174,14 +172,14 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
         rating: overallRating,
         content: newReview,
         photos: reviewPhotos,
-        categories: categoryRatings
+        categories: categoryRatings,
+        is_verified_attendee: true
       };
       
       if (onAddReview) {
         await onAddReview(reviewData);
       }
       
-      // For demo, we'll just add it to the local state
       const newReviewObj: Review = {
         ...reviewData,
         id: reviews.length + 1,
@@ -189,7 +187,6 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
         user_name: user?.name || 'Anonymous',
         user_avatar: user?.profile_picture,
         helpful_count: 0,
-        is_verified_attendee: true,
         sentiment: overallRating >= 4 ? 'positive' : overallRating >= 3 ? 'neutral' : 'negative'
       };
       
@@ -292,7 +289,6 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
   const getSortedAndFilteredReviews = () => {
     let filtered = [...reviews];
     
-    // Apply filters
     if (filterBy === 'verified') {
       filtered = filtered.filter(review => review.is_verified_attendee);
     } else if (filterBy === 'positive') {
@@ -303,7 +299,6 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
       filtered = filtered.filter(review => review.photos && review.photos.length > 0);
     }
     
-    // Apply sorting
     return filtered.sort((a, b) => {
       if (sortBy === 'recent') {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -782,7 +777,21 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
   );
 };
 
-// We need to add the Plus icon since we're using it in the component
+const X = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
 const Plus = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
