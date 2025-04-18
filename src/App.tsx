@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import Admin from "./pages/Admin";
 import RequestEvent from "./pages/RequestEvent";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SurveyPage from "./pages/SurveyPage";
 import CreateSurveyPage from "./pages/CreateSurveyPage";
@@ -51,140 +53,142 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/events/:eventId" element={<EventDetails />} />
-              <Route path="/categories/:slug" element={<Categories />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route path="/request-event" element={<RequestEvent />} />
-              <Route path="/create-event" element={
-                <ProtectedRoute>
-                  <CreateEvent />
-                </ProtectedRoute>
-              } />
-              <Route path="/search" element={<Search />} />
-              <Route path="/stories" element={<Stories />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/ai-assistance" element={<AIAssistance />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/terms-of-service" element={<TermsOfService />} />
-              <Route path="/favorites" element={
-                <ProtectedRoute>
-                  <Favorites />
-                </ProtectedRoute>
-              } />
-              
-              {/* User Profiles */}
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } />
-              <Route path="/users/:userId" element={<UserProfile />} />
-              
-              {/* Chat */}
-              <Route path="/chat" element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/chat/:conversationId" element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              } />
-              
-              {/* Admin routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/events" element={
-                <ProtectedRoute adminOnly={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute adminOnly={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/analytics" element={
-                <ProtectedRoute adminOnly={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/moderation" element={
-                <ProtectedRoute adminOnly={true}>
-                  <Admin />
-                </ProtectedRoute>
-              } />
-              
-              {/* Survey routes */}
-              <Route path="/surveys/:surveyId" element={
-                <ProtectedRoute>
-                  <SurveyPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/surveys/:surveyId/results" element={
-                <ProtectedRoute>
-                  <SurveyResultsPage />
-                </ProtectedRoute>
-              } />
+        <ThemeProvider>
+          <AuthProvider>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/events" element={<Events />} />
+                <Route path="/events/:eventId" element={<EventDetails />} />
+                <Route path="/categories/:slug" element={<Categories />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/request-event" element={<RequestEvent />} />
+                <Route path="/create-event" element={
+                  <ProtectedRoute>
+                    <CreateEvent />
+                  </ProtectedRoute>
+                } />
+                <Route path="/search" element={<Search />} />
+                <Route path="/stories" element={<Stories />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/ai-assistance" element={<AIAssistance />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/favorites" element={
+                  <ProtectedRoute>
+                    <Favorites />
+                  </ProtectedRoute>
+                } />
+                
+                {/* User Profiles */}
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/users/:userId" element={<UserProfile />} />
+                
+                {/* Chat */}
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <ChatPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat/:conversationId" element={
+                  <ProtectedRoute>
+                    <ChatPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin routes */}
+                <Route path="/admin" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/events" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/users" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/analytics" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/moderation" element={
+                  <ProtectedRoute adminOnly={true}>
+                    <Admin />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Survey routes */}
+                <Route path="/surveys/:surveyId" element={
+                  <ProtectedRoute>
+                    <SurveyPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/surveys/:surveyId/results" element={
+                  <ProtectedRoute>
+                    <SurveyResultsPage />
+                  </ProtectedRoute>
+                } />
 
-              {/* Forum routes */}
-              <Route path="/forum" element={
-                <ProtectedRoute>
-                  <Forum />
-                </ProtectedRoute>
-              } />
-              <Route path="/forum/:postId" element={
-                <ProtectedRoute>
-                  <PostDetail />
-                </ProtectedRoute>
-              } />
-              
-              {/* Tickets */}
-              <Route path="/tickets" element={
-                <ProtectedRoute>
-                  <MyTickets />
-                </ProtectedRoute>
-              } />
-              <Route path="/tickets/:ticketId" element={
-                <ProtectedRoute>
-                  <TicketDetail />
-                </ProtectedRoute>
-              } />
-              
-              {/* Analytics */}
-              <Route path="/analytics" element={
-                <ProtectedRoute>
-                  <AnalyticsDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/analytics/events/:eventId" element={
-                <ProtectedRoute>
-                  <AnalyticsDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/analytics/event/:eventId" element={
-                <ProtectedRoute>
-                  <EventAnalytics />
-                </ProtectedRoute>
-              } />
+                {/* Forum routes */}
+                <Route path="/forum" element={
+                  <ProtectedRoute>
+                    <Forum />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forum/:postId" element={
+                  <ProtectedRoute>
+                    <PostDetail />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Tickets */}
+                <Route path="/tickets" element={
+                  <ProtectedRoute>
+                    <MyTickets />
+                  </ProtectedRoute>
+                } />
+                <Route path="/tickets/:ticketId" element={
+                  <ProtectedRoute>
+                    <TicketDetail />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Analytics */}
+                <Route path="/analytics" element={
+                  <ProtectedRoute>
+                    <AnalyticsDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics/events/:eventId" element={
+                  <ProtectedRoute>
+                    <AnalyticsDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/analytics/event/:eventId" element={
+                  <ProtectedRoute>
+                    <EventAnalytics />
+                  </ProtectedRoute>
+                } />
 
-              <Route path="/users" element={<UsersDirectory />} />
+                <Route path="/users" element={<UsersDirectory />} />
 
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </AuthProvider>
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
       <Toaster />
       <Sonner />
