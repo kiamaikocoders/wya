@@ -1,12 +1,11 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User } from '@lucide-react';
 import { ChatConversation } from '@/lib/chat-service';
 import { useAuth } from '@/contexts/AuthContext';
 
