@@ -79,6 +79,7 @@ const Categories = () => {
                 date={event.date}
                 location={event.location}
                 image={event.image_url}
+                capacity={100}
               />
             ))}
           </div>

@@ -145,7 +145,19 @@ const Home: React.FC = () => {
         ) : featuredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
             {featuredEvents.map(event => (
-              <EventCard key={event.id} event={event} />
+              <EventCard 
+                key={event.id}
+                id={String(event.id)}
+                title={event.title}
+                category={event.category}
+                date={event.date}
+                location={event.location}
+                image={event.image_url}
+                capacity={100}
+                attendees={Math.floor(Math.random() * 100)}
+                isFeatured={event.is_featured}
+                price={event.price}
+              />
             ))}
           </div>
         ) : (
@@ -165,7 +177,19 @@ const Home: React.FC = () => {
         ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
             {filteredEvents.slice(0, 6).map(event => (
-              <EventCard key={event.id} event={event} />
+              <EventCard 
+                key={event.id}
+                id={String(event.id)}
+                title={event.title}
+                category={event.category}
+                date={event.date}
+                location={event.location}
+                image={event.image_url}
+                capacity={100}
+                attendees={Math.floor(Math.random() * 100)}
+                isFeatured={event.is_featured}
+                price={event.price}
+              />
             ))}
           </div>
         ) : (

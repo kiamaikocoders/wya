@@ -8,7 +8,7 @@ type SearchBarProps = {
   onSearch?: (query: string) => void;
   className?: string;
   defaultQuery?: string;
-  initialValue?: string; // Added this property
+  initialValue?: string;
 };
 
 const SearchBar = ({ 
@@ -16,7 +16,7 @@ const SearchBar = ({
   onSearch, 
   className = "",
   defaultQuery = "",
-  initialValue = "" // Added with default value
+  initialValue = ""
 }: SearchBarProps) => {
   const [query, setQuery] = useState(initialValue || defaultQuery);
   const navigate = useNavigate();
