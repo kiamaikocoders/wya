@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User as BaseUser, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 
 interface User extends BaseUser {
   preferences?: {
@@ -39,18 +40,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
 
   const refreshAuth = async () => {
-    if (!authService.isAuthenticated()) {
-      return;
-    }
-    
     try {
-      setLoading(true);
-      const userData = await authService.getCurrentUser();
-      setUser(userData);
-      setIsAdmin(userData.user_type === 'admin');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        setUser(profile);
+        setIsAdmin(profile?.role === 'admin');
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
     } catch (error) {
       console.error('Error refreshing auth:', error);
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('sb-token');
       setUser(null);
       setIsAdmin(false);
     } finally {
