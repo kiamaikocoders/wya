@@ -33,7 +33,10 @@ import Stories from "./pages/Stories";
 import Favorites from "./pages/Favorites";
 import ChatPage from "./pages/ChatPage";
 import Notifications from "./pages/Notifications";
-import AIAssistance from "./pages/AIAssistance"; // New import for AI Assistance page
+import AIAssistance from "./pages/AIAssistance";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import CreateEvent from "./pages/CreateEvent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,10 +62,17 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/request-event" element={<RequestEvent />} />
+              <Route path="/create-event" element={
+                <ProtectedRoute>
+                  <CreateEvent />
+                </ProtectedRoute>
+              } />
               <Route path="/search" element={<Search />} />
               <Route path="/stories" element={<Stories />} />
               <Route path="/notifications" element={<Notifications />} />
-              <Route path="/ai-assistance" element={<AIAssistance />} /> {/* New route for AI Assistance */}
+              <Route path="/ai-assistance" element={<AIAssistance />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/favorites" element={
                 <ProtectedRoute>
                   <Favorites />
