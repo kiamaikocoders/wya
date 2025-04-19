@@ -26,14 +26,17 @@ export interface ChatMessage {
   created_at: string;
   sender?: {
     id: string;
-    name: string;
+    name?: string;
+    full_name?: string; // Added to match Supabase data
     avatar_url?: string;
   };
   receiver?: {
     id: string;
-    name: string;
+    name?: string;
+    full_name?: string; // Added to match Supabase data
     avatar_url?: string;
   };
+  updated_at?: string;
 }
 
 export const chatService = {
@@ -67,7 +70,7 @@ export const chatService = {
             id: parseInt(message.id),
             participants: [{
               id: otherUserId,
-              name: otherUser.full_name,
+              name: otherUser.full_name, // Use full_name from Supabase
               avatar_url: otherUser.avatar_url
             }],
             last_message: {
@@ -109,7 +112,21 @@ export const chatService = {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as ChatMessage[];
+      
+      // Transform the data to match our ChatMessage interface
+      const transformedMessages: ChatMessage[] = data.map((message: any) => ({
+        ...message,
+        sender: message.sender ? {
+          ...message.sender,
+          name: message.sender.full_name // Map full_name to name for compatibility
+        } : undefined,
+        receiver: message.receiver ? {
+          ...message.receiver,
+          name: message.receiver.full_name // Map full_name to name for compatibility
+        } : undefined
+      }));
+      
+      return transformedMessages;
     } catch (error) {
       console.error('Error fetching messages:', error);
       return [];
@@ -139,7 +156,21 @@ export const chatService = {
         .single();
 
       if (error) throw error;
-      return data as ChatMessage;
+      
+      // Transform the data to match our ChatMessage interface
+      const transformedMessage: ChatMessage = {
+        ...data,
+        sender: data.sender ? {
+          ...data.sender,
+          name: data.sender.full_name // Map full_name to name for compatibility
+        } : undefined,
+        receiver: data.receiver ? {
+          ...data.receiver,
+          name: data.receiver.full_name // Map full_name to name for compatibility
+        } : undefined
+      };
+      
+      return transformedMessage;
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;
@@ -158,7 +189,9 @@ export const chatService = {
           filter: `receiver_id=eq.${conversationId}`
         },
         payload => {
-          onNewMessage(payload.new as ChatMessage);
+          // Transform the data to match our ChatMessage interface if needed
+          const message = payload.new as ChatMessage;
+          onNewMessage(message);
         }
       )
       .subscribe();

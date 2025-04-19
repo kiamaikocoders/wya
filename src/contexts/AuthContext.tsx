@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User as BaseUser, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
@@ -49,8 +50,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .eq('id', session.user.id)
           .single();
           
-        setUser(profile);
-        setIsAdmin(profile?.role === 'admin');
+        if (profile) {
+          // Map Supabase profile fields to our User type
+          const userData: User = {
+            id: profile.id,
+            name: profile.full_name || '',
+            email: session.user.email || '',
+            user_type: profile.username === 'admin' ? 'admin' : 'attendee', // Default to attendee if not admin
+            created_at: profile.created_at,
+            bio: profile.bio,
+            profile_picture: profile.avatar_url
+          };
+          
+          setUser(userData);
+          setIsAdmin(userData.user_type === 'admin');
+        }
       } else {
         setUser(null);
         setIsAdmin(false);
