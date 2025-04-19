@@ -58,6 +58,21 @@ const ChatPage = () => {
     }
   });
 
+  // Create a proper participant object for ChatHeader
+  const getParticipantForHeader = () => {
+    if (!currentConversation) return null;
+    
+    const participant = currentConversation.participants[0];
+    return {
+      id: participant.id,
+      name: participant.name,
+      avatar_url: participant.avatar_url,
+      email: "",
+      user_type: "attendee",
+      created_at: new Date().toISOString()
+    };
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-2xl font-bold mb-4">Messages</h1>
@@ -78,8 +93,9 @@ const ChatPage = () => {
           {currentConversation ? (
             <Card className="h-[calc(100vh-200px)] flex flex-col">
               <ChatHeader 
-                participant={{
-                  ...currentConversation.participants[0],
+                participant={getParticipantForHeader() || {
+                  id: "",
+                  name: "",
                   email: "",
                   user_type: "attendee",
                   created_at: new Date().toISOString()
