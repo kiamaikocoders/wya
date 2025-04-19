@@ -76,7 +76,7 @@ const ConversationsList = ({
                     </div>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground truncate max-w-[180px]">
-                        {conversation.last_message.sender_id === user?.id ? 'You: ' : ''}
+                        {conversation.last_message.sender_id === user?.id.toString() ? 'You: ' : ''}
                         {conversation.last_message.content}
                       </p>
                       {conversation.unread_count > 0 && (

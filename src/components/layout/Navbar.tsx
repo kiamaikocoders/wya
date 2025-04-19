@@ -15,6 +15,7 @@ import {
   LogIn,
   UserPlus,
   Users,
+  MessageCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -31,7 +32,7 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { theme } = useTheme();
   
-  const { data: unreadCount } = useQuery({
+  const { data: unreadCount = 0 } = useQuery({
     queryKey: ['unreadCount'],
     queryFn: chatService.getUnreadCount,
   });
@@ -97,7 +98,7 @@ const Navbar = () => {
                 </Link>
                 <Link to="/chat">
                   <DropdownMenuItem>
-                    <MessageIcon className="mr-2 h-4 w-4" />
+                    <MessageCircle className="mr-2 h-4 w-4" />
                     <span>Messages</span>
                     {unreadCount > 0 && (
                       <div className="ml-auto flex items-center justify-center rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
@@ -148,23 +149,5 @@ const Navbar = () => {
     </nav>
   );
 };
-
-// Custom message icon
-const MessageIcon = ({ size = 24, className = '' }: { size?: number, className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-  </svg>
-);
 
 export default Navbar;
