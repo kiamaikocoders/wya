@@ -7,7 +7,14 @@ import { ArrowLeft, Phone, VideoIcon, Info, MoreVertical } from 'lucide-react';
 import { User } from '@/lib/auth-service';
 
 interface ChatHeaderProps {
-  participant: User;
+  participant: User | {
+    id: string;
+    name: string;
+    avatar_url?: string;
+    email: string;
+    user_type: string;
+    created_at: string;
+  };
   showBackButton?: boolean;
 }
 

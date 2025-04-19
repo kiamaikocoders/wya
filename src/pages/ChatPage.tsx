@@ -78,7 +78,12 @@ const ChatPage = () => {
           {currentConversation ? (
             <Card className="h-[calc(100vh-200px)] flex flex-col">
               <ChatHeader 
-                participant={currentConversation.participants[0]}
+                participant={{
+                  ...currentConversation.participants[0],
+                  email: "",
+                  user_type: "attendee",
+                  created_at: new Date().toISOString()
+                }}
                 showBackButton
               />
               

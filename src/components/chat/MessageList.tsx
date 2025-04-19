@@ -21,7 +21,7 @@ const MessageList = ({ messages }: MessageListProps) => {
     <ScrollArea className="flex-grow p-4">
       <div className="space-y-4">
         {messages.map((message) => {
-          const isCurrentUser = message.sender_id === user?.id;
+          const isCurrentUser = message.sender_id === user?.id.toString();
           return (
             <div 
               key={message.id}
