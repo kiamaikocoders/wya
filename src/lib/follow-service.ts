@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export interface Follow {
@@ -12,9 +12,18 @@ export interface Follow {
 export const followService = {
   followUser: async (followingId: string): Promise<boolean> => {
     try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user) {
+        toast.error('You must be logged in to follow users');
+        return false;
+      }
+
       const { error } = await supabase
         .from('follows')
-        .insert({ following_id: followingId });
+        .insert({ 
+          follower_id: currentUser.user.id,
+          following_id: followingId 
+        });
 
       if (error) throw error;
       toast.success('User followed successfully');
@@ -28,10 +37,19 @@ export const followService = {
 
   unfollowUser: async (followingId: string): Promise<boolean> => {
     try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user) {
+        toast.error('You must be logged in to unfollow users');
+        return false;
+      }
+
       const { error } = await supabase
         .from('follows')
         .delete()
-        .match({ following_id: followingId });
+        .match({ 
+          follower_id: currentUser.user.id,
+          following_id: followingId 
+        });
 
       if (error) throw error;
       toast.success('User unfollowed successfully');
@@ -60,10 +78,15 @@ export const followService = {
 
   getFollowing: async (userId: string): Promise<string[]> => {
     try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user && !userId) return [];
+      
+      const userIdToUse = userId || currentUser?.user?.id;
+      
       const { data, error } = await supabase
         .from('follows')
         .select('following_id')
-        .eq('follower_id', userId);
+        .eq('follower_id', userIdToUse);
 
       if (error) throw error;
       return data.map(follow => follow.following_id);
@@ -75,11 +98,17 @@ export const followService = {
 
   isFollowing: async (followingId: string): Promise<boolean> => {
     try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user) return false;
+      
       const { data, error } = await supabase
         .from('follows')
         .select('id')
-        .match({ following_id: followingId })
-        .single();
+        .match({ 
+          follower_id: currentUser.user.id,
+          following_id: followingId 
+        })
+        .maybeSingle();
 
       if (error) return false;
       return !!data;
