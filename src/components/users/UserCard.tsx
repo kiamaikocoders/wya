@@ -7,7 +7,7 @@ import { MessageCircle, UserPlus, UserMinus, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface UserCardProps {
-  id: number;
+  id: number | string;
   name: string;
   avatar?: string;
   bio?: string;
