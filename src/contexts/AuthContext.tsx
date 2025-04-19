@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { User as BaseUser, authService } from '@/lib/auth-service';
 import { useNavigate } from 'react-router-dom';
@@ -51,12 +50,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .single();
           
         if (profile) {
-          // Map Supabase profile fields to our User type
           const userData: User = {
-            id: profile.id,
+            id: parseInt(profile.id),
             name: profile.full_name || '',
             email: session.user.email || '',
-            user_type: profile.username === 'admin' ? 'admin' : 'attendee', // Default to attendee if not admin
+            user_type: profile.username === 'admin' ? 'admin' : 'attendee',
             created_at: profile.created_at,
             bio: profile.bio,
             profile_picture: profile.avatar_url
@@ -181,3 +179,5 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthProvider;
