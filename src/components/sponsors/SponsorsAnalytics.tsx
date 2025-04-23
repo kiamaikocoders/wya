@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BarChart as RechartsBarChart, 
-  LineChart as RechartsLineChart, 
+  LineChart as RechartsLineChart,
   PieChart as RechartsPieChart,
   CartesianGrid, 
   XAxis, 

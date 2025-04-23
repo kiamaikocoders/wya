@@ -16,7 +16,6 @@ import { Image, Film, Link2, Loader2 } from 'lucide-react';
 const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
 
-// Sample media for easy insertion
 const sampleImages = [
   "https://images.unsplash.com/photo-1472653431158-6364773b2fbc?q=80&w=2069",
   "https://images.unsplash.com/photo-1496024840928-4c417adf211d?q=80&w=2070",
@@ -35,7 +34,6 @@ const CreateEvent: React.FC = () => {
     date: '',
     location: '',
     image_url: '',
-    organizer_id: 0, // This will be set before submission
     price: 0,
     tags: []
   });
@@ -44,7 +42,6 @@ const CreateEvent: React.FC = () => {
   const [tagsInput, setTagsInput] = useState('');
   const [mediaType, setMediaType] = useState<"image" | "video" | "link">("image");
   
-  // Redirect if not authenticated or not an organizer
   useEffect(() => {
     if (!isAuthenticated) {
       toast.error('Please log in to create an event');
@@ -94,7 +91,6 @@ const CreateEvent: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.title.trim()) {
       toast.error('Please enter an event title');
       return;
@@ -123,9 +119,7 @@ const CreateEvent: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Use a fallback image if none provided
       if (!formData.image_url) {
-        // Pick a default image based on category
         const defaultImages = {
           Business: "https://images.unsplash.com/photo-1676372971824-ed498ef0db5f?q=80&w=2070",
           Culture: "https://images.unsplash.com/photo-1529154045759-34c09aed3b73?q=80&w=2070",
@@ -140,10 +134,9 @@ const CreateEvent: React.FC = () => {
         formData.image_url = imageUrl;
       }
       
-      // Update organizer_id before submission
       const eventData: CreateEventPayload = {
         ...formData,
-        organizer_id: user?.id || 0
+        organizer_id: user?.id
       };
       
       await eventService.createEvent(eventData);

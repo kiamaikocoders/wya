@@ -24,6 +24,7 @@ export interface CreateEventPayload {
   price?: number;
   is_featured?: boolean;
   tags?: string[];
+  organizer_id?: number;
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

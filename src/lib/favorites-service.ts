@@ -1,11 +1,13 @@
-import { apiClient, FAVORITES_ENDPOINTS } from './api-client';
+
+import { apiClient } from './api-client';
+import { FAVORITES_ENDPOINTS } from './api-endpoints';
 import type { Event } from '@/types/event.types';
 
 export const favoritesService = {
   // Add event to favorites
   addFavorite: async (eventId: number): Promise<void> => {
     try {
-      await apiClient.post(FAVORITES_ENDPOINTS.ADD(eventId));
+      await apiClient.post(FAVORITES_ENDPOINTS.ADD(eventId), {});
     } catch (error) {
       console.error('Error adding to favorites:', error);
       throw error;
