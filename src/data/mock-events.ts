@@ -1,0 +1,110 @@
+import { Event } from '@/types/event.types';
+
+export const SAMPLE_EVENTS: Event[] = [
+  {
+    id: 1,
+    title: 'Nairobi International Trade Fair',
+    description: 'The largest trade exhibition in East Africa, showcasing agricultural, commercial, and industrial products and services from across the region and beyond.',
+    category: 'Business',
+    date: '2023-10-02',
+    location: 'Nairobi',
+    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Trade+Fair',
+    organizer_id: 1,
+    created_at: '2023-09-01T08:00:00Z',
+    price: 500,
+    tags: ['trade', 'business', 'agriculture', 'exhibition']
+  },
+  {
+    id: 2,
+    title: 'Lamu Cultural Festival',
+    description: 'An annual celebration of the unique Swahili culture, featuring traditional dances, dhow races, donkey races, and various competitions.',
+    category: 'Culture',
+    date: '2023-11-15',
+    location: 'Lamu',
+    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Cultural+Festival',
+    organizer_id: 2,
+    created_at: '2023-10-12T09:30:00Z',
+    price: 0,
+    is_featured: true,
+    tags: ['culture', 'heritage', 'traditional', 'festival']
+  },
+  {
+    id: 3,
+    title: 'Magical Kenya Open',
+    description: 'A prestigious golf tournament that attracts professional players from across the globe, part of the European Tour.',
+    category: 'Sports',
+    date: '2024-03-10',
+    location: 'Nairobi',
+    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Kenya+Open',
+    organizer_id: 3,
+    created_at: '2024-01-20T11:15:00Z',
+    price: 2000,
+    tags: ['golf', 'sports', 'tournament', 'European Tour']
+  },
+  {
+    id: 4,
+    title: 'Nairobi Restaurant Week',
+    description: 'A culinary celebration where top restaurants offer special menus at discounted prices, showcasing the diverse cuisine available in Nairobi.',
+    category: 'Food & Drink',
+    date: '2024-02-01',
+    location: 'Nairobi',
+    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Restaurant+Week',
+    organizer_id: 4,
+    created_at: '2024-01-05T10:00:00Z',
+    price: 0,
+    tags: ['food', 'dining', 'culinary', 'restaurants']
+  },
+  {
+    id: 5,
+    title: 'Kilifi New Year Festival',
+    description: 'A 3-day electronic music festival featuring local and international DJs, workshops, and art installations.',
+    category: 'Music',
+    date: '2023-12-31',
+    location: 'Kilifi',
+    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Music+Festival',
+    organizer_id: 5,
+    created_at: '2023-11-10T14:30:00Z',
+    price: 4500,
+    is_featured: true,
+    tags: ['music', 'party', 'new year', 'festival']
+  },
+  {
+    id: 6,
+    title: 'Lake Turkana Cultural Festival',
+    description: 'A celebration of the cultural diversity of communities living around Lake Turkana, featuring traditional dances, music, and crafts.',
+    category: 'Culture',
+    date: '2024-06-15',
+    location: 'Turkana',
+    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Cultural+Festival',
+    organizer_id: 6,
+    created_at: '2024-04-22T09:00:00Z',
+    price: 500,
+    tags: ['culture', 'heritage', 'traditional', 'festival']
+  },
+  {
+    id: 7,
+    title: 'Nairobi Tech Week',
+    description: 'Kenya\'s largest tech event, bringing together developers, startups, and tech enthusiasts for workshops, panel discussions, and networking.',
+    category: 'Technology',
+    date: '2024-05-20',
+    location: 'Nairobi',
+    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Tech+Week',
+    organizer_id: 7,
+    created_at: '2024-03-15T11:00:00Z',
+    price: 1000,
+    tags: ['technology', 'innovation', 'developers', 'startups']
+  },
+  {
+    id: 8,
+    title: 'Art and Design Fair',
+    description: 'An exhibition of contemporary Kenyan art, design, and fashion with opportunities to purchase artworks directly from creators.',
+    category: 'Art',
+    date: '2024-04-10',
+    location: 'Nairobi',
+    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Art+Fair',
+    organizer_id: 8,
+    created_at: '2024-02-28T13:45:00Z',
+    price: 300,
+    tags: ['art', 'design', 'exhibition', 'fashion']
+  }
+];
