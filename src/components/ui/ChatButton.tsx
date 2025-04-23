@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { chatService } from '@/lib/chat-service';
+import { conversationsService } from '@/lib/chat';
 import { useQuery } from '@tanstack/react-query';
 
 interface ChatButtonProps {
@@ -18,7 +18,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 }) => {
   const { data: unreadCount = 0, isLoading } = useQuery({
     queryKey: ['unreadChatCount'],
-    queryFn: chatService.getUnreadCount,
+    queryFn: conversationsService.getUnreadCount,
     refetchInterval: 60000, // Refetch every minute
   });
   

@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from '@tanstack/react-query';
-import { chatService } from '@/lib/chat-service';
+import { conversationsService } from '@/lib/chat';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -34,7 +34,7 @@ const Navbar = () => {
   
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['unreadCount'],
-    queryFn: chatService.getUnreadCount,
+    queryFn: conversationsService.getUnreadCount,
   });
 
   const navigationItems = [
