@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +8,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistance } from 'date-fns';
 import StoryCarousel from '@/components/stories/StoryCarousel';
+import EventSponsorsSection from '@/components/sponsors/EventSponsorsSection';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -189,6 +189,9 @@ const EventDetails: React.FC = () => {
           <h2 className="text-white text-lg font-semibold mb-2">About this event</h2>
           <p className="text-kenya-brown-light whitespace-pre-line">{event.description}</p>
         </div>
+        
+        {/* Event Sponsors Section */}
+        {eventId && <EventSponsorsSection eventId={Number(eventId)} />}
         
         {/* Tags */}
         {event.tags && event.tags.length > 0 && (
