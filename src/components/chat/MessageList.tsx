@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ChatMessage } from '@/lib/chat-service';
+import { ChatMessage } from '@/lib/chat';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MessageListProps {
