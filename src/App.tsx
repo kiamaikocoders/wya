@@ -39,6 +39,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import CreateEvent from "./pages/CreateEvent";
 import UsersDirectory from '@/pages/UsersDirectory';
+import SponsorsPage from './pages/SponsorsPage';
+import SponsorZone from './pages/SponsorZone';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,6 +83,10 @@ const App = () => (
                     <Favorites />
                   </ProtectedRoute>
                 } />
+                
+                {/* Sponsor routes */}
+                <Route path="/sponsors" element={<SponsorsPage />} />
+                <Route path="/sponsors/:sponsorId" element={<SponsorZone />} />
                 
                 {/* User Profiles */}
                 <Route path="/profile" element={

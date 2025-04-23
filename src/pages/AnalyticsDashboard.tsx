@@ -6,10 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Download, Filter, BarChart, PieChart, Activity, Calendar } from 'lucide-react';
+import { Download, Filter, BarChart, PieChart, Activity, Calendar, Handshake } from 'lucide-react';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import { eventService } from '@/lib/event-service';
 import { useAuth } from '@/contexts/AuthContext';
+import SponsorsAnalytics from '@/components/sponsors/SponsorsAnalytics';
 
 // Sample analytics data
 const SAMPLE_ANALYTICS_DATA = {
@@ -163,6 +164,11 @@ const AnalyticsDashboardPage: React.FC = () => {
             <Calendar className="h-4 w-4" />
             Events
           </TabsTrigger>
+          {/* New Sponsors Tab */}
+          <TabsTrigger value="sponsors" className="flex items-center gap-1">
+            <Handshake className="h-4 w-4" />
+            Sponsors
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -198,6 +204,11 @@ const AnalyticsDashboardPage: React.FC = () => {
               Detailed event metrics are being developed. Check back soon for more insights!
             </p>
           </Card>
+        </TabsContent>
+        
+        {/* New Sponsors Tab Content */}
+        <TabsContent value="sponsors">
+          <SponsorsAnalytics eventId={eventId ? Number(eventId) : undefined} />
         </TabsContent>
       </Tabs>
     </div>
