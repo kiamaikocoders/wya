@@ -1,18 +1,16 @@
-import { apiClient, EVENT_ENDPOINTS } from './api-client';
+
+import { apiClient } from './api-client';
+import { EVENT_ENDPOINTS } from './api-endpoints';
 import { toast } from 'sonner';
 import { SAMPLE_EVENTS } from '@/data/mock-events';
 import type { Event, CreateEventPayload, UpdateEventPayload } from '@/types/event.types';
-
-export type { Event, CreateEventPayload, UpdateEventPayload };
 
 export const eventService = {
   // Get all events
   getAllEvents: async (): Promise<Event[]> => {
     try {
-      // First attempt to get events from the API
       const response = await apiClient.get<Event[]>(EVENT_ENDPOINTS.ALL);
       
-      // If API returns empty array or fails, use sample data for development
       if (response && Array.isArray(response) && response.length > 0) {
         return response;
       } else {
@@ -28,11 +26,9 @@ export const eventService = {
   // Get event by ID
   getEventById: async (id: number): Promise<Event> => {
     try {
-      // First attempt to get event from the API
       const response = await apiClient.get<Event>(EVENT_ENDPOINTS.SINGLE(id));
       return response;
     } catch (error) {
-      // If API fails, check if the event exists in sample data
       const sampleEvent = SAMPLE_EVENTS.find(event => event.id === id);
       
       if (sampleEvent) {
