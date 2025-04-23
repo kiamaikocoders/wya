@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { MessageCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { chatService } from '@/lib/chat-service';
+import { conversationsService, messagesService } from '@/lib/chat';
 import ConversationsList from '@/components/chat/ConversationsList';
 import ChatHeader from '@/components/chat/ChatHeader';
 import MessageList from '@/components/chat/MessageList';
@@ -20,12 +19,12 @@ const ChatPage = () => {
   
   const { data: conversations = [] } = useQuery({
     queryKey: ['conversations'],
-    queryFn: chatService.getConversations,
+    queryFn: conversationsService.getConversations,
   });
   
   const { data: messages = [] } = useQuery({
     queryKey: ['messages', conversationId],
-    queryFn: () => conversationId ? chatService.getMessages(parseInt(conversationId)) : Promise.resolve([]),
+    queryFn: () => conversationId ? messagesService.getMessages(parseInt(conversationId)) : Promise.resolve([]),
     enabled: !!conversationId,
   });
   
@@ -36,7 +35,7 @@ const ChatPage = () => {
   const sendMessageMutation = useMutation({
     mutationFn: (content: string) => {
       if (!conversationId) throw new Error('No conversation selected');
-      return chatService.sendMessage(parseInt(conversationId), { content });
+      return messagesService.sendMessage(parseInt(conversationId), content);
     },
     onSuccess: (newMessage) => {
       queryClient.setQueryData(['messages', conversationId], (oldMessages: any = []) => [...oldMessages, newMessage]);
@@ -58,7 +57,6 @@ const ChatPage = () => {
     }
   });
 
-  // Create a proper participant object for ChatHeader
   const getParticipantForHeader = () => {
     if (!currentConversation) return null;
     
