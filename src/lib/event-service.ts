@@ -1,7 +1,9 @@
 import { apiClient, EVENT_ENDPOINTS } from './api-client';
 import { toast } from 'sonner';
 import { SAMPLE_EVENTS } from '@/data/mock-events';
-import { Event, CreateEventPayload, UpdateEventPayload } from '@/types/event.types';
+import type { Event, CreateEventPayload, UpdateEventPayload } from '@/types/event.types';
+
+export type { Event, CreateEventPayload, UpdateEventPayload };
 
 export const eventService = {
   // Get all events
