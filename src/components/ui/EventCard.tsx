@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
-import { Event } from '@/lib/event-service';
+import type { Event } from '@/types/event.types';
 
 export interface EventCardProps {
   id: string;

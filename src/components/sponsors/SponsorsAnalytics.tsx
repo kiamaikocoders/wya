@@ -1,4 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { 
+  BarChart as RechartsBarChart, 
+  LineChart as RechartsLineChart, 
+  PieChart as RechartsPieChart,
+  CartesianGrid, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Legend, 
+  Bar, 
+  Line,
+  Pie,
+  Cell,
+  ResponsiveContainer 
+} from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
