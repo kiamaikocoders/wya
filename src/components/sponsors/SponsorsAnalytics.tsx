@@ -1,27 +1,10 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, PieChart, Award, Users, Zap, Calendar, LineChart } from 'lucide-react';
-import { sponsor, sponsorService } from '@/lib/sponsor-service';
-
-import {
-  Bar,
-  BarChart as RechartsBarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart as RechartsLineChart,
-  Pie,
-  PieChart as RechartsPieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { sponsorService } from '@/lib/sponsor-service';
 
 interface SponsorsAnalyticsProps {
   sponsorId?: number;
@@ -43,7 +26,6 @@ const SponsorsAnalytics: React.FC<SponsorsAnalyticsProps> = ({
     enabled: !!sponsorId,
   });
   
-  // Sample data for charts
   const impressionsData = [
     { name: 'Mon', value: 2400 },
     { name: 'Tue', value: 1398 },
@@ -89,7 +71,6 @@ const SponsorsAnalytics: React.FC<SponsorsAnalyticsProps> = ({
   
   return (
     <div className="space-y-6">
-      {/* Controls */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Sponsor Analytics</h2>
         
@@ -106,7 +87,6 @@ const SponsorsAnalytics: React.FC<SponsorsAnalyticsProps> = ({
         </Select>
       </div>
       
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -149,7 +129,6 @@ const SponsorsAnalytics: React.FC<SponsorsAnalyticsProps> = ({
         </Card>
       </div>
       
-      {/* Tabs & Charts */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="overview" className="flex items-center gap-1">

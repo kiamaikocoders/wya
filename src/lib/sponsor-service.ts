@@ -89,7 +89,7 @@ const SAMPLE_SPONSORS: Sponsor[] = [
   },
 ];
 
-const SAMPLE_EVENT_SPONSORS = [
+const SAMPLE_EVENT_SPONSORS: EventSponsor[] = [
   {
     id: 1,
     event_id: 1,
