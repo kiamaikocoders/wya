@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { eventService, CreateEventPayload } from '@/lib/event-service';
+import { eventService } from '@/lib/event-service';
+import { CreateEventPayload } from '@/types/event.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Film, Link2, Loader2 } from 'lucide-react';
 
@@ -29,7 +30,7 @@ const CreateEvent: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
-  const [formData, setFormData] = useState<Omit<CreateEventPayload, 'organizer_id'>>({
+  const [formData, setFormData] = useState<CreateEventPayload>({
     title: '',
     description: '',
     category: '',
@@ -37,7 +38,8 @@ const CreateEvent: React.FC = () => {
     location: '',
     image_url: '',
     price: 0,
-    tags: []
+    tags: [],
+    organizer_id: 0
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +59,12 @@ const CreateEvent: React.FC = () => {
       navigate('/events');
     }
   }, [isAuthenticated, user, navigate]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setFormData(prev => ({ ...prev, organizer_id: user.id }));
+    }
+  }, [user]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -136,7 +144,6 @@ const CreateEvent: React.FC = () => {
         };
         
         const imageUrl = defaultImages[formData.category as keyof typeof defaultImages] || defaultImages.default;
-        setFormData(prev => ({ ...prev, image_url: imageUrl }));
         formData.image_url = imageUrl;
       }
       

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Link } from "react-router-dom";
 import { Calendar, MessageSquare, BarChart, PlusCircle } from "lucide-react";
 import EventCard from "@/components/ui/EventCard";
 import PostCard from "@/components/forum/PostCard";
-import { Event } from "@/lib/event-service";
+import { Event } from "@/types/event.types";
 
 interface OrganizerContentProps {
   activeTab: string;
