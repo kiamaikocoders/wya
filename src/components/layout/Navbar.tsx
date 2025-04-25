@@ -16,6 +16,7 @@ import {
   UserPlus,
   Users,
   MessageCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,7 +30,7 @@ import { useQuery } from '@tanstack/react-query';
 import { conversationsService } from '@/lib/chat';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const { theme } = useTheme();
   
   const { data: unreadCount = 0 } = useQuery({
@@ -87,6 +88,11 @@ const Navbar = () => {
                     <span className="text-xs leading-none text-muted-foreground">
                       {user?.email}
                     </span>
+                    {isAdmin && (
+                      <span className="text-xs leading-none text-kenya-orange font-semibold mt-1">
+                        Administrator
+                      </span>
+                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -107,6 +113,19 @@ const Navbar = () => {
                     )}
                   </DropdownMenuItem>
                 </Link>
+                
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <Link to="/admin">
+                      <DropdownMenuItem>
+                        <ShieldAlert className="mr-2 h-4 w-4 text-kenya-orange" />
+                        <span>Admin Dashboard</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  </>
+                )}
+                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -126,6 +145,12 @@ const Navbar = () => {
                 <Button>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Sign Up
+                </Button>
+              </Link>
+              <Link to="/admin-login">
+                <Button variant="outline" className="text-kenya-orange border-kenya-orange">
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  Admin
                 </Button>
               </Link>
             </>

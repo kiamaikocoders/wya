@@ -1,17 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { adminLogin } = useAuth();
+  const { adminLogin, isAdmin, user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in as admin
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +34,11 @@ const AdminLogin = () => {
     try {
       setIsSubmitting(true);
       await adminLogin(email, password);
+      toast.success('Admin login successful!');
+      navigate('/admin');
     } catch (error) {
       console.error('Admin login failed:', error);
+      toast.error('Admin login failed. Please check your credentials.');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +106,10 @@ const AdminLogin = () => {
         
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-kenya-brown-light">
-            This area is restricted to administrators only.
+            <p>This area is restricted to administrators only.</p>
+            <p className="mt-2 text-kenya-orange">
+              Demo Admin: {ADMIN_CREDENTIALS.email} / {ADMIN_CREDENTIALS.password}
+            </p>
           </div>
         </CardFooter>
       </Card>

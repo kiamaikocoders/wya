@@ -47,6 +47,23 @@ const MOCK_USERS: Record<string, User> = {
     email: ADMIN_CREDENTIALS.email,
     user_type: 'admin',
     created_at: new Date().toISOString(),
+    profile_picture: 'https://api.dicebear.com/7.x/avatars/svg?seed=admin',
+  },
+  'organizer@wya.com': {
+    id: 2,
+    name: 'Event Organizer',
+    email: 'organizer@wya.com',
+    user_type: 'organizer',
+    created_at: new Date().toISOString(),
+    profile_picture: 'https://api.dicebear.com/7.x/avatars/svg?seed=organizer',
+  },
+  'user@wya.com': {
+    id: 3,
+    name: 'Regular User',
+    email: 'user@wya.com',
+    user_type: 'attendee',
+    created_at: new Date().toISOString(),
+    profile_picture: 'https://api.dicebear.com/7.x/avatars/svg?seed=user',
   }
 };
 
@@ -176,13 +193,11 @@ export const authService = {
       // Check if the credentials match our hardcoded admin credentials
       if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
         // If match, create an admin session
-        const adminUser: User = {
-          id: 1,
-          name: 'Admin User',
-          email: ADMIN_CREDENTIALS.email,
-          user_type: 'admin',
-          created_at: new Date().toISOString(),
-        };
+        const adminUser = MOCK_USERS[ADMIN_CREDENTIALS.email];
+        
+        if (!adminUser) {
+          throw new Error('Admin user not found in mock database');
+        }
         
         const mockToken = generateMockToken();
         localStorage.setItem('auth_token', mockToken);

@@ -1,24 +1,35 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Users, MessageSquare, ActivitySquare } from 'lucide-react';
+import { Calendar, Users, MessageSquare, ActivitySquare, FileText } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EventManagement from '@/components/admin/EventManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import Analytics from '@/components/admin/Analytics';
 import ContentModeration from '@/components/admin/ContentModeration';
+import ProposalManagement from '@/components/admin/ProposalManagement';
+import { toast } from 'sonner';
 
 const Admin = () => {
   const { user, isAdmin, loading } = useAuth();
-
-  if (!loading && (!user || !isAdmin)) {
-    return <Navigate to="/admin-login" />;
-  }
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Show welcome toast when admin dashboard loads
+    if (user && isAdmin && !loading) {
+      toast.success(`Welcome to the admin dashboard, ${user.name}!`);
+    }
+  }, [user, isAdmin, loading]);
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!user || !isAdmin) {
+    toast.error('You do not have admin privileges');
+    return <Navigate to="/admin-login" />;
   }
 
   return (
@@ -33,6 +44,10 @@ const Admin = () => {
           <TabsTrigger value="events" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Event Management
+          </TabsTrigger>
+          <TabsTrigger value="proposals" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Proposals
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -50,6 +65,10 @@ const Admin = () => {
         
         <TabsContent value="events" className="space-y-4">
           <EventManagement />
+        </TabsContent>
+        
+        <TabsContent value="proposals" className="space-y-4">
+          <ProposalManagement />
         </TabsContent>
         
         <TabsContent value="users" className="space-y-4">
