@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '@/lib/event-service';
-import { storyService, CreateStoryDto } from '@/lib/story-service';
+import { storyService, CreateStoryDto } from '@/lib/story';
 import { Calendar, MapPin, User, Tag, Clock, ArrowLeft, Edit, Trash, MessageSquare, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';

@@ -1,17 +1,15 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { storyService } from '@/lib/story-service';
+import { useNavigate } from 'react-router-dom';
+import { storyService, Story } from '@/lib/story';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AIStoryGenerator from '@/components/stories/AIStoryGenerator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-// Event background images for stories
 const eventBackgrounds = [
   {
     id: 1,
@@ -51,7 +49,6 @@ const Stories: React.FC = () => {
   const [aiGeneratedContent, setAiGeneratedContent] = useState<string>("");
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   
-  // Fetch all stories
   const { data: stories, isLoading, error } = useQuery({
     queryKey: ['stories'],
     queryFn: storyService.getAllStories,
@@ -64,7 +61,6 @@ const Stories: React.FC = () => {
       return;
     }
     
-    // Navigate to event selection or directly to story creation
     toast.info('Story creation coming soon!');
   };
   
@@ -73,8 +69,6 @@ const Stories: React.FC = () => {
     setIsAIDialogOpen(false);
     toast.success('AI content ready to use in your story!');
     
-    // In a complete implementation, we would open a story creation form
-    // with the AI-generated content pre-filled
     navigator.clipboard.writeText(text);
     toast.info('Content copied to clipboard! You can paste it when creating your story.');
   };
@@ -123,12 +117,10 @@ const Stories: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Featured Stories Carousel */}
             <div className="mb-12">
               <StoryCarousel stories={stories || []} />
             </div>
 
-            {/* AI Content Preview Section (if generated) */}
             {aiGeneratedContent && (
               <div className="mb-8 bg-kenya-orange/10 p-4 rounded-lg border border-kenya-orange/30">
                 <h3 className="text-white text-lg font-semibold mb-2 flex items-center gap-2">
@@ -152,11 +144,9 @@ const Stories: React.FC = () => {
               </div>
             )}
 
-            {/* Event Background Sections */}
             <div className="space-y-16">
               {eventBackgrounds.map((event) => (
                 <div key={event.id} className="relative">
-                  {/* Background Image with Gradient Overlay */}
                   <div className="relative h-64 md:h-96 rounded-xl overflow-hidden">
                     <div 
                       className="absolute inset-0 bg-cover bg-center"
@@ -164,7 +154,6 @@ const Stories: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
                     
-                    {/* Content */}
                     <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full">
                       <h2 className="text-white text-2xl md:text-3xl font-bold mb-2">{event.title}</h2>
                       <p className="text-white/80 max-w-lg">{event.description}</p>
@@ -181,7 +170,6 @@ const Stories: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Event-specific Stories */}
                   <div className="mt-8">
                     <h3 className="text-white text-xl font-semibold mb-4">Latest Stories</h3>
                     {stories && stories.length > 0 ? (

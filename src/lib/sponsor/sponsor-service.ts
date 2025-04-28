@@ -1,20 +1,17 @@
-
-import { toast } from 'sonner';
-import { 
+import { apiClient } from '../api-client';
+import type { 
   Sponsor, 
   EventSponsor, 
-  SponsorZone 
+  SponsorZone, 
+  SponsorContentBlock,
+  SponsorContentBlockType
 } from './types';
-import { 
-  SAMPLE_SPONSORS, 
-  SAMPLE_EVENT_SPONSORS, 
-  SAMPLE_SPONSOR_ZONES 
-} from './mock-data';
+import { mockSponsors, mockEventSponsors, mockSponsorZones } from './mock-data';
 
 export const sponsorService = {
   getAllSponsors: async (): Promise<Sponsor[]> => {
     try {
-      return SAMPLE_SPONSORS;
+      return mockSponsors;
     } catch (error) {
       console.error('Error fetching sponsors:', error);
       toast.error('Failed to load sponsors');
@@ -24,7 +21,7 @@ export const sponsorService = {
   
   getSponsorById: async (sponsorId: number): Promise<Sponsor | null> => {
     try {
-      const sponsor = SAMPLE_SPONSORS.find(s => s.id === sponsorId);
+      const sponsor = mockSponsors.find(s => s.id === sponsorId);
       if (!sponsor) {
         throw new Error(`Sponsor with ID ${sponsorId} not found`);
       }
@@ -38,7 +35,7 @@ export const sponsorService = {
   
   getEventSponsors: async (eventId: number): Promise<EventSponsor[]> => {
     try {
-      return SAMPLE_EVENT_SPONSORS.filter(es => es.event_id === eventId);
+      return mockEventSponsors.filter(es => es.event_id === eventId);
     } catch (error) {
       console.error(`Error fetching sponsors for event ${eventId}:`, error);
       toast.error('Failed to load event sponsors');
@@ -48,7 +45,7 @@ export const sponsorService = {
   
   getSponsorZone: async (sponsorId: number): Promise<SponsorZone | null> => {
     try {
-      const sponsorZone = SAMPLE_SPONSOR_ZONES.find(sz => sz.sponsor_id === sponsorId);
+      const sponsorZone = mockSponsorZones.find(sz => sz.sponsor_id === sponsorId);
       if (!sponsorZone) {
         throw new Error(`Sponsor zone for sponsor ID ${sponsorId} not found`);
       }
