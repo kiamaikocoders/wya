@@ -1,7 +1,7 @@
 
 import { Sponsor, EventSponsor, SponsorZone } from './types';
 
-export const mockSponsors: Sponsor[] = [
+export const SAMPLE_SPONSORS: Sponsor[] = [
   {
     id: 1,
     name: 'EABL',
@@ -34,13 +34,13 @@ export const mockSponsors: Sponsor[] = [
   },
 ];
 
-export const mockEventSponsors: EventSponsor[] = [
+export const SAMPLE_EVENT_SPONSORS: EventSponsor[] = [
   {
     id: 1,
     event_id: 1,
     sponsor_id: 1,
     sponsorship_type: 'title',
-    sponsor: mockSponsors[0],
+    sponsor: SAMPLE_SPONSORS[0],
     created_at: new Date().toISOString(),
   },
   {
@@ -48,7 +48,7 @@ export const mockEventSponsors: EventSponsor[] = [
     event_id: 1,
     sponsor_id: 2,
     sponsorship_type: 'presenting',
-    sponsor: mockSponsors[1],
+    sponsor: SAMPLE_SPONSORS[1],
     created_at: new Date().toISOString(),
   },
   {
@@ -56,12 +56,12 @@ export const mockEventSponsors: EventSponsor[] = [
     event_id: 2,
     sponsor_id: 3,
     sponsorship_type: 'partner',
-    sponsor: mockSponsors[2],
+    sponsor: SAMPLE_SPONSORS[2],
     created_at: new Date().toISOString(),
   },
 ];
 
-export const mockSponsorZones: SponsorZone[] = [
+export const SAMPLE_SPONSOR_ZONES: SponsorZone[] = [
   {
     id: 1,
     sponsor_id: 1,
@@ -133,3 +133,8 @@ export const mockSponsorZones: SponsorZone[] = [
     updated_at: new Date().toISOString(),
   }
 ];
+
+// Aliases for backward compatibility
+export const mockSponsors = SAMPLE_SPONSORS;
+export const mockEventSponsors = SAMPLE_EVENT_SPONSORS;
+export const mockSponsorZones = SAMPLE_SPONSOR_ZONES;

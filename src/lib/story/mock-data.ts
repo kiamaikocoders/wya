@@ -1,7 +1,7 @@
 
 import { Story } from './types';
 
-export const mockStories: Story[] = [
+export const SAMPLE_STORIES: Story[] = [
   {
     id: 1,
     user_id: 1,
@@ -45,3 +45,6 @@ export const mockStories: Story[] = [
     has_liked: false
   }
 ];
+
+// Alias for backwards compatibility
+export const mockStories = SAMPLE_STORIES;
