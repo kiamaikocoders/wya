@@ -1,8 +1,15 @@
+
 import { apiClient } from '../api-client';
 import { toast } from 'sonner';
 import type { Story, CreateStoryDto, UpdateStoryDto } from './types';
 import { SAMPLE_STORIES } from './mock-data';
 import { checkEndpointAvailability } from './endpoint-checker';
+
+// Define story endpoints
+const STORY_ENDPOINTS = {
+  ALL: '/stories',
+  SINGLE: (id: number) => `/stories/${id}`
+};
 
 export const storyService = {
   getAllStories: async (): Promise<Story[]> => {
@@ -63,6 +70,7 @@ export const storyService = {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           user_name: "Current User",
+          user_image: undefined,
           likes_count: 0,
           comments_count: 0,
           has_liked: false

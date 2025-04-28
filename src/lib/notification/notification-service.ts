@@ -1,185 +1,122 @@
-import { apiClient } from "../api-client";
+
+import { apiClient } from '../api-client';
 import { toast } from 'sonner';
-import type { 
-  Notification, 
-  CreateNotificationPayload, 
-  NotificationSettings 
-} from './types';
-import { 
-  connectWebSocket, 
-  setupWebSocketReconnection, 
-  closeWebSocketConnection 
-} from './websocket';
+import { initializeNotificationSocket, closeNotificationSocket } from './websocket';
+// Use type-only import to avoid conflicts with the global Notification
+import type { Notification as NotificationType } from './types';
 
-const NOTIFICATION_ENDPOINT = `${apiClient.XANO_EVENT_API_URL}/notifications`;
+// Mock notifications for development
+const SAMPLE_NOTIFICATIONS: NotificationType[] = [
+  {
+    id: 1,
+    user_id: 1,
+    title: 'New Event Near You',
+    message: 'Check out "Nairobi Food Festival" happening this weekend.',
+    type: 'event',
+    read: false,
+    data: { event_id: 5 },
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    user_id: 1,
+    title: 'Your Ticket Confirmed',
+    message: 'Your ticket for "Tech Summit 2023" has been confirmed.',
+    type: 'ticket',
+    read: true,
+    data: { ticket_id: 102, event_id: 3 },
+    created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+  },
+  {
+    id: 3,
+    user_id: 1,
+    title: 'Event Reminder',
+    message: 'Your event "Kilifi New Year" starts tomorrow!',
+    type: 'reminder',
+    read: false,
+    data: { event_id: 7 },
+    created_at: new Date(Date.now() - 172800000).toISOString() // 2 days ago
+  }
+];
 
-// Global variable for reconnection attempts
-let reconnectAttempts = 0;
 let notificationSocket: WebSocket | null = null;
+let reconnectAttempts = 0;
 
+// Notification service functions
 export const notificationService = {
-  getUserNotifications: async (): Promise<Notification[]> => {
+  // Get all notifications for the current user
+  getAllNotifications: async (): Promise<NotificationType[]> => {
     try {
-      const response = await apiClient.get<Notification[]>(`${NOTIFICATION_ENDPOINT}/user`);
-      return response;
+      // In a real app, we would fetch from an API
+      // return await apiClient.get<NotificationType[]>('/notifications');
+      return SAMPLE_NOTIFICATIONS;
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications');
       return [];
     }
   },
   
-  getUnreadCount: async (): Promise<number> => {
+  // Mark a notification as read
+  markAsRead: async (notificationId: number): Promise<void> => {
     try {
-      const response = await apiClient.get<{ count: number }>(`${NOTIFICATION_ENDPOINT}/unread-count`);
-      return response.count;
+      const notificationIndex = SAMPLE_NOTIFICATIONS.findIndex(n => n.id === notificationId);
+      if (notificationIndex !== -1) {
+        SAMPLE_NOTIFICATIONS[notificationIndex].read = true;
+      }
+      
+      // In a real app:
+      // await apiClient.patch(`/notifications/${notificationId}`, { read: true });
     } catch (error) {
-      console.error('Failed to fetch unread notification count:', error);
-      return 0;
+      console.error('Error marking notification as read:', error);
+      toast.error('Failed to update notification');
     }
   },
   
-  markAsRead: async (id: number): Promise<void> => {
-    try {
-      await apiClient.patch(`${NOTIFICATION_ENDPOINT}/${id}/read`, { read: true });
-    } catch (error) {
-      console.error(`Failed to mark notification #${id} as read:`, error);
-    }
-  },
-  
+  // Mark all notifications as read
   markAllAsRead: async (): Promise<void> => {
     try {
-      await apiClient.post(`${NOTIFICATION_ENDPOINT}/read-all`, {});
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
-    }
-  },
-  
-  createNotification: async (data: CreateNotificationPayload): Promise<void> => {
-    try {
-      await apiClient.post(NOTIFICATION_ENDPOINT, data);
-      toast.success('Notification sent successfully');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send notification';
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
-  
-  deleteNotification: async (id: number): Promise<void> => {
-    try {
-      await apiClient.delete(`${NOTIFICATION_ENDPOINT}/${id}`);
-    } catch (error) {
-      console.error(`Failed to delete notification #${id}:`, error);
-    }
-  },
-  
-  getNotificationSettings: async (): Promise<NotificationSettings> => {
-    try {
-      const response = await apiClient.get<NotificationSettings>(`${NOTIFICATION_ENDPOINT}/settings`);
-      return response;
-    } catch (error) {
-      console.error('Failed to fetch notification settings:', error);
-      return {
-        email_notifications: true,
-        push_notifications: true,
-        in_app_notifications: true,
-        notification_types: {
-          event_updates: true,
-          messages: true,
-          announcements: true,
-          system: true,
-          reviews: true
-        }
-      };
-    }
-  },
-  
-  updateNotificationSettings: async (settings: Partial<NotificationSettings>): Promise<void> => {
-    try {
-      await apiClient.patch(`${NOTIFICATION_ENDPOINT}/settings`, settings);
-      toast.success('Notification settings updated successfully');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update notification settings';
-      toast.error(errorMessage);
-    }
-  },
-  
-  initializeRealTimeNotifications: (userId: number, onNewNotification: (notification: Notification) => void) => {
-    if (!userId) return;
-    
-    closeWebSocketConnection();
-    reconnectAttempts = 0;
-    
-    notificationSocket = connectWebSocket(userId, (event) => {
-      if (event.type === 'notification') {
-        onNewNotification(event.data);
-      }
-    });
-    
-    if (notificationSocket) {
-      notificationSocket.onclose = () => {
-        console.log('WebSocket connection closed');
-        setupWebSocketReconnection(userId, (event) => {
-          if (event.type === 'notification') {
-            onNewNotification(event.data);
-          }
-        });
-      };
-      
-      notificationSocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        closeWebSocketConnection();
-        setupWebSocketReconnection(userId, (event) => {
-          if (event.type === 'notification') {
-            onNewNotification(event.data);
-          }
-        });
-      };
-    }
-    
-    return () => {
-      closeWebSocketConnection();
-    };
-  },
-  
-  sendEmailNotification: async (userId: number, subject: string, body: string): Promise<boolean> => {
-    try {
-      await apiClient.post(`${NOTIFICATION_ENDPOINT}/email`, {
-        user_id: userId,
-        subject,
-        body
-      });
-      return true;
-    } catch (error) {
-      console.error('Failed to send email notification:', error);
-      return false;
-    }
-  },
-  
-  sendPushNotification: async (userId: number, title: string, body: string, icon?: string): Promise<boolean> => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Push notifications not supported');
-      return false;
-    }
-    
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.warn('Push notification permission not granted');
-        return false;
-      }
-      
-      await apiClient.post(`${NOTIFICATION_ENDPOINT}/push`, {
-        user_id: userId,
-        title,
-        body,
-        icon
+      SAMPLE_NOTIFICATIONS.forEach(notification => {
+        notification.read = true;
       });
       
-      return true;
+      // In a real app:
+      // await apiClient.patch('/notifications/mark-all-read');
+      
+      toast.success('All notifications marked as read');
     } catch (error) {
-      console.error('Failed to send push notification:', error);
-      return false;
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to update notifications');
     }
+  },
+  
+  // Delete a notification
+  deleteNotification: async (notificationId: number): Promise<void> => {
+    try {
+      const notificationIndex = SAMPLE_NOTIFICATIONS.findIndex(n => n.id === notificationId);
+      if (notificationIndex !== -1) {
+        SAMPLE_NOTIFICATIONS.splice(notificationIndex, 1);
+      }
+      
+      // In a real app:
+      // await apiClient.delete(`/notifications/${notificationId}`);
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to delete notification');
+    }
+  },
+  
+  // Initialize WebSocket connection for real-time notifications
+  initNotificationSocket: (userId: string | number): void => {
+    try {
+      initializeNotificationSocket(userId);
+    } catch (error) {
+      console.error('Failed to initialize notification socket:', error);
+    }
+  },
+  
+  // Close WebSocket connection
+  closeNotificationSocket: (): void => {
+    closeNotificationSocket();
   }
 };

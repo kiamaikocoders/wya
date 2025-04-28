@@ -1,71 +1,100 @@
 
 import { toast } from 'sonner';
+import type { NotificationType } from './types';
 
-let notificationSocket: WebSocket | null = null;
+// WebSocket connection state
+let socket: WebSocket | null = null;
+let isConnected = false;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_DELAY = 3000;
+const RECONNECT_INTERVAL = 3000; // 3 seconds
 
-export const connectWebSocket = (userId: number, onMessage: (data: any) => void) => {
-  if (!userId) return null;
+// Callbacks for notification events
+type NotificationCallback = (notification: NotificationType) => void;
+const notificationCallbacks: NotificationCallback[] = [];
+
+// Function to add a notification callback
+export const onNotification = (callback: NotificationCallback): (() => void) => {
+  notificationCallbacks.push(callback);
   
-  console.log(`Creating mock WebSocket connection for user ${userId}`);
-  
-  const mockSocket = {
-    send: (data: string) => {
-      console.log('Mock WebSocket sent:', data);
-    },
-    close: () => {
-      console.log('Mock WebSocket connection closed');
-      notificationSocket = null;
+  // Return function to remove this callback
+  return () => {
+    const index = notificationCallbacks.indexOf(callback);
+    if (index !== -1) {
+      notificationCallbacks.splice(index, 1);
     }
   };
-  
-  const mockNotificationInterval = setInterval(() => {
-    if (Math.random() < 0.1) {
-      const mockTypes = ['event_update', 'announcement', 'system', 'message'];
-      const mockType = mockTypes[Math.floor(Math.random() * mockTypes.length)] as any;
-      
-      const mockNotification = {
-        id: Math.floor(Math.random() * 1000),
-        user_id: userId,
-        title: `New ${mockType.replace('_', ' ')}`,
-        message: `This is a mock ${mockType.replace('_', ' ')} notification.`,
-        type: mockType,
-        read: false,
-        created_at: new Date().toISOString(),
-      };
-      
-      onMessage({ type: 'notification', data: mockNotification });
-    }
-  }, 30000);
-  
-  (mockSocket as any).intervalId = mockNotificationInterval;
-  
-  return mockSocket as any;
 };
 
-export const setupWebSocketReconnection = (userId: number, onMessage: (data: any) => void) => {
-  if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-    setTimeout(() => {
-      reconnectAttempts++;
-      console.log(`Attempting to reconnect WebSocket (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-      notificationSocket = connectWebSocket(userId, onMessage);
-    }, RECONNECT_DELAY * reconnectAttempts);
-  } else {
-    console.error('Maximum WebSocket reconnection attempts reached');
-    toast.error('Failed to establish notification connection. Please refresh the page.');
+// Initialize WebSocket connection
+export const initializeNotificationSocket = (userId: string | number): void => {
+  if (socket) {
+    socket.close();
+  }
+  
+  try {
+    // In production, this would be a real WebSocket endpoint
+    // For now, we'll use a mock URL
+    const wsUrl = `wss://api.example.com/notifications/${userId}`;
+    
+    socket = new WebSocket(wsUrl);
+    
+    socket.onopen = () => {
+      console.log('Notification WebSocket connected');
+      isConnected = true;
+      reconnectAttempts = 0;
+    };
+    
+    socket.onmessage = (event) => {
+      try {
+        const notification = JSON.parse(event.data) as NotificationType;
+        // Notify all callbacks
+        notificationCallbacks.forEach(callback => callback(notification));
+      } catch (error) {
+        console.error('Error parsing notification:', error);
+      }
+    };
+    
+    socket.onerror = (error) => {
+      console.error('Notification WebSocket error:', error);
+      toast.error('Notification service encountered an error');
+    };
+    
+    socket.onclose = () => {
+      console.log('Notification WebSocket closed');
+      isConnected = false;
+      
+      // Attempt to reconnect
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts++;
+        setTimeout(() => {
+          console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+          initializeNotificationSocket(userId);
+        }, RECONNECT_INTERVAL);
+      } else {
+        toast.error('Could not connect to notification service. Please refresh the page.');
+      }
+    };
+  } catch (error) {
+    console.error('Failed to initialize notification socket:', error);
+    toast.error('Failed to initialize notification service');
   }
 };
 
-export const closeWebSocketConnection = () => {
-  if (notificationSocket) {
-    if ((notificationSocket as any).intervalId) {
-      clearInterval((notificationSocket as any).intervalId);
-    }
-    
-    notificationSocket.close();
-    notificationSocket = null;
-    reconnectAttempts = 0;
+// Send data through WebSocket
+export const sendNotificationData = (data: any): void => {
+  if (socket && isConnected) {
+    socket.send(JSON.stringify(data));
+  } else {
+    console.error('WebSocket is not connected');
+  }
+};
+
+// Close WebSocket connection
+export const closeNotificationSocket = (): void => {
+  if (socket) {
+    socket.close();
+    socket = null;
+    isConnected = false;
   }
 };
