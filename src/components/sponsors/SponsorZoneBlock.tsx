@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   SponsorContentBlock, 
   SponsorContentBlockType, 
   sponsorService 
-} from '@/lib/sponsor-service';
+} from '@/lib/sponsor';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -25,10 +24,8 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Check if block has expired
   const isExpired = block.expires_at ? new Date(block.expires_at) < new Date() : false;
   
-  // Format expiration date
   const formatExpiration = () => {
     if (!block.expires_at) return null;
     
@@ -44,7 +41,6 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
     return `Expires on ${expiryDate.toLocaleDateString()}`;
   };
 
-  // Handle interaction submissions
   const handleSubmit = async () => {
     if (!isAuthenticated || !user) {
       toast.error("Please log in to participate");
@@ -90,7 +86,6 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
     }
   };
 
-  // Render block content based on type
   const renderBlockContent = () => {
     switch (block.type) {
       case 'video':
@@ -324,7 +319,6 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
     }
   };
   
-  // Get icon for the block type
   const getBlockIcon = (type: SponsorContentBlockType) => {
     switch (type) {
       case 'video': return <Play size={18} />;

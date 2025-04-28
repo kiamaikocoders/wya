@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sponsor, EventSponsor } from '@/lib/sponsor-service';
+import { Sponsor, EventSponsor } from '@/lib/sponsor';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,14 +18,12 @@ const SponsorBanner: React.FC<SponsorBannerProps> = ({
 }) => {
   if (!sponsors || sponsors.length === 0) return null;
   
-  // Define logo sizes based on the size prop
   const logoSizes = {
     sm: 'h-6 w-6 md:h-8 md:w-8',
     md: 'h-8 w-8 md:h-10 md:w-10',
     lg: 'h-10 w-10 md:h-14 md:w-14',
   };
   
-  // Sort sponsors by partnership level (title sponsors first)
   const sortedSponsors = [...sponsors].sort((a, b) => {
     const levels = {
       'title': 5,
@@ -51,7 +49,6 @@ const SponsorBanner: React.FC<SponsorBannerProps> = ({
       )}
       
       <div className="flex flex-col gap-2">
-        {/* Title sponsor (if any) */}
         {titleSponsor && titleSponsor.sponsor && (
           <div className="flex justify-center">
             <TooltipProvider>
@@ -79,7 +76,6 @@ const SponsorBanner: React.FC<SponsorBannerProps> = ({
           </div>
         )}
         
-        {/* Other sponsors */}
         {otherSponsors.length > 0 && (
           <ScrollArea className="w-full">
             <div className="flex items-center gap-2 py-1 px-2 min-w-max">

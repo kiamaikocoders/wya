@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, PieChart, Award, Users, Zap, Calendar, LineChart } from 'lucide-react';
-import { sponsorService } from '@/lib/sponsor-service';
+import { sponsorService } from '@/lib/sponsor';
 
 interface SponsorsAnalyticsProps {
   sponsorId?: number;

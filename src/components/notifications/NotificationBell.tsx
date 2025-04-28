@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
-import { notificationService, Notification } from '@/lib/notification';
+import { notificationService, NotificationType } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationBell = () => {
@@ -22,7 +21,6 @@ const NotificationBell = () => {
     enabled: isAuthenticated,
   });
 
-  // Calculate unread count whenever notifications change
   useEffect(() => {
     if (notifications) {
       const count = notifications.filter(notification => !notification.read).length;
@@ -30,7 +28,7 @@ const NotificationBell = () => {
     }
   }, [notifications]);
 
-  const handleNotificationClick = async (notification: Notification) => {
+  const handleNotificationClick = async (notification: NotificationType) => {
     if (!notification.read) {
       await notificationService.markAsRead(notification.id);
       refetch();

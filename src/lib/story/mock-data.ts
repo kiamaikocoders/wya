@@ -1,7 +1,7 @@
 
 import { Story } from './types';
 
-export const SAMPLE_STORIES: Story[] = [
+export const mockStories: Story[] = [
   {
     id: 1,
     user_id: 1,

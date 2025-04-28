@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   notificationService,
-  Notification as NotificationType 
+  NotificationType 
 } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

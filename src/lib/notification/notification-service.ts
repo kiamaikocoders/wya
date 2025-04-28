@@ -1,7 +1,7 @@
 import { apiClient } from "../api-client";
 import { toast } from 'sonner';
 import type { 
-  Notification as NotificationType, 
+  Notification, 
   CreateNotificationPayload, 
   NotificationSettings 
 } from './types';
@@ -18,9 +18,9 @@ let reconnectAttempts = 0;
 let notificationSocket: WebSocket | null = null;
 
 export const notificationService = {
-  getUserNotifications: async (): Promise<NotificationType[]> => {
+  getUserNotifications: async (): Promise<Notification[]> => {
     try {
-      const response = await apiClient.get<NotificationType[]>(`${NOTIFICATION_ENDPOINT}/user`);
+      const response = await apiClient.get<Notification[]>(`${NOTIFICATION_ENDPOINT}/user`);
       return response;
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -104,7 +104,7 @@ export const notificationService = {
     }
   },
   
-  initializeRealTimeNotifications: (userId: number, onNewNotification: (notification: NotificationType) => void) => {
+  initializeRealTimeNotifications: (userId: number, onNewNotification: (notification: Notification) => void) => {
     if (!userId) return;
     
     closeWebSocketConnection();
