@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -8,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Bell, Mail, Smartphone, Info, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from '@/lib/notification';
+import type { NotificationSettings as NotificationSettingsType } from '@/lib/notification/types';
 import { toast } from 'sonner';
 
 interface NotificationSettingsProps {
@@ -19,7 +19,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<NotificationSettingsType>({
     email_notifications: true,
     push_notifications: true,
     in_app_notifications: true,

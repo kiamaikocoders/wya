@@ -1,6 +1,6 @@
 
 import { toast } from 'sonner';
-import type { NotificationType } from './types';
+import type { Notification } from './types';
 
 // WebSocket connection state
 let socket: WebSocket | null = null;
@@ -10,7 +10,7 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_INTERVAL = 3000; // 3 seconds
 
 // Callbacks for notification events
-type NotificationCallback = (notification: NotificationType) => void;
+type NotificationCallback = (notification: Notification) => void;
 const notificationCallbacks: NotificationCallback[] = [];
 
 // Function to add a notification callback
@@ -47,7 +47,7 @@ export const initializeNotificationSocket = (userId: string | number): void => {
     
     socket.onmessage = (event) => {
       try {
-        const notification = JSON.parse(event.data) as NotificationType;
+        const notification = JSON.parse(event.data) as Notification;
         // Notify all callbacks
         notificationCallbacks.forEach(callback => callback(notification));
       } catch (error) {

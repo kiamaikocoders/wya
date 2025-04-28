@@ -3,18 +3,19 @@ import { apiClient } from '../api-client';
 import { toast } from 'sonner';
 import { initializeNotificationSocket, closeNotificationSocket } from './websocket';
 // Use type-only import to avoid conflicts with the global Notification
-import type { Notification as NotificationType } from './types';
+import type { Notification, NotificationSettings } from './types';
 
 // Mock notifications for development
-const SAMPLE_NOTIFICATIONS: NotificationType[] = [
+const SAMPLE_NOTIFICATIONS: Notification[] = [
   {
     id: 1,
     user_id: 1,
     title: 'New Event Near You',
     message: 'Check out "Nairobi Food Festival" happening this weekend.',
-    type: 'event',
+    type: 'event_update',
     read: false,
-    data: { event_id: 5 },
+    resource_id: 5,
+    resource_type: 'event',
     created_at: new Date().toISOString()
   },
   {
@@ -24,7 +25,8 @@ const SAMPLE_NOTIFICATIONS: NotificationType[] = [
     message: 'Your ticket for "Tech Summit 2023" has been confirmed.',
     type: 'ticket',
     read: true,
-    data: { ticket_id: 102, event_id: 3 },
+    resource_id: 3,
+    resource_type: 'ticket',
     created_at: new Date(Date.now() - 86400000).toISOString() // 1 day ago
   },
   {
@@ -32,29 +34,46 @@ const SAMPLE_NOTIFICATIONS: NotificationType[] = [
     user_id: 1,
     title: 'Event Reminder',
     message: 'Your event "Kilifi New Year" starts tomorrow!',
-    type: 'reminder',
+    type: 'system',
     read: false,
-    data: { event_id: 7 },
+    resource_id: 7,
+    resource_type: 'event',
     created_at: new Date(Date.now() - 172800000).toISOString() // 2 days ago
   }
 ];
 
-let notificationSocket: WebSocket | null = null;
-let reconnectAttempts = 0;
+// Default notification settings
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  email_notifications: true,
+  push_notifications: true,
+  in_app_notifications: true,
+  notification_types: {
+    event_updates: true,
+    messages: true,
+    announcements: true,
+    system: true,
+    reviews: true
+  }
+};
 
 // Notification service functions
 export const notificationService = {
-  // Get all notifications for the current user
-  getAllNotifications: async (): Promise<NotificationType[]> => {
+  // Get all notifications for the current user - main function
+  getAllNotifications: async (): Promise<Notification[]> => {
     try {
       // In a real app, we would fetch from an API
-      // return await apiClient.get<NotificationType[]>('/notifications');
+      // return await apiClient.get<Notification[]>('/notifications');
       return SAMPLE_NOTIFICATIONS;
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to load notifications');
       return [];
     }
+  },
+  
+  // Alias for getAllNotifications to maintain compatibility with components
+  getUserNotifications: async (): Promise<Notification[]> => {
+    return notificationService.getAllNotifications();
   },
   
   // Mark a notification as read
@@ -103,6 +122,32 @@ export const notificationService = {
     } catch (error) {
       console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
+    }
+  },
+  
+  // Get notification settings
+  getNotificationSettings: async (): Promise<NotificationSettings> => {
+    try {
+      // In a real app, fetch from API
+      // return await apiClient.get('/notifications/settings');
+      return DEFAULT_NOTIFICATION_SETTINGS;
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+      toast.error('Failed to load notification settings');
+      return DEFAULT_NOTIFICATION_SETTINGS;
+    }
+  },
+  
+  // Update notification settings
+  updateNotificationSettings: async (settings: NotificationSettings): Promise<void> => {
+    try {
+      // In a real app:
+      // await apiClient.patch('/notifications/settings', settings);
+      console.log('Updated notification settings:', settings);
+      // For now, we just simulate a successful update
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      toast.error('Failed to update notification settings');
     }
   },
   

@@ -1,7 +1,8 @@
 
 import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { notificationService, NotificationType } from '@/lib/notification';
+import { notificationService } from '@/lib/notification';
+import type { Notification } from '@/lib/notification/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bell, CheckCircle, AlertTriangle, Calendar, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,9 +13,9 @@ import { toast } from 'sonner';
 const Notifications = () => {
   const { isAuthenticated } = useAuth();
   
-  const { data: notifications, isLoading, error, refetch } = useQuery({
+  const { data: notifications = [], isLoading, error, refetch } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getUserNotifications,
+    queryFn: notificationService.getAllNotifications,
     enabled: isAuthenticated,
   });
   
@@ -58,9 +59,10 @@ const Notifications = () => {
     }
   };
   
-  const mockNotifications = [
+  const mockNotifications: Notification[] = [
     {
       id: 1,
+      user_id: 1,
       title: 'New Event: Nairobi Tech Week',
       message: 'A new tech event has been added in your area.',
       type: 'event_update',
@@ -69,6 +71,7 @@ const Notifications = () => {
     },
     {
       id: 2,
+      user_id: 1,
       title: 'Event Update: Lamu Cultural Festival',
       message: 'The venue for Lamu Cultural Festival has been changed.',
       type: 'announcement',
@@ -77,6 +80,7 @@ const Notifications = () => {
     },
     {
       id: 3,
+      user_id: 1,
       title: 'Your Ticket Confirmation',
       message: 'Your ticket for Kilifi New Year Festival has been confirmed.',
       type: 'ticket',
@@ -85,6 +89,7 @@ const Notifications = () => {
     },
     {
       id: 4,
+      user_id: 1,
       title: 'Welcome to WYA!',
       message: 'Welcome to WYA - Your local event discovery platform.',
       type: 'system',
