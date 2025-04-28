@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,16 +9,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
-import { notificationService, NotificationType } from '@/lib/notification';
+import { notificationService } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Notification as NotificationType } from '@/lib/notification/types';
 
 const NotificationBell = () => {
   const { isAuthenticated } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   
-  const { data: notifications, isLoading, refetch } = useQuery({
+  const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getUserNotifications,
+    queryFn: notificationService.getAllNotifications,
     enabled: isAuthenticated,
   });
 

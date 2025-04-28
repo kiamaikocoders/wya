@@ -11,9 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
-  notificationService,
-  NotificationType 
+  notificationService
 } from '@/lib/notification';
+import type { Notification } from '@/lib/notification/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ const NotificationsDropdown = () => {
   
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getUserNotifications,
+    queryFn: notificationService.getAllNotifications,
     enabled: isAuthenticated,
     refetchInterval: 60000, // Refresh every minute
   });
@@ -49,7 +49,7 @@ const NotificationsDropdown = () => {
     return null;
   }
   
-  const getNotificationLink = (notification: NotificationType) => {
+  const getNotificationLink = (notification: Notification) => {
     if (notification.resource_type === 'event' && notification.resource_id) {
       return `/events/${notification.resource_id}`;
     }
