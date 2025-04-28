@@ -1,207 +1,291 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Calendar, Clock, MapPin, Users, Banknote } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, Calendar } from 'lucide-react';
 
-const RequestEvent = () => {
-  const { user, isAuthenticated } = useAuth();
+interface EventProposal {
+  title: string;
+  description: string;
+  category: string;
+  estimatedDate: string;
+  location: string;
+  expectedAttendees: string;
+  budget: string;
+  sponsorNeeds: string;
+  contactEmail: string;
+  contactPhone: string;
+  additionalInfo: string;
+}
+
+const RequestEvent: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [proposal, setProposal] = useState<EventProposal>({
     title: '',
-    date: '',
-    time: '',
+    description: '',
+    category: '',
+    estimatedDate: '',
     location: '',
     expectedAttendees: '',
     budget: '',
-    description: ''
+    sponsorNeeds: '',
+    contactEmail: user?.email || '',
+    contactPhone: '',
+    additionalInfo: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setProposal(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSelectChange = (name: string, value: string) => {
+    setProposal(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
-    if (!formData.title || !formData.date || !formData.location || !formData.description) {
+    if (!proposal.title || !proposal.description || !proposal.category) {
       toast.error('Please fill in all required fields');
       return;
     }
-    
+
     setIsSubmitting(true);
     
     // Simulate API call
-    setTimeout(() => {
-      toast.success('Event proposal submitted successfully!');
-      setIsSubmitting(false);
+    try {
+      // In a real implementation, this would be an API call
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      toast.success('Your event proposal has been submitted for review!');
       navigate('/');
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting proposal:', error);
+      toast.error('Failed to submit proposal. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container mx-auto px-4 py-16 max-w-2xl">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>Sign In Required</CardTitle>
-            <CardDescription>You must be logged in to submit an event proposal</CardDescription>
-          </CardHeader>
-          <CardFooter className="flex justify-center">
-            <Button onClick={() => navigate('/login')}>
-              Sign In
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-10 max-w-3xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Submit Event Proposal</CardTitle>
-          <CardDescription>
-            Tell us about your event idea and we'll review it for approval
-          </CardDescription>
-        </CardHeader>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center mb-6">
+          <Calendar className="h-8 w-8 text-kenya-orange mr-3" />
+          <h1 className="text-3xl font-bold">Request an Event</h1>
+        </div>
         
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <p className="text-muted-foreground mb-8">
+          Submit your event request, and our team will review it. Once approved, it can be published and promoted on our platform.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Event Title*</Label>
-              <Input 
-                id="title" 
+              <label htmlFor="title" className="text-sm font-medium">
+                Event Title <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="title"
                 name="title"
-                value={formData.title}
+                value={proposal.title}
                 onChange={handleChange}
                 placeholder="Enter a catchy title for your event"
                 required
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="date">Event Date*</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="date" 
-                    name="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={handleChange}
-                    className="pl-8"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="time">Event Time</Label>
-                <div className="relative">
-                  <Clock className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="time" 
-                    name="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={handleChange}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-            </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="location">Location*</Label>
-              <div className="relative">
-                <MapPin className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  id="location" 
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  className="pl-8"
-                  placeholder="Where will this event take place?"
-                  required
-                />
-              </div>
+              <label htmlFor="category" className="text-sm font-medium">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={proposal.category}
+                onValueChange={(value) => handleSelectChange('category', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="music">Music</SelectItem>
+                  <SelectItem value="sports">Sports</SelectItem>
+                  <SelectItem value="arts">Arts & Culture</SelectItem>
+                  <SelectItem value="food">Food & Drink</SelectItem>
+                  <SelectItem value="business">Business & Networking</SelectItem>
+                  <SelectItem value="tech">Technology</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="expectedAttendees">Expected Attendees</Label>
-                <div className="relative">
-                  <Users className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="expectedAttendees" 
-                    name="expectedAttendees"
-                    type="number"
-                    value={formData.expectedAttendees}
-                    onChange={handleChange}
-                    className="pl-8"
-                    placeholder="Estimated number of attendees"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="budget">Budget</Label>
-                <div className="relative">
-                  <Banknote className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="budget" 
-                    name="budget"
-                    value={formData.budget}
-                    onChange={handleChange}
-                    className="pl-8"
-                    placeholder="Estimated budget"
-                  />
-                </div>
-              </div>
-            </div>
-            
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="description" className="text-sm font-medium">
+              Event Description <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              value={proposal.description}
+              onChange={handleChange}
+              placeholder="Provide a detailed description of your event"
+              rows={5}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="description">Event Description*</Label>
-              <Textarea 
-                id="description" 
-                name="description"
-                value={formData.description}
+              <label htmlFor="estimatedDate" className="text-sm font-medium">
+                Estimated Date
+              </label>
+              <Input
+                id="estimatedDate"
+                name="estimatedDate"
+                type="date"
+                value={proposal.estimatedDate}
                 onChange={handleChange}
-                placeholder="Please provide details about your event, including purpose, activities, and any special requirements"
-                rows={5}
-                required
               />
             </div>
             
-            <div className="pt-4">
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit Proposal'}
-              </Button>
+            <div className="space-y-2">
+              <label htmlFor="location" className="text-sm font-medium">
+                Location
+              </label>
+              <Input
+                id="location"
+                name="location"
+                value={proposal.location}
+                onChange={handleChange}
+                placeholder="Event location"
+              />
             </div>
-          </form>
-        </CardContent>
-        
-        <CardFooter className="flex justify-center text-sm text-muted-foreground">
-          <p>
-            Our team will review your proposal and get back to you within 48 hours.
-          </p>
-        </CardFooter>
-      </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="expectedAttendees" className="text-sm font-medium">
+                Expected Number of Attendees
+              </label>
+              <Input
+                id="expectedAttendees"
+                name="expectedAttendees"
+                type="number"
+                value={proposal.expectedAttendees}
+                onChange={handleChange}
+                placeholder="e.g., 100"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="budget" className="text-sm font-medium">
+                Estimated Budget
+              </label>
+              <Input
+                id="budget"
+                name="budget"
+                value={proposal.budget}
+                onChange={handleChange}
+                placeholder="Budget range or amount"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="sponsorNeeds" className="text-sm font-medium">
+              Sponsorship Needs
+            </label>
+            <Textarea
+              id="sponsorNeeds"
+              name="sponsorNeeds"
+              value={proposal.sponsorNeeds}
+              onChange={handleChange}
+              placeholder="Describe what kind of sponsorships you're looking for"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="contactEmail" className="text-sm font-medium">
+                Contact Email
+              </label>
+              <Input
+                id="contactEmail"
+                name="contactEmail"
+                type="email"
+                value={proposal.contactEmail}
+                onChange={handleChange}
+                placeholder="Your email address"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="contactPhone" className="text-sm font-medium">
+                Contact Phone
+              </label>
+              <Input
+                id="contactPhone"
+                name="contactPhone"
+                value={proposal.contactPhone}
+                onChange={handleChange}
+                placeholder="Your phone number"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="additionalInfo" className="text-sm font-medium">
+              Additional Information
+            </label>
+            <Textarea
+              id="additionalInfo"
+              name="additionalInfo"
+              value={proposal.additionalInfo}
+              onChange={handleChange}
+              placeholder="Any other details you'd like to share"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/')}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-kenya-orange hover:bg-opacity-90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                'Submit Proposal'
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
