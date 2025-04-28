@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { storyService, Story } from '@/lib/story';
+import { storyService, type Story } from '@/lib/story';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Sparkles } from 'lucide-react';
@@ -49,7 +50,7 @@ const Stories: React.FC = () => {
   const [aiGeneratedContent, setAiGeneratedContent] = useState<string>("");
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   
-  const { data: stories, isLoading, error } = useQuery({
+  const { data: stories = [], isLoading, error } = useQuery({
     queryKey: ['stories'],
     queryFn: storyService.getAllStories,
   });
@@ -118,7 +119,7 @@ const Stories: React.FC = () => {
         ) : (
           <>
             <div className="mb-12">
-              <StoryCarousel stories={stories || []} />
+              <StoryCarousel stories={stories} />
             </div>
 
             {aiGeneratedContent && (
@@ -172,7 +173,7 @@ const Stories: React.FC = () => {
                   
                   <div className="mt-8">
                     <h3 className="text-white text-xl font-semibold mb-4">Latest Stories</h3>
-                    {stories && stories.length > 0 ? (
+                    {stories.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {stories.slice(0, 3).map((story) => (
                           <div key={story.id} className="bg-kenya-brown bg-opacity-20 p-4 rounded-xl">

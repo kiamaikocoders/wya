@@ -11,7 +11,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { notificationService } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Notification as NotificationType } from '@/lib/notification/types';
+import type { Notification } from '@/lib/notification/types';
 
 const NotificationBell = () => {
   const { isAuthenticated } = useAuth();
@@ -30,7 +30,7 @@ const NotificationBell = () => {
     }
   }, [notifications]);
 
-  const handleNotificationClick = async (notification: NotificationType) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       await notificationService.markAsRead(notification.id);
       refetch();
