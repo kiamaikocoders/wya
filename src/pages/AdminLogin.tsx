@@ -16,6 +16,12 @@ const AdminLogin = () => {
   const { adminLogin, isAdmin, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // Pre-fill email and password for the demo
+  useEffect(() => {
+    setEmail(ADMIN_CREDENTIALS.email);
+    setPassword(ADMIN_CREDENTIALS.password);
+  }, []);
+
   // Redirect if already logged in as admin
   useEffect(() => {
     if (isAuthenticated && isAdmin) {

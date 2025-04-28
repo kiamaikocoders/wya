@@ -17,6 +17,7 @@ import {
   Users,
   MessageCircle,
   ShieldAlert,
+  FileText,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -111,6 +112,13 @@ const Navbar = () => {
                         {unreadCount}
                       </div>
                     )}
+                  </DropdownMenuItem>
+                </Link>
+                
+                <Link to="/request-event">
+                  <DropdownMenuItem>
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Request Event</span>
                   </DropdownMenuItem>
                 </Link>
                 
