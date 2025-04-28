@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { sponsorService } from '@/lib/sponsor-service';
+import { sponsorService } from '@/lib/sponsor';
 import SponsorBanner from './SponsorBanner';
 import { Button } from '@/components/ui/button';
 import { Handshake } from 'lucide-react';

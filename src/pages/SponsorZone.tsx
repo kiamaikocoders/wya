@@ -2,7 +2,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Sponsor, SponsorZone as SponsorZoneType, sponsorService } from '@/lib/sponsor-service';
+import { Sponsor, SponsorZone as SponsorZoneType, sponsorService } from '@/lib/sponsor';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Globe } from 'lucide-react';

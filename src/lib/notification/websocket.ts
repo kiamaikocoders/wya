@@ -1,4 +1,6 @@
 
+import { toast } from 'sonner';
+
 let notificationSocket: WebSocket | null = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;

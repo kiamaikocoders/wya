@@ -1,8 +1,7 @@
-
 import { apiClient } from "../api-client";
 import { toast } from 'sonner';
-import { 
-  Notification, 
+import type { 
+  Notification as NotificationType, 
   CreateNotificationPayload, 
   NotificationSettings 
 } from './types';
@@ -14,10 +13,14 @@ import {
 
 const NOTIFICATION_ENDPOINT = `${apiClient.XANO_EVENT_API_URL}/notifications`;
 
+// Global variable for reconnection attempts
+let reconnectAttempts = 0;
+let notificationSocket: WebSocket | null = null;
+
 export const notificationService = {
-  getUserNotifications: async (): Promise<Notification[]> => {
+  getUserNotifications: async (): Promise<NotificationType[]> => {
     try {
-      const response = await apiClient.get<Notification[]>(`${NOTIFICATION_ENDPOINT}/user`);
+      const response = await apiClient.get<NotificationType[]>(`${NOTIFICATION_ENDPOINT}/user`);
       return response;
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -101,7 +104,7 @@ export const notificationService = {
     }
   },
   
-  initializeRealTimeNotifications: (userId: number, onNewNotification: (notification: Notification) => void) => {
+  initializeRealTimeNotifications: (userId: number, onNewNotification: (notification: NotificationType) => void) => {
     if (!userId) return;
     
     closeWebSocketConnection();
@@ -180,5 +183,3 @@ export const notificationService = {
     }
   }
 };
-
-export type { Notification, CreateNotificationPayload, NotificationSettings };

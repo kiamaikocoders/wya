@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
-import { notificationService, Notification } from '@/lib/notification-service';
+import { notificationService, Notification } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NotificationBell = () => {

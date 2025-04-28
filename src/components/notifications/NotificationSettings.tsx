@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Bell, Mail, Smartphone, Info, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { notificationService } from '@/lib/notification-service';
+import { notificationService } from '@/lib/notification';
 import { toast } from 'sonner';
 
 interface NotificationSettingsProps {
