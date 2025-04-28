@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { notificationService } from '@/lib/notification';
+import { notificationService, NotificationType } from '@/lib/notification';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bell, CheckCircle, AlertTriangle, Calendar, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';

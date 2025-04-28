@@ -1,7 +1,6 @@
-
-import { apiClient, STORY_ENDPOINTS } from "../api-client";
+import { apiClient } from '../api-client';
 import { toast } from 'sonner';
-import { Story, CreateStoryDto, UpdateStoryDto } from './types';
+import type { Story, CreateStoryDto, UpdateStoryDto } from './types';
 import { SAMPLE_STORIES } from './mock-data';
 import { checkEndpointAvailability } from './endpoint-checker';
 

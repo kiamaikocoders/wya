@@ -1,7 +1,7 @@
 
 import { Sponsor, EventSponsor, SponsorZone } from './types';
 
-export const SAMPLE_SPONSORS: Sponsor[] = [
+export const mockSponsors: Sponsor[] = [
   {
     id: 1,
     name: 'EABL',
@@ -34,13 +34,13 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
   },
 ];
 
-export const SAMPLE_EVENT_SPONSORS: EventSponsor[] = [
+export const mockEventSponsors: EventSponsor[] = [
   {
     id: 1,
     event_id: 1,
     sponsor_id: 1,
     sponsorship_type: 'title',
-    sponsor: SAMPLE_SPONSORS[0],
+    sponsor: mockSponsors[0],
     created_at: new Date().toISOString(),
   },
   {
@@ -48,7 +48,7 @@ export const SAMPLE_EVENT_SPONSORS: EventSponsor[] = [
     event_id: 1,
     sponsor_id: 2,
     sponsorship_type: 'presenting',
-    sponsor: SAMPLE_SPONSORS[1],
+    sponsor: mockSponsors[1],
     created_at: new Date().toISOString(),
   },
   {
@@ -56,12 +56,12 @@ export const SAMPLE_EVENT_SPONSORS: EventSponsor[] = [
     event_id: 2,
     sponsor_id: 3,
     sponsorship_type: 'partner',
-    sponsor: SAMPLE_SPONSORS[2],
+    sponsor: mockSponsors[2],
     created_at: new Date().toISOString(),
   },
 ];
 
-export const SAMPLE_SPONSOR_ZONES: SponsorZone[] = [
+export const mockSponsorZones: SponsorZone[] = [
   {
     id: 1,
     sponsor_id: 1,
@@ -124,31 +124,9 @@ export const SAMPLE_SPONSOR_ZONES: SponsorZone[] = [
         id: 6,
         type: 'offer',
         title: 'Special Offer',
-        description: 'Get 100% bonus on your first bet',
-        action_url: 'https://www.sportpesa.co.ke/promo',
-        expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        description: 'Get a bonus on your first bet',
+        expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         order: 2,
-      },
-      {
-        id: 7,
-        type: 'quiz',
-        title: 'Sports Quiz',
-        description: 'Test your sports knowledge',
-        data: {
-          questions: [
-            {
-              question: 'Which team won the 2022 FIFA World Cup?',
-              options: ['Brazil', 'France', 'Argentina', 'Germany'],
-              correct: 2
-            },
-            {
-              question: 'Who holds the record for most Premier League goals?',
-              options: ['Wayne Rooney', 'Alan Shearer', 'Sergio Aguero', 'Harry Kane'],
-              correct: 1
-            }
-          ]
-        },
-        order: 3,
       }
     ],
     created_at: new Date().toISOString(),

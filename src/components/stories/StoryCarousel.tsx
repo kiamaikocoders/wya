@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Story } from '@/lib/story-service';
+import { Story } from '@/lib/story';
 import { formatDistance } from 'date-fns';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
