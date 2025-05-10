@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
@@ -21,6 +22,9 @@ export interface EventCardProps {
 }
 
 const EventCard: React.FC<EventCardProps> = (props) => {
+  // Add hover state for touch devices
+  const [isHovered, setIsHovered] = useState(false);
+  
   // Check if an event object was passed; if so, extract its properties
   const {
     id,
@@ -61,13 +65,20 @@ const EventCard: React.FC<EventCardProps> = (props) => {
   const isAlmostFull = capacityPercentage >= 80;
   
   return (
-    <Card className="overflow-hidden bg-kenya-brown/10 hover:bg-kenya-brown/20 transition-all duration-300 h-full flex flex-col">
+    <Card 
+      className={`overflow-hidden bg-kenya-brown/10 transition-all duration-300 h-full flex flex-col
+        ${isHovered ? 'bg-kenya-brown/30 scale-[1.02] shadow-lg' : 'hover:bg-kenya-brown/20'}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setTimeout(() => setIsHovered(false), 500)}
+    >
       <Link to={`/events/${eventId}`} className="h-full flex flex-col">
         <div className="relative">
           <img 
             src={eventImage || 'https://placehold.co/600x400?text=Event+Image'} 
             alt={eventTitle}
-            className="w-full h-48 object-cover"
+            className={`w-full h-48 object-cover transition-all duration-300 ${isHovered ? 'brightness-110' : ''}`}
           />
           {eventIsFeatured && (
             <div className="absolute top-2 right-2">
@@ -102,7 +113,7 @@ const EventCard: React.FC<EventCardProps> = (props) => {
             )}
           </div>
           
-          <div className="mt-auto">
+          <div className={`mt-auto transition-transform duration-300 ${isHovered ? 'transform translate-y-[-5px]' : ''}`}>
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center">
                 <Users className="h-3 w-3 mr-1" />
@@ -117,7 +128,7 @@ const EventCard: React.FC<EventCardProps> = (props) => {
             
             <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
               <div 
-                className={`${isAlmostFull ? 'bg-red-500' : 'bg-kenya-orange'} h-1.5 rounded-full`} 
+                className={`${isAlmostFull ? 'bg-red-500' : 'bg-kenya-orange'} h-1.5 rounded-full transition-all duration-300`} 
                 style={{ width: `${capacityPercentage}%` }}
               ></div>
             </div>
