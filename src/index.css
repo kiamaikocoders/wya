@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900&display=swap');
 
 @tailwind base;
@@ -72,6 +71,7 @@
 @layer base {
   * {
     @apply border-border selection:bg-kenya-orange/10 selection:text-white;
+    -webkit-tap-highlight-color: transparent; /* Removes the default tap highlight on mobile */
   }
   
   body {
@@ -85,6 +85,7 @@
 
   html {
     @apply scroll-smooth;
+    touch-action: manipulation; /* Improves touch responsiveness */
   }
 
   input, select, textarea {
@@ -108,6 +109,17 @@
   
   .text-gradient {
     @apply bg-gradient-to-br from-kenya-orange via-kenya-orange/90 to-kenya-orange/70 bg-clip-text text-transparent;
+  }
+  
+  /* Touch-specific utility classes */
+  .touch-scale {
+    transition: transform 0.3s;
+  }
+  
+  @media (hover: none) {
+    .touch-scale:active {
+      transform: scale(0.98);
+    }
   }
 }
 
@@ -198,3 +210,31 @@
   transition: transform 300ms ease-in;
 }
 
+/* Carousel touch enhancements */
+.embla {
+  overflow: hidden;
+  width: 100%;
+}
+
+.embla__container {
+  display: flex;
+}
+
+.embla__slide {
+  position: relative;
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+@media (hover: none) {
+  .carousel-item-touch-active {
+    transform: scale(1.02);
+    z-index: 10;
+  }
+}
+
+/* Make carousel controls more touch-friendly */
+button[role="button"] {
+  @apply min-h-10 min-w-10 md:min-h-8 md:min-w-8;
+  touch-action: manipulation;
+}

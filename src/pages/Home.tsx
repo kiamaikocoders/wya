@@ -10,6 +10,7 @@ import EventCard from '@/components/ui/EventCard';
 import SearchBar from '@/components/ui/SearchBar';
 import AIEventRecommendations from '@/components/events/AIEventRecommendations';
 import { Brain, Sparkles } from 'lucide-react';
+import EventCarousel from '@/components/ui/EventCarousel';
 
 // Sample categories
 const categories = [
@@ -40,8 +41,6 @@ const Home: React.FC = () => {
   
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    // Could also navigate to the category page
-    // navigate(`/categories/${category.toLowerCase()}`);
   };
   
   const handleSearch = (query: string) => {
@@ -143,22 +142,11 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : featuredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
-            {featuredEvents.map(event => (
-              <EventCard 
-                key={event.id}
-                id={String(event.id)}
-                title={event.title}
-                category={event.category}
-                date={event.date}
-                location={event.location}
-                image={event.image_url}
-                capacity={100}
-                attendees={Math.floor(Math.random() * 100)}
-                isFeatured={event.is_featured}
-                price={event.price}
-              />
-            ))}
+          <div className="px-4 overflow-visible">
+            <EventCarousel 
+              events={featuredEvents}
+              slidesToShow={3}
+            />
           </div>
         ) : (
           <p className="text-center text-kenya-brown-light py-4">No featured events available.</p>
@@ -175,22 +163,12 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
-            {filteredEvents.slice(0, 6).map(event => (
-              <EventCard 
-                key={event.id}
-                id={String(event.id)}
-                title={event.title}
-                category={event.category}
-                date={event.date}
-                location={event.location}
-                image={event.image_url}
-                capacity={100}
-                attendees={Math.floor(Math.random() * 100)}
-                isFeatured={event.is_featured}
-                price={event.price}
-              />
-            ))}
+          <div className="px-4 mb-12 overflow-visible">
+            <EventCarousel 
+              events={filteredEvents.slice(0, 9)}
+              emptyMessage={selectedCategory ? `No ${selectedCategory} events available.` : "No upcoming events available."}
+              slidesToShow={3}
+            />
           </div>
         ) : (
           <p className="text-center text-kenya-brown-light py-4 px-4">
