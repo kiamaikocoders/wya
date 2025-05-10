@@ -41,9 +41,8 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
         }}
         className="w-full"
         onSelect={(api) => {
-          const index = api?.selectedScrollSnap();
-          if (typeof index === 'number') {
-            setActiveIndex(index);
+          if (api) {
+            setActiveIndex(api.selectedScrollSnap());
           }
         }}
       >
