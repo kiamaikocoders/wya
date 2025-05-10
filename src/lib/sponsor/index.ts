@@ -4,6 +4,7 @@
 export * from './types';
 export * from './sponsor-service';
 export * from './mock-data';
+export * from './brand-utils';
 
 // Export the service as a single instance
 import { sponsorService } from './sponsor-service';

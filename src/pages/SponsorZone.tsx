@@ -3,6 +3,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { sponsorService } from '@/lib/sponsor';
+import { getSponsorColorVars, getSponsorClasses } from '@/lib/sponsor/brand-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Globe } from 'lucide-react';
@@ -62,15 +63,20 @@ const SponsorZone: React.FC = () => {
     );
   }
   
+  // Get brand color styles
+  const colorVars = getSponsorColorVars(sponsor);
+  
   return (
-    <div className="min-h-screen pb-20 animate-fade-in">
+    <div 
+      className="min-h-screen pb-20 animate-fade-in"
+      style={colorVars as React.CSSProperties}
+    >
       {/* Sponsor Header */}
       <div className="relative">
         <div 
           className="w-full h-40 bg-center bg-cover bg-no-repeat relative"
           style={{ 
-            backgroundColor: '#2A231D',
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7))` 
+            background: sponsor.brand_gradient || `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)), var(--sponsor-color, #2A231D)`
           }}
         >
           <Button
@@ -83,7 +89,7 @@ const SponsorZone: React.FC = () => {
           </Button>
           
           <div className="absolute left-0 right-0 -bottom-16 flex justify-center">
-            <Avatar className="h-32 w-32 border-4 border-background">
+            <Avatar className="h-32 w-32 border-4 border-background bg-white">
               <AvatarImage src={sponsor.logo_url} alt={sponsor.name} />
               <AvatarFallback>{sponsor.name.charAt(0)}</AvatarFallback>
             </Avatar>
@@ -95,7 +101,7 @@ const SponsorZone: React.FC = () => {
       <div className="mt-20 px-4 pt-4 text-center">
         <h1 className="text-2xl font-bold mb-1">{sponsor.name}</h1>
         <div className="inline-flex items-center gap-1 text-sm text-kenya-brown-light">
-          <span className="capitalize px-2 py-0.5 bg-kenya-brown/20 rounded-full">
+          <span className={`capitalize px-2 py-0.5 rounded-full ${getSponsorClasses(sponsor, 'background')} bg-opacity-20`}>
             {sponsor.partnership_level} Partner
           </span>
         </div>
@@ -107,10 +113,10 @@ const SponsorZone: React.FC = () => {
         {sponsor.website_url && (
           <Button 
             variant="outline" 
-            className="mt-4 flex items-center gap-2"
+            className={`mt-4 flex items-center gap-2 ${getSponsorClasses(sponsor, 'border')}`}
             onClick={() => window.open(sponsor.website_url, '_blank')}
           >
-            <Globe size={16} />
+            <Globe size={16} className={getSponsorClasses(sponsor)} />
             Visit Website
             <ExternalLink size={14} />
           </Button>
@@ -136,7 +142,8 @@ const SponsorZone: React.FC = () => {
                 <SponsorZoneBlock 
                   key={block.id} 
                   block={block} 
-                  sponsorId={Number(sponsorId)} 
+                  sponsorId={Number(sponsorId)}
+                  sponsor={sponsor}
                 />
               ))
             }
