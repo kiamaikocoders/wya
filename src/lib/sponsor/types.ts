@@ -6,6 +6,8 @@ export interface Sponsor {
   logo_url: string;
   website_url?: string;
   partnership_level: 'title' | 'presenting' | 'gold' | 'silver' | 'bronze' | 'partner';
+  brand_color?: string;
+  brand_gradient?: string;
   created_at: string;
   updated_at: string;
 }

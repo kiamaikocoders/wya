@@ -3,8 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   SponsorContentBlock, 
   SponsorContentBlockType, 
-  sponsorService 
+  sponsorService,
+  Sponsor
 } from '@/lib/sponsor';
+import { getSponsorColorVars, getSponsorClasses } from '@/lib/sponsor/brand-utils';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -16,15 +18,26 @@ import { Calendar, Clock, Gift, PieChart, Play, ShoppingBag, Timer, Video } from
 interface SponsorZoneBlockProps {
   block: SponsorContentBlock;
   sponsorId: number;
+  sponsor?: Sponsor | null;
 }
 
-const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId }) => {
+const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, sponsor }) => {
   const { user, isAuthenticated } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const isExpired = block.expires_at ? new Date(block.expires_at) < new Date() : false;
+  const colorVars = getSponsorColorVars(sponsor);
+  
+  // Function to get sponsor-branded button style
+  const getBrandedButtonStyle = (variant: 'default' | 'outline' = 'default') => {
+    if (!sponsor?.brand_color) return {};
+    
+    return variant === 'default' 
+      ? { background: sponsor.brand_color, borderColor: sponsor.brand_color }
+      : { borderColor: sponsor.brand_color, color: sponsor.brand_color };
+  };
   
   const formatExpiration = () => {
     if (!block.expires_at) return null;
@@ -101,7 +114,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
-                <Video size={48} className="text-kenya-brown-light mb-2" />
+                <Video size={48} className={getSponsorClasses(sponsor) || "text-kenya-brown-light"} />
                 <p className="text-kenya-brown-light text-sm">Video preview</p>
               </div>
             )}
@@ -120,8 +133,12 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             )}
             <div className="flex justify-end">
               {block.action_url && (
-                <Button variant="outline" onClick={() => window.open(block.action_url, '_blank')}>
-                  <ShoppingBag className="mr-2 h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  style={getBrandedButtonStyle('outline')}
+                  onClick={() => window.open(block.action_url, '_blank')}
+                >
+                  <ShoppingBag className={`mr-2 h-4 w-4 ${getSponsorClasses(sponsor)}`} />
                   View Product
                 </Button>
               )}
@@ -141,13 +158,14 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             )}
             {block.expires_at && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock size={16} className="text-kenya-orange" />
+                <Clock size={16} className={getSponsorClasses(sponsor) || "text-kenya-orange"} />
                 <span>{formatExpiration()}</span>
               </div>
             )}
             {block.action_url && (
               <Button 
                 className="w-full" 
+                style={getBrandedButtonStyle('default')}
                 onClick={() => window.open(block.action_url, '_blank')}
                 disabled={isExpired}
               >
@@ -169,7 +187,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             )}
             {block.expires_at && (
               <div className="flex items-center gap-2 text-sm">
-                <Calendar size={16} className="text-kenya-orange" />
+                <Calendar size={16} className={getSponsorClasses(sponsor) || "text-kenya-orange"} />
                 <span>{formatExpiration()}</span>
               </div>
             )}
@@ -182,6 +200,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             ) : (
               <Button 
                 className="w-full" 
+                style={getBrandedButtonStyle('default')}
                 onClick={handleSubmit}
                 disabled={isExpired || loading || !isAuthenticated}
               >
@@ -206,7 +225,13 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
                       <span>{option}</span>
                       <span>{Math.floor(Math.random() * 60 + 10)}%</span>
                     </div>
-                    <Progress value={Math.floor(Math.random() * 60 + 10)} className="h-2" />
+                    <Progress 
+                      value={Math.floor(Math.random() * 60 + 10)} 
+                      className="h-2"
+                      style={{ 
+                        '--progress-background': sponsor?.brand_color || 'hsl(var(--primary))' 
+                      } as React.CSSProperties} 
+                    />
                   </div>
                 ))}
                 <p className="text-center text-sm text-muted-foreground mt-2">
@@ -217,7 +242,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
               <RadioGroup value={selected || ""} onValueChange={setSelected}>
                 {block.data.options.map((option, idx) => (
                   <div key={idx} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={`option-${idx}`} />
+                    <RadioGroupItem value={option} id={`option-${idx}`} style={getBrandedButtonStyle('default')} />
                     <Label htmlFor={`option-${idx}`}>{option}</Label>
                   </div>
                 ))}
@@ -227,6 +252,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             {!submitted && (
               <Button 
                 className="w-full mt-4" 
+                style={getBrandedButtonStyle('default')}
                 onClick={handleSubmit}
                 disabled={!selected || loading || !isAuthenticated}
               >
@@ -271,7 +297,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
               <RadioGroup value={selected || ""} onValueChange={setSelected}>
                 {question.options.map((option, idx) => (
                   <div key={idx} className="flex items-center space-x-2">
-                    <RadioGroupItem value={String(idx)} id={`quiz-option-${idx}`} />
+                    <RadioGroupItem value={String(idx)} id={`quiz-option-${idx}`} style={getBrandedButtonStyle('default')} />
                     <Label htmlFor={`quiz-option-${idx}`}>{option}</Label>
                   </div>
                 ))}
@@ -281,6 +307,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             {!submitted && (
               <Button 
                 className="w-full mt-4" 
+                style={getBrandedButtonStyle('default')}
                 onClick={handleSubmit}
                 disabled={!selected || loading || !isAuthenticated}
               >
@@ -308,7 +335,8 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
             {block.action_url && (
               <Button 
                 variant="outline" 
-                className="w-full" 
+                className="w-full"
+                style={getBrandedButtonStyle('outline')}
                 onClick={() => window.open(block.action_url, '_blank')}
               >
                 Learn More
@@ -332,11 +360,17 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId })
   };
 
   return (
-    <Card className="w-full bg-black/20 border-kenya-brown/20">
+    <Card 
+      className="w-full bg-black/20 border-kenya-brown/20"
+      style={{
+        ...colorVars as React.CSSProperties,
+        borderColor: sponsor?.brand_color ? `${sponsor.brand_color}20` : undefined
+      }}
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {getBlockIcon(block.type)}
+            <span className={getSponsorClasses(sponsor)}>{getBlockIcon(block.type)}</span>
             <span>{block.title}</span>
           </CardTitle>
           

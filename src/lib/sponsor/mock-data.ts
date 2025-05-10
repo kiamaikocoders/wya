@@ -1,4 +1,3 @@
-
 import { Sponsor, EventSponsor, SponsorZone, SponsorContentBlock } from './types';
 
 export const SAMPLE_SPONSORS: Sponsor[] = [
@@ -9,6 +8,8 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
     logo_url: "https://upload.wikimedia.org/wikipedia/commons/8/88/Safaricom_Logo.svg",
     website_url: "https://www.safaricom.co.ke",
     partnership_level: "title",
+    brand_color: "#4CD964", // Safaricom green
+    brand_gradient: "linear-gradient(135deg, #4CD964 0%, #3cb051 100%)",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -19,6 +20,8 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
     logo_url: "https://upload.wikimedia.org/wikipedia/commons/4/48/Kenya_Airways_Logo.svg",
     website_url: "https://www.kenya-airways.com",
     partnership_level: "gold",
+    brand_color: "#C82333", // Kenya Airways red
+    brand_gradient: "linear-gradient(135deg, #C82333 0%, #a01d2a 100%)",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -29,6 +32,8 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
     logo_url: "https://www.equitygroupholdings.com/wp-content/uploads/2022/01/Equity-Group-Holdings-PLC.png",
     website_url: "https://equitygroupholdings.com",
     partnership_level: "silver",
+    brand_color: "#4A89DC", // Equity blue
+    brand_gradient: "linear-gradient(135deg, #4A89DC 0%, #3a6fb1 100%)",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -39,6 +44,8 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
     logo_url: "https://upload.wikimedia.org/wikipedia/commons/8/83/Tusker_Beer_Logo.svg",
     website_url: "https://www.eabl.com/brands/tusker",
     partnership_level: "presenting",
+    brand_color: "#F9CB41", // Tusker yellow
+    brand_gradient: "linear-gradient(135deg, #F9CB41 0%, #e9b726 100%)",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -49,6 +56,8 @@ export const SAMPLE_SPONSORS: Sponsor[] = [
     logo_url: "https://www.kcbgroup.com/wp-content/uploads/2021/06/logo.png",
     website_url: "https://www.kcbgroup.com",
     partnership_level: "bronze",
+    brand_color: "#37B34A", // KCB green
+    brand_gradient: "linear-gradient(135deg, #37B34A 0%, #2a8b38 100%)",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
