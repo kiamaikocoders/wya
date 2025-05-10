@@ -40,9 +40,15 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
           loop: events.length > slidesToShow,
         }}
         className="w-full"
-        onSelect={(api) => {
-          if (api) {
-            setActiveIndex(api.selectedScrollSnap());
+        onSelect={() => {
+          // We'll use a different approach to track the active slide
+          // since the onSelect callback doesn't provide the API directly
+          const carousel = document.querySelector('[role="region"][aria-roledescription="carousel"]');
+          if (carousel) {
+            const scrollSnap = carousel.getAttribute('data-embla-active-slide');
+            if (scrollSnap !== null) {
+              setActiveIndex(Number(scrollSnap) || 0);
+            }
           }
         }}
       >
@@ -51,6 +57,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
             <CarouselItem 
               key={event.id || index} 
               className={`pl-4 sm:basis-1/2 md:basis-1/3 lg:basis-1/${slidesToShow} transition-opacity duration-300`}
+              data-index={index}
             >
               <div className="h-full">
                 <EventCard 
