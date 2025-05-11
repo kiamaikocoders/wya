@@ -1,15 +1,21 @@
 
-import { apiClient } from './api-client';
-import { FAVORITES_ENDPOINTS } from './api-endpoints';
+import { supabase } from './supabase';
+import { toast } from 'sonner';
 import type { Event } from '@/types/event.types';
 
 export const favoritesService = {
   // Add event to favorites
   addFavorite: async (eventId: number): Promise<void> => {
     try {
-      await apiClient.post(FAVORITES_ENDPOINTS.ADD(eventId), {});
+      const { error } = await supabase
+        .from('favorites')
+        .insert({ event_id: eventId });
+        
+      if (error) throw error;
+      toast.success('Event added to favorites');
     } catch (error) {
       console.error('Error adding to favorites:', error);
+      toast.error('Failed to add to favorites');
       throw error;
     }
   },
@@ -17,9 +23,16 @@ export const favoritesService = {
   // Remove event from favorites
   removeFavorite: async (eventId: number): Promise<void> => {
     try {
-      await apiClient.delete(FAVORITES_ENDPOINTS.REMOVE(eventId));
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('event_id', eventId);
+        
+      if (error) throw error;
+      toast.success('Event removed from favorites');
     } catch (error) {
       console.error('Error removing from favorites:', error);
+      toast.error('Failed to remove from favorites');
       throw error;
     }
   },
@@ -27,8 +40,14 @@ export const favoritesService = {
   // Check if event is favorited by user
   isEventFavorited: async (eventId: number): Promise<boolean> => {
     try {
-      const response = await apiClient.get<boolean>(FAVORITES_ENDPOINTS.IS_FAVORITED(eventId));
-      return response;
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('event_id', eventId)
+        .single();
+        
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+      return !!data;
     } catch (error) {
       console.error('Error checking if event is favorited:', error);
       return false;
@@ -38,8 +57,12 @@ export const favoritesService = {
   // Get user's favorite events
   getUserFavorites: async (): Promise<{ event_id: number }[]> => {
     try {
-      const response = await apiClient.get<{ event_id: number }[]>(FAVORITES_ENDPOINTS.GET_ALL);
-      return response;
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('event_id');
+        
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error("Error fetching user's favorite events:", error);
       throw error;

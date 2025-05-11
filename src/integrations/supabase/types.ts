@@ -9,6 +9,122 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      event_sponsors: {
+        Row: {
+          created_at: string | null
+          event_id: number | null
+          id: number
+          sponsor_id: number | null
+          sponsorship_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          sponsor_id?: number | null
+          sponsorship_type: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          sponsor_id?: number | null
+          sponsorship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sponsors_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_sponsors_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          capacity: number | null
+          category: string | null
+          created_at: string | null
+          date: string
+          description: string | null
+          featured: boolean | null
+          id: number
+          image_url: string | null
+          location: string
+          organizer_id: string | null
+          price: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          category?: string | null
+          created_at?: string | null
+          date: string
+          description?: string | null
+          featured?: boolean | null
+          id?: number
+          image_url?: string | null
+          location: string
+          organizer_id?: string | null
+          price?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          featured?: boolean | null
+          id?: number
+          image_url?: string | null
+          location?: string
+          organizer_id?: string | null
+          price?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string | null
+          event_id: number | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -41,6 +157,88 @@ export type Database = {
             columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: number
+          media_url: string | null
+          post_id: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: number
+          media_url?: string | null
+          post_id?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: number
+          media_url?: string | null
+          post_id?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_posts: {
+        Row: {
+          content: string
+          created_at: string | null
+          event_id: number | null
+          id: number
+          likes_count: number | null
+          media_url: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          likes_count?: number | null
+          media_url?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          event_id?: number | null
+          id?: number
+          likes_count?: number | null
+          media_url?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -90,6 +288,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: number
+          message: string
+          read: boolean | null
+          resource_id: number | null
+          resource_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          message: string
+          read?: boolean | null
+          resource_id?: number | null
+          resource_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          message?: string
+          read?: boolean | null
+          resource_id?: number | null
+          resource_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -119,6 +353,180 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      sponsor_content_blocks: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          data: Json | null
+          description: string | null
+          expires_at: string | null
+          id: number
+          media_url: string | null
+          order_position: number
+          title: string | null
+          type: string
+          updated_at: string | null
+          zone_id: number | null
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          expires_at?: string | null
+          id?: number
+          media_url?: string | null
+          order_position: number
+          title?: string | null
+          type: string
+          updated_at?: string | null
+          zone_id?: number | null
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          expires_at?: string | null
+          id?: number
+          media_url?: string | null
+          order_position?: number
+          title?: string | null
+          type?: string
+          updated_at?: string | null
+          zone_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_content_blocks_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "sponsor_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsor_zones: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          sponsor_id: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          sponsor_id?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          sponsor_id?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_zones_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsors: {
+        Row: {
+          brand_color: string | null
+          brand_gradient: string | null
+          created_at: string | null
+          description: string | null
+          id: number
+          logo_url: string
+          name: string
+          partnership_level: string
+          updated_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          brand_color?: string | null
+          brand_gradient?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          logo_url: string
+          name: string
+          partnership_level: string
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          brand_color?: string | null
+          brand_gradient?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          logo_url?: string
+          name?: string
+          partnership_level?: string
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          event_date: string
+          event_id: number | null
+          event_title: string
+          id: number
+          price: number | null
+          purchase_date: string | null
+          reference_code: string | null
+          status: string
+          ticket_type: string
+          user_id: string
+        }
+        Insert: {
+          event_date: string
+          event_id?: number | null
+          event_title: string
+          id?: number
+          price?: number | null
+          purchase_date?: string | null
+          reference_code?: string | null
+          status: string
+          ticket_type: string
+          user_id: string
+        }
+        Update: {
+          event_date?: string
+          event_id?: number | null
+          event_title?: string
+          id?: number
+          price?: number | null
+          purchase_date?: string | null
+          reference_code?: string | null
+          status?: string
+          ticket_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

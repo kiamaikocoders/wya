@@ -1,26 +1,15 @@
 
-import { apiClient } from '../api-client';
+import { supabase } from '../supabase';
 import { toast } from 'sonner';
 import type { Story, CreateStoryDto, UpdateStoryDto } from './types';
 import { SAMPLE_STORIES } from './mock-data';
-import { checkEndpointAvailability } from './endpoint-checker';
-
-// Define story endpoints
-const STORY_ENDPOINTS = {
-  ALL: '/stories',
-  SINGLE: (id: number) => `/stories/${id}`
-};
 
 export const storyService = {
   getAllStories: async (): Promise<Story[]> => {
     try {
-      const endpointExists = await checkEndpointAvailability(STORY_ENDPOINTS.ALL);
-      if (!endpointExists) {
-        console.log('Stories API not available, using sample data');
-        return SAMPLE_STORIES;
-      }
-      
-      return await apiClient.get<Story[]>(STORY_ENDPOINTS.ALL);
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, return sample data
+      return SAMPLE_STORIES;
     } catch (error) {
       console.warn('Error fetching stories, using sample data:', error);
       return SAMPLE_STORIES;
@@ -29,8 +18,9 @@ export const storyService = {
 
   getStoriesByEventId: async (eventId: number): Promise<Story[]> => {
     try {
-      const allStories = await storyService.getAllStories();
-      return allStories.filter(story => story.event_id === eventId);
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, filter sample data
+      return SAMPLE_STORIES.filter(story => story.event_id === eventId);
     } catch (error) {
       console.error('Error filtering stories by event:', error);
       return [];
@@ -39,16 +29,13 @@ export const storyService = {
 
   getStoryById: async (id: number): Promise<Story> => {
     try {
-      const endpointExists = await checkEndpointAvailability(STORY_ENDPOINTS.SINGLE(id));
-      if (!endpointExists) {
-        const story = SAMPLE_STORIES.find(s => s.id === id);
-        if (story) {
-          return story;
-        }
-        throw new Error(`Story with ID ${id} not found`);
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, find in sample data
+      const story = SAMPLE_STORIES.find(s => s.id === id);
+      if (story) {
+        return story;
       }
-      
-      return await apiClient.get<Story>(STORY_ENDPOINTS.SINGLE(id));
+      throw new Error(`Story with ID ${id} not found`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to fetch story #${id}`;
       toast.error(errorMessage);
@@ -58,29 +45,30 @@ export const storyService = {
 
   createStory: async (storyData: CreateStoryDto): Promise<Story> => {
     try {
-      const endpointExists = await checkEndpointAvailability(STORY_ENDPOINTS.ALL);
-      if (!endpointExists) {
-        const newId = SAMPLE_STORIES.length + 1;
-        const newStory: Story = {
-          id: newId,
-          user_id: 1,
-          event_id: storyData.event_id,
-          content: storyData.content,
-          media_url: storyData.media_url,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_name: "Current User",
-          user_image: undefined,
-          likes_count: 0,
-          comments_count: 0,
-          has_liked: false
-        };
-        
-        SAMPLE_STORIES.push(newStory);
-        return newStory;
-      }
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, create in sample data
+      const { user } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
       
-      return await apiClient.post<Story>(STORY_ENDPOINTS.ALL, storyData);
+      const newId = SAMPLE_STORIES.length + 1;
+      const newStory: Story = {
+        id: newId,
+        user_id: parseInt(user.id),
+        event_id: storyData.event_id,
+        content: storyData.content,
+        media_url: storyData.media_url,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_name: "Current User",
+        user_image: undefined,
+        likes_count: 0,
+        comments_count: 0,
+        has_liked: false
+      };
+      
+      SAMPLE_STORIES.push(newStory);
+      toast.success('Story created successfully');
+      return newStory;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create story';
       toast.error(errorMessage);
@@ -90,23 +78,21 @@ export const storyService = {
 
   updateStory: async (id: number, storyData: UpdateStoryDto): Promise<Story> => {
     try {
-      const endpointExists = await checkEndpointAvailability(STORY_ENDPOINTS.SINGLE(id));
-      if (!endpointExists) {
-        const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
-        if (storyIndex === -1) {
-          throw new Error(`Story with ID ${id} not found`);
-        }
-        
-        SAMPLE_STORIES[storyIndex] = {
-          ...SAMPLE_STORIES[storyIndex],
-          ...storyData,
-          updated_at: new Date().toISOString()
-        };
-        
-        return SAMPLE_STORIES[storyIndex];
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, update in sample data
+      const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
+      if (storyIndex === -1) {
+        throw new Error(`Story with ID ${id} not found`);
       }
       
-      return await apiClient.patch<Story>(STORY_ENDPOINTS.SINGLE(id), storyData);
+      SAMPLE_STORIES[storyIndex] = {
+        ...SAMPLE_STORIES[storyIndex],
+        ...storyData,
+        updated_at: new Date().toISOString()
+      };
+      
+      toast.success('Story updated successfully');
+      return SAMPLE_STORIES[storyIndex];
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to update story #${id}`;
       toast.error(errorMessage);
@@ -116,18 +102,15 @@ export const storyService = {
 
   deleteStory: async (id: number): Promise<void> => {
     try {
-      const endpointExists = await checkEndpointAvailability(STORY_ENDPOINTS.SINGLE(id));
-      if (!endpointExists) {
-        const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
-        if (storyIndex === -1) {
-          throw new Error(`Story with ID ${id} not found`);
-        }
-        
-        SAMPLE_STORIES.splice(storyIndex, 1);
-        return;
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, delete from sample data
+      const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
+      if (storyIndex === -1) {
+        throw new Error(`Story with ID ${id} not found`);
       }
       
-      return await apiClient.delete<void>(STORY_ENDPOINTS.SINGLE(id));
+      SAMPLE_STORIES.splice(storyIndex, 1);
+      toast.success('Story deleted successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `Failed to delete story #${id}`;
       toast.error(errorMessage);
@@ -137,6 +120,8 @@ export const storyService = {
   
   likeStory: async (id: number): Promise<void> => {
     try {
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, update in sample data
       const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
       if (storyIndex !== -1) {
         if (!SAMPLE_STORIES[storyIndex].has_liked) {
@@ -148,11 +133,14 @@ export const storyService = {
       toast.success('Story liked!');
     } catch (error) {
       console.error('Error liking story:', error);
+      toast.error('Failed to like story');
     }
   },
   
   unlikeStory: async (id: number): Promise<void> => {
     try {
+      // We'll implement this properly once we have the stories table in Supabase
+      // For now, update in sample data
       const storyIndex = SAMPLE_STORIES.findIndex(s => s.id === id);
       if (storyIndex !== -1) {
         if (SAMPLE_STORIES[storyIndex].has_liked) {
@@ -164,6 +152,7 @@ export const storyService = {
       toast.success('Story unliked');
     } catch (error) {
       console.error('Error unliking story:', error);
+      toast.error('Failed to unlike story');
     }
   }
 };
