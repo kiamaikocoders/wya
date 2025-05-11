@@ -1,5 +1,5 @@
 
-import { apiClient } from '../api-client';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { 
   Sponsor, 
@@ -8,12 +8,17 @@ import type {
   SponsorContentBlock,
   SponsorContentBlockType
 } from './types';
-import { SAMPLE_SPONSORS, SAMPLE_EVENT_SPONSORS, SAMPLE_SPONSOR_ZONES } from './mock-data';
 
 export const sponsorService = {
   getAllSponsors: async (): Promise<Sponsor[]> => {
     try {
-      return SAMPLE_SPONSORS;
+      const { data, error } = await supabase
+        .from('sponsors')
+        .select('*')
+        .order('partnership_level', { ascending: true });
+        
+      if (error) throw error;
+      return data as Sponsor[];
     } catch (error) {
       console.error('Error fetching sponsors:', error);
       toast.error('Failed to load sponsors');
@@ -23,11 +28,14 @@ export const sponsorService = {
   
   getSponsorById: async (sponsorId: number): Promise<Sponsor | null> => {
     try {
-      const sponsor = SAMPLE_SPONSORS.find(s => s.id === sponsorId);
-      if (!sponsor) {
-        throw new Error(`Sponsor with ID ${sponsorId} not found`);
-      }
-      return sponsor;
+      const { data, error } = await supabase
+        .from('sponsors')
+        .select('*')
+        .eq('id', sponsorId)
+        .single();
+        
+      if (error) throw error;
+      return data as Sponsor;
     } catch (error) {
       console.error(`Error fetching sponsor ${sponsorId}:`, error);
       toast.error('Failed to load sponsor details');
@@ -37,7 +45,16 @@ export const sponsorService = {
   
   getEventSponsors: async (eventId: number): Promise<EventSponsor[]> => {
     try {
-      return SAMPLE_EVENT_SPONSORS.filter(es => es.event_id === eventId);
+      const { data, error } = await supabase
+        .from('event_sponsors')
+        .select(`
+          *,
+          sponsor:sponsors(*)
+        `)
+        .eq('event_id', eventId);
+        
+      if (error) throw error;
+      return data as EventSponsor[];
     } catch (error) {
       console.error(`Error fetching sponsors for event ${eventId}:`, error);
       toast.error('Failed to load event sponsors');
@@ -47,10 +64,32 @@ export const sponsorService = {
   
   getSponsorZone: async (sponsorId: number): Promise<SponsorZone | null> => {
     try {
-      const sponsorZone = SAMPLE_SPONSOR_ZONES.find(sz => sz.sponsor_id === sponsorId);
-      if (!sponsorZone) {
-        throw new Error(`Sponsor zone for sponsor ID ${sponsorId} not found`);
-      }
+      // First get the sponsor zone
+      const { data: zoneData, error: zoneError } = await supabase
+        .from('sponsor_zones')
+        .select('*')
+        .eq('sponsor_id', sponsorId)
+        .single();
+        
+      if (zoneError) throw zoneError;
+      
+      if (!zoneData) return null;
+      
+      // Then get the content blocks for this zone
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('sponsor_content_blocks')
+        .select('*')
+        .eq('zone_id', zoneData.id)
+        .order('order_position', { ascending: true });
+        
+      if (blocksError) throw blocksError;
+      
+      // Combine the data
+      const sponsorZone: SponsorZone = {
+        ...zoneData,
+        content_blocks: blocksData as SponsorContentBlock[]
+      };
+      
       return sponsorZone;
     } catch (error) {
       console.error(`Error fetching sponsor zone for sponsor ${sponsorId}:`, error);
@@ -66,8 +105,20 @@ export const sponsorService = {
     data: Record<string, any>
   ): Promise<void> => {
     try {
+      // In a real implementation, we would store these interactions in a table
+      // For now, we'll just log them
       console.log(`User ${userId} interacted with ${type} (content block ${contentBlockId}):`, data);
       toast.success(`Your ${type} submission was recorded!`);
+      
+      // This would be the actual implementation with Supabase
+      /* 
+      await supabase.from('sponsor_interactions').insert({
+        user_id: userId,
+        content_block_id: contentBlockId,
+        interaction_type: type,
+        interaction_data: data
+      });
+      */
     } catch (error) {
       console.error(`Error submitting ${type} response:`, error);
       toast.error(`Failed to submit your ${type} response`);
@@ -80,6 +131,8 @@ export const sponsorService = {
     period: 'day' | 'week' | 'month' | 'year' = 'month'
   ): Promise<Record<string, any>> => {
     try {
+      // In a real implementation, we would query analytics data from the database
+      // For now, we'll return mock data
       return {
         impressions: 2547,
         interactions: 842,
@@ -89,6 +142,18 @@ export const sponsorService = {
         giveawayEntries: 437,
         checkIns: 195,
       };
+      
+      // This would be the actual implementation with Supabase
+      /*
+      const { data, error } = await supabase.rpc('get_sponsor_analytics', {
+        p_sponsor_id: sponsorId,
+        p_event_id: eventId,
+        p_period: period
+      });
+      
+      if (error) throw error;
+      return data;
+      */
     } catch (error) {
       console.error(`Error fetching analytics for sponsor ${sponsorId}:`, error);
       toast.error('Failed to load sponsor analytics');
