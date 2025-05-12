@@ -32,7 +32,7 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
   // Extract the sponsors from the eventSponsors array
   const sponsors = eventSponsors
     .filter(es => es.sponsor)
-    .map(es => es.sponsor!)
+    .map(es => es.sponsor as Sponsor)
     // Add type assertion to match the expected type
     .map(sponsor => ({
       ...sponsor,
@@ -40,6 +40,14 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
     }));
   
   if (sponsors.length === 0) return null;
+  
+  // This is needed to transform the sponsors array into the expected format
+  const formattedSponsors = sponsors.map(sponsor => ({
+    ...sponsor,
+    event_id: eventId,
+    sponsor_id: sponsor.id,
+    sponsorship_type: sponsor.partnership_level
+  })) as unknown as EventSponsor[];
   
   return (
     <div className="mt-6">
@@ -53,7 +61,7 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
         </Button>
       </div>
       
-      <SponsorBanner sponsors={sponsors as any} size={size} showLabels={true} />
+      <SponsorBanner sponsors={formattedSponsors} size={size} showLabels={true} />
     </div>
   );
 };

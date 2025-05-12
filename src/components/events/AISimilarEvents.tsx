@@ -70,8 +70,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
         .slice(0, 3);
       
       // Use the explicitly typed version to avoid type conflicts
-      const typedEvents: Event[] = sorted;
-      setSimilarEvents(typedEvents);
+      setSimilarEvents(sorted as Event[]);
     } catch (error) {
       console.error('Error finding similar events:', error);
       toast.error('Could not find similar events');
