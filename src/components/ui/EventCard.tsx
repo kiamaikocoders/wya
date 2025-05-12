@@ -49,7 +49,7 @@ const EventCard: React.FC<EventCardProps> = (props) => {
   const eventImage = event ? event.image_url : image;
   const eventCapacity = capacity || 100; // Default capacity to 100 if not provided
   const eventAttendees = attendees;
-  const eventIsFeatured = event ? event.is_featured : isFeatured;
+  const eventIsFeatured = event ? event.featured : isFeatured;
   const eventPrice = event ? event.price : price;
 
   // Format the date
