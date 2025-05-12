@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { forumService, ForumPost } from "@/lib/forum-service";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,16 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, AlertTriangle, MessageSquarePlus, X } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import PostCard from "@/components/forum/PostCard";
 import NewPostForm from "@/components/forum/NewPostForm";
 
 const Forum: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const [posts, setPosts] = useState<ForumPost[]>([]);
 
-  const { data: posts = [], isLoading, error, refetch } = useQuery({
+  const { data: forumPosts = [], isLoading, error, refetch } = useQuery({
     queryKey: ["forumPosts"],
     queryFn: forumService.getAllPosts,
     // Set retries to 0 for 404 responses
@@ -25,6 +28,9 @@ const Forum: React.FC = () => {
         return false;
       }
       return failureCount < 2;
+    },
+    onSuccess: (data) => {
+      setPosts(data);
     }
   });
 
@@ -32,6 +38,30 @@ const Forum: React.FC = () => {
     queryKey: ["events"],
     queryFn: () => import('@/lib/event-service').then(module => module.eventService.getAllEvents()),
   });
+  
+  // Load liked posts on component mount
+  useEffect(() => {
+    if (user) {
+      const fetchLikedPosts = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', user.id);
+            
+          if (error) throw error;
+          
+          if (data) {
+            setLikedPosts(data.map(item => item.post_id));
+          }
+        } catch (err) {
+          console.error('Error fetching liked posts:', err);
+        }
+      };
+      
+      fetchLikedPosts();
+    }
+  }, [user]);
 
   const handleNewPostSuccess = () => {
     refetch();
@@ -96,7 +126,7 @@ const Forum: React.FC = () => {
 
   // Function to handle like/unlike
   const handleLikeToggle = async (postId: number) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       toast.error('Please log in to like posts');
       return;
     }
@@ -112,7 +142,7 @@ const Forum: React.FC = () => {
         const { error } = await supabase
           .from('post_likes')
           .delete()
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .eq('post_id', postId);
           
         if (error) throw error;
@@ -128,7 +158,7 @@ const Forum: React.FC = () => {
         const { error } = await supabase
           .from('post_likes')
           .insert({
-            user_id: user?.id,
+            user_id: user.id,
             post_id: postId
           });
           
@@ -193,7 +223,12 @@ const Forum: React.FC = () => {
         <TabsContent value="all" className="space-y-4">
           {posts && posts.length > 0 ? (
             posts.map(post => (
-              <PostCard key={post.id} post={post} />
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                isLiked={likedPosts.includes(post.id)}
+                onLikeToggle={() => handleLikeToggle(post.id)} 
+              />
             ))
           ) : (
             <Card>
@@ -218,7 +253,12 @@ const Forum: React.FC = () => {
           {posts && posts.filter(post => (post.likes_count || 0) > 0)
             .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
             .map(post => (
-              <PostCard key={post.id} post={post} />
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                isLiked={likedPosts.includes(post.id)}
+                onLikeToggle={() => handleLikeToggle(post.id)} 
+              />
             ))
           }
         </TabsContent>
@@ -227,7 +267,12 @@ const Forum: React.FC = () => {
           {posts && posts
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .map(post => (
-              <PostCard key={post.id} post={post} />
+              <PostCard 
+                key={post.id} 
+                post={post} 
+                isLiked={likedPosts.includes(post.id)}
+                onLikeToggle={() => handleLikeToggle(post.id)} 
+              />
             ))
           }
         </TabsContent>
@@ -237,7 +282,12 @@ const Forum: React.FC = () => {
             {posts && posts
               .filter(post => post.user_id === user.id)
               .map(post => (
-                <PostCard key={post.id} post={post} />
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  isLiked={likedPosts.includes(post.id)}
+                  onLikeToggle={() => handleLikeToggle(post.id)} 
+                />
               ))
             }
           </TabsContent>

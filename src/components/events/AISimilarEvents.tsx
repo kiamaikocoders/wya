@@ -42,7 +42,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
           score += 5;
         }
         
-        // Tag matches
+        // Tag matches - check if tags exist before processing
         if (currentEvent.tags && event.tags) {
           const currentTags = currentEvent.tags;
           const eventTags = event.tags;
