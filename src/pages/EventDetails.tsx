@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '@/lib/event-service';
-import { storyService, CreateStoryDto } from '@/lib/story';
+import { storyService } from '@/lib/story';
 import { Calendar, MapPin, User, Tag, Clock, ArrowLeft, Edit, Trash, MessageSquare, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +33,8 @@ const EventDetails: React.FC = () => {
   });
 
   const createStoryMutation = useMutation({
-    mutationFn: (newStory: CreateStoryDto) => storyService.createStory(newStory),
+    mutationFn: (newStory: { event_id: number; content: string; media_url?: string }) => 
+      storyService.createStory(newStory),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stories', eventId] });
       setStoryContent('');
@@ -80,7 +82,7 @@ const EventDetails: React.FC = () => {
     
     if (!eventId) return;
     
-    const newStory: CreateStoryDto = {
+    const newStory = {
       event_id: Number(eventId),
       content: storyContent,
       media_url: storyMedia,

@@ -6,6 +6,9 @@ export interface SponsorZone {
   title: string;
   description: string | null;
   sponsor_id: number | null;
+  content_blocks: SponsorContentBlock[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Sponsor {
@@ -17,6 +20,8 @@ export interface Sponsor {
   partnership_level: string;
   brand_color: string | null;
   brand_gradient: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EventSponsor {
@@ -46,6 +51,8 @@ export interface SponsorAnalytics {
   clicks: number;
   conversion_rate: number;
   engagement_time: number;
+  interactions: number;
+  clickThroughs: number;
 }
 
 export const sponsorService = {
@@ -63,6 +70,11 @@ export const sponsorService = {
       console.error('Error fetching sponsors:', error);
       throw error;
     }
+  },
+  
+  // Alias for getSponsors (for compatibility)
+  getAllSponsors: async (): Promise<Sponsor[]> => {
+    return sponsorService.getSponsors();
   },
   
   // Get sponsor by ID
@@ -83,7 +95,7 @@ export const sponsorService = {
   },
   
   // Get sponsors for an event
-  getEventSponsors: async (eventId: number): Promise<Sponsor[]> => {
+  getEventSponsors: async (eventId: number): Promise<EventSponsor[]> => {
     try {
       const { data, error } = await supabase
         .from('event_sponsors')
@@ -92,10 +104,54 @@ export const sponsorService = {
       
       if (error) throw error;
       
-      // Extract the sponsors from the join query
-      return data.map((item: any) => item.sponsor);
+      return data as EventSponsor[];
     } catch (error) {
       console.error(`Error fetching sponsors for event with ID ${eventId}:`, error);
+      throw error;
+    }
+  },
+  
+  // Get sponsor zone (singular)
+  getSponsorZone: async (sponsorId: number): Promise<SponsorZone | null> => {
+    try {
+      // First get the zone
+      const { data: zoneData, error: zoneError } = await supabase
+        .from('sponsor_zones')
+        .select('*')
+        .eq('sponsor_id', sponsorId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+      
+      if (zoneError) {
+        if (zoneError.code === 'PGRST116') { // No rows returned
+          return null;
+        }
+        throw zoneError;
+      }
+      
+      // Then get the content blocks for this zone
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('sponsor_content_blocks')
+        .select('*')
+        .eq('zone_id', zoneData.id)
+        .order('order_position', { ascending: true });
+      
+      if (blocksError) throw blocksError;
+      
+      // Map the Supabase data to match our interface
+      const contentBlocks = (blocksData || []).map((block: any) => ({
+        ...block,
+        order: block.order_position // Map order_position to order
+      })) as SponsorContentBlock[];
+      
+      // Return the zone with content blocks
+      return {
+        ...zoneData,
+        content_blocks: contentBlocks
+      } as SponsorZone;
+    } catch (error) {
+      console.error(`Error fetching zone for sponsor with ID ${sponsorId}:`, error);
       throw error;
     }
   },
@@ -129,7 +185,7 @@ export const sponsorService = {
       if (error) throw error;
       
       // Map the Supabase data to match our interface
-      return data.map((block: any) => ({
+      return (data || []).map((block: any) => ({
         ...block,
         order: block.order_position // Map order_position to order
       })) as SponsorContentBlock[];
@@ -139,14 +195,20 @@ export const sponsorService = {
     }
   },
 
-  // Track sponsor interactions (placeholder for now)
-  submitSponsorInteraction: async (data: { 
-    sponsor_id: number, 
-    interaction_type: string, 
-    content_id?: number 
-  }): Promise<void> => {
+  // Track sponsor interactions
+  submitSponsorInteraction: async (
+    userId: string,
+    contentId: number,
+    interactionType: string,
+    data: Record<string, any> = {}
+  ): Promise<void> => {
     try {
-      console.log('Sponsor interaction tracked:', data);
+      console.log('Sponsor interaction tracked:', {
+        user_id: userId,
+        content_id: contentId,
+        interaction_type: interactionType,
+        data
+      });
       // This would typically insert into a sponsor_interactions table
       // For now just log the interaction
     } catch (error) {
@@ -154,8 +216,12 @@ export const sponsorService = {
     }
   },
   
-  // Get sponsor analytics (placeholder for now)
-  getSponsorAnalytics: async (sponsorId: number): Promise<SponsorAnalytics> => {
+  // Get sponsor analytics
+  getSponsorAnalytics: async (
+    sponsorId: number,
+    eventId?: number,
+    period: 'day' | 'week' | 'month' | 'year' = 'month'
+  ): Promise<SponsorAnalytics> => {
     try {
       // This would typically query analytics data from the database
       // For now return mock data
@@ -163,7 +229,9 @@ export const sponsorService = {
         impressions: Math.floor(Math.random() * 10000),
         clicks: Math.floor(Math.random() * 1000),
         conversion_rate: Math.random() * 10,
-        engagement_time: Math.floor(Math.random() * 300)
+        engagement_time: Math.floor(Math.random() * 300),
+        interactions: Math.floor(Math.random() * 500),
+        clickThroughs: Math.floor(Math.random() * 300)
       };
     } catch (error) {
       console.error('Error fetching sponsor analytics:', error);
