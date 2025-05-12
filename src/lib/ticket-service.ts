@@ -84,6 +84,10 @@ export const ticketService = {
   // Purchase ticket
   purchaseTicket: async (purchaseData: PurchaseTicketPayload): Promise<Ticket> => {
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to purchase tickets');
+      
       // First get event details
       const { data: eventData, error: eventError } = await supabase
         .from('events')
@@ -94,6 +98,7 @@ export const ticketService = {
       if (eventError) throw eventError;
       
       const ticketData = {
+        user_id: user.id,
         event_id: purchaseData.event_id,
         ticket_type: purchaseData.ticket_type,
         price: eventData.price,
