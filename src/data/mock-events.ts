@@ -1,110 +1,112 @@
-import { Event } from '@/types/event.types';
 
-export const SAMPLE_EVENTS: Event[] = [
+import { Event } from "@/types/event.types";
+
+export const mockEvents: Event[] = [
   {
     id: 1,
-    title: 'Nairobi International Trade Fair',
-    description: 'The largest trade exhibition in East Africa, showcasing agricultural, commercial, and industrial products and services from across the region and beyond.',
-    category: 'Business',
-    date: '2023-10-02',
-    location: 'Nairobi',
-    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Trade+Fair',
-    organizer_id: 1,
-    created_at: '2023-09-01T08:00:00Z',
-    price: 500,
-    tags: ['trade', 'business', 'agriculture', 'exhibition']
+    title: "Nairobi International Jazz Festival",
+    description: "Experience the best jazz musicians from Africa and around the world at Nairobi's premier music festival.",
+    location: "Carnivore Grounds, Nairobi",
+    date: "2024-05-15T18:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1480796927426-f609979314bd?q=80&w=2070",
+    category: "Music",
+    organizer_id: "1", // Changed to string
+    created_at: "2024-01-15T10:00:00Z",
+    price: 2500,
+    tags: ["jazz", "music", "festival", "live"],
+    capacity: 1000
   },
   {
     id: 2,
-    title: 'Lamu Cultural Festival',
-    description: 'An annual celebration of the unique Swahili culture, featuring traditional dances, dhow races, donkey races, and various competitions.',
-    category: 'Culture',
-    date: '2023-11-15',
-    location: 'Lamu',
-    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Cultural+Festival',
-    organizer_id: 2,
-    created_at: '2023-10-12T09:30:00Z',
-    price: 0,
-    is_featured: true,
-    tags: ['culture', 'heritage', 'traditional', 'festival']
+    title: "Kenya Wildlife Photography Workshop",
+    description: "Learn wildlife photography techniques from National Geographic photographers in the heart of the Maasai Mara.",
+    location: "Maasai Mara",
+    date: "2024-06-10T09:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2069",
+    category: "Education",
+    organizer_id: "2", // Changed to string
+    created_at: "2024-01-20T14:30:00Z",
+    price: 15000,
+    tags: ["photography", "wildlife", "safari", "workshop"],
+    is_featured: true
   },
   {
     id: 3,
-    title: 'Magical Kenya Open',
-    description: 'A prestigious golf tournament that attracts professional players from across the globe, part of the European Tour.',
-    category: 'Sports',
-    date: '2024-03-10',
-    location: 'Nairobi',
-    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Kenya+Open',
-    organizer_id: 3,
-    created_at: '2024-01-20T11:15:00Z',
-    price: 2000,
-    tags: ['golf', 'sports', 'tournament', 'European Tour']
+    title: "Lamu Cultural Festival",
+    description: "Celebrate the rich Swahili culture through music, dance, crafts and traditional dhow races in historic Lamu.",
+    location: "Lamu",
+    date: "2024-07-20T10:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1515711660811-48832a4c6f69?q=80&w=1938",
+    category: "Culture",
+    organizer_id: "3", // Changed to string
+    created_at: "2024-02-05T09:15:00Z",
+    is_featured: true,
+    tags: ["culture", "festival", "heritage", "coastal"]
   },
   {
     id: 4,
-    title: 'Nairobi Restaurant Week',
-    description: 'A culinary celebration where top restaurants offer special menus at discounted prices, showcasing the diverse cuisine available in Nairobi.',
-    category: 'Food & Drink',
-    date: '2024-02-01',
-    location: 'Nairobi',
-    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Restaurant+Week',
-    organizer_id: 4,
-    created_at: '2024-01-05T10:00:00Z',
-    price: 0,
-    tags: ['food', 'dining', 'culinary', 'restaurants']
+    title: "Naivasha Camping & Stargazing Weekend",
+    description: "Escape the city for a weekend of camping, hiking, and stargazing at Lake Naivasha.",
+    location: "Naivasha",
+    date: "2024-05-25T16:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1546811740-23e671faf31c?q=80&w=2070",
+    category: "Outdoor",
+    organizer_id: "4", // Changed to string
+    created_at: "2024-03-10T11:20:00Z",
+    price: 3500,
+    tags: ["camping", "outdoors", "stargazing", "weekend"]
   },
   {
     id: 5,
-    title: 'Kilifi New Year Festival',
-    description: 'A 3-day electronic music festival featuring local and international DJs, workshops, and art installations.',
-    category: 'Music',
-    date: '2023-12-31',
-    location: 'Kilifi',
-    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Music+Festival',
-    organizer_id: 5,
-    created_at: '2023-11-10T14:30:00Z',
-    price: 4500,
+    title: "Nairobi Tech Summit",
+    description: "Connect with tech innovators, startups, and investors at East Africa's largest technology conference.",
+    location: "Nairobi",
+    date: "2024-08-05T08:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2070",
+    category: "Technology",
+    organizer_id: "5", // Changed to string
+    created_at: "2024-03-18T13:00:00Z",
+    price: 5000,
     is_featured: true,
-    tags: ['music', 'party', 'new year', 'festival']
+    tags: ["tech", "summit", "startup", "innovation"]
   },
   {
     id: 6,
-    title: 'Lake Turkana Cultural Festival',
-    description: 'A celebration of the cultural diversity of communities living around Lake Turkana, featuring traditional dances, music, and crafts.',
-    category: 'Culture',
-    date: '2024-06-15',
-    location: 'Turkana',
-    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Cultural+Festival',
-    organizer_id: 6,
-    created_at: '2024-04-22T09:00:00Z',
-    price: 500,
-    tags: ['culture', 'heritage', 'traditional', 'festival']
+    title: "Samburu Cultural Food Festival",
+    description: "Experience the diverse flavors of Kenyan cuisine with a focus on traditional Samburu recipes and techniques.",
+    location: "Samburu",
+    date: "2024-06-15T11:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1499715217757-2aa48ed7e593?q=80&w=2070",
+    category: "Food & Drink",
+    organizer_id: "6", // Changed to string
+    created_at: "2024-03-22T09:45:00Z",
+    price: 1500,
+    tags: ["food", "culinary", "traditional", "culture"]
   },
   {
     id: 7,
-    title: 'Nairobi Tech Week',
-    description: 'Kenya\'s largest tech event, bringing together developers, startups, and tech enthusiasts for workshops, panel discussions, and networking.',
-    category: 'Technology',
-    date: '2024-05-20',
-    location: 'Nairobi',
-    image_url: 'https://placehold.co/800x600/3A3027/FFFFFF?text=Tech+Week',
-    organizer_id: 7,
-    created_at: '2024-03-15T11:00:00Z',
-    price: 1000,
-    tags: ['technology', 'innovation', 'developers', 'startups']
+    title: "Mombasa Beach Yoga Retreat",
+    description: "Rejuvenate your body and mind with a weekend yoga retreat on the beautiful beaches of Mombasa.",
+    location: "Mombasa",
+    date: "2024-07-05T07:00:00Z",
+    image_url: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2022",
+    category: "Wellness",
+    organizer_id: "7", // Changed to string
+    created_at: "2024-04-01T10:30:00Z",
+    price: 8000,
+    tags: ["yoga", "wellness", "retreat", "beach"]
   },
   {
     id: 8,
-    title: 'Art and Design Fair',
-    description: 'An exhibition of contemporary Kenyan art, design, and fashion with opportunities to purchase artworks directly from creators.',
-    category: 'Art',
-    date: '2024-04-10',
-    location: 'Nairobi',
-    image_url: 'https://placehold.co/800x600/FF8000/FFFFFF?text=Art+Fair',
-    organizer_id: 8,
-    created_at: '2024-02-28T13:45:00Z',
-    price: 300,
-    tags: ['art', 'design', 'exhibition', 'fashion']
+    title: "Nakuru Business Networking Event",
+    description: "Build valuable connections with business leaders and entrepreneurs from around the Rift Valley region.",
+    location: "Nakuru",
+    date: "2024-05-30T17:30:00Z",
+    image_url: "https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2070",
+    category: "Business",
+    organizer_id: "8", // Changed to string
+    created_at: "2024-04-15T14:20:00Z",
+    price: 1000,
+    tags: ["business", "networking", "entrepreneurship"]
   }
 ];

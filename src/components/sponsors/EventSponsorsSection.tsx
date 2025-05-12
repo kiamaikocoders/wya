@@ -6,6 +6,7 @@ import { sponsorService, EventSponsor } from '@/lib/sponsor';
 import SponsorBanner from './SponsorBanner';
 import { Button } from '@/components/ui/button';
 import { Handshake } from 'lucide-react';
+import { Sponsor } from '@/lib/sponsor/types';
 
 interface EventSponsorsSectionProps {
   eventId: number;
@@ -28,11 +29,15 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
   
   if (!eventSponsors || eventSponsors.length === 0) return null;
   
-  // We need to provide Sponsor[] to the SponsorBanner, not EventSponsor[]
   // Extract the sponsors from the eventSponsors array
   const sponsors = eventSponsors
     .filter(es => es.sponsor)
-    .map(es => es.sponsor!);
+    .map(es => es.sponsor!)
+    // Add type assertion to match the expected type
+    .map(sponsor => ({
+      ...sponsor,
+      partnership_level: sponsor.partnership_level as "title" | "presenting" | "gold" | "silver" | "bronze" | "partner" | string
+    }));
   
   if (sponsors.length === 0) return null;
   

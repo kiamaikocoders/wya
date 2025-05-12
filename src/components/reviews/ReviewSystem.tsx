@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import { format } from 'date-fns';
 
 export interface Review {
   id: number;
-  user_id: number;
+  user_id: string; // Changed from number to string
   event_id: number;
   rating: number;
   content: string;
@@ -167,7 +168,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
     
     try {
       const reviewData = {
-        user_id: user?.id || 0,
+        user_id: user?.id || '', // Use string for user_id
         event_id: eventId,
         rating: overallRating,
         content: newReview,

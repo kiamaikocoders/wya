@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface Message {
   id: string;
-  sender_id: number;
-  receiver_id: number;
+  sender_id: string; // Changed from number to string
+  receiver_id: string; // Changed from number to string
   content: string;
   attachment_url?: string;
   attachment_type?: 'image' | 'file' | 'location' | 'event';
@@ -27,7 +28,7 @@ interface Message {
 }
 
 interface User {
-  id: number;
+  id: string; // Changed from number to string
   name: string;
   profile_picture?: string;
   last_seen?: string;
@@ -35,7 +36,7 @@ interface User {
 }
 
 interface DirectMessageProps {
-  recipientId: number;
+  recipientId: string; // Changed from number to string
   recipientName: string;
   recipientAvatar?: string;
   onClose?: () => void;
@@ -71,7 +72,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
       const welcomeMessage: Message = {
         id: 'welcome-1',
         sender_id: recipientId,
-        receiver_id: user?.id || 0,
+        receiver_id: user?.id || '',
         content: `Hi there! I'm ${recipientName}. How can I help you?`,
         created_at: new Date().toISOString(),
         is_read: true
@@ -88,7 +89,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     
     const message: Message = {
       id: Date.now().toString(),
-      sender_id: user?.id || 0,
+      sender_id: user?.id || '',
       receiver_id: recipientId,
       content: newMessage.trim(),
       created_at: new Date().toISOString(),
@@ -114,7 +115,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
         const responseMessage: Message = {
           id: (Date.now() + 1).toString(),
           sender_id: recipientId,
-          receiver_id: user?.id || 0,
+          receiver_id: user?.id || '',
           content: responseMessages[Math.floor(Math.random() * responseMessages.length)],
           created_at: new Date(Date.now() + 1000).toISOString(),
           is_read: true
@@ -132,7 +133,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     if (imageUrl && imageUrl.trim()) {
       const message: Message = {
         id: Date.now().toString(),
-        sender_id: user?.id || 0,
+        sender_id: user?.id || '',
         receiver_id: recipientId,
         content: '',
         attachment_url: imageUrl.trim(),
@@ -150,7 +151,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     if (location && location.trim()) {
       const message: Message = {
         id: Date.now().toString(),
-        sender_id: user?.id || 0,
+        sender_id: user?.id || '',
         receiver_id: recipientId,
         content: `📍 I'm at ${location.trim()}`,
         attachment_type: 'location',
@@ -172,7 +173,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
     
     const message: Message = {
       id: Date.now().toString(),
-      sender_id: user?.id || 0,
+      sender_id: user?.id || '',
       receiver_id: recipientId,
       content: 'Check out this event!',
       attachment_type: 'event',
