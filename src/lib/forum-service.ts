@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -53,17 +52,12 @@ export const forumService = {
   // Get all forum posts
   getAllPosts: async (): Promise<ForumPost[]> => {
     try {
-      // Get posts with user profiles joined
+      // Get posts with user profiles joined using JOIN syntax
       const { data, error } = await supabase
         .from('forum_posts')
         .select(`
           *,
-          profiles:user_id (
-            id,
-            username,
-            full_name,
-            avatar_url
-          )
+          profiles:user_id (*)
         `)
         .order('created_at', { ascending: false });
       
@@ -94,12 +88,7 @@ export const forumService = {
         .from('forum_posts')
         .select(`
           *,
-          profiles:user_id (
-            id,
-            username,
-            full_name,
-            avatar_url
-          )
+          profiles:user_id (*)
         `)
         .eq('id', id)
         .single();
@@ -188,12 +177,7 @@ export const forumService = {
         .from('forum_comments')
         .select(`
           *,
-          profiles:user_id (
-            id,
-            username,
-            full_name,
-            avatar_url
-          )
+          profiles:user_id (*)
         `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });

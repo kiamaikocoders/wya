@@ -54,7 +54,7 @@ export const userService = {
         name: profile?.full_name || user.email || 'Anonymous User',
         profile_picture: profile?.avatar_url,
         bio: profile?.bio,
-        location: profile?.location,
+        location: profile?.location || '',
         user_type: user.user_metadata?.user_type || 'attendee',
         created_at: profile?.created_at
       };

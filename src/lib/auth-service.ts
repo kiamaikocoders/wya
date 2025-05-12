@@ -2,7 +2,7 @@
 // Migrated authentication service using Supabase
 import { supabase } from './supabase';
 import { toast } from 'sonner';
-import { User } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 // Types for authentication
 export interface LoginCredentials {
@@ -15,6 +15,18 @@ export interface SignupCredentials {
   password: string;
   name: string;
   user_type?: 'attendee' | 'admin' | 'organizer';
+}
+
+// Export User interface so it can be imported by other files
+export interface User {
+  id: string;
+  name?: string;
+  email: string;
+  user_type: string;
+  created_at: string;
+  bio?: string;
+  profile_picture?: string;
+  avatar_url?: string;
 }
 
 // Auth service functions using Supabase
@@ -121,7 +133,7 @@ export const authService = {
   },
   
   // Get current user with Supabase
-  getCurrentUser: async () => {
+  getCurrentUser: async (): Promise<User | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -141,7 +153,8 @@ export const authService = {
         user_type: profile.username === 'admin' ? 'admin' : 'attendee',
         created_at: profile.created_at,
         bio: profile.bio,
-        profile_picture: profile.avatar_url
+        profile_picture: profile.avatar_url,
+        avatar_url: profile.avatar_url
       };
     } catch (error) {
       console.error('Error getting current user:', error);

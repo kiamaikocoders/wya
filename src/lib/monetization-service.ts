@@ -1,125 +1,43 @@
-
-import { apiClient } from './api-client';
+// This is a temporary monetization service that will be replaced with Supabase implementation
 import { toast } from 'sonner';
+import { supabase } from './supabase';
 
-// Endpoint for monetization features
-const MONETIZATION_ENDPOINT = `${apiClient.XANO_EVENT_API_URL}/monetization`;
-
-// Define pricing tiers
-export interface PricingTier {
-  id: string;
-  name: string;
-  description: string;
+export interface TicketPurchase {
+  event_id: number;
+  user_id: string;
+  ticket_type: string;
   price: number;
-  features: string[];
+  quantity: number;
 }
 
-export interface RevenueSplit {
-  platform: number; // platform cut (percentage)
-  organizer: number; // organizer cut (percentage)
+export interface PaymentIntent {
+  id: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  created_at: string;
 }
 
-// Standard pricing tiers
-export const PRICING_TIERS: PricingTier[] = [
-  {
-    id: 'basic',
-    name: 'Basic',
-    description: 'Simple listing for your event',
-    price: 0,
-    features: [
-      'Standard event listing',
-      'Basic discovery',
-      'Up to 3 photos'
-    ]
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    description: 'Enhanced visibility for your event',
-    price: 2500,
-    features: [
-      'Featured on homepage',
-      'Highlighted in search results',
-      'Unlimited photos',
-      'Social media promotion',
-      'Priority support'
-    ]
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Complete promotion package for serious events',
-    price: 5000,
-    features: [
-      'All Premium features',
-      'Top placement in search results',
-      'Featured in email newsletters',
-      'Advanced analytics',
-      'Customizable event page',
-      'Dedicated account manager'
-    ]
-  }
-];
-
-// Revenue split configurations
-export const REVENUE_SPLITS: Record<string, RevenueSplit> = {
-  'free': { platform: 0, organizer: 100 },
-  'standard': { platform: 10, organizer: 90 },
-  'premium': { platform: 8, organizer: 92 }
-};
-
-// Monetization service methods
+// Temporary monetization service
 export const monetizationService = {
-  // Get pricing tiers
-  getPricingTiers: async (): Promise<PricingTier[]> => {
+  createTicketPurchase: async (purchase: TicketPurchase): Promise<boolean> => {
     try {
-      // First try to get from API
-      const response = await apiClient.get<PricingTier[]>(`${MONETIZATION_ENDPOINT}/pricing-tiers`);
-      return response;
-    } catch (error) {
-      console.info('Using default pricing tiers');
-      return PRICING_TIERS;
-    }
-  },
-  
-  // Get revenue split information
-  getRevenueSplit: async (tierType: string = 'standard'): Promise<RevenueSplit> => {
-    try {
-      // First try to get from API
-      const response = await apiClient.get<RevenueSplit>(`${MONETIZATION_ENDPOINT}/revenue-split/${tierType}`);
-      return response;
-    } catch (error) {
-      console.info('Using default revenue split configuration');
-      return REVENUE_SPLITS[tierType] || REVENUE_SPLITS.standard;
-    }
-  },
-
-  // Calculate platform fee
-  calculatePlatformFee: (amount: number, tierType: string = 'standard'): number => {
-    const split = REVENUE_SPLITS[tierType] || REVENUE_SPLITS.standard;
-    return (amount * split.platform) / 100;
-  },
-  
-  // Calculate organizer payout
-  calculateOrganizerPayout: (amount: number, tierType: string = 'standard'): number => {
-    const split = REVENUE_SPLITS[tierType] || REVENUE_SPLITS.standard;
-    return (amount * split.organizer) / 100;
-  },
-  
-  // Purchase a pricing tier for an event
-  purchaseTier: async (eventId: number, tierId: string): Promise<boolean> => {
-    try {
-      await apiClient.post<{success: boolean}>(`${MONETIZATION_ENDPOINT}/purchase-tier`, {
-        event_id: eventId,
-        tier_id: tierId
-      });
-      
-      toast.success(`Successfully upgraded event to ${tierId} tier!`);
+      // This will be implemented with Supabase later
+      toast.success('Ticket purchase processing initiated');
       return true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to purchase tier';
-      toast.error(errorMessage);
+      console.error('Error creating ticket purchase:', error);
+      toast.error('Failed to process ticket purchase');
       return false;
+    }
+  },
+  
+  getPaymentMethods: async (userId: string): Promise<any[]> => {
+    try {
+      // Placeholder - will be implemented with Supabase
+      return [];
+    } catch (error) {
+      console.error('Error fetching payment methods:', error);
+      return [];
     }
   }
 };

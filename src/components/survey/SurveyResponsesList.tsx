@@ -105,7 +105,7 @@ const ResponseItem: React.FC<ResponseItemProps> = ({ response, survey, index }) 
 
 interface ResponseValueProps {
   answer: string | string[] | number;
-  questionType: 'multiple_choice' | 'text' | 'rating' | 'yes_no';
+  questionType: 'multiple_choice' | 'text' | 'rating' | 'yes_no'; // Removed 'checkbox' type which was causing the error
 }
 
 const ResponseValue: React.FC<ResponseValueProps> = ({ answer, questionType }) => {

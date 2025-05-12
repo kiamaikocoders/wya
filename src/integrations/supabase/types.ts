@@ -61,6 +61,7 @@ export type Database = {
           location: string
           organizer_id: string | null
           price: number | null
+          tags: string[] | null
           title: string
           updated_at: string | null
         }
@@ -76,6 +77,7 @@ export type Database = {
           location: string
           organizer_id?: string | null
           price?: number | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
         }
@@ -91,6 +93,7 @@ export type Database = {
           location?: string
           organizer_id?: string | null
           price?: number | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
         }
@@ -324,6 +327,35 @@ export type Database = {
         }
         Relationships: []
       }
+      post_likes: {
+        Row: {
+          created_at: string | null
+          id: number
+          post_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          post_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          post_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -331,6 +363,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          location: string | null
           updated_at: string | null
           username: string | null
         }
@@ -340,6 +373,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          location?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -349,6 +383,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          location?: string | null
           updated_at?: string | null
           username?: string | null
         }

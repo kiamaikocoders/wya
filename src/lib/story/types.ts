@@ -8,7 +8,7 @@ export interface Story {
   media_url: string;
   media_type: 'image' | 'video';
   likes_count: number;
-  comments_count: number;
+  comments_count: number; // Ensure this field is present
   created_at: string;
   user_name?: string; // Added for UI display
   user_image?: string; // Added for UI display

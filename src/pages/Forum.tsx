@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { forumService, ForumPost } from "@/lib/forum-service";
@@ -28,11 +27,14 @@ const Forum: React.FC = () => {
         return false;
       }
       return failureCount < 2;
-    },
-    onSuccess: (data) => {
-      setPosts(data);
     }
   });
+
+  useEffect(() => {
+    if (forumPosts.length > 0) {
+      setPosts(forumPosts);
+    }
+  }, [forumPosts]);
 
   const { data: events } = useQuery({
     queryKey: ["events"],

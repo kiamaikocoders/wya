@@ -27,7 +27,7 @@ export const profileService = {
       
       // Add name property for compatibility
       if (data) {
-        data.name = data.full_name;
+        data.name = data.full_name || '';
       }
       
       return data;
@@ -51,7 +51,7 @@ export const profileService = {
       
       // Add name property for compatibility
       if (data) {
-        data.name = data.full_name;
+        data.name = data.full_name || '';
       }
       
       return data;
@@ -75,7 +75,7 @@ export const profileService = {
       // Add name property for compatibility
       if (data) {
         data.forEach(profile => {
-          profile.name = profile.full_name;
+          profile.name = profile.full_name || '';
         });
       }
       

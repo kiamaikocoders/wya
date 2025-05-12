@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Phone, VideoIcon, Info, MoreVertical } from 'lucide-react';
-import { User } from '@/lib/auth-service';
+import { User } from '@/lib/auth-service'; // Import from auth-service now that User is exported
 
 interface ChatHeaderProps {
   participant: User | {
