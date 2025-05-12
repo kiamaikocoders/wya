@@ -28,7 +28,7 @@ export const mockEvents: Event[] = [
     created_at: "2024-01-20T14:30:00Z",
     price: 15000,
     tags: ["photography", "wildlife", "safari", "workshop"],
-    is_featured: true
+    featured: true
   },
   {
     id: 3,
@@ -40,7 +40,7 @@ export const mockEvents: Event[] = [
     category: "Culture",
     organizer_id: "3", // Changed to string
     created_at: "2024-02-05T09:15:00Z",
-    is_featured: true,
+    featured: true,
     tags: ["culture", "festival", "heritage", "coastal"]
   },
   {
@@ -67,7 +67,7 @@ export const mockEvents: Event[] = [
     organizer_id: "5", // Changed to string
     created_at: "2024-03-18T13:00:00Z",
     price: 5000,
-    is_featured: true,
+    featured: true,
     tags: ["tech", "summit", "startup", "innovation"]
   },
   {

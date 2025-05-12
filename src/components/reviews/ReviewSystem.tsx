@@ -76,7 +76,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
       const demoReviews: Review[] = [
         {
           id: 1,
-          user_id: 101,
+          user_id: "101", // Change to string
           event_id: eventId,
           rating: 5,
           content: "Absolutely amazing event! The atmosphere was electric and everything was well organized. Would definitely attend again next year.",
@@ -95,7 +95,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
         },
         {
           id: 2,
-          user_id: 102,
+          user_id: "102", // Change to string
           event_id: eventId,
           rating: 3,
           content: "The event was okay. Good music but the venue was a bit crowded and hot. The food stands were overpriced for what they were offering.",
@@ -114,7 +114,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
         },
         {
           id: 3,
-          user_id: 103,
+          user_id: "103", // Change to string
           event_id: eventId,
           rating: 4,
           content: "Really enjoyed it! The performers were excellent and the staff were very helpful. Just wish there were more restrooms available.",

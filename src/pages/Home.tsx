@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Section from '@/components/ui/Section';
@@ -126,32 +125,28 @@ const Home: React.FC = () => {
       </Section>
       
       {/* Featured Events Section */}
-      <Section 
-        title="Featured Events" 
-        subtitle="Don't miss out on these amazing events"
-        action={
-          <Link to="/events">
-            <Button variant="link" className="text-kenya-orange">
-              View All
-            </Button>
-          </Link>
-        }
-      >
-        {eventsLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
-          </div>
-        ) : featuredEvents.length > 0 ? (
-          <div className="px-4 overflow-visible">
-            <EventCarousel 
-              events={featuredEvents}
-              slidesToShow={3}
-            />
-          </div>
-        ) : (
-          <p className="text-center text-kenya-brown-light py-4">No featured events available.</p>
-        )}
-      </Section>
+      <section className="mb-16">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Featured Events</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="bg-transparent border-kenya-orange text-kenya-orange hover:bg-kenya-orange hover:text-white"
+            asChild
+          >
+            <Link to="/events">View All</Link>
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events
+            .filter(event => event.featured)
+            .slice(0, 3)
+            .map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
+        </div>
+      </section>
       
       {/* Filtered Events or Upcoming Events */}
       <Section 

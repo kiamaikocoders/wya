@@ -25,7 +25,7 @@ export interface Profile {
   bio?: string;
   updated_at?: string;
   created_at?: string;
-  location?: string; // Added location property
+  location?: string;
 }
 
 export interface UpdateProfilePayload {
@@ -33,7 +33,7 @@ export interface UpdateProfilePayload {
   full_name?: string;
   avatar_url?: string;
   bio?: string;
-  location?: string; // Added location property
+  location?: string;
 }
 
 export const userService = {
@@ -54,7 +54,7 @@ export const userService = {
         name: profile?.full_name || user.email || 'Anonymous User',
         profile_picture: profile?.avatar_url,
         bio: profile?.bio,
-        location: profile?.location, // Use location property
+        location: profile?.location,
         user_type: user.user_metadata?.user_type || 'attendee',
         created_at: profile?.created_at
       };
@@ -73,7 +73,7 @@ export const userService = {
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           bio: profile.bio,
-          location: profile.location, // Use location property
+          location: profile.location,
           updated_at: new Date().toISOString()
         })
         .eq('id', userId);

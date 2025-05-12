@@ -31,8 +31,14 @@ const SurveyPage: React.FC = () => {
   });
   
   const submitAnswersMutation = useMutation({
-    mutationFn: (data: { surveyId: number; answers: Record<string, any> }) => 
-      surveyService.submitSurveyAnswers(data.surveyId, data.answers),
+    mutationFn: (data: { surveyId: number; answers: Record<string, any> }) => {
+      // Transform the answers object into the expected array format
+      const formattedAnswers = Object.entries(data.answers).map(([questionId, answer]) => ({
+        question_id: parseInt(questionId, 10),
+        answer
+      }));
+      return surveyService.submitSurveyAnswers(data.surveyId, formattedAnswers);
+    },
     onSuccess: () => {
       toast.success('Survey submitted successfully!');
       navigate('/surveys/thank-you');
@@ -142,7 +148,8 @@ const SurveyPage: React.FC = () => {
   const renderQuestionInput = () => {
     if (!currentQuestion) return null;
     
-    switch (currentQuestion.type) {
+    // Use question_type instead of type
+    switch (currentQuestion.question_type) {
       case 'multiple_choice':
         return (
           <RadioGroup 

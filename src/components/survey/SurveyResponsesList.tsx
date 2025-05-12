@@ -54,6 +54,9 @@ const ResponseItem: React.FC<ResponseItemProps> = ({ response, survey, index }) 
     "MMM d, yyyy 'at' h:mm a"
   );
   
+  // Use answers if responses is undefined
+  const responseData = response.responses || response.answers;
+  
   return (
     <AccordionItem value={`response-${response.id}`} className="border rounded-lg mb-4">
       <AccordionTrigger className="px-4 py-2 hover:no-underline">
@@ -72,7 +75,7 @@ const ResponseItem: React.FC<ResponseItemProps> = ({ response, survey, index }) 
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-4 mt-2">
           {survey.questions.map(question => {
-            const answer = response.responses.find(
+            const answer = responseData.find(
               r => r.question_id === question.id
             );
             

@@ -90,7 +90,9 @@ const getAnswerData = (question: SurveyQuestion, responses: SurveyResponse[]) =>
   let totalResponded = 0;
 
   responses.forEach(response => {
-    const answer = response.responses.find(r => r.question_id === question.id);
+    // Use answers if responses is undefined
+    const responseData = response.responses || response.answers;
+    const answer = responseData.find(r => r.question_id === question.id);
     if (answer) {
       totalResponded++;
       const answerValue = String(answer.answer);
@@ -229,7 +231,9 @@ const renderQuestionChart = (
       // For text responses, show a list of all answers
       const textResponses = responses
         .map(response => {
-          const answer = response.responses.find(r => r.question_id === question.id);
+          // Use answers if responses is undefined
+          const responseData = response.responses || response.answers;
+          const answer = responseData.find(r => r.question_id === question.id);
           return answer ? String(answer.answer) : null;
         })
         .filter(answer => answer !== null) as string[];

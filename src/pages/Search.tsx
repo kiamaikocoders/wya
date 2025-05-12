@@ -1,281 +1,157 @@
-
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Filter, MapPin, Tag, User as UserIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from '@/components/ui/select';
 import { eventService } from '@/lib/event-service';
-import EventCard from '@/components/ui/EventCard';
-import PostCard from '@/components/forum/PostCard';
-import { forumService } from '@/lib/forum-service';
+import { profileService } from '@/lib/profile-service';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Search, SearchX } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 
-// Sample locations and categories for filters
-const locations = ['All Locations', 'Nairobi', 'Lamu', 'Naivasha', 'Samburu'];
-const categories = ['All Categories', 'Business', 'Culture', 'Sports', 'Music', 'Technology'];
-// Sample tags for filter
-const popularTags = ['conference', 'concert', 'festival', 'workshop', 'networking', 'charity'];
-
-const Search = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  const [activeTab, setActiveTab] = useState('events');
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [location, setLocation] = useState('All Locations');
-  const [category, setCategory] = useState('All Categories');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+const SearchPage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
   
-  // Fetch events
-  const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ['events', searchQuery, location, category, startDate, endDate, selectedTags],
+  const { data: events, isLoading: isEventsLoading } = useQuery({
+    queryKey: ['events'],
     queryFn: eventService.getAllEvents,
   });
   
-  // Fetch forum posts
-  const { data: posts, isLoading: postsLoading } = useQuery({
-    queryKey: ['forumPosts', searchQuery],
-    queryFn: forumService.getAllPosts,
+  const { data: profiles, isLoading: isProfilesLoading } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: () => profileService.searchProfiles(searchTerm),
+    enabled: searchTerm.length > 0,
   });
   
-  // Update search params when query changes
   useEffect(() => {
-    if (searchQuery) {
-      searchParams.set('q', searchQuery);
-      setSearchParams(searchParams);
-    }
-  }, [searchQuery]);
+    const initialSearchTerm = searchParams.get('q') || '';
+    setSearchTerm(initialSearchTerm);
+  }, [searchParams]);
   
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // The search query is already being tracked in state
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
   
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag) 
-        : [...prev, tag]
-    );
-  };
+  const filteredEvents = events
+    ? events.filter(event =>
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
   
-  // Filter events based on search parameters
-  const filteredEvents = events?.filter(event => {
-    const matchesQuery = !searchQuery || 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesLocation = location === 'All Locations' || 
-      event.location === location;
-      
-    const matchesCategory = category === 'All Categories' || 
-      event.category === category;
-      
-    const matchesStartDate = !startDate || 
-      new Date(event.date) >= new Date(startDate);
-      
-    const matchesEndDate = !endDate || 
-      new Date(event.date) <= new Date(endDate);
-      
-    const matchesTags = selectedTags.length === 0 || 
-      (event.tags && selectedTags.some(tag => event.tags?.includes(tag)));
-      
-    return matchesQuery && 
-      matchesLocation && 
-      matchesCategory && 
-      matchesStartDate && 
-      matchesEndDate && 
-      matchesTags;
-  });
-  
-  // Filter posts based on search query
-  const filteredPosts = posts?.filter(post => 
-    !searchQuery || 
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  
+  const hasResults = filteredEvents.length > 0 || (profiles && profiles.length > 0);
+  const isLoading = isEventsLoading || isProfilesLoading;
+
   return (
-    <div className="container py-8 animate-fade-in">
-      <h1 className="text-2xl font-bold mb-6 text-white">
-        Search Results{searchQuery ? `: "${searchQuery}"` : ''}
-      </h1>
-      
-      <div className="mb-6">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            type="search"
-            placeholder="Search for events, posts, people..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
-          <Button type="submit">Search</Button>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="icon"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter size={18} />
-          </Button>
-        </form>
+    <div className="container py-8">
+      <div className="flex items-center mb-6">
+        <Input
+          type="text"
+          placeholder="Search events, organizers, and more..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="shadow-sm focus-visible:ring-kenya-orange"
+        />
+        <Button variant="outline" className="ml-2 shadow-sm">
+          <Search className="h-4 w-4 mr-2" />
+          Search
+        </Button>
       </div>
-      
-      {showFilters && (
-        <Card className="mb-6">
-          <CardContent className="pt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+      {searchTerm.length > 0 && !isLoading && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Search Results</h2>
+          
+          {hasResults ? (
+            <>
+              {filteredEvents.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-medium text-lg mb-3">Events</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredEvents.map(event => (
+                      <Card key={event.id} className="overflow-hidden">
+                        <div className="h-40 relative">
+                          <img 
+                            src={event.image_url} 
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {event.tags && event.tags.length > 0 && (
+                            <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+                              {event.tags.slice(0, 2).map((tag, i) => (
+                                <Badge key={i} variant="outline" className="bg-black bg-opacity-70 text-white border-0 text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <h4 className="font-semibold mb-1 line-clamp-1">{event.title}</h4>
+                          <p className="text-sm text-muted-foreground mb-2">{formatDate(event.date)} • {event.location}</p>
+                          <Button size="sm" asChild className="w-full mt-2">
+                            <Link to={`/events/${event.id}`}>View Details</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {filteredEvents.length > 3 && (
+                    <div className="text-center mt-4">
+                      <Button 
+                        variant="outline" 
+                        asChild
+                        className="border-kenya-orange text-kenya-orange hover:bg-kenya-orange hover:text-white"
+                      >
+                        <Link to={`/events?q=${searchTerm}`}>
+                          See all {filteredEvents.length} events
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {profiles && profiles.length > 0 && (
+                <div>
+                  <h3 className="font-medium text-lg mb-3">Organizers</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {profiles.map(profile => (
+                      <Card key={profile.id}>
+                        <CardContent className="flex items-center gap-4 p-4">
+                          <Avatar>
+                            <AvatarImage src={profile.avatar_url || "/placeholder.svg"} alt={profile.full_name || 'User'} />
+                            <AvatarFallback>{profile.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <h4 className="font-semibold">{profile.full_name}</h4>
+                            <p className="text-sm text-muted-foreground">@{profile.username}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <SearchX size={48} className="mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No results found</h3>
+              <p className="text-muted-foreground">
+                We couldn't find anything matching "{searchTerm}". Try different keywords or check for typos.
+              </p>
             </div>
-            
-            <div className="space-y-2">
-              <Label>Location</Label>
-              <Select value={location} onValueChange={setLocation}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map(loc => (
-                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Start Date</Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>End Date</Label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2 md:col-span-2">
-              <Label>Tags</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {popularTags.map(tag => (
-                  <Badge 
-                    key={tag}
-                    variant={selectedTags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
       )}
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="events" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Events
-          </TabsTrigger>
-          <TabsTrigger value="posts" className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Posts
-          </TabsTrigger>
-          <TabsTrigger value="people" className="flex items-center gap-2">
-            <UserIcon className="h-4 w-4" />
-            People
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="events">
-          {eventsLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
-            </div>
-          ) : filteredEvents && filteredEvents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map(event => (
-                <EventCard 
-                  key={event.id}
-                  id={event.id.toString()}
-                  title={event.title}
-                  category={event.category}
-                  date={new Date(event.date).toLocaleDateString()}
-                  location={event.location}
-                  image={event.image_url}
-                  capacity={100}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <h3 className="text-xl text-white mb-2">No events found</h3>
-              <p className="text-kenya-brown-light">Try adjusting your search criteria</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="posts">
-          {postsLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
-            </div>
-          ) : filteredPosts && filteredPosts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredPosts.map(post => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <h3 className="text-xl text-white mb-2">No posts found</h3>
-              <p className="text-kenya-brown-light">Try adjusting your search criteria</p>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="people">
-          <div className="text-center py-12">
-            <h3 className="text-xl text-white mb-2">People search coming soon</h3>
-            <p className="text-kenya-brown-light">We're working on this feature!</p>
-          </div>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };
 
-export default Search;
+export default SearchPage;
