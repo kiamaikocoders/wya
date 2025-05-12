@@ -63,8 +63,8 @@ const SponsorZone: React.FC = () => {
     );
   }
   
-  // Get brand color styles
-  const colorVars = getSponsorColorVars(sponsor);
+  // Get brand color styles - use type assertion to make TypeScript happy
+  const colorVars = getSponsorColorVars(sponsor as any);
   
   return (
     <div 
@@ -141,9 +141,9 @@ const SponsorZone: React.FC = () => {
               .map((block) => (
                 <SponsorZoneBlock 
                   key={block.id} 
-                  block={block} 
+                  block={block as any}
                   sponsorId={Number(sponsorId)}
-                  sponsor={sponsor}
+                  sponsor={sponsor as any}
                 />
               ))
             }

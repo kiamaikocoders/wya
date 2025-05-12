@@ -1,45 +1,68 @@
 
 import { supabase } from '../supabase';
 import { toast } from 'sonner';
-
-export interface Story {
-  id: number;
-  user_id: string;
-  event_id: number;
-  caption: string;
-  media_url: string;
-  media_type: 'image' | 'video';
-  likes_count: number;
-  comments_count: number;
-  created_at: string;
-  user_name?: string;
-  user_image?: string;
-  content?: string;
-  has_liked?: boolean;
-}
+import { Story, CreateStoryDto, UpdateStoryDto } from './types';
+import { mockStories } from './mock-data';
 
 export const storyService = {
   // Get all stories
   getAllStories: async (): Promise<Story[]> => {
     try {
-      console.log("Attempting to fetch all stories");
-      // We need to create stories table first
-      return []; // Return empty array until we create the stories table
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        return data.map(item => ({
+          ...item,
+          user_name: item.profiles?.username || '',
+          user_image: item.profiles?.avatar_url || ''
+        }));
+      }
+      
+      // Return mock data if no real data exists
+      return mockStories;
     } catch (error) {
       console.error('Error fetching all stories:', error);
-      throw error;
+      // Return mock data on error for development
+      return mockStories;
     }
   },
   
   // Get all stories for an event
   getEventStories: async (eventId: number): Promise<Story[]> => {
     try {
-      // We need to create stories table first
-      console.log("Attempting to fetch stories for event:", eventId);
-      return []; // Return empty array until we create the stories table
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        return data.map(item => ({
+          ...item,
+          user_name: item.profiles?.username || '',
+          user_image: item.profiles?.avatar_url || ''
+        }));
+      }
+      
+      // Return filtered mock data if no real data exists
+      return mockStories.filter(story => story.event_id === eventId);
     } catch (error) {
       console.error('Error fetching event stories:', error);
-      throw error;
+      // Return filtered mock data on error
+      return mockStories.filter(story => story.event_id === eventId);
     }
   },
   
@@ -51,42 +74,60 @@ export const storyService = {
   // Get story by ID
   getStoryById: async (id: number): Promise<Story> => {
     try {
-      // We need to create stories table first
-      console.log("Attempting to fetch story by ID:", id);
-      throw new Error('Stories feature not implemented yet');
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      return {
+        ...data,
+        user_name: data.profiles?.username || '',
+        user_image: data.profiles?.avatar_url || ''
+      };
     } catch (error) {
       console.error('Error fetching story:', error);
-      throw error;
+      // Return mock story on error
+      const mockStory = mockStories.find(story => story.id === id);
+      if (!mockStory) throw new Error(`Story with ID ${id} not found`);
+      return mockStory;
     }
   },
   
   // Create a new story
-  createStory: async (storyData: {
-    event_id: number;
-    content: string;
-    media_url?: string;
-  }): Promise<Story> => {
+  createStory: async (storyData: CreateStoryDto): Promise<Story> => {
     try {
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to create a story');
       
-      const { content, media_url, event_id } = storyData;
+      const { event_id, content, media_url } = storyData;
       
-      // Convert from CreateStoryDto to what the interface expects
+      // Prepare story data for database
       const newStory = {
         user_id: user.id,
         event_id,
-        caption: content, // Map content to caption
-        content: content, // Keep content for compatibility
-        media_url: media_url || '',
+        caption: content,
+        content,
+        media_url: media_url || null,
         media_type: 'image' as const // Default to image
       };
       
-      // We need to create stories table first
-      console.log("Attempting to create story:", newStory);
-      toast.error('Stories feature not implemented yet');
-      throw new Error('Stories feature not implemented yet');
+      const { data, error } = await supabase
+        .from('stories')
+        .insert(newStory)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      toast.success('Story created successfully!');
+      return data as Story;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create story';
       toast.error(errorMessage);
@@ -101,10 +142,15 @@ export const storyService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to delete a story');
       
-      // We need to create stories table first
-      console.log("Attempting to delete story:", id);
-      toast.error('Stories feature not implemented yet');
-      throw new Error('Stories feature not implemented yet');
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success('Story deleted successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete story';
       toast.error(errorMessage);

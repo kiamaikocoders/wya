@@ -1,59 +1,5 @@
-
 import { supabase } from '../supabase';
-
-export interface SponsorZone {
-  id: number;
-  title: string;
-  description: string | null;
-  sponsor_id: number | null;
-  content_blocks: SponsorContentBlock[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Sponsor {
-  id: number;
-  name: string;
-  description: string | null;
-  logo_url: string;
-  website_url: string | null;
-  partnership_level: string;
-  brand_color: string | null;
-  brand_gradient: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface EventSponsor {
-  id: number;
-  event_id: number;
-  sponsor_id: number;
-  sponsorship_type: string;
-  created_at: string;
-  sponsor?: Sponsor;
-}
-
-export interface SponsorContentBlock {
-  id: number;
-  zone_id: number;
-  type: string;
-  title: string | null;
-  description: string | null;
-  media_url: string | null;
-  action_url: string | null;
-  expires_at: string | null;
-  order: number;
-  data: any;
-}
-
-export interface SponsorAnalytics {
-  impressions: number;
-  clicks: number;
-  conversion_rate: number;
-  engagement_time: number;
-  interactions: number;
-  clickThroughs: number;
-}
+import { Sponsor, EventSponsor, SponsorZone, SponsorContentBlock, SponsorAnalytics } from './types';
 
 export const sponsorService = {
   // Get all sponsors
@@ -194,7 +140,7 @@ export const sponsorService = {
       throw error;
     }
   },
-
+  
   // Track sponsor interactions
   submitSponsorInteraction: async (
     userId: string,
@@ -218,9 +164,7 @@ export const sponsorService = {
   
   // Get sponsor analytics
   getSponsorAnalytics: async (
-    sponsorId: number,
-    eventId?: number,
-    period: 'day' | 'week' | 'month' | 'year' = 'month'
+    sponsorId: number
   ): Promise<SponsorAnalytics> => {
     try {
       // This would typically query analytics data from the database

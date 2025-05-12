@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   BarChart as RechartsBarChart, 
@@ -36,8 +37,8 @@ const SponsorsAnalytics: React.FC<SponsorsAnalyticsProps> = ({
   const [activeTab, setActiveTab] = useState('overview');
   
   const { data: analytics, isLoading } = useQuery({
-    queryKey: ['sponsorAnalytics', sponsorId, eventId, period],
-    queryFn: () => sponsorService.getSponsorAnalytics(sponsorId || 0, eventId, period),
+    queryKey: ['sponsorAnalytics', sponsorId, period],
+    queryFn: () => sponsorService.getSponsorAnalytics(sponsorId || 0),
     enabled: !!sponsorId,
   });
   
