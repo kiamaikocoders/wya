@@ -18,7 +18,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
   const [similarEvents, setSimilarEvents] = useState<Event[]>([]);
   
   // Fetch all events
-  const { data: events } = useQuery({
+  const { data: events = [] } = useQuery({
     queryKey: ['events'],
     queryFn: eventService.getAllEvents,
   });
@@ -69,7 +69,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
         .map(item => item.event)
         .slice(0, 3);
       
-      // Use the explicitly typed version to avoid type conflicts
+      // Use type assertion to avoid type conflicts
       setSimilarEvents(sorted as Event[]);
     } catch (error) {
       console.error('Error finding similar events:', error);

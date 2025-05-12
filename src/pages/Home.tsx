@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Section from '@/components/ui/Section';
@@ -10,6 +11,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import AIEventRecommendations from '@/components/events/AIEventRecommendations';
 import { Brain, Sparkles } from 'lucide-react';
 import EventCarousel from '@/components/ui/EventCarousel';
+import { Event } from '@/types/event.types';
 
 // Sample categories
 const categories = [
@@ -26,16 +28,17 @@ const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Fetch all events
-  const { data: events, isLoading: eventsLoading } = useQuery({
+  const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['events'],
     queryFn: eventService.getAllEvents,
   });
   
-  const featuredEvents = events?.filter(event => event.is_featured) || [];
+  // Ensure events is defined before filtering
+  const featuredEvents = events ? events.filter(event => event.featured) : [];
   
   // Filter events by selected category
-  const filteredEvents = selectedCategory
-    ? events?.filter(event => event.category.toLowerCase() === selectedCategory.toLowerCase())
+  const filteredEvents = selectedCategory && events
+    ? events.filter(event => event.category?.toLowerCase() === selectedCategory.toLowerCase())
     : events || [];
   
   const handleCategorySelect = (category: string) => {
@@ -139,12 +142,26 @@ const Home: React.FC = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events
-            .filter(event => event.featured)
-            .slice(0, 3)
-            .map(event => (
-              <EventCard key={event.id} event={event} />
-            ))}
+          {featuredEvents.length > 0 ? (
+            featuredEvents.slice(0, 3).map(event => (
+              <EventCard 
+                key={event.id} 
+                id={String(event.id)}
+                title={event.title}
+                category={event.category || ''}
+                date={event.date}
+                location={event.location}
+                image={event.image_url || ''}
+                capacity={event.capacity || 100}
+                isFeatured={event.featured}
+                price={event.price}
+              />
+            ))
+          ) : (
+            <p className="text-center text-kenya-brown-light py-4 px-4 col-span-3">
+              No featured events available.
+            </p>
+          )}
         </div>
       </section>
       
@@ -160,7 +177,17 @@ const Home: React.FC = () => {
         ) : filteredEvents.length > 0 ? (
           <div className="px-4 mb-12 overflow-visible">
             <EventCarousel 
-              events={filteredEvents.slice(0, 9)}
+              events={filteredEvents.slice(0, 9).map(event => ({
+                id: String(event.id),
+                title: event.title,
+                category: event.category || '',
+                date: event.date,
+                location: event.location,
+                image: event.image_url || '',
+                capacity: event.capacity || 100,
+                isFeatured: event.featured,
+                price: event.price
+              }))}
               emptyMessage={selectedCategory ? `No ${selectedCategory} events available.` : "No upcoming events available."}
               slidesToShow={3}
             />
