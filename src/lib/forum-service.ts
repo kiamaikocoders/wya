@@ -1,293 +1,247 @@
 
-import { apiClient } from "./api-client";
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-// Define the API endpoint for forum
-const FORUM_ENDPOINTS = {
-  ALL: `${apiClient.XANO_EVENT_API_URL}/forum`,
-  SINGLE: (id: number) => `${apiClient.XANO_EVENT_API_URL}/forum/${id}`,
-  COMMENTS: (postId: number) => `${apiClient.XANO_EVENT_API_URL}/forum/${postId}/comments`,
-  LIKE: (postId: number) => `${apiClient.XANO_EVENT_API_URL}/forum/${postId}/like`,
-  UNLIKE: (postId: number) => `${apiClient.XANO_EVENT_API_URL}/forum/${postId}/unlike`,
-};
-
-// Forum post interfaces
 export interface ForumPost {
   id: number;
-  user_id: number;
-  event_id: number;
   title: string;
   content: string;
-  media_url?: string;
+  user_id: string;
+  event_id?: number;
   created_at: string;
-  updated_at: string;
-  user_name?: string;
-  user_image?: string;
+  updated_at?: string;
+  media_url?: string;
   likes_count?: number;
-  comments_count?: number;
-  has_liked?: boolean;
+  user?: {
+    id: string;
+    name?: string;
+    avatar_url?: string;
+    username?: string;
+  };
 }
 
 export interface ForumComment {
   id: number;
-  post_id: number;
-  user_id: number;
   content: string;
-  media_url?: string;
+  user_id: string;
+  post_id: number;
   created_at: string;
-  updated_at: string;
-  user_name?: string;
-  user_image?: string;
+  updated_at?: string;
+  media_url?: string;
+  user?: {
+    id: string;
+    name?: string;
+    avatar_url?: string;
+    username?: string;
+  };
 }
 
 export interface CreateForumPostDto {
-  event_id: number;
   title: string;
   content: string;
-  media_url?: string;
-}
-
-export interface UpdateForumPostDto {
-  title?: string;
-  content?: string;
+  event_id?: number;
   media_url?: string;
 }
 
 export interface CreateCommentDto {
-  post_id: number;
   content: string;
+  post_id: number;
   media_url?: string;
 }
 
-// Helper function to check if an endpoint exists
-const checkEndpointAvailability = async (url: string): Promise<boolean> => {
-  try {
-    // Try a simple OPTIONS request to check if endpoint is available
-    const response = await fetch(url, { 
-      method: 'OPTIONS',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    return response.ok;
-  } catch (error) {
-    console.error(`Endpoint ${url} check failed:`, error);
-    return false;
-  }
-};
-
-// Mock implementations for development
-const mockLikePost = (postId: number): Promise<void> => {
-  console.log(`Mock like for post ${postId}`);
-  // In a real implementation, this would update state in a real backend
-  return Promise.resolve();
-};
-
-const mockUnlikePost = (postId: number): Promise<void> => {
-  console.log(`Mock unlike for post ${postId}`);
-  return Promise.resolve();
-};
-
-// Forum service
 export const forumService = {
   // Get all forum posts
   getAllPosts: async (): Promise<ForumPost[]> => {
     try {
-      return await apiClient.get<ForumPost[]>(FORUM_ENDPOINTS.ALL);
-    } catch (error) {
-      // Check if the error is a 404 (endpoint not found)
-      if (error instanceof Error && error.message.includes('404')) {
-        console.warn('Forum API endpoint not available. Returning empty array.');
-        return [];
-      }
+      // Get posts with user profiles joined
+      const { data, error } = await supabase
+        .from('forum_posts')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .order('created_at', { ascending: false });
       
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch forum posts';
-      toast.error(errorMessage);
-      console.error('Error fetching forum posts:', error);
-      return [];
-    }
-  },
-
-  // Get posts by event ID
-  getPostsByEventId: async (eventId: number): Promise<ForumPost[]> => {
-    try {
-      const allPosts = await forumService.getAllPosts();
-      return allPosts.filter(post => post.event_id === eventId);
+      if (error) throw error;
+      
+      // Transform the data to match our ForumPost interface
+      const formattedPosts = data.map(post => ({
+        ...post,
+        user: post.profiles ? {
+          id: post.profiles.id,
+          name: post.profiles.full_name || post.profiles.username,
+          avatar_url: post.profiles.avatar_url,
+          username: post.profiles.username
+        } : undefined
+      }));
+      
+      return formattedPosts;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch posts for event #${eventId}`;
-      toast.error(errorMessage);
-      return [];
+      console.error('Error fetching forum posts:', error);
+      throw new Error('Failed to fetch forum posts');
     }
   },
-
-  // Get post by ID
+  
+  // Get single forum post by ID
   getPostById: async (id: number): Promise<ForumPost> => {
     try {
-      return await apiClient.get<ForumPost>(FORUM_ENDPOINTS.SINGLE(id));
+      const { data, error } = await supabase
+        .from('forum_posts')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      // Transform the data to match our ForumPost interface
+      const formattedPost = {
+        ...data,
+        user: data.profiles ? {
+          id: data.profiles.id,
+          name: data.profiles.full_name || data.profiles.username,
+          avatar_url: data.profiles.avatar_url,
+          username: data.profiles.username
+        } : undefined
+      };
+      
+      return formattedPost;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch post #${id}`;
-      toast.error(errorMessage);
-      throw error;
+      console.error(`Error fetching post #${id}:`, error);
+      throw new Error(`Failed to fetch post #${id}`);
     }
   },
-
-  // Create a new post
+  
+  // Create new forum post
   createPost: async (postData: CreateForumPostDto): Promise<ForumPost> => {
     try {
-      console.log('Creating post with data:', postData);
-      // Validate post data
-      if (!postData.event_id) {
-        throw new Error('Event ID is required');
-      }
-      if (!postData.title || !postData.title.trim()) {
-        throw new Error('Title is required');
-      }
-      if (!postData.content || !postData.content.trim()) {
-        throw new Error('Content is required');
-      }
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to create a post');
       
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        throw new Error('You must be logged in to create a post');
-      }
-      
-      // Check if the endpoint exists before trying to create a post
-      const endpointExists = await checkEndpointAvailability(FORUM_ENDPOINTS.ALL);
-      if (!endpointExists) {
-        console.warn('Forum endpoint not available, using mock data');
-        // Return mock data for development
-        return {
-          id: Math.floor(Math.random() * 1000),
-          user_id: 1,
-          event_id: postData.event_id,
+      const { data, error } = await supabase
+        .from('forum_posts')
+        .insert({
           title: postData.title,
           content: postData.content,
+          event_id: postData.event_id,
           media_url: postData.media_url,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_name: 'Current User',
-          likes_count: 0,
-          comments_count: 0,
-          has_liked: false
-        };
-      }
+          user_id: user.id
+        })
+        .select()
+        .single();
       
-      const result = await apiClient.post<ForumPost>(FORUM_ENDPOINTS.ALL, postData);
-      console.log('Post created successfully:', result);
-      return result;
+      if (error) throw error;
+      
+      return data;
     } catch (error) {
       console.error('Error creating post:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create post';
-      toast.error(errorMessage);
-      throw error;
+      throw new Error('Failed to create post');
     }
   },
-
-  // Update post
-  updatePost: async (id: number, postData: UpdateForumPostDto): Promise<ForumPost> => {
+  
+  // Delete a forum post
+  deletePost: async (postId: number): Promise<void> => {
     try {
-      return await apiClient.patch<ForumPost>(FORUM_ENDPOINTS.SINGLE(id), postData);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to update post #${id}`;
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
-
-  // Delete post
-  deletePost: async (id: number): Promise<void> => {
-    try {
-      return await apiClient.delete<void>(FORUM_ENDPOINTS.SINGLE(id));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to delete post #${id}`;
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
-
-  // Get comments for a post
-  getComments: async (postId: number): Promise<ForumComment[]> => {
-    try {
-      return await apiClient.get<ForumComment[]>(FORUM_ENDPOINTS.COMMENTS(postId));
-    } catch (error) {
-      // Check if it's a 404 error (endpoint not found)
-      if (error instanceof Error && error.message.includes('404')) {
-        console.warn('Comments endpoint not available. Returning empty array.');
-        return [];
+      // Check if the user is the post owner
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to delete a post');
+      
+      const { data: post } = await supabase
+        .from('forum_posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+      
+      if (post.user_id !== user.id) {
+        throw new Error('You can only delete your own posts');
       }
       
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch comments for post #${postId}`;
-      toast.error(errorMessage);
-      return [];
+      const { error } = await supabase
+        .from('forum_posts')
+        .delete()
+        .eq('id', postId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error deleting post #${postId}:`, error);
+      throw error;
     }
   },
-
-  // Create a comment
+  
+  // Get comments for a post
+  getCommentsByPostId: async (postId: number): Promise<ForumComment[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('forum_comments')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Transform the data to match our ForumComment interface
+      const formattedComments = data.map(comment => ({
+        ...comment,
+        user: comment.profiles ? {
+          id: comment.profiles.id,
+          name: comment.profiles.full_name || comment.profiles.username,
+          avatar_url: comment.profiles.avatar_url,
+          username: comment.profiles.username
+        } : undefined
+      }));
+      
+      return formattedComments;
+    } catch (error) {
+      console.error(`Error fetching comments for post #${postId}:`, error);
+      throw new Error(`Failed to fetch comments for post #${postId}`);
+    }
+  },
+  
+  // Add a comment to a post
   createComment: async (commentData: CreateCommentDto): Promise<ForumComment> => {
     try {
-      // Check if comments endpoint exists before trying to create
-      const endpointExists = await checkEndpointAvailability(FORUM_ENDPOINTS.COMMENTS(commentData.post_id));
-      if (!endpointExists) {
-        console.warn('Comments endpoint not available, using mock data');
-        // Return mock data for development
-        return {
-          id: Math.floor(Math.random() * 1000),
-          post_id: commentData.post_id,
-          user_id: 1,
-          content: commentData.content,
-          media_url: commentData.media_url,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          user_name: 'Current User',
-        };
-      }
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to comment');
       
-      return await apiClient.post<ForumComment>(FORUM_ENDPOINTS.COMMENTS(commentData.post_id), commentData);
+      const { data, error } = await supabase
+        .from('forum_comments')
+        .insert({
+          content: commentData.content,
+          post_id: commentData.post_id,
+          media_url: commentData.media_url,
+          user_id: user.id
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      return data;
     } catch (error) {
       console.error('Error creating comment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create comment';
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
-
-  // Delete a comment
-  deleteComment: async (postId: number, commentId: number): Promise<void> => {
-    try {
-      return await apiClient.delete<void>(`${FORUM_ENDPOINTS.COMMENTS(postId)}/${commentId}`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to delete comment #${commentId}`;
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
-  
-  // Like a post - fallback to mock implementation if API not available
-  likePost: async (postId: number): Promise<void> => {
-    try {
-      const endpointExists = await checkEndpointAvailability(FORUM_ENDPOINTS.LIKE(postId));
-      if (!endpointExists) {
-        return mockLikePost(postId);
-      }
-      
-      await apiClient.post(FORUM_ENDPOINTS.LIKE(postId), {});
-    } catch (error) {
-      console.error('Error liking post:', error);
-      return mockLikePost(postId);
-    }
-  },
-  
-  // Unlike a post - fallback to mock implementation if API not available
-  unlikePost: async (postId: number): Promise<void> => {
-    try {
-      const endpointExists = await checkEndpointAvailability(FORUM_ENDPOINTS.UNLIKE(postId));
-      if (!endpointExists) {
-        return mockUnlikePost(postId);
-      }
-      
-      await apiClient.post(FORUM_ENDPOINTS.UNLIKE(postId), {});
-    } catch (error) {
-      console.error('Error unliking post:', error);
-      return mockUnlikePost(postId);
+      throw new Error('Failed to create comment');
     }
   }
 };

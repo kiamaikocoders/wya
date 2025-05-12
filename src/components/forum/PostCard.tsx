@@ -1,147 +1,153 @@
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ForumPost } from "@/lib/forum-service";
-import { MessageCircle, ThumbsUp, Calendar, User, Play } from "lucide-react";
-import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ForumPost } from "@/lib/forum-service"; 
+import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
+import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PostCardProps {
   post: ForumPost;
+  isLiked?: boolean;
+  onLikeToggle?: (postId: number) => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const formattedDate = format(new Date(post.created_at), "MMM d, yyyy 'at' h:mm a");
-  
-  // Function to determine if a URL is a video
-  const isVideoUrl = (url: string) => {
-    return url.match(/\.(mp4|webm|ogg)$/) || 
-           url.includes('youtube.com') || 
-           url.includes('youtu.be') || 
-           url.includes('vimeo.com');
-  };
-  
-  // Function to get YouTube embed URL
-  const getYoutubeEmbedUrl = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
+const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle }) => {
+  const { isAuthenticated, user } = useAuth();
+
+  // Format creation date to relative time
+  const formattedDate = post.created_at 
+    ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true }) 
+    : '';
     
-    return (match && match[2].length === 11)
-      ? `https://www.youtube.com/embed/${match[2]}`
-      : null;
-  };
-  
-  // Render media content based on URL
-  const renderMedia = () => {
-    if (!post.media_url) return null;
-    
-    if (isVideoUrl(post.media_url)) {
-      // Handle YouTube videos
-      if (post.media_url.includes('youtube.com') || post.media_url.includes('youtu.be')) {
-        const embedUrl = getYoutubeEmbedUrl(post.media_url);
-        if (embedUrl) {
-          return (
-            <div className="relative pt-[56.25%] mt-4 overflow-hidden rounded-md">
-              <iframe 
-                className="absolute top-0 left-0 w-full h-full border-0"
-                src={embedUrl}
-                title="Video content"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          );
-        }
-      }
-      
-      // Handle direct video files
-      return (
-        <div className="mt-4 relative rounded-md overflow-hidden">
-          <video 
-            className="w-full max-h-96 object-contain" 
-            controls
-          >
-            <source src={post.media_url} />
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      );
-    }
-    
-    // Default to image
-    return (
-      <div className="mt-4">
-        <img 
-          src={post.media_url} 
-          alt="Post attachment" 
-          className="rounded-md max-h-80 object-cover w-full" 
-        />
-      </div>
-    );
-  };
-  
+  // Check if user is the post author
+  const isAuthor = user?.id === post.user_id;
+
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="mb-2">
-              <Link to={`/forum/${post.id}`} className="hover:underline">
-                {post.title}
-              </Link>
-            </CardTitle>
-            <CardDescription>
-              <div className="flex items-center gap-2 mb-1">
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={post.user_image} alt={post.user_name || "User"} />
-                  <AvatarFallback><User className="h-3 w-3" /></AvatarFallback>
-                </Avatar>
-                <span>{post.user_name || "Anonymous"}</span>
+      <CardHeader className="p-4 pb-0">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center">
+            <Avatar className="h-10 w-10 mr-3">
+              <AvatarImage src={post.user?.avatar_url || "/placeholder.svg"} alt={post.user?.name || "User"} />
+              <AvatarFallback>
+                {(post.user?.name || "U")[0].toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium">
+                {post.user?.name || "Anonymous"}
               </div>
-              <div className="flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3" />
-                <span>{formattedDate}</span>
+              <div className="text-xs text-muted-foreground">
+                {formattedDate}
               </div>
-            </CardDescription>
+            </div>
           </div>
           
-          {post.event_id && (
-            <Link 
-              to={`/events/${post.event_id}`}
-              className="text-xs bg-muted px-2 py-1 rounded-full hover:bg-muted/80"
-            >
-              Event #{post.event_id}
-            </Link>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">More actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to={`/posts/${post.id}`}>View Post</Link>
+              </DropdownMenuItem>
+              {isAuthor && (
+                <DropdownMenuItem className="text-red-500">
+                  Delete Post
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem>Report</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       
-      <CardContent>
-        <p className="whitespace-pre-wrap">{post.content}</p>
+      <CardContent className="p-4">
+        <Link to={`/posts/${post.id}`} className="hover:underline">
+          <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
+        </Link>
+        <p className="text-muted-foreground whitespace-pre-line">{post.content}</p>
         
-        {renderMedia()}
+        {post.media_url && (
+          <div className="mt-3">
+            <img 
+              src={post.media_url} 
+              alt="Post attachment" 
+              className="rounded-md max-h-[300px] w-auto object-contain"
+            />
+          </div>
+        )}
+        
+        {post.event_id && (
+          <div className="mt-3">
+            <Link 
+              to={`/events/${post.event_id}`}
+              className="text-sm text-muted-foreground hover:underline flex items-center"
+            >
+              <span className="bg-primary/10 text-primary text-xs py-1 px-2 rounded">
+                Related Event
+              </span>
+            </Link>
+          </div>
+        )}
       </CardContent>
       
-      <CardFooter className="flex justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
-            <ThumbsUp className="h-4 w-4" />
+      <CardFooter className="p-4 pt-0 flex justify-between">
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`flex items-center gap-1 ${isLiked ? 'text-red-500' : ''}`}
+            onClick={() => onLikeToggle && onLikeToggle(post.id)}
+            disabled={!isAuthenticated}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
             <span>{post.likes_count || 0}</span>
           </Button>
           
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            <span>{post.comments_count || 0}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1"
+            asChild
+          >
+            <Link to={`/posts/${post.id}`}>
+              <MessageCircle className="h-4 w-4" />
+              <span>Comment</span>
+            </Link>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1 md:hidden lg:flex"
+            onClick={() => {
+              navigator.share({
+                title: post.title,
+                text: post.content.substring(0, 50) + '...',
+                url: window.location.origin + `/posts/${post.id}`,
+              }).catch(err => {
+                console.error('Share failed:', err);
+              });
+            }}
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden md:inline">Share</span>
           </Button>
         </div>
-        
-        <Link to={`/forum/${post.id}`}>
-          <Button variant="outline" size="sm">
-            View Discussion
-          </Button>
-        </Link>
       </CardFooter>
     </Card>
   );

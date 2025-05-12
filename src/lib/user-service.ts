@@ -25,7 +25,7 @@ export interface Profile {
   bio?: string;
   updated_at?: string;
   created_at?: string;
-  location?: string;
+  location?: string; // Add location to match interface
 }
 
 export interface UpdateProfilePayload {

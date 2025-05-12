@@ -11,7 +11,7 @@ export interface Event {
   created_at: string;
   price?: number;
   featured?: boolean;
-  tags?: string[];
+  tags?: string[]; // Added tags property
   capacity?: number;
   is_featured?: boolean; // Adding this as an alias for 'featured' for backward compatibility
 }
