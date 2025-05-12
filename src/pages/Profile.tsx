@@ -1,151 +1,238 @@
-
-import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { eventService } from "@/lib/event-service";
-import { forumService } from "@/lib/forum-service";
-import { surveyService } from "@/lib/survey-service";
-import { ticketService } from "@/lib/ticket-service";
-import ProfileHeader from "@/components/profile/ProfileHeader";
-import AttendeeContent from "@/components/profile/AttendeeContent";
-import OrganizerContent from "@/components/profile/OrganizerContent";
-import EditProfileForm from "@/components/profile/EditProfileForm";
-import { toast } from "sonner";
-import { User } from "@/lib/auth-service";
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { userService } from '@/lib/user-service';
+import { eventService } from '@/lib/event-service';
+import { Link } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, MapPin, Settings, LogOut, User as UserIcon, Heart, Ticket, Bell } from 'lucide-react';
+import { formatDistance } from 'date-fns';
+import { toast } from 'sonner';
 
 const Profile: React.FC = () => {
-  const { user, logout, updateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState("events");
-  const [isEditing, setIsEditing] = useState(false);
-  const queryClient = useQueryClient();
+  const { user, logout } = useAuth();
   
-  const { data: events } = useQuery({
-    queryKey: ["events"],
-    queryFn: eventService.getAllEvents,
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: () => userService.getUserProfile(user?.id || ''),
+    enabled: !!user?.id,
   });
   
-  const { data: posts } = useQuery({
-    queryKey: ["forumPosts"],
-    queryFn: forumService.getAllPosts,
+  const { data: userEvents, isLoading: eventsLoading } = useQuery({
+    queryKey: ['userEvents', user?.id],
+    queryFn: () => eventService.getUserEvents(user?.id || ''),
+    enabled: !!user?.id,
   });
   
-  const { data: surveys } = useQuery({
-    queryKey: ["surveys"],
-    queryFn: surveyService.getAllSurveys,
+  const { data: savedEvents, isLoading: savedEventsLoading } = useQuery({
+    queryKey: ['savedEvents', user?.id],
+    queryFn: () => eventService.getSavedEvents(user?.id || ''),
+    enabled: !!user?.id,
   });
   
-  const { data: tickets } = useQuery({
-    queryKey: ["tickets"],
-    queryFn: ticketService.getUserTickets,
-    enabled: !!user,
-  });
-  
-  const updateProfileMutation = useMutation({
-    mutationFn: async (userData: Partial<User>) => {
-      // In a real app, you would send this data to your backend
-      // For now, we'll just update the local state
-      if (updateUser) {
-        await updateUser(userData);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-      setIsEditing(false);
-      toast.success("Profile updated successfully");
-    },
-    onError: (error) => {
-      console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
-    },
-  });
-  
-  const handleUpdateProfile = async (data: Partial<User>) => {
-    updateProfileMutation.mutate(data);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
   
-  if (!user) {
+  if (profileLoading) {
     return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center p-8">
-              <h2 className="text-xl mb-2">Please login to view your profile</h2>
-              <Link to="/login">
-                <Button className="mt-4">Login</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
       </div>
     );
   }
   
-  // Filter for user's content
-  const userEvents = events?.filter(event => 
-    user.user_type === "organizer" 
-      ? event.organizer_id === user.id 
-      : true
-  ) || [];
-  
-  const userPosts = posts?.filter(post => post.user_id === user.id) || [];
-  const userSurveys = surveys?.filter(survey => survey.creator_id === user.id) || [];
-  const userTickets = tickets || [];
-  
-  const stats = {
-    events: userEvents.length,
-    posts: userPosts.length,
-    surveys: userSurveys.length,
-  };
+  if (!user || !profile) {
+    return (
+      <div className="min-h-screen p-6 flex flex-col items-center justify-center">
+        <h1 className="text-white text-xl font-bold mb-4">Not Logged In</h1>
+        <p className="text-kenya-brown-light mb-6">Please log in to view your profile.</p>
+        <Button asChild>
+          <Link to="/login">Log In</Link>
+        </Button>
+      </div>
+    );
+  }
   
   return (
-    <div className="container py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          {isEditing ? (
-            <EditProfileForm 
-              user={user}
-              onUpdate={handleUpdateProfile}
-              onCancel={() => setIsEditing(false)}
-            />
-          ) : (
-            <>
-              <ProfileHeader 
-                user={user}
-                stats={stats}
-                onLogout={logout}
-              />
-              <Button 
-                onClick={() => setIsEditing(true)} 
-                variant="outline" 
-                className="w-full mt-4"
-              >
-                Edit Profile
-              </Button>
-            </>
-          )}
-        </div>
-        
-        <div className="md:col-span-2">
-          {user.user_type === "organizer" ? (
-            <OrganizerContent
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              organizedEvents={userEvents}
-              userPosts={userPosts}
-              userSurveys={userSurveys}
-            />
-          ) : (
-            <AttendeeContent
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              attendedEvents={userEvents}
-              userPosts={userPosts}
-              userTickets={userTickets}
-            />
-          )}
+    <div className="min-h-screen pb-20 animate-fade-in">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Profile Sidebar */}
+          <div className="w-full md:w-1/3">
+            <Card className="bg-kenya-dark border-kenya-brown/20">
+              <CardHeader className="pb-2">
+                <div className="flex flex-col items-center">
+                  <Avatar className="h-24 w-24 mb-4">
+                    <AvatarImage src={profile.avatar_url} />
+                    <AvatarFallback className="bg-kenya-orange text-white text-xl">
+                      {profile.name?.charAt(0) || user.email?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <CardTitle className="text-white text-xl">{profile.name || 'User'}</CardTitle>
+                  <CardDescription className="text-kenya-brown-light">
+                    {profile.bio || 'No bio yet'}
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="text-kenya-brown-light">
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-center gap-2">
+                    <UserIcon size={16} />
+                    <span>{user.email}</span>
+                  </div>
+                  {profile.location && (
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} />
+                      <span>{profile.location}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} />
+                    <span>Joined {formatDistance(new Date(profile.created_at), new Date(), { addSuffix: true })}</span>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Account Settings
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/notifications">
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notifications
+                  </Link>
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-start mt-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+          
+          {/* Main Content */}
+          <div className="w-full md:w-2/3">
+            <Tabs defaultValue="myEvents">
+              <TabsList className="bg-kenya-dark border-kenya-brown/20 mb-6">
+                <TabsTrigger value="myEvents" className="data-[state=active]:bg-kenya-orange">
+                  My Events
+                </TabsTrigger>
+                <TabsTrigger value="saved" className="data-[state=active]:bg-kenya-orange">
+                  Saved Events
+                </TabsTrigger>
+                <TabsTrigger value="tickets" className="data-[state=active]:bg-kenya-orange">
+                  My Tickets
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="myEvents">
+                <h2 className="text-white text-xl font-bold mb-4">Events You've Created</h2>
+                {eventsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-kenya-orange"></div>
+                  </div>
+                ) : userEvents && userEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {userEvents.map(event => (
+                      <Card key={event.id} className="bg-kenya-dark border-kenya-brown/20">
+                        <div className="h-40 bg-cover bg-center rounded-t-lg" style={{ backgroundImage: `url(${event.image_url})` }}></div>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-white">{event.title}</CardTitle>
+                          <CardDescription className="text-kenya-brown-light flex items-center gap-1">
+                            <Calendar size={14} />
+                            {event.date}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                          <Button asChild>
+                            <Link to={`/events/${event.id}`}>View Event</Link>
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-kenya-brown-light mb-4">You haven't created any events yet.</p>
+                    <Button asChild>
+                      <Link to="/events/create">Create an Event</Link>
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="saved">
+                <h2 className="text-white text-xl font-bold mb-4">Saved Events</h2>
+                {savedEventsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-kenya-orange"></div>
+                  </div>
+                ) : savedEvents && savedEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {savedEvents.map(event => (
+                      <Card key={event.id} className="bg-kenya-dark border-kenya-brown/20">
+                        <div className="h-40 bg-cover bg-center rounded-t-lg" style={{ backgroundImage: `url(${event.image_url})` }}></div>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-white">{event.title}</CardTitle>
+                          <CardDescription className="text-kenya-brown-light flex items-center gap-1">
+                            <Calendar size={14} />
+                            {event.date}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardFooter className="flex justify-between">
+                          <Button asChild>
+                            <Link to={`/events/${event.id}`}>View Event</Link>
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => {
+                              toast.success('Event removed from saved list');
+                              // This would typically call a mutation to remove the event
+                            }}
+                          >
+                            <Heart size={16} className="fill-kenya-orange text-kenya-orange" />
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-kenya-brown-light mb-4">You haven't saved any events yet.</p>
+                    <Button asChild>
+                      <Link to="/events">Browse Events</Link>
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="tickets">
+                <h2 className="text-white text-xl font-bold mb-4">Your Tickets</h2>
+                <div className="text-center py-8">
+                  <p className="text-kenya-brown-light mb-4">Ticket functionality coming soon!</p>
+                  <div className="flex justify-center">
+                    <Ticket size={48} className="text-kenya-orange opacity-50" />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>

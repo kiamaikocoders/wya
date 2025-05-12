@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { sponsorService } from '@/lib/sponsor';
+import { sponsorService, EventSponsor } from '@/lib/sponsor';
 import SponsorBanner from './SponsorBanner';
 import { Button } from '@/components/ui/button';
 import { Handshake } from 'lucide-react';
@@ -13,7 +13,7 @@ interface EventSponsorsSectionProps {
 }
 
 const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, size = 'md' }) => {
-  const { data: sponsors, isLoading } = useQuery({
+  const { data: eventSponsors, isLoading } = useQuery({
     queryKey: ['eventSponsors', eventId],
     queryFn: () => sponsorService.getEventSponsors(eventId),
   });
@@ -26,7 +26,12 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
     );
   }
   
-  if (!sponsors || sponsors.length === 0) return null;
+  if (!eventSponsors || eventSponsors.length === 0) return null;
+  
+  // Extract just the sponsor objects from the EventSponsor objects
+  const sponsors = eventSponsors.map(es => es.sponsor).filter(Boolean);
+  
+  if (sponsors.length === 0) return null;
   
   return (
     <div className="mt-6">

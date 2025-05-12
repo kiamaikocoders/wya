@@ -13,7 +13,7 @@ import { ExternalLink } from 'lucide-react';
 const SponsorsPage: React.FC = () => {
   const { data: sponsors = [], isLoading } = useQuery({
     queryKey: ['sponsors'],
-    queryFn: sponsorService.getAllSponsors,
+    queryFn: sponsorService.getSponsors,
   });
   
   if (isLoading) {
