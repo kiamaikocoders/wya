@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,7 +38,7 @@ const CreateEvent: React.FC = () => {
     image_url: '',
     price: 0,
     tags: [],
-    organizer_id: 0
+    organizer_id: '' // Changed to empty string
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
