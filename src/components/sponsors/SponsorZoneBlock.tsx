@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -28,7 +29,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
   const [loading, setLoading] = useState(false);
   
   const isExpired = block.expires_at ? new Date(block.expires_at) < new Date() : false;
-  const colorVars = getSponsorColorVars(sponsor);
+  const colorVars = getSponsorColorVars(sponsor as any); // Type casting to fix compatibility issues
   
   // Function to get sponsor-branded button style
   const getBrandedButtonStyle = (variant: 'default' | 'outline' = 'default') => {
@@ -68,10 +69,10 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
     setLoading(true);
     
     try {
-      let type: 'poll' | 'quiz' | 'giveaway' | 'click';
+      let type = 'click';
       let data: Record<string, any> = {};
       
-      switch (block.type) {
+      switch (block.type as SponsorContentBlockType) {
         case 'poll':
           type = 'poll';
           data = { selection: selected };
@@ -370,7 +371,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <span className={getSponsorClasses(sponsor)}>{getBlockIcon(block.type)}</span>
+            <span className={getSponsorClasses(sponsor as any)}>{getBlockIcon(block.type as SponsorContentBlockType)}</span>
             <span>{block.title}</span>
           </CardTitle>
           

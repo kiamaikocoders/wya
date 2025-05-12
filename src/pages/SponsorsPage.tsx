@@ -71,7 +71,7 @@ const SponsorsPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {levelSponsors.map(sponsor => {
-                  const colorVars = getSponsorColorVars(sponsor);
+                  const colorVars = getSponsorColorVars(sponsor as any);
                   return (
                     <Link to={`/sponsors/${sponsor.id}`} key={sponsor.id}>
                       <Card 
@@ -98,7 +98,7 @@ const SponsorsPage: React.FC = () => {
                             
                             <Badge 
                               variant="outline" 
-                              className={`mt-1 ${getSponsorClasses(sponsor, 'border')}`}
+                              className={`mt-1 ${getSponsorClasses(sponsor as any, 'border')}`}
                             >
                               {sponsor.partnership_level}
                             </Badge>

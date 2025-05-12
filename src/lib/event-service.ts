@@ -1,53 +1,102 @@
-
-import { apiClient } from './api-client';
-import { EVENT_ENDPOINTS } from './api-endpoints';
+import { supabase } from './supabase';
 import { toast } from 'sonner';
-import { SAMPLE_EVENTS } from '@/data/mock-events';
-import type { Event, CreateEventPayload, UpdateEventPayload } from '@/types/event.types';
+import { eventServiceExtensions } from './event-service-extensions';
 
+// Define event types
+export interface Event {
+  id: number;
+  title: string;
+  description?: string;
+  date: string;
+  location: string;
+  image_url?: string;
+  capacity?: number;
+  price?: number;
+  category?: string;
+  organizer_id?: string;
+  featured?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateEventPayload {
+  title: string;
+  description?: string;
+  date: string;
+  location: string;
+  image_url?: string;
+  capacity?: number;
+  price?: number;
+  category?: string;
+}
+
+export interface UpdateEventPayload {
+  id: number;
+  title?: string;
+  description?: string;
+  date?: string;
+  location?: string;
+  image_url?: string;
+  capacity?: number;
+  price?: number;
+  category?: string;
+}
+
+// Event service
 export const eventService = {
   // Get all events
   getAllEvents: async (): Promise<Event[]> => {
     try {
-      const response = await apiClient.get<Event[]>(EVENT_ENDPOINTS.ALL);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: true });
       
-      if (response && Array.isArray(response) && response.length > 0) {
-        return response;
-      } else {
-        console.info('Using sample events data for development');
-        return SAMPLE_EVENTS;
-      }
+      if (error) throw error;
+      return data || [];
     } catch (error) {
-      console.info('API call failed, using sample events data for development', error);
-      return SAMPLE_EVENTS;
+      console.error('Error fetching events:', error);
+      toast.error('Failed to fetch events');
+      return [];
     }
   },
   
   // Get event by ID
   getEventById: async (id: number): Promise<Event> => {
     try {
-      const response = await apiClient.get<Event>(EVENT_ENDPOINTS.SINGLE(id));
-      return response;
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data;
     } catch (error) {
-      const sampleEvent = SAMPLE_EVENTS.find(event => event.id === id);
-      
-      if (sampleEvent) {
-        console.info(`Using sample event data for id: ${id}`);
-        return sampleEvent;
-      }
-      
-      const errorMessage = error instanceof Error ? error.message : `Failed to fetch event #${id}`;
-      toast.error(errorMessage);
+      console.error(`Error fetching event with ID ${id}:`, error);
+      toast.error('Failed to fetch event');
       throw error;
     }
   },
   
-  // Create new event
+  // Create event
   createEvent: async (eventData: CreateEventPayload): Promise<Event> => {
     try {
-      const response = await apiClient.post<Event>(EVENT_ENDPOINTS.ALL, eventData);
-      toast.success('Event created successfully!');
-      return response;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('You must be logged in to create an event');
+      
+      const { data, error } = await supabase
+        .from('events')
+        .insert({
+          ...eventData,
+          organizer_id: user.id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      toast.success('Event created successfully');
+      return data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create event';
       toast.error(errorMessage);
@@ -55,15 +104,23 @@ export const eventService = {
     }
   },
   
-  // Update existing event
+  // Update event
   updateEvent: async (eventData: UpdateEventPayload): Promise<Event> => {
     try {
-      const { id, ...updateData } = eventData;
-      const response = await apiClient.patch<Event>(EVENT_ENDPOINTS.SINGLE(id), updateData);
-      toast.success('Event updated successfully!');
-      return response;
+      const { id, ...updates } = eventData;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      toast.success('Event updated successfully');
+      return data;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to update event #${eventData.id}`;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update event';
       toast.error(errorMessage);
       throw error;
     }
@@ -72,12 +129,23 @@ export const eventService = {
   // Delete event
   deleteEvent: async (id: number): Promise<void> => {
     try {
-      await apiClient.delete(EVENT_ENDPOINTS.SINGLE(id));
-      toast.success('Event deleted successfully!');
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success('Event deleted successfully');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `Failed to delete event #${id}`;
-      toast.error(errorMessage);
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
       throw error;
     }
-  }
+  },
+  
+  // Get events by user ID (created by the user)
+  getUserEvents: eventServiceExtensions.getUserEvents,
+  
+  // Get saved events by user
+  getSavedEvents: eventServiceExtensions.getSavedEvents
 };
