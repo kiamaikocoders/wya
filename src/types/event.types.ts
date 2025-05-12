@@ -13,6 +13,7 @@ export interface Event {
   featured?: boolean;
   tags?: string[];
   capacity?: number;
+  is_featured?: boolean; // Adding this as an alias for 'featured' for backward compatibility
 }
 
 export interface CreateEventPayload {
