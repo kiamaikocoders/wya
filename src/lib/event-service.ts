@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { eventServiceExtensions } from './event-service-extensions';

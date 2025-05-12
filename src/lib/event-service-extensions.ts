@@ -1,7 +1,7 @@
 
 import { supabase } from './supabase';
 import { toast } from 'sonner';
-import { Event } from '@/types/event.types';
+import type { Event } from '@/types/event.types';
 
 // Add missing methods to the event service
 export const eventServiceExtensions = {
@@ -54,10 +54,3 @@ export const eventServiceExtensions = {
     }
   }
 };
-
-// Extend the event service with these methods
-// This will be used in other files that import from event-service
-import { eventService } from './event-service';
-
-// Add the new methods to the eventService object
-Object.assign(eventService, eventServiceExtensions);
