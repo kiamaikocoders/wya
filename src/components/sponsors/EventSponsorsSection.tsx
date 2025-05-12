@@ -28,10 +28,13 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
   
   if (!eventSponsors || eventSponsors.length === 0) return null;
   
-  // We need to provide EventSponsor[] to the SponsorBanner, not Sponsor[]
-  const validSponsors = eventSponsors.filter(es => es.sponsor);
+  // We need to provide Sponsor[] to the SponsorBanner, not EventSponsor[]
+  // Extract the sponsors from the eventSponsors array
+  const sponsors = eventSponsors
+    .filter(es => es.sponsor)
+    .map(es => es.sponsor!);
   
-  if (validSponsors.length === 0) return null;
+  if (sponsors.length === 0) return null;
   
   return (
     <div className="mt-6">
@@ -45,7 +48,7 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
         </Button>
       </div>
       
-      <SponsorBanner sponsors={validSponsors.map(es => es.sponsor!)} size={size} showLabels={true} />
+      <SponsorBanner sponsors={sponsors} size={size} showLabels={true} />
     </div>
   );
 };

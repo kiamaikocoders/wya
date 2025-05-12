@@ -1,11 +1,12 @@
 
 import { supabase } from './supabase';
 import { toast } from 'sonner';
+import { Event } from '@/types/event.types';
 
 // Add missing methods to the event service
 export const eventServiceExtensions = {
   // Get events created by a user
-  getUserEvents: async (userId: string) => {
+  getUserEvents: async (userId: string): Promise<Event[]> => {
     try {
       const { data, error } = await supabase
         .from('events')
@@ -23,7 +24,7 @@ export const eventServiceExtensions = {
   },
   
   // Get events saved by a user
-  getSavedEvents: async (userId: string) => {
+  getSavedEvents: async (userId: string): Promise<Event[]> => {
     try {
       const { data, error } = await supabase
         .from('favorites')
@@ -53,3 +54,10 @@ export const eventServiceExtensions = {
     }
   }
 };
+
+// Extend the event service with these methods
+// This will be used in other files that import from event-service
+import { eventService } from './event-service';
+
+// Add the new methods to the eventService object
+Object.assign(eventService, eventServiceExtensions);

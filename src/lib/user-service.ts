@@ -29,6 +29,7 @@ export const userService = {
         email: '', // Email is stored in auth.users, not accessible directly
         avatar_url: data.avatar_url,
         bio: data.bio,
+        location: data.location || '',
         created_at: data.created_at
       };
     } catch (error) {
@@ -46,6 +47,7 @@ export const userService = {
           full_name: profileData.name,
           avatar_url: profileData.avatar_url,
           bio: profileData.bio,
+          location: profileData.location,
           updated_at: new Date().toISOString()
         })
         .eq('id', userId)
@@ -60,6 +62,7 @@ export const userService = {
         name: data.full_name,
         avatar_url: data.avatar_url,
         bio: data.bio,
+        location: data.location || '',
         created_at: data.created_at
       };
     } catch (error) {
