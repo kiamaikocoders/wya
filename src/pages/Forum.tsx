@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { forumService, ForumPost } from "@/lib/forum-service";
@@ -15,6 +14,7 @@ const Forum: React.FC = () => {
   const { user } = useAuth();
   const [showNewPostForm, setShowNewPostForm] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [likedPosts, setLikedPosts] = useState<number[]>([]);
 
   const { data: posts = [], isLoading, error, refetch } = useQuery({
     queryKey: ["forumPosts"],
@@ -93,6 +93,59 @@ const Forum: React.FC = () => {
       </div>
     );
   }
+
+  // Function to handle like/unlike
+  const handleLikeToggle = async (postId: number) => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to like posts');
+      return;
+    }
+    
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      const isLiked = likedPosts.includes(postId);
+      
+      if (isLiked) {
+        // Unlike post
+        const { error } = await supabase
+          .from('post_likes')
+          .delete()
+          .eq('user_id', user?.id)
+          .eq('post_id', postId);
+          
+        if (error) throw error;
+        
+        setLikedPosts(likedPosts.filter(id => id !== postId));
+        setPosts(posts.map(p => 
+          p.id === postId 
+            ? { ...p, likes_count: (p.likes_count || 0) - 1 } 
+            : p
+        ));
+      } else {
+        // Like post
+        const { error } = await supabase
+          .from('post_likes')
+          .insert({
+            user_id: user?.id,
+            post_id: postId
+          });
+          
+        if (error) throw error;
+        
+        setLikedPosts([...likedPosts, postId]);
+        setPosts(posts.map(p => 
+          p.id === postId 
+            ? { ...p, likes_count: (p.likes_count || 0) + 1 } 
+            : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error('Failed to update like');
+    }
+  };
 
   return (
     <div className="container py-8">

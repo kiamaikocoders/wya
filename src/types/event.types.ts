@@ -10,7 +10,7 @@ export interface Event {
   organizer_id: string;
   created_at: string;
   price?: number;
-  is_featured?: boolean;
+  featured?: boolean;
   tags?: string[];
   capacity?: number;
 }
@@ -23,7 +23,6 @@ export interface CreateEventPayload {
   location: string;
   image_url?: string;
   price?: number;
-  is_featured?: boolean;
   tags?: string[];
   organizer_id?: string;
   capacity?: number;

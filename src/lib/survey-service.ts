@@ -4,13 +4,14 @@ import { toast } from 'sonner';
 
 export interface SurveyQuestion {
   id: number;
-  question_text: string; // Added missing property
-  question_type: 'multiple_choice' | 'text' | 'rating' | 'yes_no'; // Added missing property
+  question_text: string;
+  question_type: 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox';
   options?: string[];
   required: boolean;
-  maxRating?: number; // Added missing property
-  description?: string; // Added missing property
-  text?: string; // Added for compatibility
+  maxRating?: number;
+  description?: string;
+  text?: string;
+  type?: string; // Added for compatibility with existing code
 }
 
 export interface Survey {
@@ -20,7 +21,7 @@ export interface Survey {
   description?: string;
   questions: SurveyQuestion[];
   created_at: string;
-  is_anonymous: boolean; // Added missing property
+  is_anonymous: boolean;
 }
 
 export interface SurveyResponse {
@@ -31,8 +32,11 @@ export interface SurveyResponse {
     question_id: number;
     answer: string | string[] | number;
   }[];
-  submitted_at: string; // Added missing property
-  responses?: any; // Added for compatibility
+  submitted_at: string;
+  responses?: {
+    question_id: number;
+    answer: string | string[] | number;
+  }[];
 }
 
 export interface CreateSurveyPayload {
@@ -89,13 +93,21 @@ export const surveyService = {
   // Create a new survey
   createSurvey: async (surveyData: CreateSurveyPayload): Promise<Survey> => {
     try {
+      // Add IDs to the questions
+      const questions = surveyData.questions.map((q, index) => ({
+        ...q,
+        id: index + 1
+      }));
+
       // This is a mock implementation
       toast.success('Survey created successfully');
-      return {
+      const result: Survey = {
         id: Date.now(),
         ...surveyData,
+        questions,
         created_at: new Date().toISOString()
       };
+      return result;
     } catch (error) {
       console.error('Error creating survey:', error);
       toast.error('Failed to create survey');

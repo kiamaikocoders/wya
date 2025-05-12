@@ -53,7 +53,7 @@ const EventSponsorsSection: React.FC<EventSponsorsSectionProps> = ({ eventId, si
         </Button>
       </div>
       
-      <SponsorBanner sponsors={sponsors} size={size} showLabels={true} />
+      <SponsorBanner sponsors={sponsors as any} size={size} showLabels={true} />
     </div>
   );
 };
