@@ -19,6 +19,15 @@ export interface Sponsor {
   brand_gradient: string | null;
 }
 
+export interface EventSponsor {
+  id: number;
+  event_id: number;
+  sponsor_id: number;
+  sponsorship_type: string;
+  created_at: string;
+  sponsor?: Sponsor;
+}
+
 export interface SponsorContentBlock {
   id: number;
   zone_id: number;
@@ -30,6 +39,13 @@ export interface SponsorContentBlock {
   expires_at: string | null;
   order: number;
   data: any;
+}
+
+export interface SponsorAnalytics {
+  impressions: number;
+  clicks: number;
+  conversion_rate: number;
+  engagement_time: number;
 }
 
 export const sponsorService = {
@@ -119,6 +135,38 @@ export const sponsorService = {
       })) as SponsorContentBlock[];
     } catch (error) {
       console.error(`Error fetching content blocks for zone with ID ${zoneId}:`, error);
+      throw error;
+    }
+  },
+
+  // Track sponsor interactions (placeholder for now)
+  submitSponsorInteraction: async (data: { 
+    sponsor_id: number, 
+    interaction_type: string, 
+    content_id?: number 
+  }): Promise<void> => {
+    try {
+      console.log('Sponsor interaction tracked:', data);
+      // This would typically insert into a sponsor_interactions table
+      // For now just log the interaction
+    } catch (error) {
+      console.error('Error tracking sponsor interaction:', error);
+    }
+  },
+  
+  // Get sponsor analytics (placeholder for now)
+  getSponsorAnalytics: async (sponsorId: number): Promise<SponsorAnalytics> => {
+    try {
+      // This would typically query analytics data from the database
+      // For now return mock data
+      return {
+        impressions: Math.floor(Math.random() * 10000),
+        clicks: Math.floor(Math.random() * 1000),
+        conversion_rate: Math.random() * 10,
+        engagement_time: Math.floor(Math.random() * 300)
+      };
+    } catch (error) {
+      console.error('Error fetching sponsor analytics:', error);
       throw error;
     }
   }

@@ -1,0 +1,27 @@
+
+-- Note: This is just a placeholder file.
+-- We need to create a separate SQL migration to add the stories table, which will be implemented later.
+-- This will allow for proper schema updates without causing issues with the current code.
+
+-- CREATE TABLE public.stories (
+--   id SERIAL PRIMARY KEY,
+--   user_id UUID REFERENCES auth.users(id) NOT NULL,
+--   event_id INTEGER REFERENCES public.events(id),
+--   caption TEXT NOT NULL,
+--   media_url TEXT NOT NULL,
+--   media_type TEXT NOT NULL CHECK (media_type IN ('image', 'video')),
+--   likes_count INTEGER DEFAULT 0,
+--   comments_count INTEGER DEFAULT 0,
+--   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+-- );
+-- 
+-- ALTER TABLE public.stories ENABLE ROW LEVEL SECURITY;
+-- 
+-- CREATE POLICY "Stories are viewable by everyone" ON public.stories
+--   FOR SELECT USING (true);
+-- 
+-- CREATE POLICY "Stories can be created by authenticated users" ON public.stories
+--   FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- 
+-- CREATE POLICY "Stories can be deleted by their owners" ON public.stories
+--   FOR DELETE USING (auth.uid() = user_id);
