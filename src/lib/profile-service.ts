@@ -87,5 +87,30 @@ export const profileService = {
       console.error('Error searching profiles:', error);
       return [];
     }
+  },
+  
+  // Adding the missing method that's referenced in UserProfile.tsx
+  getProfileByUsername: async (username: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .single();
+
+      if (error) throw error;
+      
+      // Add name property for compatibility
+      if (data) {
+        const profile = data as Profile;
+        profile.name = profile.full_name || '';
+        return profile;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching profile by username:', error);
+      return null;
+    }
   }
 };
