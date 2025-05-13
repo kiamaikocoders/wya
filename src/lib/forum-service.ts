@@ -18,6 +18,8 @@ export interface ForumPost {
     avatar_url?: string;
     username?: string;
   };
+  user_name?: string;
+  user_image?: string;
 }
 
 export interface ForumComment {
@@ -34,6 +36,8 @@ export interface ForumComment {
     avatar_url?: string;
     username?: string;
   };
+  user_name?: string;
+  user_image?: string;
 }
 
 export interface CreateForumPostDto {
@@ -74,7 +78,9 @@ export const forumService = {
             name: profiles.full_name || profiles.username,
             avatar_url: profiles.avatar_url,
             username: profiles.username
-          } : undefined
+          } : undefined,
+          user_name: profiles ? (profiles.full_name || profiles.username) : 'Anonymous',
+          user_image: profiles ? profiles.avatar_url : undefined
         } as ForumPost;
       });
       
@@ -108,7 +114,9 @@ export const forumService = {
           name: profiles.full_name || profiles.username,
           avatar_url: profiles.avatar_url,
           username: profiles.username
-        } : undefined
+        } : undefined,
+        user_name: profiles ? (profiles.full_name || profiles.username) : 'Anonymous',
+        user_image: profiles ? profiles.avatar_url : undefined
       } as ForumPost;
       
       return formattedPost;
@@ -199,7 +207,9 @@ export const forumService = {
             name: profiles.full_name || profiles.username,
             avatar_url: profiles.avatar_url,
             username: profiles.username
-          } : undefined
+          } : undefined,
+          user_name: profiles ? (profiles.full_name || profiles.username) : 'Anonymous',
+          user_image: profiles ? profiles.avatar_url : undefined
         } as ForumComment;
       });
       
@@ -208,6 +218,11 @@ export const forumService = {
       console.error(`Error fetching comments for post #${postId}:`, error);
       throw new Error(`Failed to fetch comments for post #${postId}`);
     }
+  },
+  
+  // For compatibility with existing code
+  getComments: async (postId: number): Promise<ForumComment[]> => {
+    return forumService.getCommentsByPostId(postId);
   },
   
   // Add a comment to a post

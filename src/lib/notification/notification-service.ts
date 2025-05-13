@@ -2,7 +2,6 @@
 import { toast } from 'sonner';
 import { supabase } from '../supabase';
 import type { Notification, NotificationSettings } from './types';
-import { useAuth } from '@/contexts/AuthContext';
 
 // Create the notification service
 export const notificationService = {
@@ -57,15 +56,8 @@ export const notificationService = {
     }
   },
   
-  markAllAsRead: async (userId?: string): Promise<boolean> => {
+  markAllAsRead: async (userId: string): Promise<boolean> => {
     try {
-      // If no user ID provided, get the current user
-      if (!userId) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
-        userId = user.id;
-      }
-      
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })

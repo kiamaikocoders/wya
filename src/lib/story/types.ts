@@ -4,7 +4,9 @@ export interface Story {
   user_id: string;
   event_id?: number;
   content: string;
+  caption?: string;
   media_url?: string;
+  media_type?: string;
   created_at: string;
   updated_at?: string;
   user_name?: string;
