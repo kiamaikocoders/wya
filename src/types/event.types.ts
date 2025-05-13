@@ -1,4 +1,5 @@
 
+
 export interface Event {
   id: number;
   title: string;
@@ -32,3 +33,4 @@ export interface CreateEventPayload {
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {
   id: number;
 }
+

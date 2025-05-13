@@ -1,4 +1,5 @@
 
+
 export interface Story {
   id: number;
   user_id: string;
@@ -35,3 +36,4 @@ export interface CreateStoryCommentDto {
   story_id: number;
   content: string;
 }
+
