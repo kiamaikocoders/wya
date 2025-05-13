@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -25,7 +24,8 @@ export interface Profile {
   bio?: string;
   updated_at?: string;
   created_at?: string;
-  location?: string; // Add location to match interface
+  location?: string;
+  name?: string; // Add name property to fix the type errors
 }
 
 export interface UpdateProfilePayload {
@@ -97,9 +97,61 @@ export const userService = {
         .single();
       
       if (error) throw error;
-      return data;
+      
+      // Add name property for backward compatibility
+      if (data) {
+        return {
+          ...data,
+          name: data.full_name || ''
+        };
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error getting user profile:', error);
+      return null;
+    }
+  },
+  
+  // Other existing methods
+  
+  searchProfiles: async (searchTerm: string): Promise<Profile[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('full_name', `%${searchTerm}%`)
+        .limit(5);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching profiles:', error);
+      return [];
+    }
+  },
+  
+  getProfileByUsername: async (username: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .single();
+
+      if (error) throw error;
+      
+      // Add name property for compatibility
+      if (data) {
+        return {
+          ...data,
+          name: data.full_name || ''
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching profile by username:', error);
       return null;
     }
   }
