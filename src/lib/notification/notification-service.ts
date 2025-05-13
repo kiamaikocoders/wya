@@ -14,7 +14,12 @@ export const notificationService = {
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return data || [];
+      
+      // Cast the returned data to match our expected type
+      return (data || []).map(item => ({
+        ...item,
+        type: item.type as Notification['type']
+      }));
     } catch (error) {
       console.error('Error fetching notifications:', error);
       return [];
@@ -34,7 +39,12 @@ export const notificationService = {
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return data || [];
+      
+      // Cast the returned data to match our expected type
+      return (data || []).map(item => ({
+        ...item,
+        type: item.type as Notification['type']
+      }));
     } catch (error) {
       console.error('Error fetching notifications:', error);
       return [];
