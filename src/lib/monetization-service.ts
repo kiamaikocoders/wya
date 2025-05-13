@@ -1,43 +1,60 @@
-// This is a temporary monetization service that will be replaced with Supabase implementation
-import { toast } from 'sonner';
-import { supabase } from './supabase';
 
-export interface TicketPurchase {
-  event_id: number;
-  user_id: string;
-  ticket_type: string;
-  price: number;
-  quantity: number;
+import { supabase } from './supabase';
+import { toast } from 'sonner';
+
+export interface PaymentMethod {
+  id: string;
+  type: string;
+  last4?: string;
+  brand?: string;
+  expMonth?: number;
+  expYear?: number;
+  default: boolean;
 }
 
-export interface PaymentIntent {
+export interface Transaction {
   id: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
-  created_at: string;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  createdAt: string;
+  description: string;
+  paymentMethod?: Partial<PaymentMethod>;
+  eventId?: number;
+  ticketId?: number;
 }
 
-// Temporary monetization service
 export const monetizationService = {
-  createTicketPurchase: async (purchase: TicketPurchase): Promise<boolean> => {
-    try {
-      // This will be implemented with Supabase later
-      toast.success('Ticket purchase processing initiated');
-      return true;
-    } catch (error) {
-      console.error('Error creating ticket purchase:', error);
-      toast.error('Failed to process ticket purchase');
-      return false;
-    }
+  getPaymentMethods: async (): Promise<PaymentMethod[]> => {
+    // This would be implemented with Supabase or Stripe
+    console.log('Getting payment methods');
+    
+    // Return mock data for now
+    return [{
+      id: 'pm_123456789',
+      type: 'card',
+      last4: '4242',
+      brand: 'visa',
+      expMonth: 12,
+      expYear: 2025,
+      default: true
+    }];
   },
   
-  getPaymentMethods: async (userId: string): Promise<any[]> => {
-    try {
-      // Placeholder - will be implemented with Supabase
-      return [];
-    } catch (error) {
-      console.error('Error fetching payment methods:', error);
-      return [];
-    }
+  getTransactions: async (): Promise<Transaction[]> => {
+    // This would be implemented with Supabase
+    console.log('Getting transactions');
+    
+    // Return mock data for now
+    return [{
+      id: 'tx_123456789',
+      amount: 25.99,
+      currency: 'USD',
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      description: 'Ticket purchase for Event Name',
+      eventId: 1,
+      ticketId: 1
+    }];
   }
 };

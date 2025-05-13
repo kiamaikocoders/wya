@@ -11,12 +11,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
 const Notifications = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const { data: notifications = [], isLoading, error, refetch } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getAllNotifications,
-    enabled: isAuthenticated,
+    queryFn: () => user ? notificationService.getUserNotifications(user.id) : [],
+    enabled: isAuthenticated && !!user?.id,
   });
   
   useEffect(() => {
@@ -41,9 +41,11 @@ const Notifications = () => {
   
   const handleMarkAllAsRead = async () => {
     try {
-      await notificationService.markAllAsRead();
-      toast.success('All notifications marked as read');
-      refetch();
+      if (user) {
+        await notificationService.markAllAsRead(user.id);
+        toast.success('All notifications marked as read');
+        refetch();
+      }
     } catch (error) {
       toast.error('Failed to mark notifications as read');
     }
@@ -62,7 +64,7 @@ const Notifications = () => {
   const mockNotifications: Notification[] = [
     {
       id: 1,
-      user_id: 1,
+      user_id: user?.id || '',
       title: 'New Event: Nairobi Tech Week',
       message: 'A new tech event has been added in your area.',
       type: 'event_update',
@@ -71,7 +73,7 @@ const Notifications = () => {
     },
     {
       id: 2,
-      user_id: 1,
+      user_id: user?.id || '',
       title: 'Event Update: Lamu Cultural Festival',
       message: 'The venue for Lamu Cultural Festival has been changed.',
       type: 'announcement',
@@ -80,7 +82,7 @@ const Notifications = () => {
     },
     {
       id: 3,
-      user_id: 1,
+      user_id: user?.id || '',
       title: 'Your Ticket Confirmation',
       message: 'Your ticket for Kilifi New Year Festival has been confirmed.',
       type: 'ticket',
@@ -89,7 +91,7 @@ const Notifications = () => {
     },
     {
       id: 4,
-      user_id: 1,
+      user_id: user?.id || '',
       title: 'Welcome to WYA!',
       message: 'Welcome to WYA - Your local event discovery platform.',
       type: 'system',
@@ -99,14 +101,14 @@ const Notifications = () => {
   ];
   
   // Use mock data if API fails
-  const displayNotifications = notifications && notifications.length > 0 ? notifications : mockNotifications;
+  const displayNotifications = (notifications && Array.isArray(notifications) && notifications.length > 0) ? notifications : mockNotifications;
   
   return (
     <div className="container py-8 animate-fade-in">
       <div className="flex flex-col space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-white text-3xl font-bold">Your Notifications</h1>
-          {displayNotifications.length > 0 && (
+          {displayNotifications && displayNotifications.length > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead}>
               Mark all as read
             </Button>
@@ -117,7 +119,7 @@ const Notifications = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
-        ) : displayNotifications.length > 0 ? (
+        ) : displayNotifications && displayNotifications.length > 0 ? (
           <div className="grid gap-4">
             {displayNotifications.map((notification) => (
               <Card 

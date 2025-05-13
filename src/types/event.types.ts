@@ -11,9 +11,9 @@ export interface Event {
   created_at: string;
   price?: number;
   featured?: boolean;
-  tags: string[]; // Ensure this is required, not optional
+  tags: string[];
   capacity?: number;
-  is_featured?: boolean; // Adding this as an alias for 'featured' for backward compatibility
+  is_featured?: boolean;
 }
 
 export interface CreateEventPayload {
