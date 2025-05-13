@@ -14,17 +14,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Notification } from '@/lib/notification/types';
 
 const NotificationBell = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   
   const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getAllNotifications,
-    enabled: isAuthenticated,
+    queryFn: () => user ? notificationService.getUserNotifications(user.id) : [],
+    enabled: isAuthenticated && !!user?.id,
   });
 
   useEffect(() => {
-    if (notifications) {
+    if (notifications && Array.isArray(notifications)) {
       const count = notifications.filter(notification => !notification.read).length;
       setUnreadCount(count);
     }
@@ -38,8 +38,10 @@ const NotificationBell = () => {
   };
 
   const handleMarkAllAsRead = async () => {
-    await notificationService.markAllAsRead();
-    refetch();
+    if (user) {
+      await notificationService.markAllAsRead(user.id);
+      refetch();
+    }
   };
 
   if (!isAuthenticated) {
@@ -61,7 +63,7 @@ const NotificationBell = () => {
       <PopoverContent className="w-80 bg-kenya-brown-dark border-kenya-brown p-0 max-h-96 overflow-hidden">
         <div className="p-3 border-b border-kenya-brown flex justify-between items-center">
           <h3 className="font-semibold text-white">Notifications</h3>
-          {notifications && notifications.length > 0 && (
+          {notifications && Array.isArray(notifications) && notifications.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -78,7 +80,7 @@ const NotificationBell = () => {
             <div className="flex justify-center items-center h-20">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-kenya-orange"></div>
             </div>
-          ) : notifications && notifications.length > 0 ? (
+          ) : notifications && Array.isArray(notifications) && notifications.length > 0 ? (
             <div className="py-2">
               {notifications.map(notification => (
                 <div 

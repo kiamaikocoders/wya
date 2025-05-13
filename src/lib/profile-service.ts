@@ -27,10 +27,12 @@ export const profileService = {
       
       // Add name property for compatibility
       if (data) {
-        data.name = data.full_name || '';
+        const profile = data as Profile;
+        profile.name = profile.full_name || '';
+        return profile;
       }
       
-      return data;
+      return null;
     } catch (error) {
       console.error('Error fetching profile:', error);
       return null;
@@ -51,10 +53,12 @@ export const profileService = {
       
       // Add name property for compatibility
       if (data) {
-        data.name = data.full_name || '';
+        const profile = data as Profile;
+        profile.name = profile.full_name || '';
+        return profile;
       }
       
-      return data;
+      return null;
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
@@ -73,13 +77,12 @@ export const profileService = {
       if (error) throw error;
       
       // Add name property for compatibility
-      if (data) {
-        data.forEach(profile => {
-          profile.name = profile.full_name || '';
-        });
-      }
+      const profiles = (data || []) as Profile[];
+      profiles.forEach(profile => {
+        profile.name = profile.full_name || '';
+      });
       
-      return data || [];
+      return profiles;
     } catch (error) {
       console.error('Error searching profiles:', error);
       return [];

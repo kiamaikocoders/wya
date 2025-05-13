@@ -105,7 +105,7 @@ const ResponseItem: React.FC<ResponseItemProps> = ({ response, survey, index }) 
 
 interface ResponseValueProps {
   answer: string | string[] | number;
-  questionType: 'multiple_choice' | 'text' | 'rating' | 'yes_no'; // Removed 'checkbox' type which was causing the error
+  questionType: 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox';
 }
 
 const ResponseValue: React.FC<ResponseValueProps> = ({ answer, questionType }) => {
@@ -132,6 +132,21 @@ const ResponseValue: React.FC<ResponseValueProps> = ({ answer, questionType }) =
           {String(answer)}
         </span>
       );
+      
+    case 'checkbox':
+      if (Array.isArray(answer)) {
+        return (
+          <div className="space-y-1">
+            {answer.map((item, index) => (
+              <div key={index} className="flex items-center">
+                <span className="text-primary mr-2">✓</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return <p>{String(answer)}</p>;
       
     case 'text':
       return <p className="whitespace-pre-wrap">{String(answer)}</p>;

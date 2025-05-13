@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -52,27 +53,30 @@ export const forumService = {
   // Get all forum posts
   getAllPosts: async (): Promise<ForumPost[]> => {
     try {
-      // Get posts with user profiles joined using JOIN syntax
+      // Get posts with user profiles joined
       const { data, error } = await supabase
         .from('forum_posts')
         .select(`
           *,
-          profiles:user_id (*)
+          profiles:user_id(id, full_name, avatar_url, username)
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
       // Transform the data to match our ForumPost interface
-      const formattedPosts = data.map(post => ({
-        ...post,
-        user: post.profiles ? {
-          id: post.profiles.id,
-          name: post.profiles.full_name || post.profiles.username,
-          avatar_url: post.profiles.avatar_url,
-          username: post.profiles.username
-        } : undefined
-      }));
+      const formattedPosts = data.map(post => {
+        const profiles = post.profiles as any;
+        return {
+          ...post,
+          user: profiles ? {
+            id: profiles.id,
+            name: profiles.full_name || profiles.username,
+            avatar_url: profiles.avatar_url,
+            username: profiles.username
+          } : undefined
+        } as ForumPost;
+      });
       
       return formattedPosts;
     } catch (error) {
@@ -88,7 +92,7 @@ export const forumService = {
         .from('forum_posts')
         .select(`
           *,
-          profiles:user_id (*)
+          profiles:user_id(id, full_name, avatar_url, username)
         `)
         .eq('id', id)
         .single();
@@ -96,15 +100,16 @@ export const forumService = {
       if (error) throw error;
       
       // Transform the data to match our ForumPost interface
+      const profiles = data.profiles as any;
       const formattedPost = {
         ...data,
-        user: data.profiles ? {
-          id: data.profiles.id,
-          name: data.profiles.full_name || data.profiles.username,
-          avatar_url: data.profiles.avatar_url,
-          username: data.profiles.username
+        user: profiles ? {
+          id: profiles.id,
+          name: profiles.full_name || profiles.username,
+          avatar_url: profiles.avatar_url,
+          username: profiles.username
         } : undefined
-      };
+      } as ForumPost;
       
       return formattedPost;
     } catch (error) {
@@ -134,7 +139,7 @@ export const forumService = {
       
       if (error) throw error;
       
-      return data;
+      return data as ForumPost;
     } catch (error) {
       console.error('Error creating post:', error);
       throw new Error('Failed to create post');
@@ -177,7 +182,7 @@ export const forumService = {
         .from('forum_comments')
         .select(`
           *,
-          profiles:user_id (*)
+          profiles:user_id(id, full_name, avatar_url, username)
         `)
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
@@ -185,15 +190,18 @@ export const forumService = {
       if (error) throw error;
       
       // Transform the data to match our ForumComment interface
-      const formattedComments = data.map(comment => ({
-        ...comment,
-        user: comment.profiles ? {
-          id: comment.profiles.id,
-          name: comment.profiles.full_name || comment.profiles.username,
-          avatar_url: comment.profiles.avatar_url,
-          username: comment.profiles.username
-        } : undefined
-      }));
+      const formattedComments = data.map(comment => {
+        const profiles = comment.profiles as any;
+        return {
+          ...comment,
+          user: profiles ? {
+            id: profiles.id,
+            name: profiles.full_name || profiles.username,
+            avatar_url: profiles.avatar_url,
+            username: profiles.username
+          } : undefined
+        } as ForumComment;
+      });
       
       return formattedComments;
     } catch (error) {
@@ -222,7 +230,7 @@ export const forumService = {
       
       if (error) throw error;
       
-      return data;
+      return data as ForumComment;
     } catch (error) {
       console.error('Error creating comment:', error);
       throw new Error('Failed to create comment');

@@ -20,19 +20,21 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 
 const NotificationsDropdown = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
   const [unreadCount, setUnreadCount] = useState(0);
   
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
-    queryFn: notificationService.getAllNotifications,
-    enabled: isAuthenticated,
+    queryFn: () => user ? notificationService.getUserNotifications(user.id) : [],
+    enabled: isAuthenticated && !!user?.id,
     refetchInterval: 60000, // Refresh every minute
   });
   
   useEffect(() => {
-    setUnreadCount(notifications.filter(n => !n.read).length);
+    if (notifications && Array.isArray(notifications)) {
+      setUnreadCount(notifications.filter(n => !n.read).length);
+    }
   }, [notifications]);
   
   const handleMarkAsRead = async (id: number) => {
@@ -41,8 +43,10 @@ const NotificationsDropdown = () => {
   };
   
   const handleMarkAllAsRead = async () => {
-    await notificationService.markAllAsRead();
-    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    if (user) {
+      await notificationService.markAllAsRead(user.id);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
   };
   
   if (!isAuthenticated) {
@@ -90,12 +94,12 @@ const NotificationsDropdown = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {notifications.length === 0 ? (
+        {notifications && Array.isArray(notifications) && notifications.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             No notifications yet
           </div>
         ) : (
-          notifications.map(notification => (
+          notifications && Array.isArray(notifications) && notifications.map(notification => (
             <DropdownMenuItem 
               key={notification.id}
               className={`py-3 px-4 cursor-pointer flex flex-col items-start gap-1 ${
