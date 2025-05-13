@@ -1,145 +1,256 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { eventService } from "@/lib/event-service";
-import { forumService } from "@/lib/forum-service";
-import { useAuth } from "@/contexts/AuthContext";
-import ProfileCard from "@/components/profile/ProfileCard";
-import ProfileTabs from "@/components/profile/ProfileTabs";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { profileService, Profile } from '@/lib/profile-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from '@/components/ui/button';
+import { CalendarDays, MapPin, UserPlus, UserCheck, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Link } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
 
-const UserProfile = () => {
-  const { userId } = useParams<{ userId: string }>();
-  const { user: currentUser, isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState("events");
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const profileId = userId;
-  
-  const userData = {
-    id: parseInt(userId || "0"),
-    name: "Jane Doe",
-    username: "janedoe",
-    bio: "Event enthusiast and community builder. Always looking for the next exciting gathering in Nairobi!",
-    location: "Nairobi, Kenya",
-    joined: "January 2023",
-    followers: 120,
-    following: 85,
-    profile_picture: "/placeholder.svg",
-    interests: ["Music", "Technology", "Food", "Art", "Culture"],
-    social: {
-      twitter: "janedoe",
-      instagram: "jane.doe",
-      linkedin: "janedoe"
-    }
+interface UserData {
+  id: number;
+  name: string;
+  username: string;
+  bio: string;
+  location: string;
+  joined: string;
+  followers: number;
+  following: number;
+  profile_picture: string;
+  interests: string[];
+  social: {
+    twitter: string;
+    instagram: string;
+    linkedin: string;
   };
-  
-  const { data: events = [] } = useQuery({
-    queryKey: ["userEvents", userId],
-    queryFn: () => eventService.getAllEvents(),
+}
+
+interface UserStats {
+  eventsCreated: number;
+  eventsJoined: number;
+  reviewsGiven: number;
+}
+
+interface ProfileCardProps {
+  userData: UserData;
+  userStats: UserStats;
+  eventsCount: number;
+  reviewsCount: number;
+  isFollowing: boolean;
+  onFollowToggle: () => Promise<void>;
+}
+
+const ProfileCard: React.FC<ProfileCardProps> = ({ userData, userStats, eventsCount, reviewsCount, isFollowing, onFollowToggle }) => {
+  return (
+    <Card className="bg-kenya-brown-dark bg-opacity-20 text-white">
+      <CardContent className="p-6">
+        <div className="flex items-center space-x-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={userData.profile_picture} alt={userData.name} />
+            <AvatarFallback>{userData.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="text-lg font-semibold">{userData.name}</h2>
+            <p className="text-sm text-muted-foreground">@{userData.username}</p>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="text-sm">{userData.bio}</p>
+          <div className="flex items-center text-muted-foreground mt-2">
+            <MapPin className="h-4 w-4 mr-1" />
+            <span>{userData.location}</span>
+          </div>
+          <div className="flex items-center text-muted-foreground mt-1">
+            <CalendarDays className="h-4 w-4 mr-1" />
+            <span>Joined {formatDate(userData.joined)}</span>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-between">
+          <div>
+            <p className="text-sm font-medium">{userData.followers}</p>
+            <p className="text-xs text-muted-foreground">Followers</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">{userData.following}</p>
+            <p className="text-xs text-muted-foreground">Following</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">{eventsCount}</p>
+            <p className="text-xs text-muted-foreground">Events</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">{reviewsCount}</p>
+            <p className="text-xs text-muted-foreground">Reviews</p>
+          </div>
+        </div>
+
+        <Button className="w-full mt-4" onClick={onFollowToggle}>
+          {isFollowing ? (
+            <>
+              <UserCheck className="h-4 w-4 mr-2" />
+              Unfollow
+            </>
+          ) : (
+            <>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Follow
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UserActivityCard: React.FC = () => {
+  return (
+    <Card className="bg-kenya-brown-dark bg-opacity-20 text-white">
+      <CardContent className="p-6">
+        <h3 className="text-lg font-semibold mb-4">User Activity</h3>
+        <p className="text-sm">
+          This section will display the user's recent activities, such as events joined, reviews given, and posts made.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UserEventsCard: React.FC = () => {
+  return (
+    <Card className="bg-kenya-brown-dark bg-opacity-20 text-white">
+      <CardContent className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Events</h3>
+        <p className="text-sm">
+          This section will display the events created or joined by the user.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UserReviewsCard: React.FC = () => {
+  return (
+    <Card className="bg-kenya-brown-dark bg-opacity-20 text-white">
+      <CardContent className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Reviews</h3>
+        <p className="text-sm">
+          This section will display the reviews given by the user.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+const UserProfile: React.FC = () => {
+  const { username } = useParams<{ username: string }>();
+  const { user: authUser } = useAuth();
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ['userProfile', username],
+    queryFn: () => profileService.getProfileByUsername(username!),
+    enabled: !!username,
   });
-  
-  const { data: posts = [] } = useQuery({
-    queryKey: ["userPosts", userId],
-    queryFn: () => forumService.getAllPosts(),
-  });
-  
-  const userEvents = events?.filter(event => event.organizer_id === userData.id.toString()) || [];
-  const userPosts = posts?.filter(post => post.user_id === userData.id.toString()) || [];
-  const isCurrentUser = currentUser?.id === userId;
 
   useEffect(() => {
-    // When the component mounts, check if the user is already following this profile
-    const checkIfFollowing = async () => {
-      if (isAuthenticated && currentUser && profileId && profileId !== currentUser.id) {
-        try {
-          const { data } = await supabase
-            .from('follows')
-            .select('*')
-            .eq('follower_id', currentUser.id)
-            .eq('following_id', profileId)
-            .single();
-          
-          setIsFollowing(!!data);
-        } catch (error) {
-          console.error('Error checking follow status:', error);
-        }
-      }
-    };
-    
-    checkIfFollowing();
-  }, [isAuthenticated, currentUser, profileId]);
-  
-  // Function to handle follow/unfollow
+    // Mocked data for demonstration
+    const mockIsFollowing = false;
+    setIsFollowing(mockIsFollowing);
+  }, [username]);
+
   const handleFollowToggle = async () => {
-    if (!isAuthenticated) {
-      toast.error('Please log in to follow this user');
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      if (isFollowing) {
-        // Unfollow
-        const { error } = await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentUser?.id)
-          .eq('following_id', profileId);
-          
-        if (error) throw error;
-        setIsFollowing(false);
-        toast.success('Unfollowed successfully');
-      } else {
-        // Follow
-        const { error } = await supabase
-          .from('follows')
-          .insert({
-            follower_id: currentUser?.id,
-            following_id: profileId
-          });
-          
-        if (error) throw error;
-        setIsFollowing(true);
-        toast.success('Following successfully');
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      toast.error('Failed to update follow status');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleMessage = () => {
-    // TODO: Implement messaging functionality
+    // Mocked function for demonstration
+    setIsFollowing(!isFollowing);
   };
 
+  const userData: UserData = {
+    id: 1,
+    name: profile?.full_name || 'Loading...',
+    username: profile?.username || 'loading...',
+    bio: profile?.bio || 'No bio available.',
+    location: profile?.location || 'Unknown',
+    joined: profile?.created_at || new Date().toISOString(),
+    followers: 150,
+    following: 200,
+    profile_picture: profile?.avatar_url || 'https://via.placeholder.com/150',
+    interests: ['Technology', 'Travel', 'Photography'],
+    social: {
+      twitter: 'https://twitter.com',
+      instagram: 'https://instagram.com',
+      linkedin: 'https://linkedin.com',
+    },
+  };
+
+  const userStats: UserStats = {
+    eventsCreated: 10,
+    eventsJoined: 25,
+    reviewsGiven: 42,
+  };
+
+  const userEvents = [
+    {
+      id: 1,
+      title: 'Nairobi Tech Week',
+      date: '2024-08-15',
+      location: 'Nairobi',
+    },
+    {
+      id: 2,
+      title: 'Mombasa Cultural Festival',
+      date: '2024-09-20',
+      location: 'Mombasa',
+    },
+  ];
+
+  const userReviews = [
+    {
+      id: 1,
+      event: 'Lamu Yoga Festival',
+      rating: 5,
+    },
+    {
+      id: 2,
+      event: 'Kilifi New Year',
+      rating: 4,
+    },
+  ];
+
+  if (isLoading) {
+    return <div className="text-center text-white">Loading profile...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-white">Error loading profile.</div>;
+  }
+
   return (
-    <div className="container py-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="container mx-auto p-4 text-white">
+      <h1 className="text-2xl font-semibold mb-4">User Profile</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1">
-          <ProfileCard
-            userData={userData}
-            isCurrentUser={isCurrentUser}
-            onMessage={handleMessage}
-            isFollowing={isFollowing}
-            isLoading={isLoading}
+          <ProfileCard 
+            userData={userData} 
+            userStats={userStats}
+            eventsCount={userEvents.length}
+            reviewsCount={userReviews.length}
+            isFollowing={isFollowing} // Add this prop
             onFollowToggle={handleFollowToggle}
           />
         </div>
-        
-        <div className="md:col-span-2">
-          <ProfileTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            userEvents={userEvents}
-            userPosts={userPosts}
-            userData={userData}
-            isCurrentUser={isCurrentUser}
-          />
+
+        <div className="md:col-span-2 space-y-4">
+          <UserActivityCard />
+          <UserEventsCard />
+          <UserReviewsCard />
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 
 export interface Notification {
   id: number;
-  user_id: number;
+  user_id: string;
   title: string;
   message: string;
   type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'message' | 'review';

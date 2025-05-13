@@ -38,6 +38,37 @@ export const storyService = {
     }
   },
   
+  // Get all stories
+  getAllStories: async (): Promise<Story[]> => {
+    try {
+      // For now, use mock data
+      return mockStories;
+      
+      // Once the stories table is created, uncomment the code below
+      /*
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          *,
+          profiles:user_id(username, avatar_url)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return (data || []).map(item => ({
+        ...item,
+        user_name: item.profiles?.username || 'Anonymous',
+        user_image: item.profiles?.avatar_url || ''
+      }));
+      */
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stories';
+      toast.error(errorMessage);
+      return [];
+    }
+  },
+  
   // Get story by ID
   getStoryById: async (id: number): Promise<Story> => {
     try {
@@ -80,8 +111,8 @@ export const storyService = {
         id: Math.max(...mockStories.map(s => s.id)) + 1,
         user_id: '1', // Replace with actual user ID once authentication is set up
         event_id: storyData.event_id,
-        caption: storyData.content || '',
         content: storyData.content || '',
+        caption: storyData.content || '',
         media_url: storyData.media_url || '',
         media_type: 'image',
         likes_count: 0,
