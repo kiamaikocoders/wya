@@ -1,5 +1,4 @@
 
-
 export interface Story {
   id: number;
   user_id: string;
@@ -13,7 +12,8 @@ export interface Story {
   user_name?: string;
   user_image?: string;
   likes_count?: number;
-  comments_count?: number;
+  comments_count?: number; // Ensure comments_count is defined
+  hashtags?: string[];
 }
 
 export interface StoryComment {
@@ -36,4 +36,3 @@ export interface CreateStoryCommentDto {
   story_id: number;
   content: string;
 }
-

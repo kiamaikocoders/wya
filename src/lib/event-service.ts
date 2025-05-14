@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { eventServiceExtensions } from './event-service-extensions';
@@ -18,6 +17,8 @@ export interface Event {
   featured?: boolean;
   created_at?: string;
   updated_at?: string;
+  tags?: string[]; // Add tags property to match with types/event.types.ts
+  is_featured?: boolean; // Also add is_featured for compatibility
 }
 
 export interface CreateEventPayload {
