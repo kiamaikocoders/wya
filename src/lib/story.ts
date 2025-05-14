@@ -9,11 +9,13 @@ export interface Story {
   content: string;
   media_url?: string;
   likes_count: number;
+  comments_count?: number; // Add comments_count property
   created_at: string;
   updated_at?: string;
   user_name?: string;
   user_image?: string;
   hashtags?: string[];
+  caption?: string; // Add caption for compatibility
 }
 
 export interface CreateStoryDto {
