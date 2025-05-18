@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { Story, StoryComment, CreateStoryDto, CreateStoryCommentDto } from './types';
@@ -24,9 +25,7 @@ export const storyService = {
           hashtags,
           status,
           is_featured,
-          expires_at,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          expires_at
         `)
         .order('created_at', { ascending: false });
 
@@ -37,6 +36,21 @@ export const storyService = {
       const { data, error } = await query;
 
       if (error) throw error;
+
+      // Get profiles for these stories
+      const userIds = data.map(story => story.user_id).filter(Boolean);
+      
+      // Fetch profiles separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+      
+      // Create a map of user_id to profile data
+      const profileMap = (profiles || []).reduce((map, profile) => {
+        map[profile.id] = profile;
+        return map;
+      }, {});
 
       // Transform the data to match our Story interface
       const stories: Story[] = data.map(item => ({
@@ -50,8 +64,8 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: item.profiles?.username,
-        user_image: item.profiles?.avatar_url,
+        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
         is_featured: item.is_featured,
@@ -94,14 +108,27 @@ export const storyService = {
           hashtags,
           status,
           is_featured,
-          expires_at,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          expires_at
         `)
         .eq('is_featured', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Get profiles for these stories
+      const userIds = data.map(story => story.user_id).filter(Boolean);
+      
+      // Fetch profiles separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+      
+      // Create a map of user_id to profile data
+      const profileMap = (profiles || []).reduce((map, profile) => {
+        map[profile.id] = profile;
+        return map;
+      }, {});
 
       // Transform the data to match our Story interface
       const stories: Story[] = data.map(item => ({
@@ -115,8 +142,8 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: item.profiles?.username,
-        user_image: item.profiles?.avatar_url,
+        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
         is_featured: item.is_featured,
@@ -152,9 +179,7 @@ export const storyService = {
           hashtags,
           status,
           is_featured,
-          expires_at,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          expires_at
         `)
         .eq('id', storyId)
         .single();
@@ -162,6 +187,13 @@ export const storyService = {
       if (error) throw error;
 
       if (!data) return null;
+      
+      // Fetch the author's profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', data.user_id)
+        .single();
 
       return {
         id: data.id,
@@ -174,8 +206,8 @@ export const storyService = {
         likes_count: data.likes_count || 0,
         comments_count: data.comments_count || 0,
         created_at: data.created_at,
-        user_name: data.profiles?.username,
-        user_image: data.profiles?.avatar_url,
+        user_name: profile?.username || 'Unknown User',
+        user_image: profile?.avatar_url || null,
         hashtags: data.hashtags,
         status: data.status,
         is_featured: data.is_featured,
@@ -214,7 +246,7 @@ export const storyService = {
         caption: storyData.caption || storyData.content,
         media_url: storyData.media_url,
         media_type: storyData.media_url ? (storyData.media_type || 'image') : null,
-        hashtags: hashtags.length > 0 ? hashtags : null
+        hashtags: hashtags.length > 0 ? hashtags : []
       };
 
       const { data, error } = await supabase
@@ -225,8 +257,20 @@ export const storyService = {
 
       if (error) throw error;
 
+      // Fetch the user's profile to include in the response
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       toast.success('Story created successfully');
-      return data;
+      
+      return {
+        ...data,
+        user_name: profile?.username || 'Unknown User',
+        user_image: profile?.avatar_url || null
+      };
     } catch (error) {
       console.error('Error creating story:', error);
       toast.error('Failed to create story');
@@ -279,8 +323,20 @@ export const storyService = {
 
       if (error) throw error;
 
+      // Fetch the user's profile to include in the response
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', data.user_id)
+        .single();
+
       toast.success('Story updated successfully');
-      return data;
+      
+      return {
+        ...data,
+        user_name: profile?.username || 'Unknown User',
+        user_image: profile?.avatar_url || null
+      };
     } catch (error) {
       console.error(`Error updating story with ID ${storyId}:`, error);
       toast.error('Failed to update story');
@@ -341,13 +397,27 @@ export const storyService = {
           user_id,
           story_id,
           content,
-          created_at,
-          profiles:user_id (username, avatar_url)
+          created_at
         `)
         .eq('story_id', storyId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+
+      // Fetch profiles for comment authors
+      const userIds = data.map(comment => comment.user_id).filter(Boolean);
+      
+      // Fetch profiles separately
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+      
+      // Create a map of user_id to profile data
+      const profileMap = (profiles || []).reduce((map, profile) => {
+        map[profile.id] = profile;
+        return map;
+      }, {});
 
       // Transform the data to match our StoryComment interface
       return data.map(item => ({
@@ -356,8 +426,8 @@ export const storyService = {
         story_id: item.story_id,
         content: item.content,
         created_at: item.created_at,
-        user_name: item.profiles?.username,
-        user_image: item.profiles?.avatar_url
+        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_image: profileMap[item.user_id]?.avatar_url || null
       }));
     } catch (error) {
       console.error(`Error fetching comments for story ID ${storyId}:`, error);
@@ -401,8 +471,20 @@ export const storyService = {
         // Continue anyway as the comment was added successfully
       }
 
+      // Fetch the user's profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       toast.success('Comment added');
-      return comment;
+      
+      return {
+        ...comment,
+        user_name: profile?.username || 'Unknown User',
+        user_image: profile?.avatar_url || null
+      };
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
