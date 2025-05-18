@@ -461,14 +461,20 @@ export const storyService = {
 
       if (commentError) throw commentError;
 
-      // Update the comments count on the story
-      const { error: updateError } = await supabase.rpc('increment_story_comments_count', {
-        p_story_id: commentData.story_id
-      });
+      // Update the comments count on the story using a custom function
+      try {
+        const { error: updateError } = await supabase.rpc(
+          'increment_story_comments_count',
+          { p_story_id: commentData.story_id }
+        );
 
-      if (updateError) {
-        console.error('Error updating comments count:', updateError);
-        // Continue anyway as the comment was added successfully
+        if (updateError) {
+          console.error('Error updating comments count:', updateError);
+          // Continue anyway as the comment was added successfully
+        }
+      } catch (error) {
+        console.error('Error calling RPC function:', error);
+        // Continue as the comment was added
       }
 
       // Fetch the user's profile
@@ -522,12 +528,17 @@ export const storyService = {
 
         if (unlikeError) throw unlikeError;
 
-        // Decrement the likes count
-        const { error: updateError } = await supabase.rpc('decrement_story_likes_count', {
-          p_story_id: storyId
-        });
+        // Decrement the likes count using a custom function
+        try {
+          const { error: updateError } = await supabase.rpc(
+            'decrement_story_likes_count', 
+            { p_story_id: storyId }
+          );
 
-        if (updateError) console.error('Error updating likes count:', updateError);
+          if (updateError) console.error('Error updating likes count:', updateError);
+        } catch (error) {
+          console.error('Error calling RPC function:', error);
+        }
 
         toast.success('Story unliked');
         return false;
@@ -542,12 +553,17 @@ export const storyService = {
 
         if (likeError) throw likeError;
 
-        // Increment the likes count
-        const { error: updateError } = await supabase.rpc('increment_story_likes_count', {
-          p_story_id: storyId
-        });
+        // Increment the likes count using a custom function
+        try {
+          const { error: updateError } = await supabase.rpc(
+            'increment_story_likes_count',
+            { p_story_id: storyId }
+          );
 
-        if (updateError) console.error('Error updating likes count:', updateError);
+          if (updateError) console.error('Error updating likes count:', updateError);
+        } catch (error) {
+          console.error('Error calling RPC function:', error);
+        }
 
         toast.success('Story liked');
         return true;
