@@ -9,6 +9,7 @@ import CreateStoryForm from '@/components/stories/CreateStoryForm';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 import { Plus, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { Story } from '@/lib/story/types';
 
 const StoriesPage = () => {
   const [showForm, setShowForm] = useState(false);

@@ -49,7 +49,7 @@ const EventDetails: React.FC = () => {
   
   const { data: eventStories, isLoading: storiesLoading } = useQuery({
     queryKey: ['eventStories', eventId],
-    queryFn: () => storyService.getEventStories(Number(eventId)),
+    queryFn: () => storyService.getAllStories(Number(eventId)),
     enabled: !!eventId,
   });
   
