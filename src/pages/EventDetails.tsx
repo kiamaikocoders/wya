@@ -29,10 +29,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate } from '@/utils/event-utils';
-import { useEvent } from '@/hooks/use-events';
+import { useEvents } from '@/hooks/use-events';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -52,7 +52,7 @@ const EventDetails: React.FC = () => {
   
   const { data: eventStories, isLoading: storiesLoading } = useQuery({
     queryKey: ['eventStories', eventId],
-    queryFn: () => storyService.getAllStories(Number(eventId)),
+    queryFn: () => storyService.getEventStories(Number(eventId)),
     enabled: !!eventId,
   });
   
