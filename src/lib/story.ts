@@ -1,29 +1,7 @@
 
 import { supabase } from './supabase';
 import { toast } from 'sonner';
-
-export interface Story {
-  id: number;
-  event_id: number;
-  user_id: string;
-  content: string;
-  media_url?: string;
-  likes_count: number;
-  comments_count?: number; // Add comments_count property
-  created_at: string;
-  updated_at?: string;
-  user_name?: string;
-  user_image?: string;
-  hashtags?: string[];
-  caption?: string; // Add caption for compatibility
-}
-
-export interface CreateStoryDto {
-  event_id: number;
-  content: string;
-  media_url?: string;
-  hashtags?: string[];
-}
+import { Story, CreateStoryDto } from './story/types';
 
 export const storyService = {
   getEventStories: async (eventId: number): Promise<Story[]> => {
