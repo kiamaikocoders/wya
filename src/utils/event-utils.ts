@@ -18,7 +18,7 @@ export const getUpcomingEvents = (events: Event[]): Event[] => {
   return events.filter(event => new Date(event.date) >= now);
 };
 
-// Add the missing formatDate function
+// Add the missing formatDate function that was referenced in EventDetails.tsx
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
