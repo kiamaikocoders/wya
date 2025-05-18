@@ -13,8 +13,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          profiles (username, avatar_url),
+          events (title)
         `)
         .order('created_at', { ascending: false });
 
@@ -41,7 +41,10 @@ export const storyService = {
         updated_at: item.updated_at,
         user_name: item.profiles?.username,
         user_image: item.profiles?.avatar_url,
-        hashtags: item.hashtags
+        hashtags: item.hashtags,
+        status: item.status,
+        is_featured: item.is_featured,
+        expires_at: item.expires_at
       }));
 
       return stories;
@@ -53,6 +56,13 @@ export const storyService = {
   },
 
   /**
+   * Get event stories (filtered by event_id)
+   */
+  getEventStories: async (eventId: number): Promise<Story[]> => {
+    return storyService.getAllStories(eventId);
+  },
+
+  /**
    * Get featured stories (with is_featured = true)
    */
   getFeaturedStories: async (): Promise<Story[]> => {
@@ -61,8 +71,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          profiles (username, avatar_url),
+          events (title)
         `)
         .eq('is_featured', true)
         .order('created_at', { ascending: false });
@@ -84,7 +94,10 @@ export const storyService = {
         updated_at: item.updated_at,
         user_name: item.profiles?.username,
         user_image: item.profiles?.avatar_url,
-        hashtags: item.hashtags
+        hashtags: item.hashtags,
+        status: item.status,
+        is_featured: item.is_featured,
+        expires_at: item.expires_at
       }));
 
       return stories;
@@ -104,8 +117,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles:user_id (username, avatar_url),
-          events:event_id (title)
+          profiles (username, avatar_url),
+          events (title)
         `)
         .eq('id', storyId)
         .single();
@@ -128,7 +141,10 @@ export const storyService = {
         updated_at: data.updated_at,
         user_name: data.profiles?.username,
         user_image: data.profiles?.avatar_url,
-        hashtags: data.hashtags
+        hashtags: data.hashtags,
+        status: data.status,
+        is_featured: data.is_featured,
+        expires_at: data.expires_at
       };
     } catch (error) {
       console.error(`Error fetching story with ID ${storyId}:`, error);
@@ -155,17 +171,20 @@ export const storyService = {
       const matches = storyData.content.match(hashtagRegex) || [];
       const hashtags = matches.map(tag => tag.substring(1));
 
+      // Create the insert data matching table schema
+      const insertData = {
+        user_id: user.id,
+        event_id: storyData.event_id,
+        content: storyData.content,
+        caption: storyData.caption || storyData.content,
+        media_url: storyData.media_url,
+        media_type: storyData.media_url ? (storyData.media_type || 'image') : null,
+        hashtags: hashtags.length > 0 ? hashtags : null
+      };
+
       const { data, error } = await supabase
         .from('stories')
-        .insert({
-          user_id: user.id,
-          event_id: storyData.event_id,
-          content: storyData.content,
-          media_url: storyData.media_url,
-          media_type: storyData.media_url ? 'image' : null,
-          hashtags: hashtags.length > 0 ? hashtags : null,
-          created_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -205,12 +224,20 @@ export const storyService = {
         return null;
       }
 
+      // Only include fields that are in the database schema
+      const updateData: any = {};
+      
+      if (storyData.content !== undefined) updateData.content = storyData.content;
+      if (storyData.caption !== undefined) updateData.caption = storyData.caption;
+      if (storyData.media_url !== undefined) updateData.media_url = storyData.media_url;
+      if (storyData.media_type !== undefined) updateData.media_type = storyData.media_type;
+      if (storyData.hashtags !== undefined) updateData.hashtags = storyData.hashtags;
+      if (storyData.is_featured !== undefined) updateData.is_featured = storyData.is_featured;
+      if (storyData.status !== undefined) updateData.status = storyData.status;
+
       const { data, error } = await supabase
         .from('stories')
-        .update({
-          ...storyData,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', storyId)
         .select()
         .single();
@@ -276,7 +303,7 @@ export const storyService = {
         .from('story_comments')
         .select(`
           *,
-          profiles:user_id (username, avatar_url)
+          profiles (username, avatar_url)
         `)
         .eq('story_id', storyId)
         .order('created_at', { ascending: true });
@@ -318,8 +345,7 @@ export const storyService = {
         .insert({
           user_id: user.id,
           story_id: commentData.story_id,
-          content: commentData.content,
-          created_at: new Date().toISOString()
+          content: commentData.content
         })
         .select()
         .single();
@@ -390,8 +416,7 @@ export const storyService = {
           .from('story_likes')
           .insert({
             user_id: user.id,
-            story_id: storyId,
-            created_at: new Date().toISOString()
+            story_id: storyId
           });
 
         if (likeError) throw likeError;

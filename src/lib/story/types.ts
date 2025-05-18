@@ -12,8 +12,11 @@ export interface Story {
   user_name?: string;
   user_image?: string;
   likes_count?: number;
-  comments_count?: number; // Ensure comments_count is defined
+  comments_count?: number;
   hashtags?: string[];
+  status?: string;
+  is_featured?: boolean;
+  expires_at?: string;
 }
 
 export interface StoryComment {
@@ -29,7 +32,10 @@ export interface StoryComment {
 export interface CreateStoryDto {
   event_id?: number;
   content: string;
+  caption?: string;
   media_url?: string;
+  media_type?: string;
+  hashtags?: string[];
 }
 
 export interface CreateStoryCommentDto {
