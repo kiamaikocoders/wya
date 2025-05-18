@@ -327,6 +327,56 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          event_id: number | null
+          id: number
+          metadata: Json | null
+          payment_method: string | null
+          reference_code: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          event_id?: number | null
+          id?: never
+          metadata?: Json | null
+          payment_method?: string | null
+          reference_code?: string | null
+          status: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          event_id?: number | null
+          id?: never
+          metadata?: Json | null
+          payment_method?: string | null
+          reference_code?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string | null
@@ -515,6 +565,240 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
+      }
+      stories: {
+        Row: {
+          caption: string | null
+          comments_count: number | null
+          content: string | null
+          created_at: string | null
+          event_id: number | null
+          expires_at: string | null
+          hashtags: string[] | null
+          id: number
+          is_featured: boolean | null
+          likes_count: number | null
+          media_type: string | null
+          media_url: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          comments_count?: number | null
+          content?: string | null
+          created_at?: string | null
+          event_id?: number | null
+          expires_at?: string | null
+          hashtags?: string[] | null
+          id?: never
+          is_featured?: boolean | null
+          likes_count?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          comments_count?: number | null
+          content?: string | null
+          created_at?: string | null
+          event_id?: number | null
+          expires_at?: string | null
+          hashtags?: string[] | null
+          id?: never
+          is_featured?: boolean | null
+          likes_count?: number | null
+          media_type?: string | null
+          media_url?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: number
+          story_id: number | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: never
+          story_id?: number | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: never
+          story_id?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_comments_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_likes: {
+        Row: {
+          created_at: string | null
+          id: number
+          story_id: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          story_id?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          story_id?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_likes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_questions: {
+        Row: {
+          created_at: string | null
+          id: number
+          options: Json | null
+          order_position: number
+          question_text: string
+          question_type: string
+          required: boolean | null
+          survey_id: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          options?: Json | null
+          order_position: number
+          question_text: string
+          question_type: string
+          required?: boolean | null
+          survey_id?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          options?: Json | null
+          order_position?: number
+          question_text?: string
+          question_type?: string
+          required?: boolean | null
+          survey_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_questions_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_responses: {
+        Row: {
+          created_at: string | null
+          id: number
+          response_data: Json
+          survey_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          response_data: Json
+          survey_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          response_data?: Json
+          survey_id?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_id: number | null
+          id: number
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: number | null
+          id?: never
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: number | null
+          id?: never
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surveys_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
