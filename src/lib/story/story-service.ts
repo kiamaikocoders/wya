@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { Story, StoryComment, CreateStoryDto, CreateStoryCommentDto } from './types';
@@ -12,9 +11,22 @@ export const storyService = {
       let query = supabase
         .from('stories')
         .select(`
-          *,
-          profiles:user_id(username, avatar_url),
-          events:event_id(title)
+          id,
+          content,
+          user_id,
+          event_id,
+          media_url,
+          media_type,
+          caption,
+          likes_count,
+          comments_count,
+          created_at,
+          hashtags,
+          status,
+          is_featured,
+          expires_at,
+          profiles:user_id (username, avatar_url),
+          events:event_id (title)
         `)
         .order('created_at', { ascending: false });
 
@@ -38,7 +50,6 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        updated_at: item.updated_at,
         user_name: item.profiles?.username,
         user_image: item.profiles?.avatar_url,
         hashtags: item.hashtags,
@@ -70,9 +81,22 @@ export const storyService = {
       const { data, error } = await supabase
         .from('stories')
         .select(`
-          *,
-          profiles:user_id(username, avatar_url),
-          events:event_id(title)
+          id,
+          content,
+          user_id,
+          event_id,
+          media_url,
+          media_type,
+          caption,
+          likes_count,
+          comments_count,
+          created_at,
+          hashtags,
+          status,
+          is_featured,
+          expires_at,
+          profiles:user_id (username, avatar_url),
+          events:event_id (title)
         `)
         .eq('is_featured', true)
         .order('created_at', { ascending: false });
@@ -91,7 +115,6 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        updated_at: item.updated_at,
         user_name: item.profiles?.username,
         user_image: item.profiles?.avatar_url,
         hashtags: item.hashtags,
@@ -116,9 +139,22 @@ export const storyService = {
       const { data, error } = await supabase
         .from('stories')
         .select(`
-          *,
-          profiles:user_id(username, avatar_url),
-          events:event_id(title)
+          id,
+          content,
+          user_id,
+          event_id,
+          media_url,
+          media_type,
+          caption,
+          likes_count,
+          comments_count,
+          created_at,
+          hashtags,
+          status,
+          is_featured,
+          expires_at,
+          profiles:user_id (username, avatar_url),
+          events:event_id (title)
         `)
         .eq('id', storyId)
         .single();
@@ -138,7 +174,6 @@ export const storyService = {
         likes_count: data.likes_count || 0,
         comments_count: data.comments_count || 0,
         created_at: data.created_at,
-        updated_at: data.updated_at,
         user_name: data.profiles?.username,
         user_image: data.profiles?.avatar_url,
         hashtags: data.hashtags,
@@ -302,8 +337,12 @@ export const storyService = {
       const { data, error } = await supabase
         .from('story_comments')
         .select(`
-          *,
-          profiles:user_id(username, avatar_url)
+          id,
+          user_id,
+          story_id,
+          content,
+          created_at,
+          profiles:user_id (username, avatar_url)
         `)
         .eq('story_id', storyId)
         .order('created_at', { ascending: true });

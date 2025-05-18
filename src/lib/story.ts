@@ -1,4 +1,3 @@
-
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { Story, CreateStoryDto } from './story/types';
@@ -138,3 +137,6 @@ export const storyService = {
     }
   }
 };
+
+// Re-export types from the story module
+export * from './story/types';

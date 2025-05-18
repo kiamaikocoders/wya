@@ -2,7 +2,7 @@
 export interface Story {
   id: number;
   user_id: string;
-  event_id?: number;
+  event_id?: number;  // Make optional to match both implementations
   content: string;
   caption?: string;
   media_url?: string;
