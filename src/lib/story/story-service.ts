@@ -13,8 +13,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles (username, avatar_url),
-          events (title)
+          profiles:user_id(username, avatar_url),
+          events:event_id(title)
         `)
         .order('created_at', { ascending: false });
 
@@ -71,8 +71,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles (username, avatar_url),
-          events (title)
+          profiles:user_id(username, avatar_url),
+          events:event_id(title)
         `)
         .eq('is_featured', true)
         .order('created_at', { ascending: false });
@@ -117,8 +117,8 @@ export const storyService = {
         .from('stories')
         .select(`
           *,
-          profiles (username, avatar_url),
-          events (title)
+          profiles:user_id(username, avatar_url),
+          events:event_id(title)
         `)
         .eq('id', storyId)
         .single();
@@ -303,7 +303,7 @@ export const storyService = {
         .from('story_comments')
         .select(`
           *,
-          profiles (username, avatar_url)
+          profiles:user_id(username, avatar_url)
         `)
         .eq('story_id', storyId)
         .order('created_at', { ascending: true });

@@ -30,6 +30,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDate } from '@/utils/event-utils';
+import { useEvent } from '@/hooks/use-events';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
