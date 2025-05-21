@@ -1,117 +1,126 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Search, Trash2, Check, X, ThumbsUp, ThumbsDown, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase'; // Assuming supabase client is exported from here
 
 interface EventProposal {
   id: number;
   title: string;
   description: string;
   category: string;
-  estimatedDate: string;
-  location: string;
+  estimatedDate: string | null; // Match Supabase DATE type
+  location: string | null; // Match Supabase TEXT type (nullable)
   status: "pending" | "approved" | "rejected";
-  submittedBy: string;
-  submittedOn: string;
-  expectedAttendees: number;
-  budget: string;
-  sponsorNeeds?: string;
+  submittedBy: string; // Change from submitted_by to camelCase
+  submittedOn: string; // Change from submitted_on to camelCase
+  expectedAttendees: number | null; // Change from expected_attendees to camelCase
+  budget: string | null; // Match Supabase TEXT type (nullable)
+  sponsorNeeds?: string | null; // Change from sponsor_needs to camelCase
 }
 
-const MOCK_PROPOSALS: EventProposal[] = [
-  {
-    id: 1,
-    title: "Nairobi Tech Week 2024",
-    description: "A week-long festival celebrating technology and innovation in Nairobi.",
-    category: "tech",
-    estimatedDate: "2024-09-15",
-    location: "KICC, Nairobi",
-    status: "pending",
-    submittedBy: "john.doe@example.com",
-    submittedOn: "2024-05-01",
-    expectedAttendees: 2500,
-    budget: "$25,000 - $35,000",
-    sponsorNeeds: "Looking for tech companies to sponsor venues and provide speakers."
-  },
-  {
-    id: 2,
-    title: "Kenyan Food Festival",
-    description: "A celebration of traditional and modern Kenyan cuisine.",
-    category: "food",
-    estimatedDate: "2024-07-20",
-    location: "Uhuru Gardens, Nairobi",
-    status: "pending",
-    submittedBy: "chef.alice@example.com",
-    submittedOn: "2024-04-28",
-    expectedAttendees: 1500,
-    budget: "$15,000",
-    sponsorNeeds: "Seeking food industry sponsors and local restaurant partnerships."
-  },
-  {
-    id: 3,
-    title: "Lake Victoria Music Festival",
-    description: "A three-day music festival celebrating East African artists.",
-    category: "music",
-    estimatedDate: "2024-08-05",
-    location: "Kisumu Lakefront",
-    status: "approved",
-    submittedBy: "music.promoter@example.com",
-    submittedOn: "2024-04-15",
-    expectedAttendees: 5000,
-    budget: "$50,000",
-    sponsorNeeds: "Looking for beverage sponsors and media partners."
-  },
-  {
-    id: 4,
-    title: "Nairobi Marathon 2024",
-    description: "Annual marathon event through the streets of Nairobi.",
-    category: "sports",
-    estimatedDate: "2024-10-30",
-    location: "Nairobi CBD",
-    status: "rejected",
-    submittedBy: "events@athleticskenya.com",
-    submittedOn: "2024-04-10",
-    expectedAttendees: 10000,
-    budget: "$75,000",
-    sponsorNeeds: "Seeking sportswear and nutrition company sponsorships."
-  }
-];
-
 const ProposalManagement: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedProposals, setSelectedProposals] = useState<number[]>([]);
   const [viewProposal, setViewProposal] = useState<EventProposal | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
 
+  // Fetch proposals from Supabase
+  const { data: proposals, isLoading, error } = useQuery<EventProposal[], Error>({
+    queryKey: ['proposals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*');
+      if (error) throw error;
+      // Ensure data matches the interface, especially nullable fields
+      return data.map(p => ({
+        ...p,
+        estimatedDate: p.estimated_date, // Map column names
+        submittedBy: p.submitted_by, // Map column names
+        submittedOn: p.submitted_on, // Map column names
+        expectedAttendees: p.expected_attendees, // Map column names
+        sponsorNeeds: p.sponsor_needs, // Map column names
+      })) as EventProposal[];
+    },
+  });
+
+  // Mutations for updating proposals
+  const updateProposalStatusMutation = useMutation<null, Error, { id: number; status: "approved" | "rejected" }> ({
+    mutationFn: async ({ id, status }) => {
+      const { error } = await supabase
+        .from('proposals')
+        .update({ status })
+        .eq('id', id);
+      if (error) throw error;
+      return null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      toast.success('Proposal status updated');
+    },
+    onError: (err) => {
+      toast.error(`Failed to update proposal status: ${err.message}`);
+    },
+  });
+
+  // Mutation for deleting proposals
+  const deleteProposalsMutation = useMutation<null, Error, number[]>({
+    mutationFn: async (ids) => {
+      const { error } = await supabase
+        .from('proposals')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+      return null;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proposals'] });
+      toast.success('Selected proposals deleted');
+      setSelectedProposals([]); // Clear selection after deletion
+    },
+    onError: (err) => {
+      toast.error(`Failed to delete proposals: ${err.message}`);
+    },
+  });
+
+
   const handleApprove = (proposalId: number) => {
-    toast.success(`Proposal #${proposalId} has been approved`);
-    // In a real app, this would update the proposal status via API
+    updateProposalStatusMutation.mutate({ id: proposalId, status: "approved" });
   };
 
   const handleReject = (proposalId: number) => {
-    toast.success(`Proposal #${proposalId} has been rejected`);
-    // In a real app, this would update the proposal status via API
+    updateProposalStatusMutation.mutate({ id: proposalId, status: "rejected" });
   };
 
   const handleDelete = (proposalId: number) => {
-    toast.success(`Proposal #${proposalId} has been deleted`);
-    // In a real app, this would delete the proposal via API
+    if (confirm('Are you sure you want to delete this proposal?')) {
+      deleteProposalsMutation.mutate([proposalId]);
+      setViewProposal(null); // Close dialog if deleting the viewed proposal
+    }
   };
 
-  const filteredProposals = MOCK_PROPOSALS.filter(proposal => {
+  const handleDeleteSelected = () => {
+    if (confirm(`Are you sure you want to delete ${selectedProposals.length} selected proposal(s)?`)) {
+      deleteProposalsMutation.mutate(selectedProposals);
+    }
+  };
+
+  // Filter proposals based on search query, status filter, and active tab
+  const filteredProposals = (proposals || []).filter(proposal => {
     const matchesSearch = 
       proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       proposal.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      proposal.submittedBy.toLowerCase().includes(searchQuery.toLowerCase());
+      (proposal.submittedBy || '').toLowerCase().includes(searchQuery.toLowerCase()); // Use submittedBy for search
     
     const matchesStatus = statusFilter ? proposal.status === statusFilter : true;
     
@@ -133,7 +142,7 @@ const ProposalManagement: React.FC = () => {
     );
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: EventProposal['status']) => {
     switch (status) {
       case "pending":
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Pending</Badge>;
@@ -146,6 +155,14 @@ const ProposalManagement: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="text-center py-8">Loading proposals...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center py-8 text-red-500">Error loading proposals: {error.message}</div>;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -155,43 +172,13 @@ const ProposalManagement: React.FC = () => {
           <Button 
             variant="destructive" 
             size="sm"
-            disabled={selectedProposals.length === 0}
-            onClick={() => {
-              toast.success(`${selectedProposals.length} proposal(s) deleted`);
-              setSelectedProposals([]);
-            }}
+            disabled={selectedProposals.length === 0 || deleteProposalsMutation.isPending}
+            onClick={handleDeleteSelected}
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete Selected
+            {deleteProposalsMutation.isPending ? 'Deleting...' : <> <Trash2 className="h-4 w-4 mr-1" /> Delete Selected </>}
           </Button>
           
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="border-green-500 text-green-600 hover:bg-green-50"
-            disabled={selectedProposals.length === 0}
-            onClick={() => {
-              toast.success(`${selectedProposals.length} proposal(s) approved`);
-              setSelectedProposals([]);
-            }}
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Approve Selected
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="border-red-500 text-red-600 hover:bg-red-50"
-            disabled={selectedProposals.length === 0}
-            onClick={() => {
-              toast.success(`${selectedProposals.length} proposal(s) rejected`);
-              setSelectedProposals([]);
-            }}
-          >
-            <X className="h-4 w-4 mr-1" />
-            Reject Selected
-          </Button>
+          {/* Individual Approve/Reject/Delete buttons within table rows are handled below */}
         </div>
       </div>
       
@@ -207,14 +194,14 @@ const ProposalManagement: React.FC = () => {
           />
         </div>
         <Select 
-          value={statusFilter || ""} 
-          onValueChange={(value) => setStatusFilter(value || null)}
+          value={statusFilter || "all"}
+          onValueChange={(value) => setStatusFilter(value === "all" ? null : value)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
@@ -295,19 +282,30 @@ const ProposalManagement: React.FC = () => {
                       size="sm"
                       className="text-green-500 hover:text-green-700 hover:bg-green-50"
                       onClick={() => handleApprove(proposal.id)}
+                      disabled={updateProposalStatusMutation.isPending}
                     >
-                      <ThumbsUp className="h-4 w-4" />
+                       {updateProposalStatusMutation.isPending ? '' : <ThumbsUp className="h-4 w-4" />}
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       onClick={() => handleReject(proposal.id)}
+                      disabled={updateProposalStatusMutation.isPending}
                     >
-                      <ThumbsDown className="h-4 w-4" />
+                      {updateProposalStatusMutation.isPending ? '' : <ThumbsDown className="h-4 w-4" />}
                     </Button>
                   </>
                 )}
+                 <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDelete(proposal.id)}
+                    disabled={deleteProposalsMutation.isPending}
+                  >
+                     {deleteProposalsMutation.isPending ? '' : <Trash2 className="h-4 w-4" />}
+                  </Button>
               </div>
             </div>
           ))
@@ -345,22 +343,22 @@ const ProposalManagement: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-1">Location</h4>
-                    <p className="text-sm">{viewProposal.location}</p>
+                    <p className="text-sm">{viewProposal.location || 'N/A'}</p>
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-1">Estimated Date</h4>
-                    <p className="text-sm">{viewProposal.estimatedDate}</p>
+                    <p className="text-sm">{viewProposal.estimatedDate || 'N/A'}</p>
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-1">Expected Attendees</h4>
-                    <p className="text-sm">{viewProposal.expectedAttendees.toLocaleString()}</p>
+                    <p className="text-sm">{viewProposal.expectedAttendees?.toLocaleString() || 'N/A'}</p>
                   </div>
                   
                   <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-1">Budget</h4>
-                    <p className="text-sm">{viewProposal.budget}</p>
+                    <p className="text-sm">{viewProposal.budget || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -377,7 +375,9 @@ const ProposalManagement: React.FC = () => {
               variant="outline"
               className="mr-auto"
               onClick={() => {
-                toast.success(`Email sent to ${viewProposal?.submittedBy}`);
+                // This should ideally open a mail client or a compose email dialog
+                // For now, just show a toast or console log
+                toast.info(`Simulating sending email to ${viewProposal?.submittedBy}`);
               }}
             >
               <Mail className="h-4 w-4 mr-2" />
@@ -391,25 +391,26 @@ const ProposalManagement: React.FC = () => {
                   className="border-green-500 text-green-600 hover:bg-green-50"
                   onClick={() => {
                     handleApprove(viewProposal.id);
-                    setViewProposal(null);
+                    // setViewProposal(null); // Keep dialog open until mutation is successful?
                   }}
+                  disabled={updateProposalStatusMutation.isPending}
                 >
-                  <Check className="h-4 w-4 mr-1" />
-                  Approve
+                   {updateProposalStatusMutation.isPending ? 'Processing...' : <> <Check className="h-4 w-4 mr-1" /> Approve </>}
                 </Button>
                 <Button 
                   variant="outline" 
                   className="border-red-500 text-red-600 hover:bg-red-50"
                   onClick={() => {
                     handleReject(viewProposal.id);
-                    setViewProposal(null);
+                    // setViewProposal(null); // Keep dialog open?
                   }}
+                  disabled={updateProposalStatusMutation.isPending}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  Reject
+                   {updateProposalStatusMutation.isPending ? 'Processing...' : <> <X className="h-4 w-4 mr-1" /> Reject </>}
                 </Button>
               </>
             )}
+            {/* Delete button is now in the table row */}
           </DialogFooter>
         </DialogContent>
       </Dialog>

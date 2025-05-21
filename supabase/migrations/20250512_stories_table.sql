@@ -1,4 +1,3 @@
-
 -- Create stories table
 CREATE TABLE IF NOT EXISTS public.stories (
   id SERIAL PRIMARY KEY,
@@ -22,12 +21,12 @@ CREATE POLICY "Stories are viewable by everyone" ON public.stories
   FOR SELECT USING (true);
 
 -- Create policy for creating stories
-CREATE POLICY "Users can create their own stories" ON public.stories
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- CREATE POLICY "Users can create their own stories" ON public.stories
+--   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Create policy for updating stories
-CREATE POLICY "Users can update their own stories" ON public.stories
-  FOR UPDATE USING (auth.uid() = user_id);
+-- CREATE POLICY "Users can update their own stories" ON public.stories
+--   FOR UPDATE USING (auth.uid() = user_id);
 
 -- Create policy for deleting stories
 CREATE POLICY "Users can delete their own stories" ON public.stories

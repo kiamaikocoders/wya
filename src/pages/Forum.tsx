@@ -41,7 +41,7 @@ const Forum: React.FC = () => {
     queryFn: () => import('@/lib/event-service').then(module => module.eventService.getAllEvents()),
   });
   
-  // Load liked posts on component mount
+  // Load liked posts on component mount and set up Realtime subscription
   useEffect(() => {
     if (user) {
       const fetchLikedPosts = async () => {
@@ -62,8 +62,44 @@ const Forum: React.FC = () => {
       };
       
       fetchLikedPosts();
+
+      // Set up Realtime subscription for post_likes
+      const subscription = supabase
+        .channel('public:post_likes')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'post_likes' }, 
+          (payload) => {
+            // When a new like is inserted, increment the likes_count for the post
+            setPosts(prevPosts =>
+              prevPosts.map(post =>
+                post.id === payload.new.post_id
+                  ? { ...post, likes_count: (post.likes_count || 0) + 1 }
+                  : post
+              )
+            );
+          }
+        )
+        .on('postgres_changes', 
+          { event: 'DELETE', schema: 'public', table: 'post_likes' }, 
+          (payload) => {
+            // When a like is deleted, decrement the likes_count for the post
+            setPosts(prevPosts =>
+              prevPosts.map(post =>
+                post.id === payload.old.post_id
+                  ? { ...post, likes_count: Math.max(0, (post.likes_count || 0) - 1) }
+                  : post
+              )
+            );
+          }
+        )
+        .subscribe();
+
+      // Clean up subscription on component unmount
+      return () => {
+        supabase.removeChannel(subscription);
+      };
     }
-  }, [user]);
+  }, [user]); // Depend on user to set up subscription only when logged in
 
   const handleNewPostSuccess = () => {
     refetch();
@@ -149,12 +185,9 @@ const Forum: React.FC = () => {
           
         if (error) throw error;
         
+        // Update local state for liked status immediately
         setLikedPosts(likedPosts.filter(id => id !== postId));
-        setPosts(posts.map(p => 
-          p.id === postId 
-            ? { ...p, likes_count: (p.likes_count || 0) - 1 } 
-            : p
-        ));
+        // Note: likes_count update will be handled by Realtime subscription
       } else {
         // Like post
         const { error } = await supabase
@@ -166,12 +199,9 @@ const Forum: React.FC = () => {
           
         if (error) throw error;
         
+        // Update local state for liked status immediately
         setLikedPosts([...likedPosts, postId]);
-        setPosts(posts.map(p => 
-          p.id === postId 
-            ? { ...p, likes_count: (p.likes_count || 0) + 1 } 
-            : p
-        ));
+        // Note: likes_count update will be handled by Realtime subscription
       }
     } catch (error) {
       console.error('Error toggling like:', error);

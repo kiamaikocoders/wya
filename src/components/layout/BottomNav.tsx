@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Ticket, Users, Bookmark, User, MessageCircle, BarChart } from 'lucide-react';
@@ -13,7 +12,7 @@ const BottomNav = () => {
   const baseNavItems = [
     { name: 'Explore', icon: Home, path: '/' },
     { name: 'Tickets', icon: Ticket, path: '/tickets' },
-    { name: 'Community', icon: Users, path: '/forum' },
+    { name: 'Spotlight', icon: Users, path: '/spotlight' },
     { name: 'Favorites', icon: Bookmark, path: '/favorites' },
     { name: 'Profile', icon: User, path: '/profile' },
   ];

@@ -168,7 +168,7 @@ export const surveyService = {
   },
   // Submit survey response
   submitSurveyResponse: async (
-    surveyId: number,
+    surveyId: number, 
     answers: { question_id: number; answer: string | string[] | number }[]
   ): Promise<void> => {
     try {
