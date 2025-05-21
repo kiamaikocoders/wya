@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,6 +40,7 @@ import CreateEvent from "./pages/CreateEvent";
 import UsersDirectory from '@/pages/UsersDirectory';
 import SponsorsPage from './pages/SponsorsPage';
 import SponsorZone from './pages/SponsorZone';
+import SpotlightPage from './pages/SpotlightPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -189,6 +189,9 @@ const App = () => (
                 } />
 
                 <Route path="/users" element={<UsersDirectory />} />
+
+                {/* Add the new Spotlight route */}
+                <Route path="/spotlight" element={<SpotlightPage />} />
 
                 <Route path="*" element={<NotFound />} />
               </Route>

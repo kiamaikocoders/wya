@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -12,6 +11,8 @@ export interface Profile {
   created_at: string;
   updated_at: string;
   location?: string; // Added location property
+  followers_count: number; // Add followers_count
+  following_count: number; // Add following_count
 }
 
 export const profileService = {
@@ -19,7 +20,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, followers_count, following_count')
         .eq('id', userId)
         .single();
 
@@ -70,7 +71,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, followers_count, following_count')
         .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
         .limit(10);
 
@@ -94,7 +95,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, followers_count, following_count')
         .eq('username', username)
         .single();
 
