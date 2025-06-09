@@ -439,6 +439,51 @@ export type Database = {
         }
         Relationships: []
       }
+      proposals: {
+        Row: {
+          budget: string | null
+          category: string
+          description: string
+          estimated_date: string | null
+          expected_attendees: number | null
+          id: number
+          location: string | null
+          sponsor_needs: string | null
+          status: string
+          submitted_by: string
+          submitted_on: string | null
+          title: string
+        }
+        Insert: {
+          budget?: string | null
+          category: string
+          description: string
+          estimated_date?: string | null
+          expected_attendees?: number | null
+          id?: number
+          location?: string | null
+          sponsor_needs?: string | null
+          status?: string
+          submitted_by: string
+          submitted_on?: string | null
+          title: string
+        }
+        Update: {
+          budget?: string | null
+          category?: string
+          description?: string
+          estimated_date?: string | null
+          expected_attendees?: number | null
+          id?: number
+          location?: string | null
+          sponsor_needs?: string | null
+          status?: string
+          submitted_by?: string
+          submitted_on?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       sponsor_content_blocks: {
         Row: {
           action_url: string | null
