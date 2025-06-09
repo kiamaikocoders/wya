@@ -423,7 +423,7 @@ export const storyService = {
       return data.map(item => ({
         id: item.id,
         user_id: item.user_id,
-        story_id: item.story_id,
+        story_id: item.story_id!,
         content: item.content,
         created_at: item.created_at,
         user_name: profileMap[item.user_id]?.username || 'Unknown User',
@@ -461,20 +461,26 @@ export const storyService = {
 
       if (commentError) throw commentError;
 
-      // Update the comments count on the story using a custom function
+      // Update the comments count on the story manually
       try {
-        const { error: updateError } = await supabase.rpc(
-          'increment_story_comments_count',
-          { p_story_id: commentData.story_id }
-        );
+        const { data: story } = await supabase
+          .from('stories')
+          .select('comments_count')
+          .eq('id', commentData.story_id)
+          .single();
 
-        if (updateError) {
-          console.error('Error updating comments count:', updateError);
-          // Continue anyway as the comment was added successfully
+        if (story) {
+          const { error: updateError } = await supabase
+            .from('stories')
+            .update({ comments_count: (story.comments_count || 0) + 1 })
+            .eq('id', commentData.story_id);
+
+          if (updateError) {
+            console.error('Error updating comments count:', updateError);
+          }
         }
       } catch (error) {
-        console.error('Error calling RPC function:', error);
-        // Continue as the comment was added
+        console.error('Error updating comments count:', error);
       }
 
       // Fetch the user's profile
@@ -528,16 +534,24 @@ export const storyService = {
 
         if (unlikeError) throw unlikeError;
 
-        // Decrement the likes count using a custom function
+        // Decrement the likes count manually
         try {
-          const { error: updateError } = await supabase.rpc(
-            'decrement_story_likes_count', 
-            { p_story_id: storyId }
-          );
+          const { data: story } = await supabase
+            .from('stories')
+            .select('likes_count')
+            .eq('id', storyId)
+            .single();
 
-          if (updateError) console.error('Error updating likes count:', updateError);
+          if (story) {
+            const { error: updateError } = await supabase
+              .from('stories')
+              .update({ likes_count: Math.max((story.likes_count || 0) - 1, 0) })
+              .eq('id', storyId);
+
+            if (updateError) console.error('Error updating likes count:', updateError);
+          }
         } catch (error) {
-          console.error('Error calling RPC function:', error);
+          console.error('Error updating likes count:', error);
         }
 
         toast.success('Story unliked');
@@ -553,16 +567,24 @@ export const storyService = {
 
         if (likeError) throw likeError;
 
-        // Increment the likes count using a custom function
+        // Increment the likes count manually
         try {
-          const { error: updateError } = await supabase.rpc(
-            'increment_story_likes_count',
-            { p_story_id: storyId }
-          );
+          const { data: story } = await supabase
+            .from('stories')
+            .select('likes_count')
+            .eq('id', storyId)
+            .single();
 
-          if (updateError) console.error('Error updating likes count:', updateError);
+          if (story) {
+            const { error: updateError } = await supabase
+              .from('stories')
+              .update({ likes_count: (story.likes_count || 0) + 1 })
+              .eq('id', storyId);
+
+            if (updateError) console.error('Error updating likes count:', updateError);
+          }
         } catch (error) {
-          console.error('Error calling RPC function:', error);
+          console.error('Error updating likes count:', error);
         }
 
         toast.success('Story liked');
