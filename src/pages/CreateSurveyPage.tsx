@@ -27,7 +27,8 @@ const CreateSurveyPage: React.FC = () => {
       question_text: "",
       question_type: "multiple_choice",
       options: [""],
-      required: true
+      required: true,
+      order_position: 1
     }
   ]);
 
@@ -50,7 +51,8 @@ const CreateSurveyPage: React.FC = () => {
         question_text: "",
         question_type: "multiple_choice",
         options: [""],
-        required: true
+        required: true,
+        order_position: questions.length + 1
       }
     ]);
   };
@@ -59,7 +61,12 @@ const CreateSurveyPage: React.FC = () => {
     if (questions.length > 1) {
       const newQuestions = [...questions];
       newQuestions.splice(index, 1);
-      setQuestions(newQuestions);
+      // Update order positions
+      const updatedQuestions = newQuestions.map((q, idx) => ({
+        ...q,
+        order_position: idx + 1
+      }));
+      setQuestions(updatedQuestions);
     }
   };
 
