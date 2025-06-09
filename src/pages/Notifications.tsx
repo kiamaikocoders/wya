@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { notificationService } from '@/lib/notification';
@@ -60,54 +61,12 @@ const Notifications = () => {
     }
   };
   
-  const mockNotifications: Notification[] = [
-    {
-      id: 1,
-      user_id: user?.id || '',
-      title: 'New Event: Nairobi Tech Week',
-      message: 'A new tech event has been added in your area.',
-      type: 'event_update',
-      read: false,
-      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-    },
-    {
-      id: 2,
-      user_id: user?.id || '',
-      title: 'Event Update: Lamu Cultural Festival',
-      message: 'The venue for Lamu Cultural Festival has been changed.',
-      type: 'announcement',
-      read: true,
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    },
-    {
-      id: 3,
-      user_id: user?.id || '',
-      title: 'Your Ticket Confirmation',
-      message: 'Your ticket for Kilifi New Year Festival has been confirmed.',
-      type: 'ticket',
-      read: false,
-      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    },
-    {
-      id: 4,
-      user_id: user?.id || '',
-      title: 'Welcome to WYA!',
-      message: 'Welcome to WYA - Your local event discovery platform.',
-      type: 'system',
-      read: true,
-      created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-    }
-  ];
-  
-  // Use mock data if API fails
-  const displayNotifications = (notifications && Array.isArray(notifications) && notifications.length > 0) ? notifications : mockNotifications;
-  
   return (
     <div className="container py-8 animate-fade-in">
       <div className="flex flex-col space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-white text-3xl font-bold">Your Notifications</h1>
-          {displayNotifications && displayNotifications.length > 0 && (
+          {notifications && notifications.length > 0 && (
             <Button variant="outline" onClick={handleMarkAllAsRead}>
               Mark all as read
             </Button>
@@ -118,9 +77,9 @@ const Notifications = () => {
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
-        ) : displayNotifications && displayNotifications.length > 0 ? (
+        ) : notifications && notifications.length > 0 ? (
           <div className="grid gap-4">
-            {displayNotifications.map((notification) => (
+            {notifications.map((notification) => (
               <Card 
                 key={notification.id} 
                 className={`transition-colors ${!notification.read ? 'bg-kenya-brown/10 border-kenya-orange/50' : ''}`}
