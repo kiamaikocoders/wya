@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,6 +63,11 @@ const App = () => (
                 <Route path="/" element={<Home />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:eventId" element={<EventDetails />} />
+                <Route path="/events/:eventId/survey/create" element={
+                  <ProtectedRoute>
+                    <CreateSurveyPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/categories/:slug" element={<Categories />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -74,7 +80,11 @@ const App = () => (
                 } />
                 <Route path="/search" element={<Search />} />
                 <Route path="/stories" element={<Stories />} />
-                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                } />
                 <Route path="/ai-assistance" element={<AIAssistance />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -90,6 +100,11 @@ const App = () => (
                 
                 {/* User Profiles */}
                 <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
                   <ProtectedRoute>
                     <Profile />
                   </ProtectedRoute>
