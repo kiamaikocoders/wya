@@ -1,3 +1,4 @@
+
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 
@@ -11,6 +12,7 @@ export interface SurveyQuestion {
   description?: string;
   text?: string;
   type?: string; // Added for compatibility with existing code
+  order_position: number;
 }
 
 export interface Survey {
@@ -20,7 +22,7 @@ export interface Survey {
   description?: string;
   questions: SurveyQuestion[];
   created_at: string;
-  is_anonymous: boolean;
+  is_anonymous?: boolean; // Make optional since it doesn't exist in DB
 }
 
 export interface SurveyResponse {
@@ -43,7 +45,7 @@ export interface CreateSurveyPayload {
   title: string;
   description?: string;
   questions: Omit<SurveyQuestion, 'id'>[];
-  is_anonymous: boolean;
+  is_anonymous?: boolean;
 }
 
 export const surveyService = {
@@ -64,7 +66,11 @@ export const surveyService = {
       if (qError) throw qError;
       return surveys.map(survey => ({
         ...survey,
-        questions: (questions || []).filter(q => q.survey_id === survey.id)
+        is_anonymous: false, // Default value since it doesn't exist in DB
+        questions: (questions || []).filter(q => q.survey_id === survey.id).map(q => ({
+          ...q,
+          question_type: q.question_type as 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox'
+        }))
       }));
     } catch (error) {
       console.error('Error fetching surveys:', error);
@@ -89,7 +95,11 @@ export const surveyService = {
       if (qError) throw qError;
       return surveys.map(survey => ({
         ...survey,
-        questions: (questions || []).filter(q => q.survey_id === survey.id)
+        is_anonymous: false, // Default value since it doesn't exist in DB
+        questions: (questions || []).filter(q => q.survey_id === survey.id).map(q => ({
+          ...q,
+          question_type: q.question_type as 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox'
+        }))
       }));
     } catch (error) {
       console.error(`Error fetching surveys for event ${eventId}:`, error);
@@ -118,7 +128,11 @@ export const surveyService = {
       if (qError) throw qError;
       return {
         ...survey,
-        questions: questions || []
+        is_anonymous: false, // Default value since it doesn't exist in DB
+        questions: (questions || []).map(q => ({
+          ...q,
+          question_type: q.question_type as 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox'
+        }))
       };
     } catch (error) {
       console.error(`Error fetching survey with ID ${id}:`, error);
@@ -129,6 +143,10 @@ export const surveyService = {
   // Create a new survey
   createSurvey: async (surveyData: CreateSurveyPayload): Promise<Survey | null> => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
       // Insert survey
       const { data: survey, error } = await supabase
         .from('surveys')
@@ -136,15 +154,19 @@ export const surveyService = {
           event_id: surveyData.event_id,
           title: surveyData.title,
           description: surveyData.description,
-          is_anonymous: surveyData.is_anonymous
+          user_id: user.id
         })
         .select()
         .single();
       if (error) throw error;
       // Insert questions
-      const questionsToInsert = surveyData.questions.map(q => ({
-        ...q,
-        survey_id: survey.id
+      const questionsToInsert = surveyData.questions.map((q, index) => ({
+        survey_id: survey.id,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        options: q.options ? JSON.stringify(q.options) : null,
+        required: q.required,
+        order_position: index + 1
       }));
       const { error: qError } = await supabase
         .from('survey_questions')
@@ -158,7 +180,11 @@ export const surveyService = {
         .eq('survey_id', survey.id);
       return {
         ...survey,
-        questions: questions || []
+        is_anonymous: surveyData.is_anonymous || false,
+        questions: (questions || []).map(q => ({
+          ...q,
+          question_type: q.question_type as 'multiple_choice' | 'text' | 'rating' | 'yes_no' | 'checkbox'
+        }))
       };
     } catch (error) {
       console.error('Error creating survey:', error);
@@ -180,8 +206,7 @@ export const surveyService = {
         .insert({
           survey_id: surveyId,
           user_id: user.id,
-          answers,
-          submitted_at: new Date().toISOString()
+          response_data: JSON.stringify(answers)
         });
       if (error) throw error;
       toast.success('Survey response submitted successfully');
@@ -221,7 +246,13 @@ export const surveyService = {
         .select('*')
         .eq('survey_id', surveyId);
       if (error) throw error;
-      return responses || [];
+      return (responses || []).map(response => ({
+        id: response.id,
+        survey_id: response.survey_id!,
+        user_id: response.user_id!,
+        answers: JSON.parse(response.response_data as string),
+        submitted_at: response.created_at!
+      }));
     } catch (error) {
       console.error(`Error fetching responses for survey ${surveyId}:`, error);
       toast.error('Failed to fetch survey responses');
