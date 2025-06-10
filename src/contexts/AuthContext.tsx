@@ -13,6 +13,9 @@ export interface User {
   created_at: string;
   bio?: string;
   profile_picture?: string;
+  avatar_url?: string;
+  full_name?: string;
+  username?: string;
   preferences?: {
     interests?: string[];
     [key: string]: any;
@@ -69,7 +72,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             user_type: profile.username === 'admin' ? 'admin' : 'attendee',
             created_at: profile.created_at,
             bio: profile.bio,
-            profile_picture: profile.avatar_url
+            profile_picture: profile.avatar_url,
+            avatar_url: profile.avatar_url,
+            full_name: profile.full_name,
+            username: profile.username
           };
           
           setUser(userData);
@@ -81,7 +87,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             name: session.user.user_metadata?.name || '',
             email: session.user.email || '',
             user_type: 'attendee',
-            created_at: session.user.created_at || new Date().toISOString()
+            created_at: session.user.created_at || new Date().toISOString(),
+            full_name: session.user.user_metadata?.full_name || '',
+            username: session.user.email?.split('@')[0] || ''
           });
           setIsAdmin(false);
         }
@@ -111,7 +119,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             name: session.user.user_metadata?.name || '',
             email: session.user.email || '',
             user_type: 'attendee', // Default, will be updated in refreshAuth
-            created_at: session.user.created_at || new Date().toISOString()
+            created_at: session.user.created_at || new Date().toISOString(),
+            full_name: session.user.user_metadata?.full_name || '',
+            username: session.user.email?.split('@')[0] || ''
           });
           
           // Defer profile fetch with setTimeout to avoid deadlock
