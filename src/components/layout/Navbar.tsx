@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useQuery } from '@tanstack/react-query';
 import { conversationsService } from '@/lib/chat';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
@@ -72,6 +73,9 @@ const Navbar = () => {
 
         <div className="flex items-center space-x-4">
           <ModeToggle />
+          
+          {/* Notification Bell - only show when authenticated */}
+          {isAuthenticated && <NotificationBell />}
 
           {isAuthenticated ? (
             <DropdownMenu>
@@ -154,13 +158,6 @@ const Navbar = () => {
                 <Button>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Sign Up
-                </Button>
-              </Link>
-              {/* Admin button only visible when NOT authenticated */}
-              <Link to="/admin-login">
-                <Button variant="outline" className="text-kenya-orange border-kenya-orange">
-                  <ShieldAlert className="mr-2 h-4 w-4" />
-                  Admin
                 </Button>
               </Link>
             </>
