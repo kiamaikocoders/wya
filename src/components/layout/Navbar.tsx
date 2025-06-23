@@ -156,6 +156,7 @@ const Navbar = () => {
                   Sign Up
                 </Button>
               </Link>
+              {/* Admin button only visible when NOT authenticated */}
               <Link to="/admin-login">
                 <Button variant="outline" className="text-kenya-orange border-kenya-orange">
                   <ShieldAlert className="mr-2 h-4 w-4" />

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { notificationService } from '@/lib/notification';
 import type { Notification } from '@/lib/notification/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, CheckCircle, AlertTriangle, Calendar, Info } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Calendar, Info, UserPlus, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,6 +33,10 @@ const Notifications = () => {
         return <Info className="h-6 w-6 text-purple-500" />;
       case 'ticket':
         return <CheckCircle className="h-6 w-6 text-green-500" />;
+      case 'follow':
+        return <UserPlus className="h-6 w-6 text-kenya-orange" />;
+      case 'message':
+        return <MessageCircle className="h-6 w-6 text-blue-600" />;
       case 'system':
       default:
         return <Bell className="h-6 w-6 text-kenya-orange" />;
