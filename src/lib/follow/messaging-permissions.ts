@@ -8,13 +8,16 @@ export const messagingPermissions = {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser?.user) return false;
       
+      // Ensure userId is a valid UUID string
+      const targetUserId = userId.toString();
+      
       // Check if current user follows the target user
       const { data: following, error: followingError } = await supabase
         .from('follows')
         .select('id')
         .match({ 
           follower_id: currentUser.user.id,
-          following_id: userId 
+          following_id: targetUserId 
         })
         .maybeSingle();
 
@@ -25,7 +28,7 @@ export const messagingPermissions = {
         .from('follows')
         .select('id')
         .match({ 
-          follower_id: userId,
+          follower_id: targetUserId,
           following_id: currentUser.user.id 
         })
         .maybeSingle();

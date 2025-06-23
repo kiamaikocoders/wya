@@ -66,10 +66,14 @@ export const forumService = {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching forum posts:', error);
+        // Return empty array instead of throwing to prevent UI crashes
+        return [];
+      }
       
       // Transform the data to match our ForumPost interface
-      const formattedPosts = data.map(post => {
+      const formattedPosts = (data || []).map(post => {
         const profiles = post.profiles as any;
         return {
           ...post,
@@ -87,12 +91,13 @@ export const forumService = {
       return formattedPosts;
     } catch (error) {
       console.error('Error fetching forum posts:', error);
-      throw new Error('Failed to fetch forum posts');
+      // Return empty array instead of throwing to prevent UI crashes
+      return [];
     }
   },
   
   // Get single forum post by ID
-  getPostById: async (id: number): Promise<ForumPost> => {
+  getPostById: async (id: number): Promise<ForumPost | null> => {
     try {
       const { data, error } = await supabase
         .from('forum_posts')
@@ -103,7 +108,10 @@ export const forumService = {
         .eq('id', id)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching forum post:', error);
+        return null;
+      }
       
       // Transform the data to match our ForumPost interface
       const profiles = data.profiles as any;
@@ -122,16 +130,19 @@ export const forumService = {
       return formattedPost;
     } catch (error) {
       console.error(`Error fetching post #${id}:`, error);
-      throw new Error(`Failed to fetch post #${id}`);
+      return null;
     }
   },
   
   // Create new forum post
-  createPost: async (postData: CreateForumPostDto): Promise<ForumPost> => {
+  createPost: async (postData: CreateForumPostDto): Promise<ForumPost | null> => {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('You must be logged in to create a post');
+      if (!user) {
+        toast.error('You must be logged in to create a post');
+        return null;
+      }
       
       const { data, error } = await supabase
         .from('forum_posts')
@@ -145,12 +156,17 @@ export const forumService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating post:', error);
+        toast.error('Failed to create post');
+        return null;
+      }
       
       return data as ForumPost;
     } catch (error) {
       console.error('Error creating post:', error);
-      throw new Error('Failed to create post');
+      toast.error('Failed to create post');
+      return null;
     }
   },
   
@@ -167,7 +183,7 @@ export const forumService = {
         .eq('id', postId)
         .single();
       
-      if (post.user_id !== user.id) {
+      if (post?.user_id !== user.id) {
         throw new Error('You can only delete your own posts');
       }
       
@@ -195,10 +211,13 @@ export const forumService = {
         .eq('post_id', postId)
         .order('created_at', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+      }
       
       // Transform the data to match our ForumComment interface
-      const formattedComments = data.map(comment => {
+      const formattedComments = (data || []).map(comment => {
         const profiles = comment.profiles as any;
         return {
           ...comment,
@@ -216,7 +235,7 @@ export const forumService = {
       return formattedComments;
     } catch (error) {
       console.error(`Error fetching comments for post #${postId}:`, error);
-      throw new Error(`Failed to fetch comments for post #${postId}`);
+      return [];
     }
   },
   
@@ -226,11 +245,14 @@ export const forumService = {
   },
   
   // Add a comment to a post
-  createComment: async (commentData: CreateCommentDto): Promise<ForumComment> => {
+  createComment: async (commentData: CreateCommentDto): Promise<ForumComment | null> => {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('You must be logged in to comment');
+      if (!user) {
+        toast.error('You must be logged in to comment');
+        return null;
+      }
       
       const { data, error } = await supabase
         .from('forum_comments')
@@ -243,12 +265,17 @@ export const forumService = {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating comment:', error);
+        toast.error('Failed to create comment');
+        return null;
+      }
       
       return data as ForumComment;
     } catch (error) {
       console.error('Error creating comment:', error);
-      throw new Error('Failed to create comment');
+      toast.error('Failed to create comment');
+      return null;
     }
   }
 };

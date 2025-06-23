@@ -11,13 +11,16 @@ export const followOperations = {
         return false;
       }
 
+      // Ensure followingId is a valid UUID string
+      const followingUuid = followingId.toString();
+
       // Check if already following
       const { data: existingFollow } = await supabase
         .from('follows')
         .select('id')
         .match({ 
           follower_id: currentUser.user.id,
-          following_id: followingId 
+          following_id: followingUuid 
         })
         .maybeSingle();
 
@@ -31,7 +34,7 @@ export const followOperations = {
         .from('follows')
         .insert({ 
           follower_id: currentUser.user.id,
-          following_id: followingId 
+          following_id: followingUuid 
         });
 
       if (error) throw error;
@@ -51,12 +54,15 @@ export const followOperations = {
         return false;
       }
 
+      // Ensure followingId is a valid UUID string
+      const followingUuid = followingId.toString();
+
       const { error } = await supabase
         .from('follows')
         .delete()
         .match({ 
           follower_id: currentUser.user.id,
-          following_id: followingId 
+          following_id: followingUuid 
         });
 
       if (error) throw error;
