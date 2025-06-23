@@ -1,6 +1,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { notificationService } from "@/lib/notification";
 
 export interface Follow {
   id: string;
@@ -18,6 +19,7 @@ export const followService = {
         return false;
       }
 
+      // Insert follow relationship
       const { error } = await supabase
         .from('follows')
         .insert({ 
@@ -26,6 +28,33 @@ export const followService = {
         });
 
       if (error) throw error;
+
+      // Get follower's profile info for notification
+      const { data: followerProfile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', currentUser.user.id)
+        .single();
+
+      const followerName = followerProfile?.full_name || followerProfile?.username || 'Someone';
+
+      // Send notification to the followed user
+      try {
+        await notificationService.createNotification({
+          user_id: followingId,
+          type: 'follow',
+          title: 'New Follower',
+          message: `${followerName} started following you`,
+          data: {
+            follower_id: currentUser.user.id,
+            follower_name: followerName
+          }
+        });
+      } catch (notifError) {
+        console.error('Error sending follow notification:', notifError);
+        // Don't fail the follow action if notification fails
+      }
+
       toast.success('User followed successfully');
       return true;
     } catch (error) {
@@ -114,6 +143,44 @@ export const followService = {
       return !!data;
     } catch (error) {
       console.error('Error checking follow status:', error);
+      return false;
+    }
+  },
+
+  // Check if users follow each other (for messaging permissions)
+  canMessage: async (userId: string): Promise<boolean> => {
+    try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user) return false;
+      
+      // Check if current user follows the target user
+      const { data: following, error: followingError } = await supabase
+        .from('follows')
+        .select('id')
+        .match({ 
+          follower_id: currentUser.user.id,
+          following_id: userId 
+        })
+        .maybeSingle();
+
+      if (followingError) return false;
+      
+      // Check if target user follows current user back
+      const { data: follower, error: followerError } = await supabase
+        .from('follows')
+        .select('id')
+        .match({ 
+          follower_id: userId,
+          following_id: currentUser.user.id 
+        })
+        .maybeSingle();
+
+      if (followerError) return false;
+
+      // Users can message if they follow each other
+      return !!(following && follower);
+    } catch (error) {
+      console.error('Error checking messaging permissions:', error);
       return false;
     }
   }

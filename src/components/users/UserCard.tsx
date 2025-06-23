@@ -1,13 +1,16 @@
 
-import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { MessageCircle, UserPlus, UserMinus, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserPlus, UserMinus, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { followService } from '@/lib/follow-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface UserCardProps {
-  id: number | string;
+  id: number;
   name: string;
   avatar?: string;
   bio?: string;
@@ -17,7 +20,7 @@ interface UserCardProps {
   onMessage: () => void;
 }
 
-const UserCard = ({
+const UserCard: React.FC<UserCardProps> = ({
   id,
   name,
   avatar,
@@ -26,50 +29,122 @@ const UserCard = ({
   onFollow,
   onUnfollow,
   onMessage
-}: UserCardProps) => {
+}) => {
+  const navigate = useNavigate();
+  const { user: currentUser, isAuthenticated } = useAuth();
+  const [canMessage, setCanMessage] = useState(false);
+  const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
+
+  useEffect(() => {
+    const checkMessagingPermissions = async () => {
+      if (!isAuthenticated || !currentUser) {
+        setCanMessage(false);
+        return;
+      }
+      
+      setIsCheckingPermissions(true);
+      try {
+        const canMsg = await followService.canMessage(id.toString());
+        setCanMessage(canMsg);
+      } catch (error) {
+        console.error('Error checking messaging permissions:', error);
+        setCanMessage(false);
+      } finally {
+        setIsCheckingPermissions(false);
+      }
+    };
+
+    checkMessagingPermissions();
+  }, [id, isAuthenticated, currentUser, isFollowing]);
+
+  const handleMessage = () => {
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to send messages');
+      navigate('/login');
+      return;
+    }
+
+    if (!canMessage) {
+      toast.error('You can only message users you follow and who follow you back');
+      return;
+    }
+
+    // Navigate directly to chat with this specific user
+    navigate(`/chat/${id}`);
+  };
+
+  const handleFollow = () => {
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to follow users');
+      navigate('/login');
+      return;
+    }
+    onFollow();
+  };
+
+  const handleUnfollow = () => {
+    if (!isAuthenticated) {
+      toast.error('You must be logged in to unfollow users');
+      return;
+    }
+    onUnfollow();
+  };
+
   return (
-    <Card className="hover:bg-accent/50 transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={avatar} />
-            <AvatarFallback>
-              <User className="h-6 w-6" />
-            </AvatarFallback>
+    <Card className="w-full hover:shadow-lg transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start space-x-4">
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={avatar} alt={name} />
+            <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           
-          <div className="flex-grow">
-            <Link to={`/users/${id}`} className="hover:underline">
-              <h3 className="font-medium">{name}</h3>
-            </Link>
-            {bio && <p className="text-sm text-muted-foreground line-clamp-1">{bio}</p>}
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              variant={isFollowing ? "outline" : "default"}
-              size="sm"
-              onClick={isFollowing ? onUnfollow : onFollow}
-            >
-              {isFollowing ? (
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-lg truncate">{name}</h3>
+            {bio && (
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                {bio}
+              </p>
+            )}
+            
+            <div className="flex items-center space-x-2 mt-4">
+              {isAuthenticated && currentUser?.id !== id.toString() && (
                 <>
-                  <UserMinus className="h-4 w-4 mr-1" />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Follow
+                  {isFollowing ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleUnfollow}
+                      className="flex items-center gap-2"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                      Unfollow
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="sm" 
+                      onClick={handleFollow}
+                      className="flex items-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Follow
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleMessage}
+                    disabled={isCheckingPermissions || !canMessage}
+                    className="flex items-center gap-2"
+                    title={!canMessage ? "You can only message users you follow and who follow you back" : "Send message"}
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Message
+                  </Button>
                 </>
               )}
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={onMessage}
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
+            </div>
           </div>
         </div>
       </CardContent>
