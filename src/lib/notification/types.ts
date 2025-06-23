@@ -7,6 +7,8 @@ export interface Notification {
   message: string;
   read: boolean;
   created_at: string;
+  resource_type?: string;
+  resource_id?: number;
   data?: {
     event_id?: number;
     ticket_id?: number;
@@ -24,4 +26,17 @@ export interface CreateNotificationData {
   title: string;
   message: string;
   data?: Notification['data'];
+}
+
+export interface NotificationSettings {
+  email_notifications: boolean;
+  push_notifications: boolean;
+  in_app_notifications: boolean;
+  notification_types: {
+    event_updates: boolean;
+    messages: boolean;
+    announcements: boolean;
+    system: boolean;
+    reviews: boolean;
+  };
 }
