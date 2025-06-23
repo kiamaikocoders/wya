@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserPlus, UserMinus, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { followService } from '@/lib/follow-service';
+import { followService } from '@/lib/follow';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
