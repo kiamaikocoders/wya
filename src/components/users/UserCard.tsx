@@ -34,6 +34,7 @@ const UserCard: React.FC<UserCardProps> = ({
   const { user: currentUser, isAuthenticated } = useAuth();
   const [canMessage, setCanMessage] = useState(false);
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   useEffect(() => {
     const checkMessagingPermissions = async () => {
@@ -73,21 +74,33 @@ const UserCard: React.FC<UserCardProps> = ({
     navigate(`/chat/${id}`);
   };
 
-  const handleFollow = () => {
+  const handleFollow = async () => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to follow users');
       navigate('/login');
       return;
     }
-    onFollow();
+    
+    setIsFollowLoading(true);
+    try {
+      await onFollow();
+    } finally {
+      setIsFollowLoading(false);
+    }
   };
 
-  const handleUnfollow = () => {
+  const handleUnfollow = async () => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to unfollow users');
       return;
     }
-    onUnfollow();
+    
+    setIsFollowLoading(true);
+    try {
+      await onUnfollow();
+    } finally {
+      setIsFollowLoading(false);
+    }
   };
 
   return (
@@ -115,19 +128,21 @@ const UserCard: React.FC<UserCardProps> = ({
                       variant="outline" 
                       size="sm" 
                       onClick={handleUnfollow}
+                      disabled={isFollowLoading}
                       className="flex items-center gap-2"
                     >
                       <UserMinus className="w-4 h-4" />
-                      Unfollow
+                      {isFollowLoading ? 'Unfollowing...' : 'Unfollow'}
                     </Button>
                   ) : (
                     <Button 
                       size="sm" 
                       onClick={handleFollow}
+                      disabled={isFollowLoading}
                       className="flex items-center gap-2"
                     >
                       <UserPlus className="w-4 h-4" />
-                      Follow
+                      {isFollowLoading ? 'Following...' : 'Follow'}
                     </Button>
                   )}
                   

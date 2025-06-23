@@ -19,6 +19,21 @@ export const followService = {
         return false;
       }
 
+      // Check if already following
+      const { data: existingFollow } = await supabase
+        .from('follows')
+        .select('id')
+        .match({ 
+          follower_id: currentUser.user.id,
+          following_id: followingId 
+        })
+        .maybeSingle();
+
+      if (existingFollow) {
+        toast.info('You are already following this user');
+        return true;
+      }
+
       // Insert follow relationship
       const { error } = await supabase
         .from('follows')
@@ -50,12 +65,13 @@ export const followService = {
             follower_name: followerName
           }
         });
+        console.log('Follow notification sent successfully');
       } catch (notifError) {
         console.error('Error sending follow notification:', notifError);
         // Don't fail the follow action if notification fails
       }
 
-      toast.success('User followed successfully');
+      toast.success(`You are now following ${followerName}`);
       return true;
     } catch (error) {
       console.error('Error following user:', error);
