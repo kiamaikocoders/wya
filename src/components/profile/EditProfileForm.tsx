@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { User } from "@/lib/auth-service";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Upload, Camera } from "lucide-react";
 
 interface EditProfileFormProps {
   user: User;
@@ -39,9 +39,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      // Make sure profile_picture is set to the preview image
       data.profile_picture = previewImage || "";
-      
       await onUpdate(data);
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -70,13 +68,9 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
       
       setIsUploading(true);
       try {
-        // Create a local object URL for preview
         const objectUrl = URL.createObjectURL(file);
         setPreviewImage(objectUrl);
         setValue("profile_picture", objectUrl);
-        
-        // In a real app, you would upload the file to a server and get a URL back
-        // For now, we'll just use the local object URL
         toast.success('Image selected successfully');
       } catch (error) {
         console.error('Error handling image:', error);
@@ -109,8 +103,10 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="profilePicture">Profile Picture</Label>
+          <div className="space-y-4">
+            <Label htmlFor="profilePicture" className="text-base font-medium">Profile Picture</Label>
+            
+            {/* Current Profile Picture Display */}
             <div className="flex justify-center mb-4">
               <div className="relative">
                 <Avatar className="h-24 w-24">
@@ -127,39 +123,38 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
               </div>
             </div>
             
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              {sampleAvatars.map((avatar, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={`cursor-pointer rounded-full overflow-hidden h-16 w-16 border-2 hover:border-kenya-orange transition-colors ${previewImage === avatar ? 'border-kenya-orange' : 'border-transparent'}`}
-                  onClick={() => handleAvatarSelect(avatar)}
-                >
-                  <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+            {/* Upload Custom Image Button */}
+            <div className="text-center">
+              <Label htmlFor="custom-image" className="cursor-pointer">
+                <div className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
+                  <Camera size={16} />
+                  <span>{isUploading ? 'Uploading...' : 'Upload Photo'}</span>
+                </div>
+              </Label>
+              <Input
+                id="custom-image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={isUploading}
+              />
             </div>
             
-            <div className="mt-4">
-              <Label htmlFor="custom-image" className="block mb-2">Or upload your own</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="custom-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                  disabled={isUploading}
-                />
-                <label htmlFor="custom-image" className="cursor-pointer">
-                  <div className="flex items-center gap-2 bg-muted p-2 rounded-md hover:bg-muted/80 transition-colors">
-                    <Upload size={16} />
-                    <span>{isUploading ? 'Uploading...' : 'Choose file'}</span>
-                  </div>
-                </label>
-                {previewImage && previewImage !== user.profile_picture && (
-                  <span className="text-xs text-muted-foreground">New image selected</span>
-                )}
+            {/* Pre-selected Avatars */}
+            <div>
+              <Label className="text-sm text-muted-foreground mb-2 block">Or choose from our selection:</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {sampleAvatars.map((avatar, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`cursor-pointer rounded-full overflow-hidden h-16 w-16 border-2 hover:border-primary transition-colors ${previewImage === avatar ? 'border-primary' : 'border-transparent'}`}
+                    onClick={() => handleAvatarSelect(avatar)}
+                  >
+                    <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             </div>
           </div>

@@ -55,17 +55,25 @@ export const followService = {
 
       // Send notification to the followed user
       try {
-        await notificationService.createNotification({
+        const notificationData = {
           user_id: followingId,
-          type: 'follow',
+          type: 'follow' as const,
           title: 'New Follower',
           message: `${followerName} started following you`,
+          resource_type: 'user',
+          resource_id: parseInt(currentUser.user.id),
           data: {
             follower_id: currentUser.user.id,
             follower_name: followerName
           }
-        });
-        console.log('Follow notification sent successfully');
+        };
+
+        const success = await notificationService.createNotification(notificationData);
+        if (success) {
+          console.log('Follow notification sent successfully');
+        } else {
+          console.error('Failed to send follow notification');
+        }
       } catch (notifError) {
         console.error('Error sending follow notification:', notifError);
         // Don't fail the follow action if notification fails

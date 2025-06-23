@@ -127,6 +127,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
                 
+                {/* Only show admin link to actual admins */}
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator />
