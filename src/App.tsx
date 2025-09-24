@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import Layout from "./components/layout/Layout";
 import Home from "./pages/Home";
 import Events from "./pages/Events";
@@ -41,6 +42,7 @@ import UsersDirectory from '@/pages/UsersDirectory';
 import SponsorsPage from './pages/SponsorsPage';
 import SponsorZone from './pages/SponsorZone';
 import SpotlightPage from './pages/SpotlightPage';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,9 +56,10 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
+      <HelmetProvider>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />
@@ -92,6 +95,11 @@ const App = () => (
                 <Route path="/profile" element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 } />
                 <Route path="/users/:userId" element={<UserProfile />} />
@@ -196,11 +204,12 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-      <Toaster />
-      <Sonner />
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+        <Toaster />
+        <Sonner />
+      </HelmetProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

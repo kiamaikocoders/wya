@@ -25,7 +25,6 @@ export interface Profile {
   updated_at?: string;
   created_at?: string;
   location?: string;
-  name?: string; // Add name property to fix the type errors
 }
 
 export interface UpdateProfilePayload {
@@ -64,19 +63,27 @@ export const userService = {
     }
   },
   
-  updateProfile: async (userId: string, profile: UpdateProfilePayload): Promise<boolean> => {
+  updateProfile: async (profile: UpdateProfilePayload): Promise<boolean> => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Build update object with only provided fields
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (profile.username !== undefined) updateData.username = profile.username;
+      if (profile.full_name !== undefined) updateData.full_name = profile.full_name;
+      if (profile.avatar_url !== undefined) updateData.avatar_url = profile.avatar_url;
+      if (profile.bio !== undefined) updateData.bio = profile.bio;
+      if (profile.location !== undefined) updateData.location = profile.location;
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          username: profile.username,
-          full_name: profile.full_name,
-          avatar_url: profile.avatar_url,
-          bio: profile.bio,
-          location: profile.location,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+        .update(updateData)
+        .eq('id', user.id);
       
       if (error) throw error;
       toast.success('Profile updated successfully');

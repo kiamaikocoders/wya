@@ -1,331 +1,468 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { forumService, ForumPost } from "@/lib/forum-service";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, AlertTriangle, MessageSquarePlus, X } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
-import PostCard from "@/components/forum/PostCard";
-import NewPostForm from "@/components/forum/NewPostForm";
+import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  MessageCircle, 
+  Heart, 
+  Share, 
+  Eye, 
+  Plus, 
+  Search,
+  Bell,
+  User
+} from 'lucide-react';
+import { forumService, ForumPost, ForumComment } from '@/lib/forum-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { storageService } from '@/lib/storage-service';
+import { toast } from 'sonner';
 
 const Forum: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
-  const [showNewPostForm, setShowNewPostForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
-  const [likedPosts, setLikedPosts] = useState<number[]>([]);
+  const { isAuthenticated, user, loading } = useAuth();
   const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
+  const [comments, setComments] = useState<ForumComment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { data: forumPosts = [], isLoading, error, refetch } = useQuery({
-    queryKey: ["forumPosts"],
-    queryFn: forumService.getAllPosts,
-    // Set retries to 0 for 404 responses
-    retry: (failureCount, error) => {
-      if (error instanceof Error && error.message.includes('404')) {
-        return false;
-      }
-      return failureCount < 2;
-    }
-  });
+  const categories = [
+    { value: 'all', label: 'All Posts' },
+    { value: 'general', label: 'General Discussion' },
+    { value: 'events', label: 'Events' },
+    { value: 'tips', label: 'Tips & Advice' },
+    { value: 'questions', label: 'Questions' }
+  ];
 
   useEffect(() => {
-    if (forumPosts.length > 0) {
-      setPosts(forumPosts);
+    loadPosts();
+  }, [selectedCategory]);
+
+  const loadPosts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await forumService.getAllPosts();
+      setPosts(data);
+    } catch (error) {
+      console.error('Error loading posts:', error);
+      toast.error('Failed to load forum posts');
+    } finally {
+      setIsLoading(false);
     }
-  }, [forumPosts]);
-
-  const { data: events } = useQuery({
-    queryKey: ["events"],
-    queryFn: () => import('@/lib/event-service').then(module => module.eventService.getAllEvents()),
-  });
-  
-  // Load liked posts on component mount and set up Realtime subscription
-  useEffect(() => {
-    if (user) {
-      const fetchLikedPosts = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('post_likes')
-            .select('post_id')
-            .eq('user_id', user.id);
-            
-          if (error) throw error;
-          
-          if (data) {
-            setLikedPosts(data.map(item => item.post_id));
-          }
-        } catch (err) {
-          console.error('Error fetching liked posts:', err);
-        }
-      };
-      
-      fetchLikedPosts();
-
-      // Set up Realtime subscription for post_likes
-      const subscription = supabase
-        .channel('public:post_likes')
-        .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'post_likes' }, 
-          (payload) => {
-            // When a new like is inserted, increment the likes_count for the post
-            setPosts(prevPosts =>
-              prevPosts.map(post =>
-                post.id === payload.new.post_id
-                  ? { ...post, likes_count: (post.likes_count || 0) + 1 }
-                  : post
-              )
-            );
-          }
-        )
-        .on('postgres_changes', 
-          { event: 'DELETE', schema: 'public', table: 'post_likes' }, 
-          (payload) => {
-            // When a like is deleted, decrement the likes_count for the post
-            setPosts(prevPosts =>
-              prevPosts.map(post =>
-                post.id === payload.old.post_id
-                  ? { ...post, likes_count: Math.max(0, (post.likes_count || 0) - 1) }
-                  : post
-              )
-            );
-          }
-        )
-        .subscribe();
-
-      // Clean up subscription on component unmount
-      return () => {
-        supabase.removeChannel(subscription);
-      };
-    }
-  }, [user]); // Depend on user to set up subscription only when logged in
-
-  const handleNewPostSuccess = () => {
-    refetch();
-    setShowNewPostForm(false);
-    toast.success("Post created successfully!");
   };
 
-  // API endpoint is not available
-  if (error && error instanceof Error && error.message.includes('not found')) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center text-amber-500 mb-2">
-              <AlertTriangle className="h-5 w-5 mr-2" />
-              <CardTitle>Forum Feature Unavailable</CardTitle>
-            </div>
-            <CardDescription>
-              The forum feature is currently unavailable. This could be because the API endpoints haven't been set up yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              The forum feature requires the backend API to be fully configured. Please check with your administrator.
-            </p>
-            <div className="mt-4">
-              <Button onClick={() => window.history.back()}>Go Back</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const eventId = formData.get('eventId') as string;
 
-  if (isLoading) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center p-8">Loading forum posts...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error && !(error instanceof Error && error.message.includes('not found'))) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center p-8">
-              <h2 className="text-xl mb-2">Error loading forum</h2>
-              <p>Could not load forum posts. Please try again later.</p>
-              <Button onClick={() => refetch()} className="mt-4">Retry</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Function to handle like/unlike
-  const handleLikeToggle = async (postId: number) => {
-    if (!isAuthenticated || !user) {
-      toast.error('Please log in to like posts');
+    if (!title.trim() || !content.trim()) {
+      toast.error('Please fill in all required fields');
       return;
     }
     
     try {
-      const post = posts.find(p => p.id === postId);
-      if (!post) return;
-      
-      const isLiked = likedPosts.includes(postId);
-      
-      if (isLiked) {
-        // Unlike post
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', postId);
-          
-        if (error) throw error;
-        
-        // Update local state for liked status immediately
-        setLikedPosts(likedPosts.filter(id => id !== postId));
-        // Note: likes_count update will be handled by Realtime subscription
-      } else {
-        // Like post
-        const { error } = await supabase
-          .from('post_likes')
-          .insert({
-            user_id: user.id,
-            post_id: postId
+      setIsUploading(true);
+      let mediaUrl: string | undefined;
+
+      // Upload media if selected
+      if (selectedFile) {
+        try {
+          const uploadResult = await storageService.uploadFile(selectedFile, {
+            bucket: 'forum-media',
+            folder: 'posts'
           });
-          
-        if (error) throw error;
-        
-        // Update local state for liked status immediately
-        setLikedPosts([...likedPosts, postId]);
-        // Note: likes_count update will be handled by Realtime subscription
+          mediaUrl = uploadResult.publicUrl;
+        } catch (uploadError) {
+          console.error('Error uploading media:', uploadError);
+          toast.error('Failed to upload media');
+          return;
+        }
       }
+
+      await forumService.createPost({
+        title,
+        content,
+        event_id: eventId && !isNaN(parseInt(eventId)) ? parseInt(eventId) : undefined,
+        media_url: mediaUrl
+      });
+      
+      setShowCreateForm(false);
+      setSelectedFile(null);
+      loadPosts();
+      toast.success('Post created successfully!');
     } catch (error) {
-      console.error('Error toggling like:', error);
-      toast.error('Failed to update like');
+      console.error('Error creating post:', error);
+      toast.error('Failed to create post');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Forum</h1>
+  const handleLikePost = async (postId: number) => {
+    try {
+      await forumService.likePost(postId);
+      loadPosts(); // Reload to update like count
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
+  };
+
+  const handleViewPost = async (post: ForumPost) => {
+    setSelectedPost(post);
+    try {
+      // Increment views
+      await forumService.incrementViews(post.id);
+      
+      // Load comments
+      const postComments = await forumService.getPostComments(post.id);
+      setComments(postComments);
+      
+      // Reload posts to update view count
+      loadPosts();
+    } catch (error) {
+      console.error('Error loading post details:', error);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || !selectedPost) return;
+
+    setIsSubmittingComment(true);
+    try {
+      await forumService.createComment({ content: newComment, post_id: selectedPost.id });
+      
+      setNewComment('');
+      // Reload comments
+      const postComments = await forumService.getPostComments(selectedPost.id);
+      setComments(postComments);
+      
+      // Reload posts to update comment count
+      loadPosts();
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      toast.error('Failed to create comment');
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         post.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Debug logging
+  console.log('Forum - isAuthenticated:', isAuthenticated, 'user:', user, 'loading:', loading);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kenya-brown mx-auto"></div>
+          <p className="text-gray-400 mt-2">Loading...</p>
+            </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-400">Please log in to access the forum.</p>
+          <p className="text-gray-500 text-sm mt-2">Debug: isAuthenticated={String(isAuthenticated)}, user={user ? 'exists' : 'null'}</p>
+        </div>
+      </div>
+    );
+  }
+
+    return (
+    <>
+      <Helmet>
+        <title>Forum - WYA</title>
+        <meta name="description" content="Join the WYA community discussion forum. Share ideas, ask questions, and connect with other event-goers." />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <MessageCircle className="h-8 w-8 text-purple-600" />
+                Community Forum
+              </h1>
+              <p className="text-gray-600 mt-2 text-lg">
+                Share ideas, ask questions, and connect with the WYA community
+              </p>
+            </div>
         <Button 
-          onClick={() => setShowNewPostForm(!showNewPostForm)}
-          className="flex items-center gap-2"
-          variant={showNewPostForm ? "outline" : "default"}
-        >
-          {showNewPostForm ? (
-            <>
-              <X className="h-4 w-4" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <MessageSquarePlus className="h-4 w-4" />
-              New Post
-            </>
-          )}
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Post
         </Button>
       </div>
 
-      {showNewPostForm && (
-        <Card className="mb-6 border bg-card/40 backdrop-blur-sm">
-          <CardHeader className="pb-0">
-            <CardTitle className="text-xl">Create New Post</CardTitle>
-            <CardDescription>Share your thoughts with the community</CardDescription>
+          {/* Create Post Form */}
+          {showCreateForm && (
+            <Card className="mb-8 bg-white border border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-gray-900">Create New Post</CardTitle>
           </CardHeader>
           <CardContent>
-            <NewPostForm onSuccess={handleNewPostSuccess} onCancel={() => setShowNewPostForm(false)} />
-          </CardContent>
-        </Card>
-      )}
+                <form onSubmit={handleCreatePost} className="space-y-4">
+                  <div>
+                    <Label htmlFor="title" className="text-gray-700 font-medium">Title *</Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      placeholder="What's your post about?"
+                      className="bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="content" className="text-gray-700 font-medium">Content *</Label>
+                    <Textarea
+                      id="content"
+                      name="content"
+                      placeholder="Share your thoughts with the community..."
+                      rows={4}
+                      className="bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="eventId" className="text-gray-700 font-medium">Event ID (Optional)</Label>
+                    <Input
+                      id="eventId"
+                      name="eventId"
+                      type="number"
+                      placeholder="Link to a specific event"
+                      className="bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Posts</TabsTrigger>
-          <TabsTrigger value="popular">Popular</TabsTrigger>
-          <TabsTrigger value="recent">Recent</TabsTrigger>
-          {user && <TabsTrigger value="my">My Posts</TabsTrigger>}
-        </TabsList>
-        
-        <TabsContent value="all" className="space-y-4">
-          {posts && posts.length > 0 ? (
-            posts.map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                isLiked={likedPosts.includes(post.id)}
-                onLikeToggle={() => handleLikeToggle(post.id)} 
-              />
-            ))
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center p-8">
-                  <h3 className="text-lg font-medium mb-2">No posts yet</h3>
-                  <p className="text-muted-foreground">Be the first to create a post!</p>
+                  <div>
+                    <Label htmlFor="media" className="text-gray-700 font-medium">Media (Optional)</Label>
+                    <Input
+                      id="media"
+                      name="media"
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      className="bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500"
+                    />
+                    {selectedFile && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Selected: {selectedFile.name}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button
+                      type="submit"
+                      disabled={isUploading}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {isUploading ? 'Creating...' : 'Create Post'}
+                    </Button>
                   <Button 
-                    onClick={() => setShowNewPostForm(true)} 
-                    className="mt-4 flex items-center gap-2"
-                  >
-                    <MessageSquarePlus className="h-4 w-4" />
-                    Create a Post
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowCreateForm(false)}
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
                   </Button>
                 </div>
+                </form>
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-        
-        <TabsContent value="popular" className="space-y-4">
-          {posts && posts.filter(post => (post.likes_count || 0) > 0)
-            .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
-            .map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                isLiked={likedPosts.includes(post.id)}
-                onLikeToggle={() => handleLikeToggle(post.id)} 
-              />
-            ))
-          }
-        </TabsContent>
-        
-        <TabsContent value="recent" className="space-y-4">
-          {posts && posts
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                isLiked={likedPosts.includes(post.id)}
-                onLikeToggle={() => handleLikeToggle(post.id)} 
-              />
-            ))
-          }
-        </TabsContent>
-        
-        {user && (
-          <TabsContent value="my" className="space-y-4">
-            {posts && posts
-              .filter(post => post.user_id === user.id)
-              .map(post => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  isLiked={likedPosts.includes(post.id)}
-                  onLikeToggle={() => handleLikeToggle(post.id)} 
+
+          {/* Search and Filter */}
+          <div className="flex flex-col gap-6 mb-8">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-white border-gray-300 text-gray-900 focus:border-purple-500 focus:ring-purple-500 w-full"
                 />
+              </div>
+            </div>
+            
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Button
+                  key={category.value}
+                  variant={selectedCategory === category.value ? "default" : "outline"}
+                  onClick={() => setSelectedCategory(category.value)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                    selectedCategory === category.value
+                      ? "bg-purple-600 text-white hover:bg-purple-700"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                  }`}
+                >
+                  {category.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Posts List */}
+          <div className="space-y-6">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                <p className="text-gray-500 mt-2">Loading posts...</p>
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <Card className="bg-white border border-gray-200 shadow-sm">
+                <CardContent className="text-center py-12">
+                  <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts found</h3>
+                  <p className="text-gray-500 mb-4">
+                    {searchQuery ? 'Try adjusting your search terms' : 'Be the first to start a discussion!'}
+                  </p>
+                  <Button
+                    onClick={() => setShowCreateForm(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Post
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredPosts.map((post) => (
+                <Card 
+                  key={post.id} 
+                  className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleViewPost(post)}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={post.user?.avatar_url} />
+                          <AvatarFallback className="bg-purple-100 text-purple-600 font-semibold">
+                            {post.user?.username?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900 truncate">{post.user?.username || 'Anonymous'}</h3>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm text-gray-500">user@example.com</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-sm text-gray-500">{new Date(post.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={`${
+                          post.category === 'general' 
+                            ? 'bg-green-100 text-green-700 border-green-200' 
+                            : 'bg-gray-100 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        {post.category || 'general'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">{post.title}</h4>
+                    
+                    {post.media_url && (
+                      <div className="mb-4">
+                        <img
+                          src={post.media_url}
+                          alt="Post media"
+                          className="w-full h-64 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    
+                    <p className="text-gray-700 mb-4 line-clamp-3">{post.content}</p>
+                    
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLikePost(post.id);
+                          }}
+                          className="flex items-center gap-1 hover:text-purple-600 p-2"
+                        >
+                          <Heart className="h-4 w-4" />
+                          <span>{post.likes_count || 0}</span>
+                        </Button>
+                        <div className="flex items-center gap-1 p-2">
+                          <MessageCircle className="h-4 w-4" />
+                          <span>{post.comments_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 p-2">
+                          <Eye className="h-4 w-4" />
+                          <span>{post.views_count || 0}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 hover:text-purple-600 p-2"
+                      >
+                        <Share className="h-4 w-4" />
+                        <span>Share</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
-            }
-          </TabsContent>
-        )}
-      </Tabs>
+            )}
+          </div>
+        </div>
+
+        {/* Floating Action Button */}
+        <Button
+          className="fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-12 h-12 shadow-lg"
+          onClick={() => setShowCreateForm(true)}
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
     </div>
+    </>
   );
 };
 

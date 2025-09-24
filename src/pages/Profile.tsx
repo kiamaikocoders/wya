@@ -1,19 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
 import { eventService } from '@/lib/event-service';
+import { storageService } from '@/lib/storage-service';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, MapPin, Settings, LogOut, User as UserIcon, Heart, Ticket, Bell } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, MapPin, Settings, LogOut, User as UserIcon, Heart, Ticket, Bell, Upload, Camera } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { toast } from 'sonner';
 
 const Profile: React.FC = () => {
   const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    bio: '',
+    location: ''
+  });
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -39,6 +52,62 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      setIsUploading(true);
+      const uploadResult = await storageService.uploadFile(selectedFile, {
+        bucket: 'user-avatars',
+        folder: 'avatars'
+      });
+      
+      // Update profile with new avatar URL
+      await userService.updateProfile({
+        avatar_url: uploadResult.publicUrl
+      });
+      
+      // Refresh profile data
+      queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
+      
+      toast.success('Avatar updated successfully!');
+      setSelectedFile(null);
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload avatar');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleEditProfile = () => {
+    if (profile) {
+      setEditForm({
+        full_name: profile.full_name || '',
+        bio: profile.bio || '',
+        location: profile.location || ''
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await userService.updateProfile(editForm);
+      queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({ name: '', bio: '', location: '' });
   };
   
   if (profileLoading) {
@@ -70,13 +139,39 @@ const Profile: React.FC = () => {
             <Card className="bg-kenya-dark border-kenya-brown/20">
               <CardHeader className="pb-2">
                 <div className="flex flex-col items-center">
-                  <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage src={profile.avatar_url} />
-                    <AvatarFallback className="bg-kenya-orange text-white text-xl">
-                      {profile.name?.charAt(0) || user.email?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <CardTitle className="text-white text-xl">{profile.name || 'User'}</CardTitle>
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 mb-4">
+                      <AvatarImage src={profile.avatar_url} />
+                      <AvatarFallback className="bg-kenya-orange text-white text-xl">
+                        {profile.full_name?.charAt(0) || user.email?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <label className="absolute bottom-0 right-0 bg-kenya-brown hover:bg-kenya-brown-dark text-white p-2 rounded-full cursor-pointer transition-colors">
+                      <Camera size={16} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  
+                  {selectedFile && (
+                    <div className="mb-4 p-2 bg-kenya-brown/20 rounded-lg">
+                      <p className="text-white text-sm mb-2">Selected: {selectedFile.name}</p>
+                      <Button
+                        onClick={handleAvatarUpload}
+                        disabled={isUploading}
+                        size="sm"
+                        className="bg-kenya-brown hover:bg-kenya-brown-dark"
+                      >
+                        {isUploading ? 'Uploading...' : 'Upload Avatar'}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <CardTitle className="text-white text-xl">{profile.full_name || 'User'}</CardTitle>
                   <CardDescription className="text-kenya-brown-light">
                     {profile.bio || 'No bio yet'}
                   </CardDescription>
@@ -101,11 +196,13 @@ const Profile: React.FC = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Account Settings
-                  </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={handleEditProfile}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Profile
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
                   <Link to="/notifications">
@@ -127,6 +224,59 @@ const Profile: React.FC = () => {
           
           {/* Main Content */}
           <div className="w-full md:w-2/3">
+            {/* Edit Profile Form */}
+            {isEditing && (
+              <Card className="bg-kenya-dark border-kenya-brown/20 mb-6">
+                <CardHeader>
+                  <CardTitle className="text-white">Edit Profile</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-white">Name</Label>
+                    <Input
+                      id="name"
+                      value={editForm.full_name}
+                      onChange={(e) => setEditForm({...editForm, full_name: e.target.value})}
+                      className="bg-black/20 border-kenya-brown/30 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bio" className="text-white">Bio</Label>
+                    <Textarea
+                      id="bio"
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
+                      className="bg-black/20 border-kenya-brown/30 text-white"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="location" className="text-white">Location</Label>
+                    <Input
+                      id="location"
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                      className="bg-black/20 border-kenya-brown/30 text-white"
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex gap-2">
+                  <Button
+                    onClick={handleSaveProfile}
+                    className="bg-kenya-brown hover:bg-kenya-brown-dark"
+                  >
+                    Save Changes
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+
             <Tabs defaultValue="myEvents">
               <TabsList className="bg-kenya-dark border-kenya-brown/20 mb-6">
                 <TabsTrigger value="myEvents" className="data-[state=active]:bg-kenya-orange">

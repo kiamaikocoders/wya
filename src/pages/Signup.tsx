@@ -31,7 +31,7 @@ const Signup = () => {
     
     try {
       setIsSubmitting(true);
-      await signup(name, email, password);
+      await signup(email, password, name);
     } catch (error) {
       console.error('Signup failed:', error);
     } finally {

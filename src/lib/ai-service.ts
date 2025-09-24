@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 // Use the correct API endpoint for Gemini API (updated endpoint)
 const API_KEY = 'AIzaSyBRF6q949E70yC36OvT-BYsGBeP7Jfux9Y';
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
 
 interface AIResponse {
   text: string;

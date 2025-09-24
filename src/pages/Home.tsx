@@ -10,7 +10,7 @@ import EventCard from '@/components/ui/EventCard';
 import SearchBar from '@/components/ui/SearchBar';
 import AIEventRecommendations from '@/components/events/AIEventRecommendations';
 import { Brain, Sparkles } from 'lucide-react';
-import EventCarousel from '@/components/ui/EventCarousel';
+import InfiniteEventCarousel from '@/components/ui/InfiniteEventCarousel';
 import { Event } from '@/types/event.types';
 
 // Sample categories
@@ -141,28 +141,30 @@ const Home: React.FC = () => {
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredEvents.length > 0 ? (
-            featuredEvents.slice(0, 3).map(event => (
-              <EventCard 
-                key={event.id} 
-                id={String(event.id)}
-                title={event.title}
-                category={event.category || ''}
-                date={event.date}
-                location={event.location}
-                image={event.image_url || ''}
-                capacity={event.capacity || 100}
-                isFeatured={event.featured}
-                price={event.price}
-              />
-            ))
-          ) : (
-            <p className="text-center text-kenya-brown-light py-4 px-4 col-span-3">
-              No featured events available.
-            </p>
-          )}
-        </div>
+        {featuredEvents.length > 0 ? (
+          <div className="px-4 mb-12 overflow-hidden">
+            <InfiniteEventCarousel 
+              events={featuredEvents.slice(0, 6).map(event => ({
+                id: String(event.id),
+                title: event.title,
+                category: event.category || '',
+                date: event.date,
+                location: event.location,
+                image_url: event.image_url || '',
+                capacity: event.capacity || 100,
+                featured: event.featured,
+                price: event.price
+              }))}
+              emptyMessage="No featured events available."
+              slidesToShow={1.2}
+              autoScrollSpeed={4000}
+            />
+          </div>
+        ) : (
+          <p className="text-center text-kenya-brown-light py-4 px-4">
+            No featured events available.
+          </p>
+        )}
       </section>
       
       {/* Filtered Events or Upcoming Events */}
@@ -175,21 +177,22 @@ const Home: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : filteredEvents.length > 0 ? (
-          <div className="px-4 mb-12 overflow-visible">
-            <EventCarousel 
+          <div className="px-4 mb-12 overflow-hidden">
+            <InfiniteEventCarousel 
               events={filteredEvents.slice(0, 9).map(event => ({
                 id: String(event.id),
                 title: event.title,
                 category: event.category || '',
                 date: event.date,
                 location: event.location,
-                image: event.image_url || '',
+                image_url: event.image_url || '',
                 capacity: event.capacity || 100,
-                isFeatured: event.featured,
+                featured: event.featured,
                 price: event.price
               }))}
               emptyMessage={selectedCategory ? `No ${selectedCategory} events available.` : "No upcoming events available."}
-              slidesToShow={3}
+              slidesToShow={1.2}
+              autoScrollSpeed={3000}
             />
           </div>
         ) : (

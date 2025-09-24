@@ -51,7 +51,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Refresh authentication state from Supabase
   const refreshAuth = async () => {
     try {
+      console.log('Refreshing auth...');
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session:', session?.user?.id);
       
       if (session) {
         // Get profile information from profiles table
@@ -60,6 +62,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .select('*')
           .eq('id', session.user.id)
           .single();
+        
+        console.log('Profile found:', !!profile);
           
         if (profile) {
           const userData: User = {
@@ -75,10 +79,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setUser(userData);
           setIsAdmin(userData.user_type === 'admin');
         } else {
-          // User authenticated but no profile found
+          // User authenticated but no profile found - create one
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: session.user.id,
+              full_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+              username: session.user.email?.split('@')[0] || 'user'
+            });
+          
+          if (profileError) {
+            console.warn('Profile creation failed:', profileError);
+          }
+          
           setUser({
             id: session.user.id,
-            name: session.user.user_metadata?.name || '',
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             user_type: 'attendee',
             created_at: session.user.created_at || new Date().toISOString()
@@ -102,7 +118,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
+        console.log('Auth state change:', _event, session?.user?.id);
         if (session) {
           // Don't fetch profile here to avoid deadlock
           // Just update basic user data
@@ -117,7 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Defer profile fetch with setTimeout to avoid deadlock
           setTimeout(() => {
             refreshAuth();
-          }, 0);
+          }, 100);
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -202,6 +219,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (error) throw error;
+      
+      // Create profile in profiles table
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: name,
+            username: email.split('@')[0] // Use email prefix as username
+          });
+        
+        if (profileError) {
+          console.warn('Profile creation failed:', profileError);
+        }
+      }
       
       toast.success('Account created successfully! Please check your email for verification.');
       
