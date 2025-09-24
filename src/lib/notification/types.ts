@@ -2,35 +2,30 @@
 export interface Notification {
   id: number;
   user_id: string;
+  type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'follow' | 'message';
   title: string;
   message: string;
-  type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'message' | 'review';
   read: boolean;
-  resource_id?: number;
-  resource_type?: string;
   created_at: string;
-  sender_id?: number;
-  sender_name?: string;
-  action_url?: string;
-  priority?: 'high' | 'normal' | 'low';
-  expires_at?: string;
-  image_url?: string;
+  resource_type?: string;
+  resource_id?: number;
+  data?: {
+    event_id?: number;
+    ticket_id?: number;
+    follower_id?: string;
+    follower_name?: string;
+    message_id?: string;
+    sender_id?: string;
+    [key: string]: any;
+  };
 }
 
-export interface CreateNotificationPayload {
+export interface CreateNotificationData {
+  user_id: string;
+  type: Notification['type'];
   title: string;
   message: string;
-  type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'message' | 'review';
-  user_ids: number[];
-  resource_id?: number;
-  resource_type?: string;
-  sender_id?: number;
-  action_url?: string;
-  priority?: 'high' | 'normal' | 'low';
-  expires_at?: string;
-  image_url?: string;
-  send_email?: boolean;
-  send_push?: boolean;
+  data?: Notification['data'];
 }
 
 export interface NotificationSettings {

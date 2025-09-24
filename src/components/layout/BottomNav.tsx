@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Ticket, Users, Bookmark, User, MessageCircle, BarChart } from 'lucide-react';
@@ -47,7 +48,8 @@ const BottomNav = () => {
     <div className="fixed bottom-0 left-0 right-0 border-t border-kenya-brown-dark bg-kenya-brown z-50 animate-fade-in dark:bg-kenya-dark dark:border-kenya-brown">
       <nav className="flex gap-2 px-4 pt-2 pb-3">
         {visibleNavItems.map((item) => {
-          const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          const isActive = location.pathname === item.path || 
+                          (item.path !== '/' && location.pathname.startsWith(`${item.path}/`));
           return (
             <NavItem
               key={item.name}
