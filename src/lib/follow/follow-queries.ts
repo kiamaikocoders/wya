@@ -1,66 +1,7 @@
 
 import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
 
-export interface Follow {
-  id: string;
-  follower_id: string;
-  following_id: string;
-  created_at: string;
-}
-
-export const followService = {
-  followUser: async (followingId: string): Promise<boolean> => {
-    try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser?.user) {
-        toast.error('You must be logged in to follow users');
-        return false;
-      }
-
-      const { error } = await supabase
-        .from('follows')
-        .insert({ 
-          follower_id: currentUser.user.id,
-          following_id: followingId 
-        });
-
-      if (error) throw error;
-      toast.success('User followed successfully');
-      return true;
-    } catch (error) {
-      console.error('Error following user:', error);
-      toast.error('Failed to follow user');
-      return false;
-    }
-  },
-
-  unfollowUser: async (followingId: string): Promise<boolean> => {
-    try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser?.user) {
-        toast.error('You must be logged in to unfollow users');
-        return false;
-      }
-
-      const { error } = await supabase
-        .from('follows')
-        .delete()
-        .match({ 
-          follower_id: currentUser.user.id,
-          following_id: followingId 
-        });
-
-      if (error) throw error;
-      toast.success('User unfollowed successfully');
-      return true;
-    } catch (error) {
-      console.error('Error unfollowing user:', error);
-      toast.error('Failed to unfollow user');
-      return false;
-    }
-  },
-
+export const followQueries = {
   getFollowers: async (userId: string): Promise<string[]> => {
     try {
       const { data, error } = await supabase

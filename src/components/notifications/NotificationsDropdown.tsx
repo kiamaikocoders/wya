@@ -63,7 +63,8 @@ const NotificationsDropdown = () => {
     if (notification.resource_type === 'ticket' && notification.resource_id) {
       return `/tickets/${notification.resource_id}`;
     }
-    return '#';
+    // Default to notifications page if no specific link
+    return '/notifications';
   };
   
   return (

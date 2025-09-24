@@ -9,7 +9,7 @@ import UserCard from '@/components/users/UserCard';
 import { Users, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/lib/profile-service';
-import { followService } from '@/lib/follow-service';
+import { followService } from '@/lib/follow';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 

@@ -1,47 +1,74 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Notification } from '@/lib/notification/types';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const NotificationBell = () => {
-  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [unreadCount, setUnreadCount] = useState(0);
-  
-  const { data: notifications = [], isLoading, refetch } = useQuery({
+
+  const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => user ? notificationService.getUserNotifications(user.id) : [],
     enabled: isAuthenticated && !!user?.id,
+    refetchInterval: 10000, // Refetch every 10 seconds
   });
 
+  // Calculate unread count
   useEffect(() => {
-    if (notifications && Array.isArray(notifications)) {
-      const count = notifications.filter(notification => !notification.read).length;
-      setUnreadCount(count);
-    }
+    const count = notifications.filter(notif => !notif.read).length;
+    setUnreadCount(count);
   }, [notifications]);
 
-  const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
-      await notificationService.markAsRead(notification.id);
-      refetch();
-    }
-  };
+  // Set up real-time subscription for new notifications
+  useEffect(() => {
+    if (!user?.id) return;
 
-  const handleMarkAllAsRead = async () => {
-    if (user) {
-      await notificationService.markAllAsRead(user.id);
-      refetch();
-    }
+    console.log('Setting up notifications subscription for user:', user.id);
+
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('New notification received:', payload);
+          // Show toast for new notification
+          const newNotification = payload.new;
+          toast.success(newNotification.title || 'New notification received', {
+            description: newNotification.message
+          });
+          
+          // Refetch notifications to update the UI
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      )
+      .subscribe((status) => {
+        console.log('Notification subscription status:', status);
+      });
+
+    return () => {
+      console.log('Cleaning up notifications subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
+
+  const handleClick = () => {
+    navigate('/notifications');
   };
 
   if (!isAuthenticated) {
@@ -49,69 +76,22 @@ const NotificationBell = () => {
   }
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell size={20} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 bg-kenya-brown-dark border-kenya-brown p-0 max-h-96 overflow-hidden">
-        <div className="p-3 border-b border-kenya-brown flex justify-between items-center">
-          <h3 className="font-semibold text-white">Notifications</h3>
-          {notifications && Array.isArray(notifications) && notifications.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleMarkAllAsRead}
-              className="text-sm text-kenya-brown-light hover:text-white"
-            >
-              Mark all as read
-            </Button>
-          )}
-        </div>
-        
-        <ScrollArea className="max-h-72">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-20">
-              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-kenya-orange"></div>
-            </div>
-          ) : notifications && Array.isArray(notifications) && notifications.length > 0 ? (
-            <div className="py-2">
-              {notifications.map(notification => (
-                <div 
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`px-4 py-3 hover:bg-kenya-brown/20 cursor-pointer transition-colors ${
-                    !notification.read ? 'bg-kenya-brown/30' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`h-2 w-2 mt-1.5 rounded-full ${!notification.read ? 'bg-kenya-orange' : 'bg-transparent'}`} />
-                    <div>
-                      <h4 className="text-sm font-medium text-white">{notification.title}</h4>
-                      <p className="text-xs text-kenya-brown-light mt-1">{notification.message}</p>
-                      <p className="text-[10px] text-kenya-brown-light/70 mt-2">
-                        {new Date(notification.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-20 px-4 text-center">
-              <p className="text-kenya-brown-light text-sm">No notifications yet</p>
-              <p className="text-kenya-brown-light/70 text-xs mt-1">We'll notify you when there are updates</p>
-            </div>
-          )}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={handleClick}
+      className="relative"
+    >
+      <Bell size={20} />
+      {unreadCount > 0 && (
+        <Badge 
+          className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-kenya-orange text-white border-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
+          variant="default"
+        >
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </Badge>
+      )}
+    </Button>
   );
 };
 
