@@ -78,34 +78,34 @@ const EventCard: React.FC<EventCardProps> = (props) => {
           <img 
             src={eventImage || 'https://placehold.co/600x400?text=Event+Image'} 
             alt={eventTitle}
-            className={`w-full h-48 object-cover transition-all duration-300 ${isHovered ? 'brightness-110' : ''}`}
+            className={`w-full h-40 sm:h-48 object-cover transition-all duration-300 ${isHovered ? 'brightness-110' : ''}`}
           />
           {eventIsFeatured && (
             <div className="absolute top-2 right-2">
-              <Badge className="bg-kenya-orange text-white flex items-center gap-1">
+              <Badge className="bg-kenya-orange text-white flex items-center gap-1 text-xs">
                 <Star className="h-3 w-3" /> Featured
               </Badge>
             </div>
           )}
-          <Badge className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm">
+          <Badge className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-xs">
             {eventCategory}
           </Badge>
         </div>
         
-        <div className="p-4 flex-1 flex flex-col">
-          <h3 className="text-lg font-semibold mb-2 line-clamp-2">{eventTitle}</h3>
+        <div className="p-3 sm:p-4 flex-1 flex flex-col">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 leading-tight">{eventTitle}</h3>
           
-          <div className="space-y-2 mb-3 flex-1">
-            <div className="flex items-center text-sm text-kenya-brown-light">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>{formattedDate}</span>
+          <div className="space-y-1.5 sm:space-y-2 mb-3 flex-1">
+            <div className="flex items-center text-xs sm:text-sm text-kenya-brown-light">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">{formattedDate}</span>
             </div>
-            <div className="flex items-center text-sm text-kenya-brown-light">
-              <MapPin className="h-4 w-4 mr-2" />
-              <span>{eventLocation}</span>
+            <div className="flex items-center text-xs sm:text-sm text-kenya-brown-light">
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">{eventLocation}</span>
             </div>
             {eventPrice !== undefined && (
-              <div className="flex items-center text-sm font-medium">
+              <div className="flex items-center text-xs sm:text-sm font-medium">
                 <span className="text-kenya-orange">
                   {eventPrice === 0 ? 'Free' : `${eventPrice} KES`}
                 </span>
@@ -120,15 +120,15 @@ const EventCard: React.FC<EventCardProps> = (props) => {
                 <span>{eventAttendees} attending</span>
               </div>
               {isAlmostFull && (
-                <Badge variant="outline" className="text-red-400 border-red-400/30">
+                <Badge variant="outline" className="text-red-400 border-red-400/30 text-xs">
                   Almost full
                 </Badge>
               )}
             </div>
             
-            <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+            <div className="w-full bg-gray-700 rounded-full h-1 sm:h-1.5 mt-2">
               <div 
-                className={`${isAlmostFull ? 'bg-red-500' : 'bg-kenya-orange'} h-1.5 rounded-full transition-all duration-300`} 
+                className={`${isAlmostFull ? 'bg-red-500' : 'bg-kenya-orange'} h-1 sm:h-1.5 rounded-full transition-all duration-300`} 
                 style={{ width: `${capacityPercentage}%` }}
               ></div>
             </div>
