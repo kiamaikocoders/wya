@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
-import BottomNav from "./BottomNav";
 import Footer from "./Footer";
+import FooterMinimal from "./FooterMinimal";
 
 const Layout = () => {
   const location = useLocation();
@@ -39,25 +39,25 @@ const Layout = () => {
   // Check if current route is admin or auth page
   const isAdminPage = location.pathname.startsWith("/admin");
   const isAuthPage = ["/login", "/signup", "/admin-login"].includes(location.pathname);
+  const isLanding = location.pathname === "/";
 
   return (
-    <div className="flex flex-col min-h-screen bg-kenya-dark">
+    <div className="relative flex min-h-screen flex-col bg-kenya-dark">
       {!isAuthPage && <Navbar />}
       <main className="flex-1">
         <Outlet />
       </main>
-      {!isAdminPage && !isAuthPage && <Footer />}
-      {!isAdminPage && !isAuthPage && <BottomNav />}
+      {!isAuthPage && (isLanding ? <Footer /> : <FooterMinimal />)}
       
       {scrollToTop && (
         <button
           onClick={scrollTop}
-          className="fixed bottom-20 right-4 p-2 bg-kenya-orange rounded-full shadow-lg z-50 transition-opacity duration-300"
+          className="fixed bottom-6 right-6 z-50 rounded-full bg-kenya-orange p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:bottom-10 sm:right-10"
           aria-label="Scroll to top"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-white"
+            className="h-5 w-5 text-white"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
