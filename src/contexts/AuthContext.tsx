@@ -171,7 +171,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error) throw error;
       
       toast.success('Login successful!');
-      navigate('/');
+      navigate('/home');
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed');

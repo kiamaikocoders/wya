@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 type SearchBarProps = {
   placeholder?: string;
@@ -35,21 +36,21 @@ const SearchBar = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`w-full ${className}`}>
-      <div className="flex w-full items-stretch rounded-xl h-12 overflow-hidden">
-        <div className="text-kenya-brown-light flex border-none bg-kenya-brown items-center justify-center pl-4 rounded-l-xl">
-          <Search size={24} />
+    <form onSubmit={handleSubmit} className={cn("w-full", className)}>
+      <div className="flex w-full items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur focus-within:border-kenya-orange/60">
+        <div className="flex items-center justify-center rounded-full bg-white/5 p-2 text-white/60">
+          <Search size={18} />
         </div>
         <input
           type="text"
           placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-none bg-kenya-brown focus:border-none h-full placeholder:text-kenya-brown-light px-4 py-2 text-base font-normal"
+          className="flex-1 bg-transparent text-sm text-white placeholder:text-white/45 focus:outline-none"
         />
         <button 
           type="submit"
-          className="bg-kenya-orange text-white px-4 flex items-center justify-center"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-4 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.35)] hover:shadow-[0_0_28px_rgba(255,128,0,0.45)]"
         >
           Search
         </button>

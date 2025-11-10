@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Layout from "./components/layout/Layout";
+import MarketingLayout from "./components/layout/MarketingLayout";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import Categories from "./pages/Categories";
@@ -61,8 +63,11 @@ const App = () => (
           <ThemeProvider>
             <AuthProvider>
             <Routes>
+              <Route element={<MarketingLayout />}>
+                <Route path="/" element={<Landing />} />
+              </Route>
               <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
+                <Route path="/home" element={<Home />} />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:eventId" element={<EventDetails />} />
                 <Route path="/categories/:slug" element={<Categories />} />

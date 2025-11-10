@@ -6,6 +6,10 @@ import { Heart, Twitter, Facebook, Instagram, Linkedin, Github, Mail, ChevronDow
 
 const Footer = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [desktopSections, setDesktopSections] = useState<Record<string, boolean>>({
+    quickLinks: false,
+    support: false,
+  });
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -15,14 +19,14 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-kenya-brown-dark py-6 md:py-10 px-4 mt-auto">
-      <div className="container mx-auto">
+    <footer className="bg-kenya-brown-dark py-5 md:py-8 px-4 md:px-8 mt-auto">
+      <div className="mx-auto w-full max-w-[1400px]">
         {/* Mobile: Collapsible sections */}
-        <div className="block md:hidden space-y-4">
+        <div className="block md:hidden space-y-3">
           {/* WYA Kenya Section */}
-          <div className="space-y-4">
-            <h3 className="text-white text-lg font-semibold">WYA Kenya</h3>
-            <p className="text-kenya-brown-light text-sm">
+          <div className="space-y-3">
+            <h3 className="text-white text-base font-semibold">WYA Kenya</h3>
+            <p className="text-kenya-brown-light text-sm leading-relaxed">
               Discover the best events happening in Kenya. 
               Connect with organizers and other attendees.
             </p>
@@ -46,13 +50,13 @@ const Footer = () => {
           <div>
             <button
               onClick={() => toggleSection('quickLinks')}
-              className="flex items-center justify-between w-full text-white text-lg font-semibold mb-4"
+              className="flex items-center justify-between w-full text-white text-base font-semibold mb-3"
             >
               Quick Links
               {expandedSections.quickLinks ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {expandedSections.quickLinks && (
-              <ul className="space-y-2">
+              <ul className="space-y-1.5 text-sm">
                 <li>
                   <Link to="/" className="text-kenya-brown-light hover:text-white transition-colors">Home</Link>
                 </li>
@@ -76,13 +80,13 @@ const Footer = () => {
           <div>
             <button
               onClick={() => toggleSection('support')}
-              className="flex items-center justify-between w-full text-white text-lg font-semibold mb-4"
+              className="flex items-center justify-between w-full text-white text-base font-semibold mb-3"
             >
               Support
               {expandedSections.support ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {expandedSections.support && (
-              <ul className="space-y-2">
+              <ul className="space-y-1.5 text-sm">
                 <li>
                   <Link to="/ai-assistance" className="text-kenya-brown-light hover:text-white transition-colors">AI Assistance</Link>
                 </li>
@@ -106,14 +110,14 @@ const Footer = () => {
           <div>
             <button
               onClick={() => toggleSection('newsletter')}
-              className="flex items-center justify-between w-full text-white text-lg font-semibold mb-4"
+              className="flex items-center justify-between w-full text-white text-base font-semibold mb-3"
             >
               Newsletter
               {expandedSections.newsletter ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
             {expandedSections.newsletter && (
-              <div>
-                <p className="text-kenya-brown-light text-sm mb-4">
+              <div className="space-y-3">
+                <p className="text-kenya-brown-light text-sm leading-relaxed">
                   Subscribe to our newsletter for the latest events and updates.
                 </p>
                 <div className="flex">
@@ -134,10 +138,10 @@ const Footer = () => {
         </div>
 
         {/* Desktop: Grid layout */}
-        <div className="hidden md:grid grid-cols-4 gap-8">
-          <div className="space-y-4">
+        <div className="hidden md:grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-8">
+          <div className="space-y-3">
             <h3 className="text-white text-lg font-semibold">WYA Kenya</h3>
-            <p className="text-kenya-brown-light text-sm">
+            <p className="text-kenya-brown-light text-sm leading-relaxed">
               Discover the best events happening in Kenya. 
               Connect with organizers and other attendees.
             </p>
@@ -158,8 +162,21 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-white text-lg font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+            <button
+              onClick={() =>
+                setDesktopSections(prev => ({ ...prev, quickLinks: !prev.quickLinks }))
+              }
+              className="group flex w-full items-center justify-between text-left text-white text-base font-semibold uppercase tracking-wide"
+            >
+              Quick Links
+              {desktopSections.quickLinks ? (
+                <ChevronUp className="h-4 w-4 text-kenya-orange transition-transform group-hover:translate-y-[-2px]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-kenya-orange transition-transform group-hover:translate-y-[2px]" />
+              )}
+            </button>
+            {desktopSections.quickLinks && (
+              <ul className="mt-3 space-y-1.5 text-sm">
               <li>
                 <Link to="/" className="text-kenya-brown-light hover:text-white transition-colors">Home</Link>
               </li>
@@ -176,11 +193,25 @@ const Footer = () => {
                 <Link to="/forum" className="text-kenya-brown-light hover:text-white transition-colors">Forum</Link>
               </li>
             </ul>
+            )}
           </div>
           
           <div>
-            <h3 className="text-white text-lg font-semibold mb-4">Support</h3>
-            <ul className="space-y-2">
+            <button
+              onClick={() =>
+                setDesktopSections(prev => ({ ...prev, support: !prev.support }))
+              }
+              className="group flex w-full items-center justify-between text-left text-white text-base font-semibold uppercase tracking-wide"
+            >
+              Support
+              {desktopSections.support ? (
+                <ChevronUp className="h-4 w-4 text-kenya-orange transition-transform group-hover:translate-y-[-2px]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-kenya-orange transition-transform group-hover:translate-y-[2px]" />
+              )}
+            </button>
+            {desktopSections.support && (
+              <ul className="mt-3 space-y-1.5 text-sm">
               <li>
                 <Link to="/ai-assistance" className="text-kenya-brown-light hover:text-white transition-colors">AI Assistance</Link>
               </li>
@@ -197,11 +228,12 @@ const Footer = () => {
                 <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>
               </li>
             </ul>
+            )}
           </div>
           
-          <div>
-            <h3 className="text-white text-lg font-semibold mb-4">Newsletter</h3>
-            <p className="text-kenya-brown-light text-sm mb-4">
+          <div className="space-y-3">
+            <h3 className="text-white text-base font-semibold uppercase tracking-wide">Newsletter</h3>
+            <p className="text-kenya-brown-light text-sm leading-relaxed">
               Subscribe to our newsletter for the latest events and updates.
             </p>
             <div className="flex">
@@ -219,14 +251,14 @@ const Footer = () => {
           </div>
         </div>
         
-        <Separator className="my-8 bg-kenya-brown-light/20" />
+        <Separator className="my-6 bg-kenya-brown-light/20" />
         
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-kenya-brown-light text-sm">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+          <p className="text-kenya-brown-light text-xs md:text-sm">
             © {new Date().getFullYear()} WYA Kenya. All rights reserved.
           </p>
-          <div className="flex items-center mt-4 md:mt-0">
-            <p className="text-kenya-brown-light text-sm flex items-center">
+          <div className="flex items-center">
+            <p className="text-kenya-brown-light text-xs md:text-sm flex items-center">
               Made with <Heart className="h-4 w-4 text-kenya-orange mx-1" /> in Kenya
             </p>
           </div>
