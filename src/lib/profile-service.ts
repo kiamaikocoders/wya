@@ -96,6 +96,31 @@ export const profileService = {
       return [];
     }
   },
+
+  getProfilesByIds: async (ids: string[]): Promise<Profile[]> => {
+    try {
+      if (!ids || ids.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', ids);
+
+      if (error) throw error;
+
+      const profiles = (data || []) as Profile[];
+      profiles.forEach(profile => {
+        profile.name = profile.full_name || '';
+        profile.followers_count = profile.followers_count ?? 0;
+        profile.following_count = profile.following_count ?? 0;
+      });
+
+      return profiles;
+    } catch (error) {
+      console.error('Error fetching profiles by ids:', error);
+      return [];
+    }
+  },
   
   // Adding the missing method that's referenced in UserProfile.tsx
   getProfileByUsername: async (username: string): Promise<Profile | null> => {

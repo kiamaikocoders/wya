@@ -10,8 +10,10 @@ const BottomNav = () => {
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   
+  const homePath = isAuthenticated ? '/home' : '/';
+
   const baseNavItems = [
-    { name: 'Explore', icon: Home, path: '/' },
+    { name: 'Explore', icon: Home, path: homePath },
     { name: 'Tickets', icon: Ticket, path: '/tickets' },
     { name: 'Spotlight', icon: Users, path: '/spotlight' },
     { name: 'Favorites', icon: Bookmark, path: '/favorites' },
