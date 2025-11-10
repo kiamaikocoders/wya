@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,13 +31,7 @@ const PostDetail: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  useEffect(() => {
-    if (postId) {
-      loadPost();
-    }
-  }, [postId]);
-
-  const loadPost = async () => {
+  const loadPost = useCallback(async () => {
     try {
       setIsLoading(true);
       const postIdNum = parseInt(postId!);
@@ -61,7 +55,13 @@ const PostDetail: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate, postId]);
+
+  useEffect(() => {
+    if (postId) {
+      void loadPost();
+    }
+  }, [loadPost, postId]);
 
   const handleLikePost = async () => {
     if (!post) return;

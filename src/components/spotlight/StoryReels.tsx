@@ -31,7 +31,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
         }
       }
     }
-  }, [currentIndex, isPlaying]);
+  }, [currentIndex, isPlaying, currentStory?.media_url]);
 
   const isVideoFile = (url: string) => {
     return /\.(mp4|webm|ogg|mov|avi)$/i.test(url);

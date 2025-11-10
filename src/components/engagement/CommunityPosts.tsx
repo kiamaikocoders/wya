@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,11 +51,7 @@ const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
     { value: 'trending', label: 'Trending', icon: TrendingUp }
   ];
 
-  useEffect(() => {
-    loadPosts();
-  }, [selectedCategory]);
-
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await engagementService.getCommunityPosts(
@@ -68,7 +64,11 @@ const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
