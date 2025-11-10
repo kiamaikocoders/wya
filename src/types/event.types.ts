@@ -15,6 +15,8 @@ export interface Event {
   tags: string[];
   capacity?: number;
   is_featured?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CreateEventPayload {
