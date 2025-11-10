@@ -1,13 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Loader2, Calendar, CheckCircle, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { Loader2, Calendar } from 'lucide-react';
+import Section from '@/components/ui/Section';
+import { cn } from '@/lib/utils';
 
 interface EventProposal {
   title: string;
@@ -23,11 +33,31 @@ interface EventProposal {
   additionalInfo: string;
 }
 
+const steps = [
+  {
+    label: 'Concept',
+    description: 'Introduce your experience to the community.',
+  },
+  {
+    label: 'Logistics',
+    description: 'Share timing, location, and headcount.',
+  },
+  {
+    label: 'Collaboration',
+    description: 'Tell us who should partner with you.',
+  },
+  {
+    label: 'Review',
+    description: 'Confirm details before sending.',
+  },
+];
+
 const RequestEvent: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [proposal, setProposal] = useState<EventProposal>({
     title: '',
     description: '',
@@ -39,38 +69,79 @@ const RequestEvent: React.FC = () => {
     sponsorNeeds: '',
     contactEmail: user?.email || '',
     contactPhone: '',
-    additionalInfo: ''
+    additionalInfo: '',
   });
+
+  const categories = useMemo(
+    () => [
+      'Music',
+      'Sports',
+      'Arts & Culture',
+      'Food & Drink',
+      'Business & Networking',
+      'Technology',
+      'Education',
+      'Community Service',
+      'Other',
+    ],
+    []
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setProposal(prev => ({ ...prev, [name]: value }));
+    setProposal((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setProposal(prev => ({ ...prev, [name]: value }));
+  const handleSelectChange = (name: keyof EventProposal, value: string) => {
+    setProposal((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate form
+  const goToStep = (step: number) => {
+    if (step < 0 || step > steps.length - 1) return;
+    setCurrentStep(step);
+  };
+
+  const handleNext = () => {
+    if (currentStep === 0) {
+      if (!proposal.title || !proposal.description || !proposal.category) {
+        toast.error('Add a title, description, and category to continue.');
+        return;
+      }
+    }
+    if (currentStep === 1) {
+      if (!proposal.estimatedDate || !proposal.location) {
+        toast.error('Share the tentative date and location to proceed.');
+        return;
+      }
+    }
+    if (currentStep === 2) {
+      if (!proposal.contactEmail) {
+        toast.error('Enter a contact email so we can reach you.');
+        return;
+      }
+    }
+
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+  };
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleSubmit = async () => {
     if (!proposal.title || !proposal.description || !proposal.category) {
-      toast.error('Please fill in all required fields');
+      toast.error('Missing some essentials—double-check your concept step.');
+      setCurrentStep(0);
       return;
     }
 
     setIsSubmitting(true);
-    
-    // Simulate API call
     try {
-      // In a real implementation, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      toast.success('Your event proposal has been submitted for review!');
-      navigate('/');
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+      toast.success('Proposal sent! We’ll review and follow up shortly.');
+      navigate(isAuthenticated ? '/home' : '/');
     } catch (error) {
       console.error('Error submitting proposal:', error);
       toast.error('Failed to submit proposal. Please try again.');
@@ -79,78 +150,178 @@ const RequestEvent: React.FC = () => {
     }
   };
 
+  const StepCard = ({
+    step,
+    title,
+    description,
+    isActive,
+    isCompleted,
+  }: {
+    step: number;
+    title: string;
+    description: string;
+    isActive: boolean;
+    isCompleted: boolean;
+  }) => (
+    <button
+      type="button"
+      onClick={() => goToStep(step)}
+      className={cn(
+        'flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-kenya-orange/50 hover:bg-white/10',
+        isActive && 'border-kenya-orange/70 bg-white/10 shadow-[0_0_25px_rgba(255,128,0,0.25)]',
+        isCompleted && !isActive && 'border-kenya-orange/35'
+      )}
+    >
+      <span
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white',
+          isCompleted && 'bg-kenya-orange text-kenya-dark'
+        )}
+      >
+        {isCompleted ? <CheckCircle className="h-4 w-4" /> : step + 1}
+      </span>
+      <div className="space-y-1">
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="text-xs text-white/60">{description}</p>
+      </div>
+    </button>
+  );
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Calendar className="h-8 w-8 text-kenya-orange mr-3" />
-          <h1 className="text-3xl font-bold">Request an Event</h1>
+    <div className="min-h-screen bg-kenya-dark pb-16">
+      <Section
+        title="Bring a new experience to life"
+        subtitle="Share the story behind your idea. We’ll help with visibility, partnerships, and insights along the way."
+        action={
+          <Button variant="outline" onClick={() => navigate('/events')}>
+            Explore live experiences
+          </Button>
+        }
+      >
+        <div className="grid gap-6 md:grid-cols-[0.32fr_0.68fr]">
+          <div className="space-y-3">
+            {steps.map((step, index) => (
+              <StepCard
+                key={step.label}
+                step={index}
+                title={step.label}
+                description={step.description}
+                isActive={index === currentStep}
+                isCompleted={index < currentStep}
+              />
+            ))}
+            <Card className="border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm text-white/80">
+                  <Rocket className="h-4 w-4 text-kenya-orange" />
+                  Proposal snapshot
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-white/70">
+                <p>
+                  <span className="font-semibold text-white/85">Title:</span>{' '}
+                  {proposal.title || '—'}
+                </p>
+                <p>
+                  <span className="font-semibold text-white/85">Category:</span>{' '}
+                  {proposal.category || '—'}
+                </p>
+                <p>
+                  <span className="font-semibold text-white/85">Target date:</span>{' '}
+                  {proposal.estimatedDate || '—'}
+                </p>
+                <p>
+                  <span className="font-semibold text-white/85">Location:</span>{' '}
+                  {proposal.location || '—'}
+                </p>
+                <p>
+                  <span className="font-semibold text-white/85">Contact:</span>{' '}
+                  {proposal.contactEmail || proposal.contactPhone || '—'}
+                </p>
+              </CardContent>
+            </Card>
         </div>
         
-        <p className="text-muted-foreground mb-8">
-          Submit your event request, and our team will review it. Once approved, it can be published and promoted on our platform.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="border-white/10 bg-white/5">
+            <CardHeader className="space-y-1">
+              <div className="flex items-center gap-3 text-sm text-white/60">
+                <Calendar className="h-4 w-4 text-kenya-orange" />
+                Step {currentStep + 1} of {steps.length}
+              </div>
+              <CardTitle className="text-2xl text-white">
+                {steps[currentStep].label}
+              </CardTitle>
+              <p className="text-sm text-white/65">
+                {steps[currentStep].description}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {currentStep === 0 && (
+                <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="title" className="text-sm font-medium">
-                Event Title <span className="text-red-500">*</span>
+                    <label htmlFor="title" className="text-sm font-medium text-white">
+                      Event title <span className="text-kenya-orange">*</span>
               </label>
               <Input
                 id="title"
                 name="title"
                 value={proposal.title}
                 onChange={handleChange}
-                placeholder="Enter a catchy title for your event"
+                      placeholder="Rooftop Sundowner Nairobi"
                 required
               />
             </div>
-            
             <div className="space-y-2">
-              <label htmlFor="category" className="text-sm font-medium">
-                Category <span className="text-red-500">*</span>
+                    <label htmlFor="category" className="text-sm font-medium text-white">
+                      Category <span className="text-kenya-orange">*</span>
               </label>
               <Select
                 value={proposal.category}
-                onValueChange={(value) => handleSelectChange('category', value)}
+                      onValueChange={(value) =>
+                        handleSelectChange('category', value)
+                      }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder="Choose a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="music">Music</SelectItem>
-                  <SelectItem value="sports">Sports</SelectItem>
-                  <SelectItem value="arts">Arts & Culture</SelectItem>
-                  <SelectItem value="food">Food & Drink</SelectItem>
-                  <SelectItem value="business">Business & Networking</SelectItem>
-                  <SelectItem value="tech">Technology</SelectItem>
-                  <SelectItem value="education">Education</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
           <div className="space-y-2">
-            <label htmlFor="description" className="text-sm font-medium">
-              Event Description <span className="text-red-500">*</span>
+                    <label
+                      htmlFor="description"
+                      className="text-sm font-medium text-white"
+                    >
+                      Event description <span className="text-kenya-orange">*</span>
             </label>
             <Textarea
               id="description"
               name="description"
               value={proposal.description}
               onChange={handleChange}
-              placeholder="Provide a detailed description of your event"
+                      placeholder="Share the story, target audience, and desired outcomes."
               rows={5}
               required
             />
           </div>
+                </div>
+              )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="estimatedDate" className="text-sm font-medium">
-                Estimated Date
+                      <label
+                        htmlFor="estimatedDate"
+                        className="text-sm font-medium text-white"
+                      >
+                        Estimated date <span className="text-kenya-orange">*</span>
               </label>
               <Input
                 id="estimatedDate"
@@ -160,25 +331,29 @@ const RequestEvent: React.FC = () => {
                 onChange={handleChange}
               />
             </div>
-            
             <div className="space-y-2">
-              <label htmlFor="location" className="text-sm font-medium">
-                Location
+                      <label
+                        htmlFor="location"
+                        className="text-sm font-medium text-white"
+                      >
+                        Location <span className="text-kenya-orange">*</span>
               </label>
               <Input
                 id="location"
                 name="location"
                 value={proposal.location}
                 onChange={handleChange}
-                placeholder="Event location"
+                        placeholder="Venue, city, or concept"
               />
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="expectedAttendees" className="text-sm font-medium">
-                Expected Number of Attendees
+                      <label
+                        htmlFor="expectedAttendees"
+                        className="text-sm font-medium text-white"
+                      >
+                        Expected attendees
               </label>
               <Input
                 id="expectedAttendees"
@@ -186,42 +361,53 @@ const RequestEvent: React.FC = () => {
                 type="number"
                 value={proposal.expectedAttendees}
                 onChange={handleChange}
-                placeholder="e.g., 100"
+                        placeholder="e.g. 150"
               />
             </div>
-            
             <div className="space-y-2">
-              <label htmlFor="budget" className="text-sm font-medium">
-                Estimated Budget
+                      <label
+                        htmlFor="budget"
+                        className="text-sm font-medium text-white"
+                      >
+                        Estimated budget (KES)
               </label>
               <Input
                 id="budget"
                 name="budget"
                 value={proposal.budget}
                 onChange={handleChange}
-                placeholder="Budget range or amount"
+                        placeholder="Optional"
               />
             </div>
           </div>
+                </div>
+              )}
 
+              {currentStep === 2 && (
+                <div className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="sponsorNeeds" className="text-sm font-medium">
-              Sponsorship Needs
+                    <label
+                      htmlFor="sponsorNeeds"
+                      className="text-sm font-medium text-white"
+                    >
+                      Sponsorship & partnership needs
             </label>
             <Textarea
               id="sponsorNeeds"
               name="sponsorNeeds"
               value={proposal.sponsorNeeds}
               onChange={handleChange}
-              placeholder="Describe what kind of sponsorships you're looking for"
-              rows={3}
+                      placeholder="Outline sponsor tiers, preferred partners, or unique requests."
+                      rows={4}
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="contactEmail" className="text-sm font-medium">
-                Contact Email
+                      <label
+                        htmlFor="contactEmail"
+                        className="text-sm font-medium text-white"
+                      >
+                        Contact email <span className="text-kenya-orange">*</span>
               </label>
               <Input
                 id="contactEmail"
@@ -229,63 +415,155 @@ const RequestEvent: React.FC = () => {
                 type="email"
                 value={proposal.contactEmail}
                 onChange={handleChange}
-                placeholder="Your email address"
+                        placeholder="hello@yourbrand.com"
+                        required
               />
             </div>
-            
             <div className="space-y-2">
-              <label htmlFor="contactPhone" className="text-sm font-medium">
-                Contact Phone
+                      <label
+                        htmlFor="contactPhone"
+                        className="text-sm font-medium text-white"
+                      >
+                        Contact phone
               </label>
               <Input
                 id="contactPhone"
                 name="contactPhone"
                 value={proposal.contactPhone}
                 onChange={handleChange}
-                placeholder="Your phone number"
+                        placeholder="+254 700 000000"
               />
             </div>
           </div>
-
           <div className="space-y-2">
-            <label htmlFor="additionalInfo" className="text-sm font-medium">
-              Additional Information
+                    <label
+                      htmlFor="additionalInfo"
+                      className="text-sm font-medium text-white"
+                    >
+                      Additional context
             </label>
             <Textarea
               id="additionalInfo"
               name="additionalInfo"
               value={proposal.additionalInfo}
               onChange={handleChange}
-              placeholder="Any other details you'd like to share"
-              rows={3}
+                      placeholder="Anything else we should know—timelines, collaborators, or inspiration?"
+                      rows={4}
             />
           </div>
+                </div>
+              )}
 
-          <div className="flex justify-end space-x-4">
+              {currentStep === 3 && (
+                <div className="space-y-4 text-sm text-white/70">
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                      Overview
+                    </p>
+                    <p className="mt-3 text-lg font-semibold text-white">
+                      {proposal.title || 'Untitled experience'}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/60">
+                      <Badge className="bg-white/10 text-white/70">
+                        {proposal.category || 'No category'}
+                      </Badge>
+                      <Badge className="bg-white/10 text-white/70">
+                        {proposal.estimatedDate || 'Date TBD'}
+                      </Badge>
+                      <Badge className="bg-white/10 text-white/70">
+                        {proposal.location || 'Location TBD'}
+                      </Badge>
+                    </div>
+                    <p className="mt-4 whitespace-pre-wrap text-sm text-white/80">
+                      {proposal.description}
+                    </p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                        Headcount
+                      </p>
+                      <p className="mt-3 text-lg font-semibold text-white">
+                        {proposal.expectedAttendees || 'Not specified'}
+                      </p>
+                      <p className="text-xs text-white/60">
+                        Make sure capacity aligns with your venue.
+                      </p>
+                    </div>
+                    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                        Budget
+                      </p>
+                      <p className="mt-3 text-lg font-semibold text-white">
+                        {proposal.budget ? `KES ${proposal.budget}` : 'Flexible'}
+                      </p>
+                      <p className="text-xs text-white/60">
+                        Sponsors use this to scope contributions.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                      Partnerships
+                    </p>
+                    <p className="mt-3 whitespace-pre-wrap">
+                      {proposal.sponsorNeeds || 'No sponsorship requests listed.'}
+                    </p>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
+                      Contact
+                    </p>
+                    <div className="mt-3 space-y-1">
+                      <p>{proposal.contactEmail}</p>
+                      {proposal.contactPhone && <p>{proposal.contactPhone}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            <div className="flex items-center justify-between border-t border-white/10 bg-white/5 p-6">
+              <div className="flex items-center gap-2 text-xs text-white/50">
+                <Calendar className="h-4 w-4" />
+                {currentStep === steps.length - 1
+                  ? 'Ready to send for review.'
+                  : 'Save progress automatically as you go.'}
+              </div>
+              <div className="flex items-center gap-3">
             <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/')}
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBack}
+                  disabled={currentStep === 0}
             >
-              Cancel
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Back
             </Button>
-            <Button
-              type="submit"
-              className="bg-kenya-orange hover:bg-opacity-90"
-              disabled={isSubmitting}
-            >
+                {currentStep === steps.length - 1 ? (
+                  <Button onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
+                        Submitting
                 </>
               ) : (
-                'Submit Proposal'
+                      <>
+                        Submit proposal
+                        <Rocket className="ml-2 h-4 w-4" />
+                      </>
               )}
             </Button>
+                ) : (
+                  <Button onClick={handleNext}>
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
           </div>
-        </form>
+          </Card>
       </div>
+      </Section>
     </div>
   );
 };
