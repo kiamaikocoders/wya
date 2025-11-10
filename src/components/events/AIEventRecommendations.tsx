@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw, Loader2 } from 'lucide-react';
@@ -29,7 +29,7 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
   const [isLoading, setIsLoading] = useState(false);
   
   // Sample interests based on user profile or default ones
-  const getUserInterests = () => {
+  const getUserInterests = useCallback(() => {
     // Cast user to EnhancedUser type since we've made the types compatible
     const enhancedUser = user as unknown as EnhancedUser;
     if (enhancedUser?.preferences?.interests) {
@@ -37,9 +37,9 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
     }
     // Default interests if user has none
     return ['music', 'food', 'sports', 'technology', 'culture'];
-  };
+  }, [user]);
   
-  const getRecommendations = async () => {
+  const getRecommendations = useCallback(async () => {
     setIsLoading(true);
     try {
       const interests = getUserInterests();
@@ -57,12 +57,12 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getUserInterests]);
   
   useEffect(() => {
     // Get recommendations when component mounts
-    getRecommendations();
-  }, [user]);
+    void getRecommendations();
+  }, [getRecommendations]);
   
   // Parse recommendations text into clickable categories
   const renderRecommendations = () => {
@@ -105,7 +105,7 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
         <Button 
           variant="ghost" 
           size="icon"
-          onClick={getRecommendations}
+          onClick={() => void getRecommendations()}
           disabled={isLoading}
           className="text-white hover:text-kenya-orange hover:bg-transparent"
         >

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
   });
   
   // Function to find similar events based on category and tags
-  const findSimilarEvents = () => {
+  const findSimilarEvents = useCallback(() => {
     if (!events || events.length === 0) return [];
     
     setIsLoading(true);
@@ -77,14 +77,14 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentEvent, events]);
   
   // Find similar events when component mounts or when events data changes
   useEffect(() => {
     if (events) {
       findSimilarEvents();
     }
-  }, [events, currentEvent.id]);
+  }, [events, findSimilarEvents]);
   
   if (similarEvents.length === 0 && !isLoading) {
     return null; // Don't show anything if no similar events
@@ -100,7 +100,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
         <Button 
           variant="ghost" 
           size="icon"
-          onClick={findSimilarEvents}
+          onClick={() => void findSimilarEvents()}
           disabled={isLoading}
           className="text-white hover:text-kenya-orange hover:bg-transparent"
         >

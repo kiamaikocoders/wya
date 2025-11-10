@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,13 +26,7 @@ const AIEventCategorizer: React.FC<AIEventCategorizerProps> = ({
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  useEffect(() => {
-    if (title && description) {
-      analyzeCategories();
-    }
-  }, [title, description]);
-  
-  const analyzeCategories = async () => {
+  const analyzeCategories = useCallback(async () => {
     if (!title.trim() || !description.trim()) {
       return;
     }
@@ -47,7 +41,13 @@ const AIEventCategorizer: React.FC<AIEventCategorizerProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [description, title]);
+
+  useEffect(() => {
+    if (title && description) {
+      void analyzeCategories();
+    }
+  }, [analyzeCategories, title, description]);
   
   if (!title || !description) {
     return null;
