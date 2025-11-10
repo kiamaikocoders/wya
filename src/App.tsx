@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import Layout from "./components/layout/Layout";
 import MarketingLayout from "./components/layout/MarketingLayout";
 import Home from "./pages/Home";
+import Onboarding from "./pages/Onboarding";
 import Landing from "./pages/Landing";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
@@ -68,6 +69,14 @@ const App = () => (
               </Route>
               <Route element={<Layout />}>
                 <Route path="/home" element={<Home />} />
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <Onboarding />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/:eventId" element={<EventDetails />} />
                 <Route path="/categories/:slug" element={<Categories />} />
