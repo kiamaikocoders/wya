@@ -2,31 +2,22 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
-import { eventService } from '@/lib/event-service';
-import { storageService } from '@/lib/storage-service';
-import { Link } from 'react-router-dom';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { storyService } from '@/lib/story/story-service';
+import { followService } from '@/lib/follow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Settings, LogOut, User as UserIcon, Heart, Ticket, Bell, Upload, Camera } from 'lucide-react';
-import { formatDistance } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Plus, Grid, Video, UserCheck } from 'lucide-react';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import PostsGrid from '@/components/profile/PostsGrid';
+import CreatePostModal from '@/components/profile/CreatePostModal';
 import { toast } from 'sonner';
+import { useMutation } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [editForm, setEditForm] = useState({
-    full_name: '',
-    bio: '',
-    location: ''
-  });
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
+  const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -34,357 +25,171 @@ const Profile: React.FC = () => {
     enabled: !!user?.id,
   });
   
-  const { data: userEvents, isLoading: eventsLoading } = useQuery({
-    queryKey: ['userEvents', user?.id],
-    queryFn: () => eventService.getUserEvents(user?.id || ''),
+  // Fetch user's posts (stories)
+  const { data: userPosts = [] } = useQuery({
+    queryKey: ['userPosts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const stories = await storyService.getAllStories();
+      return stories.filter(s => s.user_id === user.id);
+    },
     enabled: !!user?.id,
   });
   
-  const { data: savedEvents, isLoading: savedEventsLoading } = useQuery({
-    queryKey: ['savedEvents', user?.id],
-    queryFn: () => eventService.getSavedEvents(user?.id || ''),
+  // Fetch followers and following counts
+  const { data: followers = [] } = useQuery({
+    queryKey: ['followers', user?.id],
+    queryFn: () => followService.getFollowers(user?.id || ''),
     enabled: !!user?.id,
   });
   
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  const { data: following = [] } = useQuery({
+    queryKey: ['following', user?.id],
+    queryFn: () => followService.getFollowing(user?.id || ''),
+    enabled: !!user?.id,
+  });
 
-  const handleAvatarUpload = async () => {
-    if (!selectedFile) return;
-    
-    try {
-      setIsUploading(true);
-      const uploadResult = await storageService.uploadFile(selectedFile, {
-        bucket: 'user-avatars',
-        folder: 'avatars'
-      });
-      
-      // Update profile with new avatar URL
-      await userService.updateProfile({
-        avatar_url: uploadResult.publicUrl
-      });
-      
-      // Refresh profile data
-      queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
-      
-      toast.success('Avatar updated successfully!');
-      setSelectedFile(null);
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload avatar');
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  const followMutation = useMutation({
+    mutationFn: followService.followUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followers', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['following', user?.id] });
+    },
+  });
 
-  const handleEditProfile = () => {
-    if (profile) {
-      setEditForm({
-        full_name: profile.full_name || '',
-        bio: profile.bio || '',
-        location: profile.location || ''
-      });
-      setIsEditing(true);
-    }
-  };
+  const unfollowMutation = useMutation({
+    mutationFn: followService.unfollowUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followers', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['following', user?.id] });
+    },
+  });
 
-  const handleSaveProfile = async () => {
-    try {
-      await userService.updateProfile(editForm);
-      queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
-      setIsEditing(false);
-      toast.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditForm({ name: '', bio: '', location: '' });
+  const handlePostSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['userPosts', user?.id] });
   };
   
   if (profileLoading) {
     return (
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
       </div>
     );
   }
   
   if (!user || !profile) {
     return (
-      <div className="min-h-screen p-6 flex flex-col items-center justify-center">
-        <h1 className="text-white text-xl font-bold mb-4">Not Logged In</h1>
-        <p className="text-kenya-brown-light mb-6">Please log in to view your profile.</p>
-        <Button asChild>
-          <Link to="/login">Log In</Link>
-        </Button>
+      <div className="flex min-h-screen flex-col items-center justify-center p-6">
+        <h1 className="mb-4 text-xl font-bold text-white">Not Logged In</h1>
+        <p className="mb-6 text-kenya-brown-light">Please log in to view your profile.</p>
       </div>
     );
   }
+
+  const stats = {
+    posts: userPosts.length,
+    followers: followers.length,
+    following: following.length,
+  };
   
   return (
-    <div className="min-h-screen pb-20 animate-fade-in">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Profile Sidebar */}
-          <div className="w-full md:w-1/3">
-            <Card className="bg-kenya-dark border-kenya-brown/20">
-              <CardHeader className="pb-2">
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <Avatar className="h-24 w-24 mb-4">
-                      <AvatarImage src={profile.avatar_url} />
-                      <AvatarFallback className="bg-kenya-orange text-white text-xl">
-                        {profile.full_name?.charAt(0) || user.email?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <label className="absolute bottom-0 right-0 bg-kenya-brown hover:bg-kenya-brown-dark text-white p-2 rounded-full cursor-pointer transition-colors">
-                      <Camera size={16} />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+    <div className="min-h-screen bg-kenya-dark pb-24">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        {/* Profile Header */}
+        <ProfileHeader
+          profile={{
+            id: profile.id,
+            full_name: profile.full_name,
+            username: profile.username,
+            bio: profile.bio,
+            avatar_url: profile.avatar_url,
+            location: profile.location,
+          }}
+          stats={stats}
+          isCurrentUser={true}
+          onEdit={() => {
+            // TODO: Open edit profile modal
+            toast.info('Edit profile coming soon');
+          }}
+        />
                   
-                  {selectedFile && (
-                    <div className="mb-4 p-2 bg-kenya-brown/20 rounded-lg">
-                      <p className="text-white text-sm mb-2">Selected: {selectedFile.name}</p>
+        {/* Create Post Button - TikTok style */}
+        <div className="my-6 flex justify-center">
                       <Button
-                        onClick={handleAvatarUpload}
-                        disabled={isUploading}
-                        size="sm"
-                        className="bg-kenya-brown hover:bg-kenya-brown-dark"
+            onClick={() => setIsCreatePostOpen(true)}
+            className="h-14 w-14 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange p-0 shadow-lg hover:scale-105 transition-transform"
                       >
-                        {isUploading ? 'Uploading...' : 'Upload Avatar'}
+            <Plus className="h-6 w-6 text-black" />
                       </Button>
                     </div>
-                  )}
-                  
-                  <CardTitle className="text-white text-xl">{profile.full_name || 'User'}</CardTitle>
-                  <CardDescription className="text-kenya-brown-light">
-                    {profile.bio || 'No bio yet'}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="text-kenya-brown-light">
-                <div className="space-y-4 mt-4">
-                  <div className="flex items-center gap-2">
-                    <UserIcon size={16} />
-                    <span>{user.email}</span>
-                  </div>
-                  {profile.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} />
-                      <span>{profile.location}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    <span>Joined {formatDistance(new Date(profile.created_at), new Date(), { addSuffix: true })}</span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={handleEditProfile}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Edit Profile
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/notifications">
-                    <Bell className="mr-2 h-4 w-4" />
-                    Notifications
-                  </Link>
-                </Button>
-                <Button 
-                  variant="destructive" 
-                  className="w-full justify-start mt-2" 
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log Out
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
-          
-          {/* Main Content */}
-          <div className="w-full md:w-2/3">
-            {/* Edit Profile Form */}
-            {isEditing && (
-              <Card className="bg-kenya-dark border-kenya-brown/20 mb-6">
-                <CardHeader>
-                  <CardTitle className="text-white">Edit Profile</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="name" className="text-white">Name</Label>
-                    <Input
-                      id="name"
-                      value={editForm.full_name}
-                      onChange={(e) => setEditForm({...editForm, full_name: e.target.value})}
-                      className="bg-black/20 border-kenya-brown/30 text-white"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bio" className="text-white">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      value={editForm.bio}
-                      onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
-                      className="bg-black/20 border-kenya-brown/30 text-white"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location" className="text-white">Location</Label>
-                    <Input
-                      id="location"
-                      value={editForm.location}
-                      onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                      className="bg-black/20 border-kenya-brown/30 text-white"
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter className="flex gap-2">
-                  <Button
-                    onClick={handleSaveProfile}
-                    className="bg-kenya-brown hover:bg-kenya-brown-dark"
-                  >
-                    Save Changes
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                  >
-                    Cancel
-                  </Button>
-                </CardFooter>
-              </Card>
-            )}
 
-            <Tabs defaultValue="myEvents">
-              <TabsList className="bg-kenya-dark border-kenya-brown/20 mb-6">
-                <TabsTrigger value="myEvents" className="data-[state=active]:bg-kenya-orange">
-                  My Events
-                </TabsTrigger>
-                <TabsTrigger value="saved" className="data-[state=active]:bg-kenya-orange">
-                  Saved Events
-                </TabsTrigger>
-                <TabsTrigger value="tickets" className="data-[state=active]:bg-kenya-orange">
-                  My Tickets
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+          <TabsList className="grid w-full grid-cols-3 bg-transparent border-b border-white/10 rounded-none">
+            <TabsTrigger
+              value="posts"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-kenya-orange data-[state=active]:text-white text-white/60"
+                >
+              <Grid className="mr-2 h-4 w-4" />
+              Posts
+            </TabsTrigger>
+            <TabsTrigger
+              value="reels"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-kenya-orange data-[state=active]:text-white text-white/60"
+            >
+              <Video className="mr-2 h-4 w-4" />
+              Reels
+            </TabsTrigger>
+            <TabsTrigger
+              value="tagged"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-kenya-orange data-[state=active]:text-white text-white/60"
+            >
+              <UserCheck className="mr-2 h-4 w-4" />
+              Tagged
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="myEvents">
-                <h2 className="text-white text-xl font-bold mb-4">Events You've Created</h2>
-                {eventsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-kenya-orange"></div>
-                  </div>
-                ) : userEvents && userEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {userEvents.map(event => (
-                      <Card key={event.id} className="bg-kenya-dark border-kenya-brown/20">
-                        <div className="h-40 bg-cover bg-center rounded-t-lg" style={{ backgroundImage: `url(${event.image_url})` }}></div>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-white">{event.title}</CardTitle>
-                          <CardDescription className="text-kenya-brown-light flex items-center gap-1">
-                            <Calendar size={14} />
-                            {event.date}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardFooter>
-                          <Button asChild>
-                            <Link to={`/events/${event.id}`}>View Event</Link>
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-kenya-brown-light mb-4">You haven't created any events yet.</p>
-                    <Button asChild>
-                      <Link to="/events/create">Create an Event</Link>
-                    </Button>
-                  </div>
-                )}
+          <TabsContent value="posts" className="mt-6">
+            <PostsGrid
+              posts={userPosts.map(p => ({
+                id: p.id,
+                media_url: p.media_url,
+                media_type: p.media_type,
+                content: p.content,
+                created_at: p.created_at,
+              }))}
+              activeTab="posts"
+            />
               </TabsContent>
               
-              <TabsContent value="saved">
-                <h2 className="text-white text-xl font-bold mb-4">Saved Events</h2>
-                {savedEventsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-kenya-orange"></div>
-                  </div>
-                ) : savedEvents && savedEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {savedEvents.map(event => (
-                      <Card key={event.id} className="bg-kenya-dark border-kenya-brown/20">
-                        <div className="h-40 bg-cover bg-center rounded-t-lg" style={{ backgroundImage: `url(${event.image_url})` }}></div>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-white">{event.title}</CardTitle>
-                          <CardDescription className="text-kenya-brown-light flex items-center gap-1">
-                            <Calendar size={14} />
-                            {event.date}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardFooter className="flex justify-between">
-                          <Button asChild>
-                            <Link to={`/events/${event.id}`}>View Event</Link>
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => {
-                              toast.success('Event removed from saved list');
-                              // This would typically call a mutation to remove the event
-                            }}
-                          >
-                            <Heart size={16} className="fill-kenya-orange text-kenya-orange" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-kenya-brown-light mb-4">You haven't saved any events yet.</p>
-                    <Button asChild>
-                      <Link to="/events">Browse Events</Link>
-                    </Button>
-                  </div>
-                )}
+          <TabsContent value="reels" className="mt-6">
+            <PostsGrid
+              posts={userPosts.map(p => ({
+                id: p.id,
+                media_url: p.media_url,
+                media_type: p.media_type,
+                content: p.content,
+                created_at: p.created_at,
+              }))}
+              activeTab="reels"
+            />
               </TabsContent>
               
-              <TabsContent value="tickets">
-                <h2 className="text-white text-xl font-bold mb-4">Your Tickets</h2>
-                <div className="text-center py-8">
-                  <p className="text-kenya-brown-light mb-4">Ticket functionality coming soon!</p>
-                  <div className="flex justify-center">
-                    <Ticket size={48} className="text-kenya-orange opacity-50" />
-                  </div>
-                </div>
+          <TabsContent value="tagged" className="mt-6">
+            <PostsGrid
+              posts={[]} // TODO: Fetch tagged posts
+              activeTab="tagged"
+            />
               </TabsContent>
             </Tabs>
-          </div>
-        </div>
       </div>
+
+      {/* Create Post Modal */}
+      <CreatePostModal
+        open={isCreatePostOpen}
+        onClose={() => setIsCreatePostOpen(false)}
+        onSuccess={handlePostSuccess}
+      />
     </div>
   );
 };
