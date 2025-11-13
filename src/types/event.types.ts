@@ -6,6 +6,7 @@ export interface Event {
   description: string;
   category: string;
   date: string;
+  time?: string; // Optional event start time (HH:MM:SS format)
   location: string;
   image_url: string;
   organizer_id: string;
@@ -17,6 +18,7 @@ export interface Event {
   is_featured?: boolean;
   latitude?: number;
   longitude?: number;
+  performing_artists?: string[]; // Array of performing artist names
 }
 
 export interface CreateEventPayload {
@@ -24,12 +26,14 @@ export interface CreateEventPayload {
   description: string;
   category: string;
   date: string;
+  time?: string; // Optional event start time
   location: string;
   image_url?: string;
   price?: number;
   tags?: string[];
   organizer_id?: string;
   capacity?: number;
+  performing_artists?: string[]; // Array of performing artist names
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

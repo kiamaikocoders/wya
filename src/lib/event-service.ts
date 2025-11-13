@@ -10,6 +10,7 @@ export interface Event {
   title: string;
   description?: string;
   date: string;
+  time?: string; // Optional event start time (HH:MM:SS format)
   location: string;
   image_url?: string;
   capacity?: number;
@@ -23,17 +24,20 @@ export interface Event {
   is_featured?: boolean; // Also add is_featured for compatibility
   latitude?: number;
   longitude?: number;
+  performing_artists?: string[]; // Array of performing artist names
 }
 
 export interface CreateEventPayload {
   title: string;
   description?: string;
   date: string;
+  time?: string; // Optional event start time
   location: string;
   image_url?: string;
   capacity?: number;
   price?: number;
   category?: string;
+  performing_artists?: string[]; // Array of performing artist names
 }
 
 export interface UpdateEventPayload {
@@ -41,11 +45,13 @@ export interface UpdateEventPayload {
   title?: string;
   description?: string;
   date?: string;
+  time?: string; // Optional event start time
   location?: string;
   image_url?: string;
   capacity?: number;
   price?: number;
   category?: string;
+  performing_artists?: string[]; // Array of performing artist names
 }
 
 // Event service
