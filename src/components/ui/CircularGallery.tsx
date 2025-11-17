@@ -396,7 +396,7 @@ class App {
   screen: { width: number; height: number } = { width: 0, height: 0 };
   viewport: { width: number; height: number } = { width: 0, height: 0 };
   isDown: boolean = false;
-  start: number = 0;
+  start: { x: number; y: number } = { x: 0, y: 0 };
   startTime?: number;
   raf?: number;
   boundOnResize?: () => void;
@@ -491,26 +491,50 @@ class App {
   }
 
   onTouchDown(e: MouseEvent | TouchEvent) {
+    // Only handle events within the gallery container
+    const target = e.target as HTMLElement;
+    if (!this.container.contains(target) && !this.gl?.canvas.contains(target)) {
+      return;
+    }
+    
     this.isDown = true;
     this.scroll.position = this.scroll.current;
-    this.start = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
+    const touch = e instanceof TouchEvent ? e.touches[0] : e;
+    this.start = { x: touch.clientX, y: touch.clientY };
     this.startTime = Date.now();
   }
 
   onTouchMove(e: MouseEvent | TouchEvent) {
     if (!this.isDown) return;
-    const x = e instanceof TouchEvent ? e.touches[0].clientX : e.clientX;
-    const distance = (this.start - x) * (this.scrollSpeed * 0.025);
+    const touch = e instanceof TouchEvent ? e.touches[0] : e;
+    const deltaX = this.start.x - touch.clientX;
+    const deltaY = Math.abs(this.start.y - touch.clientY);
+    
+    // Only scroll horizontally if movement is primarily horizontal
+    // If vertical movement is greater than horizontal, ignore it (user is scrolling page)
+    if (deltaY > Math.abs(deltaX) * 1.5) {
+      // User is scrolling vertically, cancel the interaction
+      this.isDown = false;
+      return;
+    }
+    
+    const distance = deltaX * (this.scrollSpeed * 0.025);
     this.scroll.target = (this.scroll.position || 0) + distance;
   }
 
   onTouchUp() {
-    const wasClick = this.isDown && Date.now() - (this.startTime || 0) < 200;
-    const moved = Math.abs((this.scroll.position || 0) - this.scroll.current) > 5;
+    if (!this.isDown) return;
     
+    const timeElapsed = Date.now() - (this.startTime || 0);
+    const wasClick = timeElapsed < 300; // Increased from 200ms to 300ms
+    const moved = Math.abs((this.scroll.position || 0) - this.scroll.current) > 20; // Increased from 5px to 20px
+    
+    // Only trigger click if:
+    // 1. It was a quick tap (less than 300ms)
+    // 2. The gallery didn't scroll significantly (less than 20px)
+    // 3. The movement was primarily horizontal (not vertical scrolling)
     if (wasClick && !moved && this.onItemClick && this.mediasImages) {
       // Find which item is closest to center
-      const centerX = this.viewport.width / 2;
       let closestIndex = 0;
       let closestDistance = Infinity;
       
@@ -525,9 +549,13 @@ class App {
           }
         });
         
-        const item = this.mediasImages[closestIndex];
-        if (item) {
-          this.onItemClick(closestIndex, item);
+        // Only trigger click if the closest item is reasonably close to center
+        // (within 30% of viewport width)
+        if (closestDistance < this.viewport.width * 0.3) {
+          const item = this.mediasImages[closestIndex];
+          if (item) {
+            this.onItemClick(closestIndex, item);
+          }
         }
       }
     }
@@ -597,34 +625,34 @@ class App {
     this.boundOnTouchUp = this.onTouchUp.bind(this);
 
     window.addEventListener('resize', this.boundOnResize);
-    window.addEventListener('mousewheel', this.boundOnWheel as any);
-    window.addEventListener('wheel', this.boundOnWheel);
-    window.addEventListener('mousedown', this.boundOnTouchDown as any);
-    window.addEventListener('mousemove', this.boundOnTouchMove as any);
-    window.addEventListener('mouseup', this.boundOnTouchUp);
-    window.addEventListener('touchstart', this.boundOnTouchDown as any);
-    window.addEventListener('touchmove', this.boundOnTouchMove as any);
-    window.addEventListener('touchend', this.boundOnTouchUp);
+    // Only listen to wheel events on the container, not the whole window
+    this.container.addEventListener('wheel', this.boundOnWheel, { passive: true });
+    // Use container for mouse events to scope them properly
+    this.container.addEventListener('mousedown', this.boundOnTouchDown as any);
+    this.container.addEventListener('mousemove', this.boundOnTouchMove as any);
+    this.container.addEventListener('mouseup', this.boundOnTouchUp);
+    this.container.addEventListener('touchstart', this.boundOnTouchDown as any, { passive: true });
+    this.container.addEventListener('touchmove', this.boundOnTouchMove as any, { passive: true });
+    this.container.addEventListener('touchend', this.boundOnTouchUp);
   }
 
   destroy() {
     if (this.raf) window.cancelAnimationFrame(this.raf);
     if (this.boundOnResize) window.removeEventListener('resize', this.boundOnResize);
     if (this.boundOnWheel) {
-      window.removeEventListener('mousewheel', this.boundOnWheel as any);
-      window.removeEventListener('wheel', this.boundOnWheel);
+      this.container.removeEventListener('wheel', this.boundOnWheel);
     }
     if (this.boundOnTouchDown) {
-      window.removeEventListener('mousedown', this.boundOnTouchDown as any);
-      window.removeEventListener('touchstart', this.boundOnTouchDown as any);
+      this.container.removeEventListener('mousedown', this.boundOnTouchDown as any);
+      this.container.removeEventListener('touchstart', this.boundOnTouchDown as any);
     }
     if (this.boundOnTouchMove) {
-      window.removeEventListener('mousemove', this.boundOnTouchMove as any);
-      window.removeEventListener('touchmove', this.boundOnTouchMove as any);
+      this.container.removeEventListener('mousemove', this.boundOnTouchMove as any);
+      this.container.removeEventListener('touchmove', this.boundOnTouchMove as any);
     }
     if (this.boundOnTouchUp) {
-      window.removeEventListener('mouseup', this.boundOnTouchUp);
-      window.removeEventListener('touchend', this.boundOnTouchUp);
+      this.container.removeEventListener('mouseup', this.boundOnTouchUp);
+      this.container.removeEventListener('touchend', this.boundOnTouchUp);
     }
     if (this.renderer && this.gl && this.gl.canvas.parentNode) {
       this.gl.canvas.parentNode.removeChild(this.gl.canvas);

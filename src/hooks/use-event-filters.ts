@@ -25,20 +25,31 @@ const parseArrayParam = (value: string | null) =>
 
 export const useEventFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initializedFromPreferences = useRef(false);
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
 
-  const [filters, setFilters] = useState<EventFilterState>(() => ({
-    ...DEFAULT_FILTERS,
-    search: searchParams.get('search') ?? '',
-    category: searchParams.get('category'),
-    location: searchParams.get('location'),
-    tags: parseArrayParam(searchParams.get('tags')),
-    featuredOnly: searchParams.get('featured') === 'true',
-    startDate: searchParams.get('startDate'),
-    endDate: searchParams.get('endDate'),
-  }));
+  const [filters, setFilters] = useState<EventFilterState>(() => {
+    // Only initialize from URL params if they're explicitly set (not empty)
+    // This ensures filters start neutral unless user explicitly navigated with filters
+    const category = searchParams.get('category');
+    const location = searchParams.get('location');
+    const search = searchParams.get('search');
+    const tags = parseArrayParam(searchParams.get('tags'));
+    const featured = searchParams.get('featured');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    
+    return {
+      ...DEFAULT_FILTERS,
+      search: search || '',
+      category: category || null,
+      location: location || null,
+      tags: tags.length > 0 ? tags : [],
+      featuredOnly: featured === 'true',
+      startDate: startDate || null,
+      endDate: endDate || null,
+    };
+  });
 
   const [viewMode, setViewMode] = useState<EventViewMode>(
     (searchParams.get('view') as EventViewMode) || DEFAULT_VIEW
@@ -74,21 +85,9 @@ export const useEventFilters = () => {
     enabled: isAuthenticated,
   });
 
-  useEffect(() => {
-    if (!initializedFromPreferences.current && onboardingQuery.data) {
-      const defaultLocation =
-        onboardingQuery.data.homeBase ||
-        onboardingQuery.data.preferredCities?.[0] ||
-        null;
-
-      if (defaultLocation && !filters.location) {
-        updateFilter('location', defaultLocation, { skipHistory: true });
-      }
-
-      initializedFromPreferences.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onboardingQuery.data]);
+  // Removed auto-fill from onboarding preferences
+  // Filters should start neutral until user explicitly applies them
+  // Users can still use their saved filters or manually set location if needed
 
   const saveFilterMutation = useMutation({
     mutationFn: eventFilterService.saveFilter,
