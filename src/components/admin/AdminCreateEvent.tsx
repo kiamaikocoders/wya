@@ -109,49 +109,87 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     setPreviewUrl(url);
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File, mediaType: "image" | "video") => {
     setIsUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `event-images/${fileName}`;
+      
+      // Use event-media bucket for videos, event-images for images
+      const bucket = mediaType === 'video' ? 'event-media' : 'event-images';
+      const folder = mediaType === 'video' ? 'event-videos' : 'event-images';
+      const filePath = `${folder}/${fileName}`;
+
+      // Validate file size based on type
+      const maxSize = mediaType === 'video' ? 100 * 1024 * 1024 : 10 * 1024 * 1024; // 100MB for videos, 10MB for images
+      if (file.size > maxSize) {
+        throw new Error(`File size must be less than ${mediaType === 'video' ? '100MB' : '10MB'}`);
+      }
 
       const { error: uploadError } = await supabase.storage
-        .from('event-images')
-        .upload(filePath, file);
+        .from(bucket)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // If bucket doesn't exist or has issues, try event-media as fallback
+        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('new row violates')) {
+          const fallbackBucket = 'event-media';
+          const fallbackPath = `events/${fileName}`;
+          const { error: fallbackError } = await supabase.storage
+            .from(fallbackBucket)
+            .upload(fallbackPath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+          
+          if (fallbackError) throw fallbackError;
+          
+          const { data } = supabase.storage
+            .from(fallbackBucket)
+            .getPublicUrl(fallbackPath);
+          
+          setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
+          setPreviewUrl(data.publicUrl);
+          toast.success(`${mediaType === 'video' ? 'Video' : 'Image'} uploaded successfully`);
+          return;
+        }
+        throw uploadError;
+      }
 
       const { data } = supabase.storage
-        .from('event-images')
+        .from(bucket)
         .getPublicUrl(filePath);
 
       setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
       setPreviewUrl(data.publicUrl);
-      toast.success('Image uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('Failed to upload image');
+      toast.success(`${mediaType === 'video' ? 'Video' : 'Image'} uploaded successfully`);
+    } catch (error: any) {
+      console.error(`Error uploading ${mediaType}:`, error);
+      toast.error(error.message || `Failed to upload ${mediaType}`);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size must be less than 10MB');
-      return;
-    }
-
-    if (!file.type.startsWith('image/')) {
+    // Validate file type
+    if (type === 'image' && !file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
     }
+    
+    if (type === 'video' && !file.type.startsWith('video/')) {
+      toast.error('Please upload a video file');
+      return;
+    }
 
-    handleFileUpload(file);
+    handleFileUpload(file, type);
   };
 
   const createEventMutation = useMutation({
@@ -378,7 +416,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             
             <div className="space-y-2">
               <Label>Event Image</Label>
-              <Tabs defaultValue="image" onValueChange={(value) => setMediaType(value as "image" | "video" | "link")}>
+              <Tabs defaultValue="image" onValueChange={(value) => {
+                setMediaType(value as "image" | "video" | "link");
+                // Clear preview when switching tabs to avoid confusion
+                setPreviewUrl(null);
+              }}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="image" className="flex items-center gap-2">
                     <Image className="h-4 w-4" />
@@ -408,14 +450,27 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                       <Input
                         type="file"
                         accept="image/*"
-                        onChange={handleFileChange}
+                        onChange={(e) => handleFileChange(e, 'image')}
                         className="hidden"
+                        id="image-upload-input"
                       />
-                      <Button type="button" variant="outline" disabled={isUploading}>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        disabled={isUploading}
+                        className="min-w-[100px]"
+                        onClick={() => document.getElementById('image-upload-input')?.click()}
+                      >
                         {isUploading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Uploading...
+                          </>
                         ) : (
-                          <Upload className="h-4 w-4" />
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload
+                          </>
                         )}
                       </Button>
                     </label>
@@ -432,9 +487,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                     ))}
                   </div>
                   
-                  {previewUrl && (
+                  {previewUrl && mediaType === 'image' && (
                     <div className="mt-2 p-2 border rounded-md relative">
-                      <img src={previewUrl} alt="Preview" className="max-h-40 object-contain mx-auto" />
+                      <img src={previewUrl} alt="Preview" className="max-h-40 object-contain mx-auto w-full" />
                       <Button
                         type="button"
                         variant="ghost"
@@ -451,14 +506,67 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   )}
                 </TabsContent>
                 
-                <TabsContent value="video">
-                  <Input
-                    id="image_url"
-                    name="image_url"
-                    value={formData.image_url || ''}
-                    onChange={handleInputChange}
-                    placeholder="Enter YouTube or video URL"
-                  />
+                <TabsContent value="video" className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="video_url"
+                      name="image_url"
+                      value={formData.image_url || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter YouTube/video URL or upload file"
+                      className="flex-1"
+                    />
+                    <label className="cursor-pointer">
+                      <Input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleFileChange(e, 'video')}
+                        className="hidden"
+                        id="video-upload-input"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        disabled={isUploading}
+                        className="min-w-[100px]"
+                        onClick={() => document.getElementById('video-upload-input')?.click()}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
+                    </label>
+                  </div>
+                  
+                  {previewUrl && mediaType === 'video' && (
+                    <div className="mt-2 p-2 border rounded-md relative">
+                      <video 
+                        src={previewUrl} 
+                        controls 
+                        className="max-h-40 object-contain mx-auto w-full"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setPreviewUrl(null);
+                          setFormData(prev => ({ ...prev, image_url: '' }));
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="link">
