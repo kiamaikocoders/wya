@@ -506,12 +506,11 @@ class App {
 
   onTouchUp() {
     const wasClick = this.isDown && Date.now() - (this.startTime || 0) < 200;
-    const moved = Math.abs((this.scroll.position || 0) - this.scroll.current) > 15;
+    const moved = Math.abs((this.scroll.position || 0) - this.scroll.current) > 5;
     
-    // Only trigger click if it was a quick tap with minimal movement (not a scroll)
-    // Also check that the item is reasonably close to center (within 30% of viewport width)
     if (wasClick && !moved && this.onItemClick && this.mediasImages) {
       // Find which item is closest to center
+      const centerX = this.viewport.width / 2;
       let closestIndex = 0;
       let closestDistance = Infinity;
       
@@ -526,13 +525,9 @@ class App {
           }
         });
         
-        // Only trigger navigation if item is close to center (within 30% of viewport width)
-        // This prevents accidental navigation when scrolling vertically
-        if (closestDistance < this.viewport.width * 0.3) {
-          const item = this.mediasImages[closestIndex];
-          if (item) {
-            this.onItemClick(closestIndex, item);
-          }
+        const item = this.mediasImages[closestIndex];
+        if (item) {
+          this.onItemClick(closestIndex, item);
         }
       }
     }

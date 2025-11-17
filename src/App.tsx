@@ -46,6 +46,10 @@ import SponsorsPage from './pages/SponsorsPage';
 import SponsorZone from './pages/SponsorZone';
 import SpotlightPage from './pages/SpotlightPage';
 import Settings from './pages/Settings';
+import DownloadApp from './pages/DownloadApp';
+import { updateService } from './lib/update-service';
+import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,7 +60,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
+const App = () => {
+  // Initialize update checking for native apps
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      updateService.initialize();
+    }
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <HelmetProvider>
@@ -66,6 +78,7 @@ const App = () => (
             <Routes>
               <Route element={<MarketingLayout />}>
                 <Route path="/" element={<Landing />} />
+                <Route path="/download" element={<DownloadApp />} />
               </Route>
               <Route element={<Layout />}>
                 <Route path="/home" element={<Home />} />
@@ -227,5 +240,6 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+};
 
 export default App;

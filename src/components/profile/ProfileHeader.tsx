@@ -25,8 +25,6 @@ interface ProfileHeaderProps {
   onUnfollow?: () => void;
   onEdit?: () => void;
   onMessage?: () => void;
-  onFollowersClick?: () => void;
-  onFollowingClick?: () => void;
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -38,8 +36,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onUnfollow,
   onEdit,
   onMessage,
-  onFollowersClick,
-  onFollowingClick,
 }) => {
   const displayName = profile.full_name || profile.username || 'User';
 
@@ -123,20 +119,14 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <p className="text-lg font-semibold text-white">{stats.posts}</p>
               <p className="text-sm text-white/70">posts</p>
             </div>
-            <button
-              onClick={onFollowersClick}
-              className="text-center cursor-pointer hover:opacity-80 transition-opacity"
-            >
+            <div className="text-center">
               <p className="text-lg font-semibold text-white">{stats.followers}</p>
               <p className="text-sm text-white/70">followers</p>
-            </button>
-            <button
-              onClick={onFollowingClick}
-              className="text-center cursor-pointer hover:opacity-80 transition-opacity"
-            >
+            </div>
+            <div className="text-center">
               <p className="text-lg font-semibold text-white">{stats.following}</p>
               <p className="text-sm text-white/70">following</p>
-            </button>
+          </div>
           </div>
 
           {/* Bio and Location */}

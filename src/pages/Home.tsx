@@ -203,101 +203,17 @@ const Home: React.FC = () => {
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/85 via-black/70 to-black/60" style={{ zIndex: 1 }} />
         {/* Gradient fade at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-32 -z-10 bg-gradient-to-t from-kenya-dark to-transparent" style={{ zIndex: 2 }} />
-        <div className="container mx-auto px-4 py-16 sm:py-20 relative z-10 max-w-full overflow-x-hidden">
-          <div className="grid items-center gap-10 md:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <Badge className="bg-white/10 text-white">Curated for you</Badge>
-                <h1 className="text-4xl font-semibold leading-tight text-white md:text-5xl">
-                  Discover what's happening in Kenya this week.
-          </h1>
-                <p className="text-lg text-white/70">
-                  We combine cultural insight, real-time data, and AI curation to
-                  surface events that feel made for you—whether you're attending,
-                  hosting, or scouting partnerships.
-          </p>
-              </div>
-          
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="flex-1">
-            <SearchBar onSearch={handleSearch} />
-          </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => navigate('/events')} size="sm">
-              Explore Events
-            </Button>
-            <Button 
-              variant="outline" 
-                    size="sm"
-              onClick={() => navigate('/request-event')}
-                  >
-                    Launch Request
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/onboarding')}
-                    className="border-white/25 text-white/80 hover:text-white"
-            >
-                    Personalise Feed
-            </Button>
-            <Button 
-                    variant="ghost"
-                    size="sm"
-              onClick={() => navigate('/ai-assistance')}
-                    className="text-white/80 hover:text-white"
-            >
-                    <Brain className="mr-2 h-4 w-4 text-kenya-orange" />
-                    AI Studio
-            </Button>
-          </div>
-        </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
-                  <CardHeader className="space-y-1">
-                    <span className="text-sm text-white/60">Happening now</span>
-                    <CardTitle className="text-2xl text-white">
-                      {events?.length || 0}+
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-white/70">
-                    Live events across Nairobi, Mombasa, Kisumu, Eldoret, and
-                    more.
-                  </CardContent>
-                </Card>
-                <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
-                  <CardHeader className="space-y-1">
-                    <span className="text-sm text-white/60">For creators</span>
-                    <CardTitle className="text-2xl text-white">350+</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-white/70">
-                    Organizers partnering with WYA to fill venues and manage
-                    audiences.
-                  </CardContent>
-                </Card>
-                <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
-                  <CardHeader className="space-y-1">
-                    <span className="text-sm text-white/60">Powered by AI</span>
-                    <CardTitle className="text-2xl text-white">Smart</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-white/70">
-                    Recommendations refresh every morning with cultural cues and
-                    community signals.
-                  </CardContent>
-                </Card>
-              </div>
-      </div>
-      
-            <div className="relative hidden h-full md:block">
-              <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-kenya-orange/20 via-white/10 to-transparent blur-2xl" />
-              <Card className="flex h-full flex-col justify-between border-white/20 bg-black/40 backdrop-blur-sm p-6 text-white shadow-none">
+        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 relative z-10">
+          <div className="space-y-8">
+            {/* Mobile AI Feed - Shows FIRST on mobile, hidden on desktop */}
+            <div className="block md:hidden">
+              <Card className="border-white/20 bg-black/40 backdrop-blur-sm p-6 text-white shadow-none">
                 <CardHeader>
                   <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
                     <Wand2 className="h-4 w-4 text-kenya-orange" />
                     AI feed
                   </span>
-                  <CardTitle className="mt-4 text-2xl text-white">
+                  <CardTitle className="mt-4 text-xl text-white">
                     Today's picks
                   </CardTitle>
                   <p className="text-sm text-white/65">
@@ -310,16 +226,16 @@ const Home: React.FC = () => {
                       const featuredEvent = trendingEvents[0];
                       return (
                         <div
-                          className="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition-all hover:border-kenya-orange/50 hover:bg-black/40"
+                          className="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition-all active:border-kenya-orange/50 active:bg-black/40"
                           onClick={() => handleEventClick(String(featuredEvent.id))}
                         >
                           {/* Event Image */}
                           {featuredEvent.image_url && (
-                            <div className="relative h-48 w-full overflow-hidden">
+                            <div className="relative h-40 w-full overflow-hidden">
                               <img
                                 src={featuredEvent.image_url}
                                 alt={featuredEvent.title}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                className="h-full w-full object-cover transition-transform duration-300 group-active:scale-105"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                               <Badge className="absolute top-3 right-3 bg-black/60 text-xs text-white backdrop-blur-sm">
@@ -330,11 +246,11 @@ const Home: React.FC = () => {
                           
                           {/* Event Info */}
                           <div className="p-4">
-                            <h3 className="mb-2 text-lg font-semibold text-white">
+                            <h3 className="mb-2 text-base font-semibold text-white">
                               {featuredEvent.title}
                             </h3>
                             <div className="space-y-1 text-xs text-white/70">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <Badge variant="outline" className="border-white/20 text-white/80">
                                   {featuredEvent.category}
                                 </Badge>
@@ -375,15 +291,203 @@ const Home: React.FC = () => {
                       <p className="text-xs mt-1">Check back soon for updates</p>
                     </div>
                   )}
-          <Button 
+                  <Button 
                     variant="outline"
-                    className="w-full border-white/20 text-white/80 hover:text-white"
+                    className="w-full border-white/20 text-white/80 hover:text-white touch-target"
                     onClick={() => navigate('/spotlight')}
                   >
                     View complete feed
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Main Content Grid - Desktop shows 2 columns, mobile stacks */}
+            <div className="grid items-start gap-8 md:gap-10 md:grid-cols-[1.2fr_0.8fr]">
+              {/* Left Column - Main Content */}
+              <div className="space-y-6 md:space-y-8">
+                <div className="space-y-3">
+                  <Badge className="bg-white/10 text-white">Curated for you</Badge>
+                  <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl">
+                    Discover what's happening in Kenya this week.
+                  </h1>
+                  <p className="text-base text-white/70 sm:text-lg">
+                    We combine cultural insight, real-time data, and AI curation to
+                    surface events that feel made for you—whether you're attending,
+                    hosting, or scouting partnerships.
+                  </p>
+                </div>
+            
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex-1">
+                    <SearchBar onSearch={handleSearch} />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => navigate('/events')} size="sm" className="touch-target">
+                      Explore Events
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/request-event')}
+                      className="touch-target"
+                    >
+                      Launch Request
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/onboarding')}
+                      className="border-white/25 text-white/80 hover:text-white touch-target"
+                    >
+                      Personalise Feed
+                    </Button>
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/ai-assistance')}
+                      className="text-white/80 hover:text-white touch-target"
+                    >
+                      <Brain className="mr-2 h-4 w-4 text-kenya-orange" />
+                      <span className="hidden sm:inline">AI Studio</span>
+                      <span className="sm:hidden">AI</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                    <CardHeader className="space-y-1">
+                      <span className="text-sm text-white/60">Happening now</span>
+                      <CardTitle className="text-xl sm:text-2xl text-white">
+                        {events?.length || 0}+
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-white/70">
+                      Live events across Nairobi, Mombasa, Kisumu, Eldoret, and
+                      more.
+                    </CardContent>
+                  </Card>
+                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                    <CardHeader className="space-y-1">
+                      <span className="text-sm text-white/60">For creators</span>
+                      <CardTitle className="text-xl sm:text-2xl text-white">350+</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-white/70">
+                      Organizers partnering with WYA to fill venues and manage
+                      audiences.
+                    </CardContent>
+                  </Card>
+                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                    <CardHeader className="space-y-1">
+                      <span className="text-sm text-white/60">Powered by AI</span>
+                      <CardTitle className="text-xl sm:text-2xl text-white">Smart</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-white/70">
+                      Recommendations refresh every morning with cultural cues and
+                      community signals.
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+              
+              {/* Right Column - Desktop AI Feed Sidebar */}
+              <div className="hidden md:block relative h-full">
+                <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-kenya-orange/20 via-white/10 to-transparent blur-2xl" />
+                <Card className="flex h-full flex-col justify-between border-white/20 bg-black/40 backdrop-blur-sm p-6 text-white shadow-none sticky top-24">
+                  <CardHeader>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
+                      <Wand2 className="h-4 w-4 text-kenya-orange" />
+                      AI feed
+                    </span>
+                    <CardTitle className="mt-4 text-2xl text-white">
+                      Today's picks
+                    </CardTitle>
+                    <p className="text-sm text-white/65">
+                      Based on your vibe and trending moments in Kenya.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm text-white/80">
+                    {trendingEvents.length > 0 ? (
+                      (() => {
+                        const featuredEvent = trendingEvents[0];
+                        return (
+                          <div
+                            className="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition-all hover:border-kenya-orange/50 hover:bg-black/40"
+                            onClick={() => handleEventClick(String(featuredEvent.id))}
+                          >
+                            {/* Event Image */}
+                            {featuredEvent.image_url && (
+                              <div className="relative h-48 w-full overflow-hidden">
+                                <img
+                                  src={featuredEvent.image_url}
+                                  alt={featuredEvent.title}
+                                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <Badge className="absolute top-3 right-3 bg-black/60 text-xs text-white backdrop-blur-sm">
+                                  {format(new Date(featuredEvent.date), 'MMM d')}
+                                </Badge>
+                              </div>
+                            )}
+                            
+                            {/* Event Info */}
+                            <div className="p-4">
+                              <h3 className="mb-2 text-lg font-semibold text-white">
+                                {featuredEvent.title}
+                              </h3>
+                              <div className="space-y-1 text-xs text-white/70">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="border-white/20 text-white/80">
+                                    {featuredEvent.category}
+                                  </Badge>
+                                  <span className="text-white/50">•</span>
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {featuredEvent.location}
+                                  </span>
+                                </div>
+                                {featuredEvent.time && (
+                                  <div className="flex items-center gap-1 text-white/60">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{featuredEvent.time.slice(0, 5)}</span>
+                                  </div>
+                                )}
+                                {featuredEvent.performing_artists && featuredEvent.performing_artists.length > 0 && (
+                                  <div className="flex items-center gap-1 text-white/60">
+                                    <Music className="h-3 w-3" />
+                                    <span className="line-clamp-1">
+                                      {featuredEvent.performing_artists.slice(0, 2).join(', ')}
+                                      {featuredEvent.performing_artists.length > 2 && ' + more'}
+                                    </span>
+                                  </div>
+                                )}
+                                {featuredEvent.price !== undefined && (
+                                  <div className="pt-2 text-sm font-semibold text-kenya-orange">
+                                    KSh {featuredEvent.price.toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-center text-white/60">
+                        <p className="text-sm">No trending events yet</p>
+                        <p className="text-xs mt-1">Check back soon for updates</p>
+                      </div>
+                    )}
+                    <Button 
+                      variant="outline"
+                      className="w-full border-white/20 text-white/80 hover:text-white"
+                      onClick={() => navigate('/spotlight')}
+                    >
+                      View complete feed
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
@@ -399,36 +503,36 @@ const Home: React.FC = () => {
         }
       >
         <Card className="border-white/10 bg-white/5">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div className="flex items-center gap-2 text-sm font-medium text-kenya-orange">
                   <Sparkles className="h-4 w-4" />
                   <span>Smart suggestions</span>
                 </div>
-                <p className="text-lg text-white/85">
+                <p className="text-base sm:text-lg text-white/85">
                   "I'm hosting a rooftop mixer for 60 creatives this Friday." WYA
                   responds with optimal time slots, invite lists, sponsor ideas,
                   and curated playlists—all within a few prompts.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className="bg-white/10 text-white/70">
+                  <Badge className="bg-white/10 text-white/70 text-xs">
                     Match sponsors instantly
                   </Badge>
-                  <Badge className="bg-white/10 text-white/70">
+                  <Badge className="bg-white/10 text-white/70 text-xs">
                     Collaborative itinerary builder
                   </Badge>
-                  <Badge className="bg-white/10 text-white/70">
+                  <Badge className="bg-white/10 text-white/70 text-xs">
                     Trend radar alerts
                   </Badge>
                 </div>
               </div>
-              <div className="rounded-3xl border border-white/10 bg-black/30 p-4">
+              <div className="rounded-2xl sm:rounded-3xl border border-white/10 bg-black/30 p-3 sm:p-4">
                 <AIEventRecommendations
                   onSelectCategory={handleCategorySelect}
                 />
-        </div>
-      </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </Section>
