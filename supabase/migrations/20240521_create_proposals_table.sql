@@ -21,14 +21,25 @@ ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can submit their own proposals" ON public.proposals
   FOR INSERT WITH CHECK (auth.uid() = submitted_by);
 
--- Policy: Admins can view all proposals
-CREATE POLICY "Admins can view all proposals" ON public.proposals
-  FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin'));
+-- Policy: Users can view their own proposals
+CREATE POLICY "Users can view their own proposals" ON public.proposals
+  FOR SELECT USING (auth.uid() = submitted_by);
 
--- Policy: Admins can update proposals
-CREATE POLICY "Admins can update proposals" ON public.proposals
-  FOR UPDATE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin'));
-
--- Policy: Admins can delete proposals
-CREATE POLICY "Admins can delete proposals" ON public.proposals
-  FOR DELETE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin')); 
+-- Policy: Admins can view all proposals (conditional - only if profiles table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'profiles') THEN
+    CREATE POLICY "Admins can view all proposals" ON public.proposals
+      FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin'));
+    
+    CREATE POLICY "Admins can update proposals" ON public.proposals
+      FOR UPDATE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin'));
+    
+    CREATE POLICY "Admins can delete proposals" ON public.proposals
+      FOR DELETE USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username = 'admin'));
+  ELSE
+    -- Fallback: Allow all authenticated users to view proposals if profiles doesn't exist yet
+    CREATE POLICY "Authenticated users can view proposals" ON public.proposals
+      FOR SELECT USING (auth.uid() IS NOT NULL);
+  END IF;
+END $$; 

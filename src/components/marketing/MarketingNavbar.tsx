@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/ui/Logo";
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -55,15 +56,12 @@ const MarketingNavbar = () => {
       )}
     >
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
-        <Link to={isAuthenticated ? "/home" : "/"} className="flex items-center gap-3">
-          <img
-            src="/wya logo.png"
-            alt="WYA logo"
-            className="h-8 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]"
-            loading="lazy"
-          />
-          <span className="text-lg font-semibold tracking-wide">WYA</span>
-        </Link>
+        <Logo 
+          href={isAuthenticated ? "/home" : "/"} 
+          size="md"
+          showTagline={false}
+          className="flex-row items-center gap-2 min-w-[120px]"
+        />
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-kenya-brown-light">
           {navLinks.map((link) => (

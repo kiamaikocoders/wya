@@ -278,7 +278,18 @@ const EventDetails: React.FC = () => {
                 <Separator />
                 
                 {isAuthenticated ? (
-                  <Button className="w-full bg-kenya-orange hover:bg-kenya-orange/90">
+                  <Button 
+                    className="w-full bg-kenya-orange hover:bg-kenya-orange/90"
+                    onClick={() => {
+                      if (event.ticket_link) {
+                        window.open(event.ticket_link, '_blank', 'noopener,noreferrer');
+                      } else {
+                        // Fallback to ticket purchase modal if no external link
+                        // You can add your ticket purchase modal logic here
+                        toast.info('Ticket purchase coming soon');
+                      }
+                    }}
+                  >
                     Get Tickets
                   </Button>
                 ) : (

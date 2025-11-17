@@ -18,8 +18,8 @@ const Section = ({
   action,
 }: SectionProps) => {
   return (
-    <section className={cn("py-10", className)}>
-      <div className="container mx-auto flex flex-col gap-6 px-4">
+    <section className={cn("py-10 overflow-x-hidden", className)}>
+      <div className="container mx-auto flex flex-col gap-6 px-4 max-w-full">
         <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur md:flex-row md:items-center md:justify-between">
           <div className="max-w-3xl space-y-2">
             <p className="text-xs uppercase tracking-[0.3em] text-white/40">

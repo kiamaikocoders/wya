@@ -153,20 +153,22 @@ const EventsFiltersPanel = ({
             </Button>
           )}
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {locations.map(location => (
             <Button
               key={location}
               variant={filters.location === location ? 'default' : 'outline'}
+              size="sm"
               className={cn(
-                'rounded-full text-xs',
+                'rounded-full text-xs whitespace-nowrap',
                 filters.location === location
                   ? 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark'
                   : 'border-white/20 text-white/70 hover:border-kenya-orange hover:text-white'
               )}
               onClick={() => updateFilter('location', filters.location === location ? null : location)}
+              title={location.length > 30 ? location : undefined}
             >
-              {location}
+              <span className="max-w-[200px] truncate block">{location}</span>
             </Button>
           ))}
         </div>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
+import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 import FooterMinimal from "./FooterMinimal";
 
@@ -44,15 +45,16 @@ const Layout = () => {
   return (
     <div className="relative flex min-h-screen flex-col bg-kenya-dark">
       {!isAuthPage && <Navbar />}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-24">
         <Outlet />
       </main>
+      {!isAuthPage && <BottomNav />}
       {!isAuthPage && (isLanding ? <Footer /> : <FooterMinimal />)}
       
       {scrollToTop && (
         <button
           onClick={scrollTop}
-          className="fixed bottom-6 right-6 z-50 rounded-full bg-kenya-orange p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 sm:bottom-10 sm:right-10"
+          className="fixed bottom-24 right-6 z-40 rounded-full bg-kenya-orange p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 md:bottom-28 sm:right-10"
           aria-label="Scroll to top"
         >
           <svg

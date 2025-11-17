@@ -60,7 +60,7 @@ CREATE POLICY "Event organizers can view event check-ins" ON public.event_checki
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.events e 
-      WHERE e.id = event_id AND e.organizer_id = auth.uid()::text
+      WHERE e.id = event_id AND e.organizer_id = auth.uid()
     )
   );
 
@@ -82,7 +82,7 @@ CREATE POLICY "Event attendance is viewable by organizers" ON public.event_atten
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.events e 
-      WHERE e.id = event_id AND e.organizer_id = auth.uid()::text
+      WHERE e.id = event_id AND e.organizer_id = auth.uid()
     )
   );
 
@@ -104,7 +104,7 @@ CREATE POLICY "Event organizers can view event QR codes" ON public.qr_code_logs
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.events e 
-      WHERE e.id = event_id AND e.organizer_id = auth.uid()::text
+      WHERE e.id = event_id AND e.organizer_id = auth.uid()
     )
   );
 
@@ -131,7 +131,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.tickets 
     WHERE id = p_ticket_id 
-    AND user_id = p_user_id::text 
+    AND user_id = p_user_id
     AND event_id = p_event_id
   ) THEN
     RAISE EXCEPTION 'Ticket not found or does not belong to user';
@@ -248,7 +248,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.events e 
     WHERE e.id = p_event_id 
-    AND (e.organizer_id = auth.uid()::text OR EXISTS (
+    AND (e.organizer_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE id = auth.uid() AND username = 'admin'
     ))
@@ -314,7 +314,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.events e 
     WHERE e.id = p_event_id 
-    AND (e.organizer_id = auth.uid()::text OR EXISTS (
+    AND (e.organizer_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.profiles 
       WHERE id = auth.uid() AND username = 'admin'
     ))
@@ -327,7 +327,7 @@ BEGIN
     SELECT 
       t.id as ticket_id,
       t.user_id,
-      public.generate_ticket_qr_code(t.id, t.event_id, t.user_id::UUID) as qr_code
+      public.generate_ticket_qr_code(t.id, t.event_id, t.user_id) as qr_code
     FROM public.tickets t
     WHERE t.event_id = p_event_id 
     AND t.status = 'confirmed'

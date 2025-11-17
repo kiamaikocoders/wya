@@ -56,17 +56,22 @@ CREATE TABLE IF NOT EXISTS public.forum_post_translations (
   UNIQUE(post_id, language_code)
 );
 
--- Translations for stories
-CREATE TABLE IF NOT EXISTS public.story_translations (
-  id SERIAL PRIMARY KEY,
-  story_id INTEGER REFERENCES public.stories(id) ON DELETE CASCADE,
-  language_code VARCHAR(5) REFERENCES public.supported_languages(code),
-  caption TEXT,
-  content TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(story_id, language_code)
-);
+-- Translations for stories (only if stories table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stories') THEN
+    CREATE TABLE IF NOT EXISTS public.story_translations (
+      id SERIAL PRIMARY KEY,
+      story_id INTEGER REFERENCES public.stories(id) ON DELETE CASCADE,
+      language_code VARCHAR(5) REFERENCES public.supported_languages(code),
+      caption TEXT,
+      content TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(story_id, language_code)
+    );
+  END IF;
+END $$;
 
 -- System translations (UI text)
 CREATE TABLE IF NOT EXISTS public.system_translations (
@@ -130,7 +135,7 @@ CREATE POLICY "Event organizers can manage event translations" ON public.event_t
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.events e 
-      WHERE e.id = event_id AND e.organizer_id = auth.uid()::text
+      WHERE e.id = event_id AND e.organizer_id = auth.uid()
     )
   );
 
@@ -144,23 +149,28 @@ CREATE POLICY "Users can manage their own post translations" ON public.forum_pos
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.forum_posts fp 
-      WHERE fp.id = post_id AND fp.user_id = auth.uid()::text
+      WHERE fp.id = post_id AND fp.user_id = auth.uid()
     )
   );
 
--- Story translations RLS
-ALTER TABLE public.story_translations ENABLE ROW LEVEL SECURITY;
+-- Story translations RLS (only if stories table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stories') THEN
+    ALTER TABLE public.story_translations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Story translations are viewable by everyone" ON public.story_translations
-  FOR SELECT USING (true);
+    CREATE POLICY "Story translations are viewable by everyone" ON public.story_translations
+      FOR SELECT USING (true);
 
-CREATE POLICY "Users can manage their own story translations" ON public.story_translations
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.stories s 
-      WHERE s.id = story_id AND s.user_id = auth.uid()::text
-    )
-  );
+    CREATE POLICY "Users can manage their own story translations" ON public.story_translations
+      FOR ALL USING (
+        EXISTS (
+          SELECT 1 FROM public.stories s 
+          WHERE s.id = story_id AND s.user_id = auth.uid()
+        )
+      );
+  END IF;
+END $$;
 
 -- System translations RLS
 ALTER TABLE public.system_translations ENABLE ROW LEVEL SECURITY;
@@ -260,13 +270,15 @@ BEGIN
       WHERE fpt.post_id = p_content_id AND fpt.language_code = target_language;
 
     WHEN 'story' THEN
-      SELECT json_build_object(
-        'caption', st.caption,
-        'content', st.content,
-        'language', st.language_code
-      ) INTO translated_content
-      FROM public.story_translations st
-      WHERE st.story_id = p_content_id AND st.language_code = target_language;
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'story_translations') THEN
+        SELECT json_build_object(
+          'caption', st.caption,
+          'content', st.content,
+          'language', st.language_code
+        ) INTO translated_content
+        FROM public.story_translations st
+        WHERE st.story_id = p_content_id AND st.language_code = target_language;
+      END IF;
 
     ELSE
       RAISE EXCEPTION 'Unsupported content type: %', p_content_type;
@@ -483,9 +495,14 @@ CREATE INDEX IF NOT EXISTS idx_event_translations_language_code ON public.event_
 CREATE INDEX IF NOT EXISTS idx_forum_post_translations_post_id ON public.forum_post_translations(post_id);
 CREATE INDEX IF NOT EXISTS idx_forum_post_translations_language_code ON public.forum_post_translations(language_code);
 
--- Story translations indexes
-CREATE INDEX IF NOT EXISTS idx_story_translations_story_id ON public.story_translations(story_id);
-CREATE INDEX IF NOT EXISTS idx_story_translations_language_code ON public.story_translations(language_code);
+-- Story translations indexes (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'story_translations') THEN
+    CREATE INDEX IF NOT EXISTS idx_story_translations_story_id ON public.story_translations(story_id);
+    CREATE INDEX IF NOT EXISTS idx_story_translations_language_code ON public.story_translations(language_code);
+  END IF;
+END $$;
 
 -- System translations indexes
 CREATE INDEX IF NOT EXISTS idx_system_translations_key ON public.system_translations(key);
