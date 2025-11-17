@@ -10,6 +10,17 @@ const config: CapacitorConfig = {
     // url: 'http://localhost:8080',
     // cleartext: true
   },
+  // Live Updates configuration for OTA updates
+  liveUpdates: {
+    appId: 'com.wya.whereyouat',
+    channel: 'production',
+    // Update this URL with your actual Vercel deployment URL
+    // Or set VITE_APP_URL environment variable in Vercel dashboard
+    // The app will use window.location.origin at runtime if not set
+    updateUrl: process.env.VITE_APP_URL || 'https://your-app.vercel.app',
+    updateMethod: 'background',
+    maxVersions: 2,
+  },
   android: {
     buildOptions: {
       keystorePath: undefined, // Set this when you're ready to sign your app

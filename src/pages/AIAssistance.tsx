@@ -50,24 +50,29 @@ const AIAssistance: React.FC = () => {
       
       <Tabs defaultValue="recommendations" className="w-full">
         <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-6">
-          <TabsTrigger value="recommendations" className="flex items-center gap-1">
+          <TabsTrigger value="recommendations" className="flex items-center gap-1 justify-center">
             <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline md:hidden">Rec</span>
             <span className="hidden md:inline">Recommendations</span>
           </TabsTrigger>
-          <TabsTrigger value="content" className="flex items-center gap-1">
+          <TabsTrigger value="content" className="flex items-center gap-1 justify-center">
             <PenTool className="h-4 w-4" />
+            <span className="hidden sm:inline md:hidden">Content</span>
             <span className="hidden md:inline">Content</span>
           </TabsTrigger>
-          <TabsTrigger value="images" className="flex items-center gap-1">
+          <TabsTrigger value="images" className="flex items-center gap-1 justify-center">
             <Image className="h-4 w-4" />
+            <span className="hidden sm:inline md:hidden">Images</span>
             <span className="hidden md:inline">Images</span>
           </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-1">
+          <TabsTrigger value="categories" className="flex items-center gap-1 justify-center">
             <Tag className="h-4 w-4" />
+            <span className="hidden sm:inline md:hidden">Tags</span>
             <span className="hidden md:inline">Categories</span>
           </TabsTrigger>
-          <TabsTrigger value="assistant" className="flex items-center gap-1">
+          <TabsTrigger value="assistant" className="flex items-center gap-1 justify-center">
             <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline md:hidden">Chat</span>
             <span className="hidden md:inline">Assistant</span>
           </TabsTrigger>
         </TabsList>

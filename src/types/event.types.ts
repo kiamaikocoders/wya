@@ -19,7 +19,6 @@ export interface Event {
   latitude?: number;
   longitude?: number;
   performing_artists?: string[]; // Array of performing artist names
-  ticket_link?: string; // External URL for ticket purchase
 }
 
 export interface CreateEventPayload {
@@ -35,7 +34,6 @@ export interface CreateEventPayload {
   organizer_id?: string;
   capacity?: number;
   performing_artists?: string[]; // Array of performing artist names
-  ticket_link?: string; // External URL for ticket purchase
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

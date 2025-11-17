@@ -10,17 +10,14 @@ import { Plus, Grid, Video, UserCheck } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostsGrid from '@/components/profile/PostsGrid';
 import CreatePostModal from '@/components/profile/CreatePostModal';
-import FollowersFollowingModal from '@/components/profile/FollowersFollowingModal';
 import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'posts' | 'spotlight' | 'tagged'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
-  const [followersModalOpen, setFollowersModalOpen] = useState(false);
-  const [followingModalOpen, setFollowingModalOpen] = useState(false);
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -114,8 +111,6 @@ const Profile: React.FC = () => {
             // TODO: Open edit profile modal
             toast.info('Edit profile coming soon');
           }}
-          onFollowersClick={() => setFollowersModalOpen(true)}
-          onFollowingClick={() => setFollowingModalOpen(true)}
         />
                   
         {/* Create Post Button - TikTok style */}
@@ -139,11 +134,11 @@ const Profile: React.FC = () => {
               Posts
             </TabsTrigger>
             <TabsTrigger
-              value="spotlight"
+              value="reels"
               className="data-[state=active]:border-b-2 data-[state=active]:border-kenya-orange data-[state=active]:text-white text-white/60"
             >
               <Video className="mr-2 h-4 w-4" />
-              Spotlight
+              Reels
             </TabsTrigger>
             <TabsTrigger
               value="tagged"
@@ -167,7 +162,7 @@ const Profile: React.FC = () => {
             />
               </TabsContent>
               
-          <TabsContent value="spotlight" className="mt-6">
+          <TabsContent value="reels" className="mt-6">
             <PostsGrid
               posts={userPosts.map(p => ({
                 id: p.id,
@@ -176,7 +171,7 @@ const Profile: React.FC = () => {
                 content: p.content,
                 created_at: p.created_at,
               }))}
-              activeTab="spotlight"
+              activeTab="reels"
             />
               </TabsContent>
               
@@ -194,22 +189,6 @@ const Profile: React.FC = () => {
         open={isCreatePostOpen}
         onClose={() => setIsCreatePostOpen(false)}
         onSuccess={handlePostSuccess}
-      />
-
-      {/* Followers Modal */}
-      <FollowersFollowingModal
-        open={followersModalOpen}
-        onOpenChange={setFollowersModalOpen}
-        userId={user.id}
-        type="followers"
-      />
-
-      {/* Following Modal */}
-      <FollowersFollowingModal
-        open={followingModalOpen}
-        onOpenChange={setFollowingModalOpen}
-        userId={user.id}
-        type="following"
       />
     </div>
   );

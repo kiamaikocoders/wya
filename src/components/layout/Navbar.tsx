@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useQuery } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
-import Logo from '@/components/ui/Logo';
 import {
   Brain,
   LogIn,
@@ -60,12 +59,16 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-black/85 via-kenya-dark/95 to-kenya-dark/90 backdrop-blur">
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-4">
         {/* Logo */}
-        <Logo 
-          href={homeHref} 
-          size="md"
-          showTagline={false}
-          className="flex-row items-center min-w-[120px]"
-        />
+        <div className="flex items-center gap-3">
+          <Link to={homeHref} className="flex items-center gap-2 text-white">
+            <img
+              src="/wya logo.png"
+              alt="WYA"
+              className="h-8 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]"
+            />
+            <span className="hidden text-lg font-semibold tracking-wide sm:inline">WYA</span>
+          </Link>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1 sm:gap-2">

@@ -12,7 +12,7 @@ interface Post {
 
 interface PostsGridProps {
   posts: Post[];
-  activeTab: 'posts' | 'spotlight' | 'tagged';
+  activeTab: 'posts' | 'reels' | 'tagged';
   onPostClick?: (post: Post) => void;
   className?: string;
 }
@@ -24,7 +24,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
   className,
 }) => {
   const filteredPosts = React.useMemo(() => {
-    if (activeTab === 'spotlight') {
+    if (activeTab === 'reels') {
       return posts.filter(p => p.media_type === 'video');
     }
     if (activeTab === 'tagged') {
@@ -38,18 +38,18 @@ const PostsGrid: React.FC<PostsGridProps> = ({
     return (
       <div className={cn('flex flex-col items-center justify-center py-16 text-center', className)}>
         <div className="mb-4 rounded-full bg-white/5 p-6">
-          {activeTab === 'spotlight' ? (
+          {activeTab === 'reels' ? (
             <Video className="h-12 w-12 text-white/40" />
           ) : (
             <Grid className="h-12 w-12 text-white/40" />
           )}
         </div>
         <p className="text-lg font-semibold text-white">
-          {activeTab === 'spotlight' ? 'No spotlight content yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
+          {activeTab === 'reels' ? 'No reels yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
         </p>
         <p className="mt-2 text-sm text-white/70">
-          {activeTab === 'spotlight' 
-            ? 'Share your first spotlight content to get started'
+          {activeTab === 'reels' 
+            ? 'Share your first reel to get started'
             : activeTab === 'tagged'
             ? "You haven't been tagged in any posts"
             : 'Share your first post to get started'}
