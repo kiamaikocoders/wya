@@ -14,10 +14,8 @@ const config: CapacitorConfig = {
   liveUpdates: {
     appId: 'com.wya.whereyouat',
     channel: 'production',
-    // Update this URL with your actual Vercel deployment URL
-    // Or set VITE_APP_URL environment variable in Vercel dashboard
-    // The app will use window.location.origin at runtime if not set
-    updateUrl: process.env.VITE_APP_URL || 'https://your-app.vercel.app',
+    // Using your stable custom domain - this URL doesn't change with deployments
+    updateUrl: process.env.VITE_APP_URL || 'https://www.wya254.com',
     updateMethod: 'background',
     maxVersions: 2,
   },

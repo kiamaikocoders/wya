@@ -28,6 +28,13 @@ export const updateService = {
         return { hasUpdate: false, downloaded: false };
       }
 
+      // Skip Live Updates if URL is invalid/placeholder
+      // Allow window.location.origin for same-domain updates
+      if (!UPDATE_URL || UPDATE_URL.includes('your-app.vercel.app')) {
+        console.log('Live Updates: Invalid or placeholder URL, skipping');
+        return { hasUpdate: false, downloaded: false };
+      }
+
       try {
         // Set Live Updates configuration first
         await LiveUpdates.setConfig({
@@ -49,11 +56,12 @@ export const updateService = {
         return { hasUpdate: false, downloaded: false };
       } catch (error) {
         console.error('Live Updates sync failed:', error);
-        // Fallback to version check for major APK updates
-        return await this.checkForAPKUpdate();
+        // Don't crash - just return no update
+        return { hasUpdate: false, downloaded: false };
       }
     } catch (error) {
       console.error('Error checking for updates:', error);
+      // Don't crash - just return no update
       return { hasUpdate: false, downloaded: false };
     }
   },
@@ -122,14 +130,29 @@ export const updateService = {
    * Call this when app starts and when app comes to foreground
    */
   async initialize() {
-    // Check for Live Updates on app start
-    await this.checkAndApplyUpdates();
+    // Don't block app startup - check updates asynchronously
+    // Use setTimeout to ensure app loads first
+    setTimeout(async () => {
+      try {
+        await this.checkAndApplyUpdates();
+      } catch (error) {
+        console.error('Update check failed on startup:', error);
+        // Don't crash the app
+      }
+    }, 2000); // Wait 2 seconds after app loads
 
     // Listen for app state changes
     App.addListener('appStateChange', async ({ isActive }) => {
       if (isActive) {
         // Check for updates when app comes to foreground
-        await this.checkAndApplyUpdates();
+        setTimeout(async () => {
+          try {
+            await this.checkAndApplyUpdates();
+          } catch (error) {
+            console.error('Update check failed on foreground:', error);
+            // Don't crash the app
+          }
+        }, 1000);
       }
     });
   },
