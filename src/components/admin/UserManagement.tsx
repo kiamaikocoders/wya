@@ -1,8 +1,10 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Table, 
   TableBody, 
@@ -35,87 +37,130 @@ import {
   Filter, 
   Download, 
   Sparkles,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  MoreVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Mock user data
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "attendee",
-    status: "active",
-    joined: "2023-01-15",
-    events_attended: 12,
-    profile_picture: "https://randomuser.me/api/portraits/men/1.jpg"
-  },
-  {
-    id: 2,
-    name: "Alice Smith",
-    email: "alice@example.com",
-    role: "organizer",
-    status: "active",
-    joined: "2023-02-20",
-    events_created: 5,
-    profile_picture: "https://randomuser.me/api/portraits/women/2.jpg"
-  },
-  {
-    id: 3,
-    name: "Robert Johnson",
-    email: "robert@example.com",
-    role: "attendee",
-    status: "inactive",
-    joined: "2023-03-10",
-    events_attended: 3,
-    profile_picture: "https://randomuser.me/api/portraits/men/3.jpg"
-  },
-  {
-    id: 4,
-    name: "Emily Brown",
-    email: "emily@example.com",
-    role: "organizer",
-    status: "active",
-    joined: "2023-04-05",
-    events_created: 8,
-    profile_picture: "https://randomuser.me/api/portraits/women/4.jpg"
-  },
-  {
-    id: 5,
-    name: "Michael Wilson",
-    email: "michael@example.com",
-    role: "attendee",
-    status: "active",
-    joined: "2023-05-12",
-    events_attended: 7,
-    profile_picture: "https://randomuser.me/api/portraits/men/5.jpg"
-  }
-];
-
-// Chart data
-const userRoleData = [
-  { name: 'Attendees', value: 120 },
-  { name: 'Organizers', value: 30 },
-  { name: 'Admins', value: 5 },
-];
-
-const userActivityData = [
-  { name: 'Jan', attendees: 40, organizers: 10 },
-  { name: 'Feb', attendees: 45, organizers: 12 },
-  { name: 'Mar', attendees: 50, organizers: 13 },
-  { name: 'Apr', attendees: 55, organizers: 15 },
-  { name: 'May', attendees: 60, organizers: 18 },
-  { name: 'Jun', attendees: 70, organizers: 20 },
-];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminService, AdminUser } from '@/lib/admin-service';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const UserManagement = () => {
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'attendee' | 'organizer' | 'admin'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
+  const [activeTab, setActiveTab] = useState('all');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+  // Fetch user stats
+  const { data: userStats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['admin-user-stats'],
+    queryFn: () => adminService.getUserStats(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fetch users with pagination
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['admin-users', page, pageSize, searchQuery, roleFilter, statusFilter, activeTab],
+    queryFn: () => {
+      const role = activeTab === 'all' ? roleFilter : 
+                   activeTab === 'attendees' ? 'attendee' :
+                   activeTab === 'organizers' ? 'organizer' : 'all';
+      
+      return adminService.getUsers({
+        page,
+        pageSize,
+        search: searchQuery,
+        role,
+        status: statusFilter,
+        sortBy: 'created_at',
+        sortOrder: 'desc',
+      });
+    },
+    keepPreviousData: true,
+  });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: 'attendee' | 'organizer' | 'admin' }) =>
+      adminService.updateUserRole(userId, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+    },
+  });
+
+  // Suspend user mutation
+  const suspendUserMutation = useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason?: string }) =>
+      adminService.suspendUser(userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+
+  // Bulk update roles mutation
+  const bulkUpdateRolesMutation = useMutation({
+    mutationFn: ({ userIds, role }: { userIds: string[]; role: 'attendee' | 'organizer' | 'admin' }) =>
+      adminService.bulkUpdateUserRoles(userIds, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+      setSelectedUsers([]);
+    },
+  });
+
+  // Chart data from stats
+  const userRoleData = useMemo(() => {
+    if (!userStats) return [];
+    return [
+      { name: 'Attendees', value: userStats.attendees },
+      { name: 'Organizers', value: userStats.organizers },
+      { name: 'Admins', value: userStats.admins },
+    ].filter(item => item.value > 0);
+  }, [userStats]);
+
+  // Export to CSV
+  const handleExport = async () => {
+    try {
+      if (!usersData?.data) return;
+      
+      const csv = await adminService.exportUsersToCSV(usersData.data);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success('Users exported successfully');
+    } catch (error) {
+      console.error('Error exporting users:', error);
+      toast.error('Failed to export users');
+    }
+  };
+
+  // AI Analysis
   const runAIAnalysis = async () => {
+    if (!userStats) return;
+    
     setIsAnalyzing(true);
     try {
       const response = await fetch(
@@ -129,14 +174,13 @@ const UserManagement = () => {
             contents: [{
               parts: [{
                 text: `Analyze this user data and provide insights (growth trends, engagement patterns, retention opportunities):
-                - Total users: 155
-                - New users this month: 23
-                - Attendees: 120
-                - Organizers: 30
-                - Admins: 5
-                - Active users in last 30 days: 78
-                - Average events attended per user: 4.5
-                - Top user interests: Music (45%), Food (30%), Technology (25%)
+                - Total users: ${userStats.total_users}
+                - New users this month: ${userStats.new_users_this_month}
+                - Attendees: ${userStats.attendees}
+                - Organizers: ${userStats.organizers}
+                - Admins: ${userStats.admins}
+                - Active users in last 30 days: ${userStats.active_users}
+                - Average events attended per user: ${userStats.average_events_per_user}
                 
                 Keep the analysis concise (3-4 bullet points) and actionable for an event platform admin.`
               }]
@@ -157,9 +201,42 @@ const UserManagement = () => {
     }
   };
 
+  const handleRoleChange = (userId: string, newRole: 'attendee' | 'organizer' | 'admin') => {
+    updateRoleMutation.mutate({ userId, role: newRole });
+  };
+
+  const handleSuspend = (userId: string) => {
+    if (confirm('Are you sure you want to suspend this user?')) {
+      suspendUserMutation.mutate({ userId });
+    }
+  };
+
+  // Real-time updates for users
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-users-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return (
-    <Tabs defaultValue="all" className="space-y-4">
-      <div className="flex justify-between items-center">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <TabsList>
           <TabsTrigger value="all" className="flex items-center gap-1">
             <Users className="h-4 w-4" />
@@ -180,109 +257,170 @@ const UserManagement = () => {
         </TabsList>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
-            <Filter className="h-4 w-4" />
-            Filter
-          </Button>
-          <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={handleExport}
+            disabled={!usersData?.data || usersData.data.length === 0}
+          >
             <Download className="h-4 w-4" />
-            Export
+            Export CSV
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={async () => {
+              if (!usersData?.data) return;
+              try {
+                await adminService.exportUsersToPDF(usersData.data);
+                toast.success('PDF exported successfully');
+              } catch (error) {
+                console.error('Error exporting PDF:', error);
+                toast.error('Failed to export PDF');
+              }
+            }}
+            disabled={!usersData?.data || usersData.data.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Export PDF
           </Button>
         </div>
       </div>
+
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search users by name, email..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+        <Select value={roleFilter} onValueChange={(value: any) => {
+          setRoleFilter(value);
+          setPage(1);
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="attendee">Attendees</SelectItem>
+            <SelectItem value="organizer">Organizers</SelectItem>
+            <SelectItem value="admin">Admins</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(value: any) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
-      <TabsContent value="all" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Total Users</CardTitle>
-              <CardDescription>All registered users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">155</div>
-              <p className="text-sm text-muted-foreground mt-1">+23 this month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Active Users</CardTitle>
-              <CardDescription>Last 30 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">78</div>
-              <p className="text-sm text-muted-foreground mt-1">50.3% of total</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>Average Events</CardTitle>
-              <CardDescription>Per user</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">4.5</div>
-              <p className="text-sm text-muted-foreground mt-1">+0.8 from last month</p>
-            </CardContent>
-          </Card>
-        </div>
+      <TabsContent value={activeTab} className="space-y-4">
+        {/* Stats Cards */}
+        {isLoadingStats ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="h-20 bg-muted animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Total Users</CardTitle>
+                <CardDescription>All registered users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{userStats?.total_users || 0}</div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  +{userStats?.new_users_this_month || 0} this month
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Active Users</CardTitle>
+                <CardDescription>Last 30 days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{userStats?.active_users || 0}</div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {userStats?.total_users 
+                    ? `${Math.round((userStats.active_users / userStats.total_users) * 100)}% of total`
+                    : '0% of total'}
+                </p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Average Events</CardTitle>
+                <CardDescription>Per user</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{userStats?.average_events_per_user || 0}</div>
+                <p className="text-sm text-muted-foreground mt-1">Events per user</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>User Roles</CardTitle>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={userRoleData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {userRoleData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>User Growth</CardTitle>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={userActivityData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="attendees" fill="#0088FE" name="Attendees" />
-                  <Bar dataKey="organizers" fill="#00C49F" name="Organizers" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Charts */}
+        {userRoleData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Roles</CardTitle>
+              </CardHeader>
+              <CardContent className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={userRoleData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {userRoleData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         
         {/* AI Analysis Card */}
         <Card className="border-kenya-orange/30">
@@ -298,7 +436,7 @@ const UserManagement = () => {
               variant="outline" 
               size="sm" 
               onClick={runAIAnalysis}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || !userStats}
               className="border-kenya-orange/50 text-kenya-orange hover:bg-kenya-orange/10"
             >
               {isAnalyzing ? (
@@ -338,94 +476,199 @@ const UserManagement = () => {
           </CardContent>
         </Card>
         
-        <Table>
-          <TableCaption>A list of all users on the platform.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Activity</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profile_picture} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div>{user.name}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
+            {/* Bulk Actions */}
+            {selectedUsers.length > 0 && (
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">
+                      {selectedUsers.length} user(s) selected
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => bulkUpdateRolesMutation.mutate({ userIds: selectedUsers, role: 'attendee' })}
+                        disabled={bulkUpdateRolesMutation.isPending}
+                      >
+                        Set as Attendees
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => bulkUpdateRolesMutation.mutate({ userIds: selectedUsers, role: 'organizer' })}
+                        disabled={bulkUpdateRolesMutation.isPending}
+                      >
+                        Set as Organizers
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedUsers([])}
+                      >
+                        Clear Selection
+                      </Button>
                     </div>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={user.role === 'organizer' ? 'outline' : 'secondary'}>
-                    {user.role}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                    {user.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>{user.joined}</TableCell>
-                <TableCell>
-                  {user.role === 'attendee' 
-                    ? `${user.events_attended} events attended` 
-                    : `${user.events_created} events created`}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    View
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Users Table */}
+        {isLoadingUsers ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <Table>
+              <TableCaption>
+                Showing {usersData?.data.length || 0} of {usersData?.total || 0} users
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.length === usersData?.data.length && usersData.data.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers(usersData?.data.map(u => u.id) || []);
+                        } else {
+                          setSelectedUsers([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Activity</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersData?.data.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  usersData?.data.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers([...selectedUsers, user.id]);
+                            } else {
+                              setSelectedUsers(selectedUsers.filter(id => id !== user.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.profile_picture} alt={user.name} />
+                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div>{user.name}</div>
+                            <div className="text-sm text-muted-foreground">{user.email || 'No email'}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'organizer' ? 'outline' : user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {user.role === 'attendee' 
+                          ? `${user.events_attended || 0} events attended` 
+                          : `${user.events_created || 0} events created`}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'attendee')}>
+                              Set as Attendee
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'organizer')}>
+                              Set as Organizer
+                            </DropdownMenuItem>
+                            {user.role !== 'admin' && (
+                              <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'admin')}>
+                                Set as Admin
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem 
+                              onClick={() => handleSuspend(user.id)}
+                              className="text-destructive"
+                            >
+                              Suspend User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {usersData && usersData.totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Page {page} of {usersData.totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
                   </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TabsContent>
-      
-      <TabsContent value="attendees">
-        <Card>
-          <CardHeader>
-            <CardTitle>Attendees</CardTitle>
-            <CardDescription>Manage attendee users.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Attendee management tools and data will appear here.</p>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      
-      <TabsContent value="organizers">
-        <Card>
-          <CardHeader>
-            <CardTitle>Organizers</CardTitle>
-            <CardDescription>Manage event organizers.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Organizer management tools and data will appear here.</p>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      
-      <TabsContent value="inactive">
-        <Card>
-          <CardHeader>
-            <CardTitle>Inactive Users</CardTitle>
-            <CardDescription>Manage inactive accounts.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Inactive user management tools and data will appear here.</p>
-          </CardContent>
-        </Card>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(usersData.totalPages, p + 1))}
+                    disabled={page === usersData.totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </TabsContent>
     </Tabs>
   );

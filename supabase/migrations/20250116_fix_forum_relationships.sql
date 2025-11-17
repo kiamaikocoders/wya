@@ -5,20 +5,44 @@
 -- FIX FORUM POSTS FOREIGN KEY RELATIONSHIPS
 -- ==============================================
 
--- Add foreign key constraint for forum_posts.user_id -> profiles.id
-ALTER TABLE public.forum_posts 
-ADD CONSTRAINT forum_posts_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+-- Add foreign key constraint for forum_posts.user_id -> profiles.id (if it doesn't exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'forum_posts_user_id_fkey'
+  ) THEN
+    ALTER TABLE public.forum_posts
+    ADD CONSTRAINT forum_posts_user_id_fkey
+    FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
--- Add foreign key constraint for forum_comments.user_id -> profiles.id
-ALTER TABLE public.forum_comments 
-ADD CONSTRAINT forum_comments_user_id_fkey 
-FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+-- Add foreign key constraint for forum_comments.user_id -> profiles.id (if it doesn't exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'forum_comments_user_id_fkey'
+  ) THEN
+    ALTER TABLE public.forum_comments 
+    ADD CONSTRAINT forum_comments_user_id_fkey 
+    FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
--- Add foreign key constraint for forum_comments.post_id -> forum_posts.id
-ALTER TABLE public.forum_comments 
-ADD CONSTRAINT forum_comments_post_id_fkey 
-FOREIGN KEY (post_id) REFERENCES public.forum_posts(id) ON DELETE CASCADE;
+-- Add foreign key constraint for forum_comments.post_id -> forum_posts.id (if it doesn't exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'forum_comments_post_id_fkey'
+  ) THEN
+    ALTER TABLE public.forum_comments 
+    ADD CONSTRAINT forum_comments_post_id_fkey 
+    FOREIGN KEY (post_id) REFERENCES public.forum_posts(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- ==============================================
 -- ADD MISSING FORUM POSTS COLUMNS

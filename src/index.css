@@ -125,6 +125,16 @@
 
 #root {
   @apply w-full max-w-[100vw] mx-auto;
+  overflow-x: hidden;
+}
+
+/* Prevent horizontal scroll on mobile */
+@media (max-width: 768px) {
+  html, body, #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    position: relative;
+  }
 }
 
 .page-transition-enter {
