@@ -62,9 +62,23 @@ const queryClient = new QueryClient({
 
 const App = () => {
   // Initialize update checking for native apps
+  // Wrap in try-catch to prevent crashes
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      updateService.initialize();
+      try {
+        // Delay initialization to ensure app is fully loaded
+        setTimeout(() => {
+          try {
+            updateService.initialize();
+          } catch (error) {
+            console.error('Failed to initialize update service:', error);
+            // Don't crash - continue without updates
+          }
+        }, 3000); // Wait 3 seconds before initializing
+      } catch (error) {
+        console.error('Error setting up update service:', error);
+        // Don't crash - continue without updates
+      }
     }
   }, []);
 

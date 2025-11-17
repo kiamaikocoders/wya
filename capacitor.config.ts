@@ -11,14 +11,16 @@ const config: CapacitorConfig = {
     // cleartext: true
   },
   // Live Updates configuration for OTA updates
-  liveUpdates: {
-    appId: 'com.wya.whereyouat',
-    channel: 'production',
-    // Using your stable custom domain - this URL doesn't change with deployments
-    updateUrl: process.env.VITE_APP_URL || 'https://www.wya254.com',
-    updateMethod: 'background',
-    maxVersions: 2,
-  },
+  // TEMPORARILY DISABLED: Causing app crashes on startup
+  // TODO: Re-enable after fixing Live Updates configuration
+  // liveUpdates: {
+  //   appId: 'com.wya.whereyouat',
+  //   channel: 'production',
+  //   // Using your stable custom domain - this URL doesn't change with deployments
+  //   updateUrl: process.env.VITE_APP_URL || 'https://www.wya254.com',
+  //   updateMethod: 'background',
+  //   maxVersions: 2,
+  // },
   android: {
     buildOptions: {
       keystorePath: undefined, // Set this when you're ready to sign your app

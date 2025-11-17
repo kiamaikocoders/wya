@@ -28,6 +28,11 @@ export const updateService = {
         return { hasUpdate: false, downloaded: false };
       }
 
+      // TEMPORARILY DISABLED: Live Updates causing crashes
+      // TODO: Re-enable after fixing Live Updates configuration
+      console.log('Live Updates: Temporarily disabled to prevent crashes');
+      return { hasUpdate: false, downloaded: false };
+
       // Skip Live Updates if URL is invalid/placeholder
       // Allow window.location.origin for same-domain updates
       if (!UPDATE_URL || UPDATE_URL.includes('your-app.vercel.app')) {
@@ -47,10 +52,12 @@ export const updateService = {
         const result = await LiveUpdates.sync();
 
         if (result.available) {
-          // Update is available and will be downloaded automatically
-          // Reload app to apply the update
-          await LiveUpdates.reload();
-          return { hasUpdate: true, downloaded: true };
+          // Update is available - DON'T reload immediately
+          // Let user continue using app, reload on next app start
+          console.log('Live Updates: Update available, will apply on next app start');
+          // Don't reload immediately - this causes crashes
+          // await LiveUpdates.reload();
+          return { hasUpdate: true, downloaded: false };
         }
 
         return { hasUpdate: false, downloaded: false };
@@ -131,65 +138,77 @@ export const updateService = {
    */
   async initialize() {
     // Don't block app startup - check updates asynchronously
-    // Use setTimeout to ensure app loads first
+    // Use longer delay to ensure app is fully loaded
     setTimeout(async () => {
       try {
         await this.checkAndApplyUpdates();
       } catch (error) {
         console.error('Update check failed on startup:', error);
-        // Don't crash the app
+        // Don't crash the app - silently fail
       }
-    }, 2000); // Wait 2 seconds after app loads
+    }, 5000); // Wait 5 seconds after app loads to ensure stability
 
     // Listen for app state changes
-    App.addListener('appStateChange', async ({ isActive }) => {
-      if (isActive) {
-        // Check for updates when app comes to foreground
-        setTimeout(async () => {
-          try {
-            await this.checkAndApplyUpdates();
-          } catch (error) {
-            console.error('Update check failed on foreground:', error);
-            // Don't crash the app
-          }
-        }, 1000);
-      }
-    });
+    try {
+      App.addListener('appStateChange', async ({ isActive }) => {
+        if (isActive) {
+          // Check for updates when app comes to foreground
+          setTimeout(async () => {
+            try {
+              await this.checkAndApplyUpdates();
+            } catch (error) {
+              console.error('Update check failed on foreground:', error);
+              // Don't crash the app - silently fail
+            }
+          }, 2000); // Wait 2 seconds after foreground
+        }
+      });
+    } catch (error) {
+      console.error('Failed to set up app state listener:', error);
+      // Don't crash - just continue without listener
+    }
   },
 
   /**
    * Check for updates and apply automatically (Live Updates) or notify (APK updates)
    */
   async checkAndApplyUpdates() {
-    // First, try Live Updates (seamless OTA)
-    const liveUpdateResult = await this.checkForLiveUpdates();
+    try {
+      // First, try Live Updates (seamless OTA)
+      // Temporarily disabled to prevent crashes
+      const liveUpdateResult = await this.checkForLiveUpdates();
 
-    if (liveUpdateResult.downloaded) {
-      // Live update was downloaded and app will reload automatically
-      return;
-    }
+      // Don't reload immediately - causes crashes
+      // if (liveUpdateResult.downloaded) {
+      //   // Live update was downloaded and app will reload automatically
+      //   return;
+      // }
 
-    // If Live Updates didn't find anything, check for major APK updates
-    const apkUpdateResult = await this.checkForAPKUpdate();
+      // If Live Updates didn't find anything, check for major APK updates
+      const apkUpdateResult = await this.checkForAPKUpdate();
 
-    if (apkUpdateResult.hasUpdate && apkUpdateResult.version) {
-      // Major update available - requires APK download
-      try {
-        const response = await fetch(`${UPDATE_URL}/api/app-version.json`);
-        const versionInfo: VersionInfo = await response.json();
+      if (apkUpdateResult.hasUpdate && apkUpdateResult.version) {
+        // Major update available - requires APK download
+        try {
+          const response = await fetch(`${UPDATE_URL}/api/app-version.json`);
+          const versionInfo: VersionInfo = await response.json();
 
-        const shouldDownload = await this.promptForAPKUpdate(
-          apkUpdateResult.version,
-          versionInfo.releaseNotes
-        );
+          const shouldDownload = await this.promptForAPKUpdate(
+            apkUpdateResult.version,
+            versionInfo.releaseNotes
+          );
 
-        if (shouldDownload) {
-          // Open download page
-          window.open(`${UPDATE_URL}/download`, '_blank');
+          if (shouldDownload) {
+            // Open download page
+            window.open(`${UPDATE_URL}/download`, '_blank');
+          }
+        } catch (error) {
+          console.error('Error fetching version info:', error);
         }
-      } catch (error) {
-        console.error('Error fetching version info:', error);
       }
+    } catch (error) {
+      console.error('Error in checkAndApplyUpdates:', error);
+      // Don't crash - silently fail
     }
   },
 
