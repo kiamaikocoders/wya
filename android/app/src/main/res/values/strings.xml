@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">WYA - Where You At</string>
+    <string name="title_activity_main">WYA - Where You At</string>
+    <string name="package_name">com.wya.whereyouat</string>
+    <string name="custom_url_scheme">com.wya.whereyouat</string>
+</resources>
