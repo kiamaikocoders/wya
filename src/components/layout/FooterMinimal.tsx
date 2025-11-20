@@ -1,11 +1,23 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { Instagram } from "lucide-react";
 
 const socialLinks = [
-  { href: "https://twitter.com", icon: Twitter, label: "Twitter" },
-  { href: "https://facebook.com", icon: Facebook, label: "Facebook" },
-  { href: "https://instagram.com", icon: Instagram, label: "Instagram" },
-  { href: "https://linkedin.com", icon: Linkedin, label: "LinkedIn" },
+  { 
+    href: "https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3", 
+    icon: Instagram, 
+    label: "Instagram",
+    active: true
+  },
+  { 
+    href: "#", 
+    icon: () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+      </svg>
+    ), 
+    label: "TikTok",
+    active: false
+  },
 ];
 
 const FooterMinimal = () => {
@@ -22,16 +34,20 @@ const FooterMinimal = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {socialLinks.map(({ href, icon: Icon, label }) => (
+          {socialLinks.map(({ href, icon: Icon, label, active }) => (
             <a
               key={label}
               href={href}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:border-kenya-orange/60 hover:text-white"
+              className={`rounded-full border border-white/10 bg-white/5 p-2 transition ${
+                active 
+                  ? 'text-kenya-orange border-kenya-orange/60 hover:border-kenya-orange hover:text-kenya-orange' 
+                  : 'text-white/30 opacity-50 cursor-not-allowed hover:border-white/10 hover:text-white/30'
+              }`}
             >
-              <Icon className="h-4 w-4" />
+              {typeof Icon === 'function' ? <Icon /> : <Icon className="h-4 w-4" />}
             </a>
           ))}
         </div>

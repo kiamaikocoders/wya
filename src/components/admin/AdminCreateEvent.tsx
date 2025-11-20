@@ -263,7 +263,14 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     }
 
     setIsSubmitting(true);
-    createEventMutation.mutate(formData);
+    
+    // Prepare event data - ensure empty time is sent as null/undefined instead of empty string
+    const eventData = {
+      ...formData,
+      time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
+    };
+    
+    createEventMutation.mutate(eventData);
     setIsSubmitting(false);
   };
 
