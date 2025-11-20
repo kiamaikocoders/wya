@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
-import { Heart, Twitter, Facebook, Instagram, Linkedin, Github, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, Instagram, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Footer = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -31,17 +31,13 @@ const Footer = () => {
               Connect with organizers and other attendees.
             </p>
             <div className="flex space-x-4">
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Facebook size={20} />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
+              <a href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3" target="_blank" rel="noopener noreferrer" className="text-kenya-orange hover:text-kenya-orange/80 transition-colors">
                 <Instagram size={20} />
               </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Linkedin size={20} />
+              <a href="#" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors opacity-50 cursor-not-allowed" aria-label="TikTok (coming soon)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                </svg>
               </a>
             </div>
           </div>
@@ -146,17 +142,13 @@ const Footer = () => {
               Connect with organizers and other attendees.
             </p>
             <div className="flex space-x-4">
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Facebook size={20} />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
+              <a href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3" target="_blank" rel="noopener noreferrer" className="text-kenya-orange hover:text-kenya-orange/80 transition-colors">
                 <Instagram size={20} />
               </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors">
-                <Linkedin size={20} />
+              <a href="#" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors opacity-50 cursor-not-allowed" aria-label="TikTok (coming soon)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                </svg>
               </a>
             </div>
           </div>

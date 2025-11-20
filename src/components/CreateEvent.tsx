@@ -134,8 +134,10 @@ const CreateEvent: React.FC = () => {
         formData.image_url = imageUrl;
       }
       
+      // Prepare event data - ensure empty time is sent as null/undefined instead of empty string
       const eventData: CreateEventPayload = {
         ...formData,
+        time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
         organizer_id: user?.id
       };
       
