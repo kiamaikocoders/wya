@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
+import { onboardingNotifications } from '@/lib/onboarding-notifications';
 
 export interface User {
   id: string;
@@ -33,6 +34,11 @@ interface AuthContextType {
   isAdmin: boolean;
   updateUser: (userData: Partial<User>) => Promise<void>;
   refreshAuth: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
+  sendMagicLink: (email: string) => Promise<void>;
+  changeEmail: (newEmail: string) => Promise<void>;
+  verifyEmail: (token: string, tokenHash?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,16 +61,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshAuth = async () => {
     try {
       console.log('Refreshing auth...');
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setLoading(false);
+        return;
+      }
+      
       console.log('Session:', session?.user?.id);
       
       if (session) {
-        // Get profile information from profiles table
-        const { data: profile } = await supabase
+        // Get profile information from profiles table with error handling
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
+        
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.warn('Profile fetch error:', profileError);
+        }
         
         console.log('Profile found:', !!profile);
           
@@ -122,13 +139,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Track if user is new (for welcome messages)
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [lastLoginTime, setLastLoginTime] = useState<string | null>(null);
+
   // Set up auth state listener
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('Auth state change:', _event, session?.user?.id);
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         if (session) {
+          // Check if this is a new user (SIGNED_UP event)
+          if (event === 'SIGNED_UP') {
+            setIsNewUser(true);
+          } else if (event === 'SIGNED_IN') {
+            setIsNewUser(false);
+            // Check last login time (non-blocking - run in background)
+            supabase
+              .from('profiles')
+              .select('last_login')
+              .eq('id', session.user.id)
+              .single()
+              .then(({ data: profile }) => {
+                setLastLoginTime(profile?.last_login || null);
+              })
+              .catch(err => console.warn('Failed to fetch last_login:', err));
+            
+            // Update last login time (non-blocking)
+            supabase
+              .from('profiles')
+              .update({ last_login: new Date().toISOString() })
+              .eq('id', session.user.id)
+              .then(() => {}) // Execute the query
+              .catch(err => console.warn('Failed to update last_login:', err));
+          }
+
           // Don't fetch profile here to avoid deadlock
           // Just update basic user data
           setUser({
@@ -142,12 +188,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
           
           // Defer profile fetch with setTimeout to avoid deadlock
+          // Don't await - let it run in background
           setTimeout(() => {
-            refreshAuth();
+            refreshAuth().catch(err => {
+              console.warn('Background refreshAuth failed:', err);
+            });
           }, 100);
         } else {
           setUser(null);
           setIsAdmin(false);
+          setIsNewUser(false);
+          setLastLoginTime(null);
         }
       }
     );
@@ -170,8 +221,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (error) throw error;
       
-      toast.success('Login successful!');
+      // Navigate IMMEDIATELY after successful auth - don't wait for anything
       navigate('/home');
+      
+      // Get user profile for welcome message (non-blocking - run after navigation)
+      supabase
+        .from('profiles')
+        .select('full_name, last_login')
+        .eq('id', data.user.id)
+        .single()
+        .then(({ data: profile }) => {
+          const userName = profile?.full_name || email.split('@')[0];
+          const isReturningUser = !!profile?.last_login;
+
+          // Send welcome notification (non-blocking)
+          if (isReturningUser) {
+            onboardingNotifications.sendWelcomeBackNotification(data.user.id, userName).catch(err => {
+              console.warn('Welcome back notification failed:', err);
+            });
+          } else {
+            onboardingNotifications.sendWelcomeNotification(data.user.id, userName).catch(err => {
+              console.warn('Welcome notification failed:', err);
+            });
+            // Initialize onboarding
+            setTimeout(() => {
+              onboardingNotifications.initializeOnboarding(data.user.id, userName).catch(err => {
+                console.warn('Onboarding initialization failed:', err);
+              });
+            }, 1000);
+          }
+
+          toast.success(`Welcome back, ${userName}! 👋`);
+        })
+        .catch(err => {
+          console.warn('Profile fetch failed, showing generic welcome:', err);
+          toast.success('Welcome back! 👋');
+        });
+      
+      // Backup navigation using window.location after short delay
+      setTimeout(() => {
+        if (window.location.pathname === '/login') {
+          console.log('Backup navigation triggered');
+          window.location.href = '/home';
+        }
+      }, 300);
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed');
@@ -218,37 +311,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLoading(true);
     try {
       // Create user with Supabase auth
+      // The database trigger (handle_new_user) will automatically create the profile
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: name,
+            username: email.split('@')[0], // Pass username to trigger
           }
         }
       });
       
       if (error) throw error;
       
-      // Create profile in profiles table
+      // Profile is automatically created by database trigger (handle_new_user)
+      // No need to manually create it here
+      
+      // Send welcome notification (will be sent after email confirmation)
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            full_name: name,
-            username: email.split('@')[0] // Use email prefix as username
-          });
-        
-        if (profileError) {
-          console.warn('Profile creation failed:', profileError);
-        }
+        const userName = name || email.split('@')[0];
+        // Store flag to send welcome notification after email confirmation
+        localStorage.setItem('pending_welcome', JSON.stringify({
+          userId: data.user.id,
+          userName: userName
+        }));
       }
       
-      toast.success('Account created successfully! Please check your email for verification.');
+      // Redirect to email confirmation pending page
+      navigate('/email-confirmation-pending', { 
+        state: { email: email } 
+      });
       
-      // We won't navigate here as the user might need to verify email first
-      // depending on Supabase settings
+      toast.success('Account created! Please check your email for verification.');
+      
       return;
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -302,6 +398,112 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      toast.error(error.message || 'Failed to send password reset email');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    setLoading(true);
+    try {
+      // Supabase handles token verification automatically when user clicks the reset link
+      // We just need to update the password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Password reset successfully!');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      toast.error(error.message || 'Failed to reset password');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendMagicLink = async (email: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Magic link sent! Check your email.');
+    } catch (error: any) {
+      console.error('Send magic link error:', error);
+      toast.error(error.message || 'Failed to send magic link');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changeEmail = async (newEmail: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Verification email sent to your new email address');
+    } catch (error: any) {
+      console.error('Change email error:', error);
+      toast.error(error.message || 'Failed to change email');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyEmail = async (token: string, tokenHash?: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash || token,
+        type: 'email'
+      });
+      
+      if (error) throw error;
+      
+      if (!data.user) {
+        throw new Error('Email verification failed');
+      }
+      
+      toast.success('Email verified successfully');
+      await refreshAuth();
+    } catch (error: any) {
+      console.error('Verify email error:', error);
+      toast.error(error.message || 'Failed to verify email');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     login,
@@ -313,6 +515,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAdmin,
     updateUser,
     refreshAuth,
+    forgotPassword,
+    resetPassword,
+    sendMagicLink,
+    changeEmail,
+    verifyEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

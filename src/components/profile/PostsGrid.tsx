@@ -24,7 +24,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
   className,
 }) => {
   const filteredPosts = React.useMemo(() => {
-    if (activeTab === 'reels') {
+    if (activeTab === 'spotlight') {
       return posts.filter(p => p.media_type === 'video');
     }
     if (activeTab === 'tagged') {
@@ -45,11 +45,11 @@ const PostsGrid: React.FC<PostsGridProps> = ({
           )}
         </div>
         <p className="text-lg font-semibold text-white">
-          {activeTab === 'reels' ? 'No reels yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
+          {activeTab === 'spotlight' ? 'No spotlight posts yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
         </p>
         <p className="mt-2 text-sm text-white/70">
-          {activeTab === 'reels' 
-            ? 'Share your first reel to get started'
+          {activeTab === 'spotlight' 
+            ? 'Share your first spotlight post to get started'
             : activeTab === 'tagged'
             ? "You haven't been tagged in any posts"
             : 'Share your first post to get started'}

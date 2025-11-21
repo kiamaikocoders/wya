@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle2, XCircle, Settings, Search, Loader2, ChevronLeft, ChevronRight, Trash2, MoreVertical, Download, FileText, Plus } from 'lucide-react';
+import { Calendar, CheckCircle2, XCircle, Settings, Search, Loader2, ChevronLeft, ChevronRight, Trash2, MoreVertical, Download, FileText, Plus, Edit } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminEvent } from '@/lib/admin-service';
 import AdminCreateEvent from './AdminCreateEvent';
+import AdminEditEvent from './AdminEditEvent';
 import {
   Table,
   TableBody,
@@ -45,6 +46,7 @@ const EventManagement = () => {
   const [selectedEvent, setSelectedEvent] = useState<AdminEvent | null>(null);
   const [selectedEvents, setSelectedEvents] = useState<number[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<AdminEvent | null>(null);
 
   // Fetch event stats
   const { data: eventStats, isLoading: isLoadingStats } = useQuery({
@@ -234,29 +236,53 @@ const EventManagement = () => {
       )}
 
       {/* Create Event Button */}
-      {!showCreateForm && (
-        <div className="flex justify-end mb-4">
-          <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Event
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create Event
+        </Button>
+      </div>
 
-      {/* Create Event Form */}
-      {showCreateForm && (
-        <div className="mb-6">
+      {/* Create Event Modal */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Event</DialogTitle>
+            <DialogDescription>
+              Create an event as an admin. All admin-created events are automatically approved.
+            </DialogDescription>
+          </DialogHeader>
           <AdminCreateEvent
             onSuccess={() => {
               setShowCreateForm(false);
             }}
             onCancel={() => setShowCreateForm(false)}
           />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Modal */}
+      <Dialog open={!!editingEvent} onOpenChange={(open) => !open && setEditingEvent(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Update event details. Changes will be saved immediately.
+            </DialogDescription>
+          </DialogHeader>
+          {editingEvent && (
+            <AdminEditEvent
+              event={editingEvent}
+              onSuccess={() => {
+                setEditingEvent(null);
+              }}
+              onCancel={() => setEditingEvent(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Search and Filters */}
-      {!showCreateForm && (
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -349,12 +375,9 @@ const EventManagement = () => {
           </Button>
         </div>
       </div>
-      )}
 
-      {!showCreateForm && (
-        <>
-          {/* Bulk Actions */}
-          {selectedEvents.length > 0 && (
+      {/* Bulk Actions */}
+      {selectedEvents.length > 0 && (
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -415,8 +438,8 @@ const EventManagement = () => {
             </Card>
           )}
 
-          {/* Events Table */}
-        {isLoadingEvents ? (
+      {/* Events Table */}
+      {isLoadingEvents ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-center">
@@ -426,7 +449,7 @@ const EventManagement = () => {
         </Card>
       ) : (
         <>
-          <Card>
+        <Card>
             <CardHeader>
               <CardTitle>Event Requests</CardTitle>
               <CardDescription>Manage and review event submissions</CardDescription>
@@ -519,6 +542,12 @@ const EventManagement = () => {
                               <DropdownMenuItem onClick={() => setSelectedEvent(event)}>
                                 View Details
                               </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => setEditingEvent(event)}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
                               {event.status === 'pending' && (
                                 <>
                                   <DropdownMenuItem 
@@ -555,8 +584,8 @@ const EventManagement = () => {
             </CardContent>
           </Card>
 
-          {/* Pagination */}
-          {eventsData && eventsData.totalPages > 1 && (
+        {/* Pagination */}
+        {eventsData && eventsData.totalPages > 1 && (
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 Page {page} of {eventsData.totalPages}
@@ -586,7 +615,6 @@ const EventManagement = () => {
         </>
       )}
 
-      {/* Event Detail Dialog */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -660,8 +688,6 @@ const EventManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-        </>
-      )}
     </div>
   );
 };

@@ -13,6 +13,7 @@ import { eventService } from '@/lib/event-service';
 import { CreateEventPayload } from '@/types/event.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Film, Link2, Loader2 } from 'lucide-react';
+import LocationPicker from '@/components/maps/LocationPicker';
 
 const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
@@ -38,8 +39,16 @@ const CreateEvent: React.FC = () => {
     image_url: '',
     price: 0,
     tags: [],
-    organizer_id: '' // Changed to empty string
+    organizer_id: '', // Changed to empty string
+    latitude: undefined,
+    longitude: undefined,
   });
+
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{
+    address: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
@@ -124,6 +133,12 @@ const CreateEvent: React.FC = () => {
     
     if (!formData.location) {
       toast.error('Please select a location');
+      return;
+    }
+
+    // Require coordinates for map pinning
+    if (!formData.latitude || !formData.longitude) {
+      toast.error('Please set the location on the map to pin the event');
       return;
     }
     
@@ -231,6 +246,9 @@ const CreateEvent: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-kenya-brown-light">
+                    Or use the map below to set precise coordinates
+                  </p>
                 </div>
               </div>
               
@@ -260,6 +278,28 @@ const CreateEvent: React.FC = () => {
                     placeholder="0 for free events"
                   />
                 </div>
+              </div>
+
+              {/* Location Picker Map */}
+              <div className="space-y-2">
+                <Label>Set Event Location on Map</Label>
+                <p className="text-xs text-kenya-brown-light mb-2">
+                  Click on the map or search to set precise coordinates. This will pin your event on the map.
+                </p>
+                <LocationPicker
+                  onLocationSelect={(location) => {
+                    setSelectedCoordinates(location);
+                    setFormData(prev => ({
+                      ...prev,
+                      location: location.address,
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                    }));
+                  }}
+                  initialLocation={selectedCoordinates || undefined}
+                  height={400}
+                  mode="event"
+                />
               </div>
               
               <div className="space-y-2">

@@ -60,16 +60,16 @@ CREATE TABLE IF NOT EXISTS public.forum_post_translations (
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stories') THEN
-    CREATE TABLE IF NOT EXISTS public.story_translations (
-      id SERIAL PRIMARY KEY,
-      story_id INTEGER REFERENCES public.stories(id) ON DELETE CASCADE,
-      language_code VARCHAR(5) REFERENCES public.supported_languages(code),
-      caption TEXT,
-      content TEXT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      UNIQUE(story_id, language_code)
-    );
+CREATE TABLE IF NOT EXISTS public.story_translations (
+  id SERIAL PRIMARY KEY,
+  story_id INTEGER REFERENCES public.stories(id) ON DELETE CASCADE,
+  language_code VARCHAR(5) REFERENCES public.supported_languages(code),
+  caption TEXT,
+  content TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(story_id, language_code)
+);
   END IF;
 END $$;
 
@@ -157,18 +157,18 @@ CREATE POLICY "Users can manage their own post translations" ON public.forum_pos
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stories') THEN
-    ALTER TABLE public.story_translations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.story_translations ENABLE ROW LEVEL SECURITY;
 
-    CREATE POLICY "Story translations are viewable by everyone" ON public.story_translations
-      FOR SELECT USING (true);
+CREATE POLICY "Story translations are viewable by everyone" ON public.story_translations
+  FOR SELECT USING (true);
 
-    CREATE POLICY "Users can manage their own story translations" ON public.story_translations
-      FOR ALL USING (
-        EXISTS (
-          SELECT 1 FROM public.stories s 
+CREATE POLICY "Users can manage their own story translations" ON public.story_translations
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.stories s 
           WHERE s.id = story_id AND s.user_id = auth.uid()
-        )
-      );
+    )
+  );
   END IF;
 END $$;
 
@@ -271,13 +271,13 @@ BEGIN
 
     WHEN 'story' THEN
       IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'story_translations') THEN
-        SELECT json_build_object(
-          'caption', st.caption,
-          'content', st.content,
-          'language', st.language_code
-        ) INTO translated_content
-        FROM public.story_translations st
-        WHERE st.story_id = p_content_id AND st.language_code = target_language;
+      SELECT json_build_object(
+        'caption', st.caption,
+        'content', st.content,
+        'language', st.language_code
+      ) INTO translated_content
+      FROM public.story_translations st
+      WHERE st.story_id = p_content_id AND st.language_code = target_language;
       END IF;
 
     ELSE
@@ -499,8 +499,8 @@ CREATE INDEX IF NOT EXISTS idx_forum_post_translations_language_code ON public.f
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'story_translations') THEN
-    CREATE INDEX IF NOT EXISTS idx_story_translations_story_id ON public.story_translations(story_id);
-    CREATE INDEX IF NOT EXISTS idx_story_translations_language_code ON public.story_translations(language_code);
+CREATE INDEX IF NOT EXISTS idx_story_translations_story_id ON public.story_translations(story_id);
+CREATE INDEX IF NOT EXISTS idx_story_translations_language_code ON public.story_translations(language_code);
   END IF;
 END $$;
 

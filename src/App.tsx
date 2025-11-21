@@ -15,7 +15,18 @@ import Categories from "./pages/Categories";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AdminLogin from "./pages/AdminLogin";
-import Admin from "./pages/Admin";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import AuthCallback from "./pages/AuthCallback";
+import EmailConfirmationPending from "./pages/EmailConfirmationPending";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminEvents from "./pages/AdminEvents";
+import AdminProposals from "./pages/AdminProposals";
+import AdminUsers from "./pages/AdminUsers";
+import AdminModeration from "./pages/AdminModeration";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminSponsorAnalytics from "./pages/AdminSponsorAnalytics";
 import RequestEvent from "./pages/RequestEvent";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -94,6 +105,21 @@ const App = () => {
                 <Route path="/" element={<Landing />} />
                 <Route path="/download" element={<DownloadApp />} />
               </Route>
+              {/* Admin routes - separate layout */}
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly={true}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="events" element={<AdminEvents />} />
+                <Route path="proposals" element={<AdminProposals />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="moderation" element={<AdminModeration />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
+              </Route>
+
               <Route element={<Layout />}>
                 <Route path="/home" element={<Home />} />
                 <Route
@@ -110,6 +136,11 @@ const App = () => {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/auth/confirm" element={<AuthCallback />} />
+                <Route path="/email-confirmation-pending" element={<EmailConfirmationPending />} />
                 <Route path="/request-event" element={<RequestEvent />} />
                 <Route path="/create-event" element={
                   <ProtectedRoute>
@@ -154,33 +185,6 @@ const App = () => {
                 <Route path="/chat/:conversationId" element={
                   <ProtectedRoute>
                     <ChatPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Admin routes */}
-                <Route path="/admin" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/events" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/users" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/analytics" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Admin />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/moderation" element={
-                  <ProtectedRoute adminOnly={true}>
-                    <Admin />
                   </ProtectedRoute>
                 } />
                 

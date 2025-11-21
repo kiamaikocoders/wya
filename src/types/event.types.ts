@@ -34,6 +34,8 @@ export interface CreateEventPayload {
   organizer_id?: string;
   capacity?: number;
   performing_artists?: string[]; // Array of performing artist names
+  latitude?: number; // Latitude for map pinning
+  longitude?: number; // Longitude for map pinning
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

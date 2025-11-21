@@ -80,14 +80,17 @@ const UserManagement = () => {
     queryFn: () => {
       const role = activeTab === 'all' ? roleFilter : 
                    activeTab === 'attendees' ? 'attendee' :
-                   activeTab === 'organizers' ? 'organizer' : 'all';
+                   activeTab === 'organizers' ? 'organizer' : 
+                   activeTab === 'inactive' ? 'all' : 'all';
+      
+      const status = activeTab === 'inactive' ? 'inactive' : statusFilter;
       
       return adminService.getUsers({
         page,
         pageSize,
         search: searchQuery,
         role,
-        status: statusFilter,
+        status,
         sortBy: 'created_at',
         sortOrder: 'desc',
       });
@@ -125,15 +128,38 @@ const UserManagement = () => {
     },
   });
 
-  // Chart data from stats
+  // Calculate filtered stats based on active tab
+  const filteredStats = useMemo(() => {
+    if (!usersData?.data || !userStats) return null;
+    
+    const filtered = usersData.data;
+    const total = filtered.length;
+    const active = filtered.filter(u => u.status === 'active').length;
+    
+    // Calculate role distribution from filtered data
+    const attendees = filtered.filter(u => u.role === 'attendee').length;
+    const organizers = filtered.filter(u => u.role === 'organizer').length;
+    const admins = filtered.filter(u => u.role === 'admin').length;
+    
+    return {
+      total,
+      active,
+      attendees,
+      organizers,
+      admins,
+      activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
+    };
+  }, [usersData, userStats]);
+
+  // Chart data from filtered stats
   const userRoleData = useMemo(() => {
-    if (!userStats) return [];
+    if (!filteredStats) return [];
     return [
-      { name: 'Attendees', value: userStats.attendees },
-      { name: 'Organizers', value: userStats.organizers },
-      { name: 'Admins', value: userStats.admins },
+      { name: 'Attendees', value: filteredStats.attendees },
+      { name: 'Organizers', value: filteredStats.organizers },
+      { name: 'Admins', value: filteredStats.admins },
     ].filter(item => item.value > 0);
-  }, [userStats]);
+  }, [filteredStats]);
 
   // Export to CSV
   const handleExport = async () => {
@@ -288,7 +314,7 @@ const UserManagement = () => {
           </Button>
         </div>
       </div>
-
+      
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -347,79 +373,91 @@ const UserManagement = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Total Users</CardTitle>
-                <CardDescription>All registered users</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{userStats?.total_users || 0}</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Total Users</CardTitle>
+              <CardDescription>
+                {activeTab === 'all' ? 'All registered users' :
+                 activeTab === 'attendees' ? 'Total attendees' :
+                 activeTab === 'organizers' ? 'Total organizers' :
+                 'Inactive users'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-3xl font-bold">{filteredStats?.total || usersData?.total || 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  +{userStats?.new_users_this_month || 0} this month
+                  {activeTab === 'all' && `+${userStats?.new_users_this_month || 0} this month`}
+                  {activeTab !== 'all' && `${filteredStats?.total || 0} ${activeTab}`}
                 </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Active Users</CardTitle>
-                <CardDescription>Last 30 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{userStats?.active_users || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Active Users</CardTitle>
+              <CardDescription>Last 30 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-3xl font-bold">{filteredStats?.active || 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {userStats?.total_users 
-                    ? `${Math.round((userStats.active_users / userStats.total_users) * 100)}% of total`
+                  {filteredStats?.total 
+                    ? `${filteredStats.activePercentage}% of total`
                     : '0% of total'}
                 </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Average Events</CardTitle>
-                <CardDescription>Per user</CardDescription>
-              </CardHeader>
-              <CardContent>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Average Events</CardTitle>
+              <CardDescription>Per user</CardDescription>
+            </CardHeader>
+            <CardContent>
                 <div className="text-3xl font-bold">{userStats?.average_events_per_user || 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">Events per user</p>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
+        </div>
         )}
         
         {/* Charts */}
         {userRoleData.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Roles</CardTitle>
-              </CardHeader>
-              <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={userRoleData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {userRoleData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Roles</CardTitle>
+              <CardDescription>
+                {activeTab === 'all' ? 'Distribution of all users' :
+                 activeTab === 'attendees' ? 'Attendee distribution' :
+                 activeTab === 'organizers' ? 'Organizer distribution' :
+                 'Inactive user distribution'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={userRoleData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {userRoleData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
         )}
         
         {/* AI Analysis Card */}
@@ -525,12 +563,12 @@ const UserManagement = () => {
           </Card>
         ) : (
           <>
-            <Table>
+        <Table>
               <TableCaption>
                 Showing {usersData?.data.length || 0} of {usersData?.total || 0} users
               </TableCaption>
-              <TableHeader>
-                <TableRow>
+          <TableHeader>
+            <TableRow>
                   <TableHead className="w-12">
                     <input
                       type="checkbox"
@@ -544,15 +582,15 @@ const UserManagement = () => {
                       }}
                     />
                   </TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Activity</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+              <TableHead>User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Activity</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
                 {usersData?.data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
@@ -561,7 +599,7 @@ const UserManagement = () => {
                   </TableRow>
                 ) : (
                   usersData?.data.map((user) => (
-                    <TableRow key={user.id}>
+              <TableRow key={user.id}>
                       <TableCell>
                         <input
                           type="checkbox"
@@ -575,42 +613,42 @@ const UserManagement = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.profile_picture} alt={user.name} />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div>{user.name}</div>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profile_picture} alt={user.name} />
+                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div>{user.name}</div>
                             <div className="text-sm text-muted-foreground">{user.email || 'No email'}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
                         <Badge variant={user.role === 'organizer' ? 'outline' : user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                          {user.status}
-                        </Badge>
-                      </TableCell>
+                    {user.role}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                    {user.status}
+                  </Badge>
+                </TableCell>
                       <TableCell>
                         {new Date(user.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
-                        {user.role === 'attendee' 
+                <TableCell>
+                  {user.role === 'attendee' 
                           ? `${user.events_attended || 0} events attended` 
                           : `${user.events_created || 0} events created`}
-                      </TableCell>
-                      <TableCell className="text-right">
+                </TableCell>
+                <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm">
                               <MoreVertical className="h-4 w-4" />
-                            </Button>
+                  </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'attendee')}>
@@ -632,12 +670,12 @@ const UserManagement = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                </TableCell>
+              </TableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
+          </TableBody>
+        </Table>
 
             {/* Pagination */}
             {usersData && usersData.totalPages > 1 && (
