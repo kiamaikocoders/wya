@@ -59,12 +59,14 @@ export const authService = {
     try {
       console.log('Signup with credentials:', credentials);
       
+      // The database trigger (handle_new_user) will automatically create the profile
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
         options: {
           data: {
             full_name: credentials.name,
+            username: credentials.name.toLowerCase().replace(/\s+/g, '_'), // Pass username to trigger
             user_type: credentials.user_type || 'attendee'
           }
         }
@@ -72,20 +74,8 @@ export const authService = {
       
       if (error) throw error;
       
-      // Create a profile for the user
-      if (data.user) {
-        try {
-          await supabase.from('profiles').insert({
-            id: data.user.id,
-            full_name: credentials.name,
-            username: credentials.name.toLowerCase().replace(/\s+/g, '_')
-          });
-        } catch (profileError) {
-          console.error('Error creating user profile:', profileError);
-          // Continue even if profile creation fails
-          // The trigger should handle this automatically
-        }
-      }
+      // Profile is automatically created by database trigger (handle_new_user)
+      // No need to manually create it here
       
       return {
         user: data.user,
@@ -244,6 +234,112 @@ export const authService = {
     } catch (error) {
       console.error('Error updating user profile:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+
+  // Request password reset
+  forgotPassword: async (email: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send password reset email';
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+
+  // Reset password with token
+  resetPassword: async (token: string, newPassword: string): Promise<void> => {
+    try {
+      // First verify the token by attempting to get the session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        // If no session, we need to verify the token first
+        // Supabase handles this automatically when user clicks the reset link
+        // So we just update the password
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (updateError) throw updateError;
+      } else {
+        // If we have a session, update password directly
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPassword
+        });
+        
+        if (updateError) throw updateError;
+      }
+      
+      toast.success('Password reset successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+
+  // Send magic link for passwordless login
+  sendMagicLink: async (email: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Magic link sent! Check your email.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send magic link';
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+
+  // Change email address
+  changeEmail: async (newEmail: string): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Verification email sent to your new email address');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change email';
+      toast.error(errorMessage);
+      throw error;
+    }
+  },
+
+  // Verify email with token
+  verifyEmail: async (token: string, tokenHash?: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash || token,
+        type: 'email'
+      });
+      
+      if (error) throw error;
+      
+      if (!data.user) {
+        throw new Error('Email verification failed');
+      }
+      
+      toast.success('Email verified successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to verify email';
       toast.error(errorMessage);
       throw error;
     }

@@ -128,18 +128,29 @@ export const adminService = {
       const userIds = data?.map(p => p.id) || [];
       
       // Fetch emails from auth.users using RPC function
+      // This requires the get_user_emails RPC function to be created in the database
       let emailMap = new Map<string, string>();
       if (userIds.length > 0) {
         try {
-          const { data: userEmails, error: emailError } = await supabase.rpc('get_user_emails', { user_ids: userIds });
-          if (!emailError && userEmails) {
-            (userEmails as any[]).forEach((u: any) => {
-              if (u.id && u.email) emailMap.set(u.id, u.email);
+          const { data: userEmails, error: emailError } = await supabase.rpc('get_user_emails', { 
+            user_ids: userIds 
+          });
+          
+          if (emailError) {
+            // Log error for debugging but don't throw - emails are optional
+            console.warn('Failed to fetch user emails via RPC:', emailError.message);
+            console.warn('Make sure the get_user_emails RPC function exists. Run migration: 20250124_add_user_emails_rpc.sql');
+          } else if (userEmails && Array.isArray(userEmails)) {
+            userEmails.forEach((u: { id: string; email: string }) => {
+              if (u.id && u.email) {
+                emailMap.set(u.id, u.email);
+              }
             });
           }
-        } catch (error) {
-          console.warn('Failed to fetch user emails:', error);
-          // Continue without emails if RPC fails
+        } catch (error: any) {
+          // Log but continue - emails are optional
+          console.warn('Error fetching user emails:', error?.message || error);
+          console.warn('To fix: Run migration 20250124_add_user_emails_rpc.sql to create the RPC function');
         }
       }
       

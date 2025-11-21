@@ -32,8 +32,10 @@ const Signup = () => {
     try {
       setIsSubmitting(true);
       await signup(email, password, name);
+      // Navigation is handled in AuthContext after successful signup
     } catch (error) {
       console.error('Signup failed:', error);
+      // Don't navigate on error - let user fix and try again
     } finally {
       setIsSubmitting(false);
     }

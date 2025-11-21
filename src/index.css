@@ -375,6 +375,15 @@ button[role="button"] {
   .flex.items-center.space-x-3 {
     gap: 0.75rem;
   }
+
+  /* Scroll snapping for spotlight */
+  .snap-start {
+    scroll-snap-align: start;
+  }
+
+  .snap-always {
+    scroll-snap-stop: always;
+  }
   
   /* Make sure theme toggle and avatar are visible */
   .h-8.w-8 {

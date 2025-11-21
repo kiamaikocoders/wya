@@ -10,14 +10,16 @@ import { Plus, Grid, Video, UserCheck } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostsGrid from '@/components/profile/PostsGrid';
 import CreatePostModal from '@/components/profile/CreatePostModal';
+import EditProfileModal from '@/components/profile/EditProfileModal';
 import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'spotlight' | 'tagged'>('posts');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -107,10 +109,7 @@ const Profile: React.FC = () => {
           }}
           stats={stats}
           isCurrentUser={true}
-          onEdit={() => {
-            // TODO: Open edit profile modal
-            toast.info('Edit profile coming soon');
-          }}
+          onEdit={() => setIsEditProfileOpen(true)}
         />
                   
         {/* Create Post Button - TikTok style */}
@@ -134,11 +133,11 @@ const Profile: React.FC = () => {
               Posts
             </TabsTrigger>
             <TabsTrigger
-              value="reels"
+              value="spotlight"
               className="data-[state=active]:border-b-2 data-[state=active]:border-kenya-orange data-[state=active]:text-white text-white/60"
             >
               <Video className="mr-2 h-4 w-4" />
-              Reels
+              Spotlight
             </TabsTrigger>
             <TabsTrigger
               value="tagged"
@@ -162,7 +161,7 @@ const Profile: React.FC = () => {
             />
               </TabsContent>
               
-          <TabsContent value="reels" className="mt-6">
+          <TabsContent value="spotlight" className="mt-6">
             <PostsGrid
               posts={userPosts.map(p => ({
                 id: p.id,
@@ -171,7 +170,7 @@ const Profile: React.FC = () => {
                 content: p.content,
                 created_at: p.created_at,
               }))}
-              activeTab="reels"
+              activeTab="spotlight"
             />
               </TabsContent>
               
@@ -190,6 +189,15 @@ const Profile: React.FC = () => {
         onClose={() => setIsCreatePostOpen(false)}
         onSuccess={handlePostSuccess}
       />
+      
+      {/* Edit Profile Modal */}
+      {profile && (
+        <EditProfileModal
+          open={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          profile={profile}
+        />
+      )}
     </div>
   );
 };

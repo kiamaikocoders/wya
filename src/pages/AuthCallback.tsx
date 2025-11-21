@@ -1,0 +1,259 @@
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2, CheckCircle2, XCircle, Mail } from 'lucide-react';
+import { toast } from 'sonner';
+
+type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
+
+const AuthCallback = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('');
+  const [callbackType, setCallbackType] = useState<CallbackType>('unknown');
+
+  useEffect(() => {
+    const handleAuthCallback = async () => {
+      try {
+        // Get token and type from URL
+        const token = searchParams.get('token');
+        const type = searchParams.get('type');
+        const tokenHash = searchParams.get('token_hash');
+
+        // Determine callback type
+        if (type === 'signup' || type === 'email') {
+          setCallbackType('signup');
+        } else if (type === 'recovery') {
+          setCallbackType('recovery');
+          // Redirect to reset password page
+          if (token) {
+            navigate(`/reset-password?token=${token}&type=recovery`);
+            return;
+          }
+        } else if (type === 'magiclink') {
+          setCallbackType('magiclink');
+        } else if (type === 'email_change') {
+          setCallbackType('email_change');
+        } else if (type === 'invite') {
+          setCallbackType('invite');
+        }
+
+        // Handle email confirmation
+        if (token && (type === 'signup' || type === 'email')) {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'email'
+          });
+
+          if (error) throw error;
+
+          if (data.user) {
+            // Check if there's a pending welcome notification
+            const pendingWelcome = localStorage.getItem('pending_welcome');
+            if (pendingWelcome) {
+              try {
+                const { userId, userName } = JSON.parse(pendingWelcome);
+                const { onboardingNotifications } = await import('@/lib/onboarding-notifications');
+                await onboardingNotifications.sendWelcomeNotification(userId, userName);
+                // Initialize onboarding
+                setTimeout(() => {
+                  onboardingNotifications.initializeOnboarding(userId, userName);
+                }, 1000);
+                localStorage.removeItem('pending_welcome');
+              } catch (err) {
+                console.warn('Failed to send welcome notification:', err);
+              }
+            }
+
+            setStatus('success');
+            setMessage('Email verified successfully! You can now sign in.');
+            toast.success('Email verified successfully!');
+            
+            // Redirect to login after 2 seconds
+            setTimeout(() => {
+              navigate('/login');
+            }, 2000);
+          }
+        }
+        // Handle magic link
+        else if (token && type === 'magiclink') {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'magiclink'
+          });
+
+          if (error) throw error;
+
+          if (data.user) {
+            setStatus('success');
+            setMessage('Signed in successfully!');
+            toast.success('Signed in successfully!');
+            
+            // Redirect to home after 1 second
+            setTimeout(() => {
+              navigate('/home');
+            }, 1000);
+          }
+        }
+        // Handle email change
+        else if (token && type === 'email_change') {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'email_change'
+          });
+
+          if (error) throw error;
+
+          if (data.user) {
+            setStatus('success');
+            setMessage('Email changed successfully!');
+            toast.success('Email changed successfully!');
+            
+            // Redirect to settings after 2 seconds
+            setTimeout(() => {
+              navigate('/settings');
+            }, 2000);
+          }
+        }
+        // Handle invite
+        else if (token && type === 'invite') {
+          // For invites, redirect to signup with token
+          navigate(`/signup?token=${token}&type=invite`);
+          return;
+        }
+        // No token or unknown type
+        else {
+          setStatus('error');
+          setMessage('Invalid or missing verification token.');
+        }
+      } catch (error: any) {
+        console.error('Auth callback error:', error);
+        setStatus('error');
+        setMessage(error.message || 'Failed to verify. The link may have expired.');
+        toast.error(error.message || 'Verification failed');
+      }
+    };
+
+    handleAuthCallback();
+  }, [searchParams, navigate]);
+
+  const getTitle = () => {
+    switch (callbackType) {
+      case 'signup':
+        return 'Verifying Email';
+      case 'magiclink':
+        return 'Signing In';
+      case 'email_change':
+        return 'Verifying Email Change';
+      case 'invite':
+        return 'Accepting Invitation';
+      default:
+        return 'Processing';
+    }
+  };
+
+  const getSuccessTitle = () => {
+    switch (callbackType) {
+      case 'signup':
+        return 'Email Verified';
+      case 'magiclink':
+        return 'Signed In';
+      case 'email_change':
+        return 'Email Changed';
+      case 'invite':
+        return 'Invitation Accepted';
+      default:
+        return 'Success';
+    }
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
+        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-kenya-orange/20 rounded-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-kenya-orange animate-spin" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">{getTitle()}</CardTitle>
+            <CardDescription className="text-kenya-brown-light">
+              Please wait while we verify your request...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
+        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">{getSuccessTitle()}</CardTitle>
+            <CardDescription className="text-kenya-brown-light">
+              {message}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-kenya-brown-dark/50 rounded-lg">
+              <p className="text-sm text-kenya-brown-light text-center">
+                Redirecting you now...
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
+      <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+        <CardHeader className="space-y-1 text-center">
+          <div className="mx-auto mb-4 w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+            <XCircle className="h-8 w-8 text-red-500" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-white">Verification Failed</CardTitle>
+          <CardDescription className="text-kenya-brown-light">
+            {message}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-kenya-brown-dark/50 rounded-lg">
+            <p className="text-sm text-kenya-brown-light text-center">
+              The verification link may have expired or is invalid. Please request a new one.
+            </p>
+          </div>
+        </CardContent>
+        
+        <CardContent className="flex flex-col space-y-2">
+          <Button
+            onClick={() => navigate('/login')}
+            className="w-full bg-kenya-orange hover:bg-opacity-90"
+          >
+            Go to Login
+          </Button>
+          <Button
+            onClick={() => navigate('/forgot-password')}
+            variant="outline"
+            className="w-full border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+          >
+            Request New Link
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AuthCallback;
+

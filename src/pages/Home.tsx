@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -13,17 +13,33 @@ import InfiniteEventCarousel from '@/components/ui/InfiniteEventCarousel';
 import EventCard from '@/components/ui/EventCard';
 import TicketPurchaseModal from '@/components/events/TicketPurchaseModal';
 import CircularGallery from '@/components/ui/CircularGallery';
+import OnboardingReminders from '@/components/onboarding/OnboardingReminders';
 import { eventService } from '@/lib/event-service';
 import { storyService } from '@/lib/story/story-service';
 import { forumService } from '@/lib/forum-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { onboardingNotifications } from '@/lib/onboarding-notifications';
 import type { Event } from '@/types/event.types';
 import { format } from 'date-fns';
 import { differenceInHours } from 'date-fns';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedEventForTickets, setSelectedEventForTickets] = useState<Event | null>(null);
+
+  // Check for nearby events when user has location
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      // Check for nearby events after 3 seconds
+      const timer = setTimeout(() => {
+        onboardingNotifications.sendNearbyEventsNotification(user.id);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, user?.id]);
   
   const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['events'],
@@ -176,6 +192,8 @@ const Home: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-kenya-dark pb-24">
+      {/* Onboarding Reminders */}
+      {isAuthenticated && <OnboardingReminders />}
       <section className="relative overflow-hidden">
         {/* Blurred Background Image */}
         <div className="absolute inset-0 -z-10 overflow-hidden" style={{ zIndex: 0 }}>

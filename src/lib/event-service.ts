@@ -305,7 +305,30 @@ export const eventService = {
         .single();
       
       if (error) throw error;
-      toast.success('Event created successfully');
+      
+      // Send notifications to all users about new event
+      try {
+        const { onboardingNotifications } = await import('./onboarding-notifications');
+        const { data: allUsers } = await supabase
+          .from('profiles')
+          .select('id')
+          .neq('id', user.id); // Don't notify the creator
+        
+        if (allUsers && allUsers.length > 0) {
+          // Notify up to 100 users (to avoid overwhelming the system)
+          const usersToNotify = allUsers.slice(0, 100);
+          await Promise.all(
+            usersToNotify.map(userProfile =>
+              onboardingNotifications.sendNewEventNotification(userProfile.id, data.title, data.id)
+            )
+          );
+        }
+      } catch (notifError) {
+        console.warn('Failed to send event notifications:', notifError);
+        // Don't fail event creation if notifications fail
+      }
+      
+      toast.success('Event created successfully! Users will be notified.');
       return data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create event';

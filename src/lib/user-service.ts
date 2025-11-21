@@ -86,7 +86,7 @@ export const userService = {
         .eq('id', user.id);
       
       if (error) throw error;
-      toast.success('Profile updated successfully');
+      // Don't show toast here - let the caller handle it
       return true;
     } catch (error) {
       console.error('Error updating profile:', error);

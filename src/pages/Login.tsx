@@ -21,13 +21,16 @@ const Login = () => {
       return;
     }
     
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
       await login(email, password);
-    } catch (error) {
+      // Login successful - navigation happens in AuthContext
+      // Don't reset form immediately - let navigation happen first
+      // The form will be cleared when component unmounts
+    } catch (error: any) {
       console.error('Login failed:', error);
-    } finally {
       setIsSubmitting(false);
+      // Error toast is already shown in AuthContext
     }
   };
 
