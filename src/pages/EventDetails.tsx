@@ -33,6 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate } from '@/utils/event-utils';
 import { useEvents } from '@/hooks/use-events';
+import BackButton from '@/components/navigation/BackButton';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -143,6 +144,13 @@ const EventDetails: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-kenya-dark via-kenya-dark/50 to-transparent" />
         
         {/* Header Actions */}
+        <div className="absolute top-4 left-4">
+          <BackButton
+            // When opened directly, go back to Events
+            fallbackHref="/events"
+            className="h-10 w-10"
+          />
+        </div>
         <div className="absolute top-4 right-4 flex gap-2">
           <Button variant="ghost" size="icon" onClick={toggleFavorite} className="bg-black/20 backdrop-blur-sm">
             {isFavorite ? (

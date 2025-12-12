@@ -20,6 +20,7 @@ import {
 import { forumService, ForumPost, ForumComment } from '@/lib/forum-service';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import BackButton from '@/components/navigation/BackButton';
 
 const PostDetail: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -149,14 +150,10 @@ const PostDetail: React.FC = () => {
       <div className="min-h-screen bg-kenya-dark">
         <div className="container mx-auto px-4 py-8">
           {/* Back Button */}
-        <Button
-          variant="ghost"
-            onClick={() => navigate('/forum')}
-            className="mb-6 text-kenya-brown hover:text-kenya-brown-dark"
-        >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Forum
-        </Button>
+          <div className="mb-6 flex items-center gap-3">
+            <BackButton fallbackHref="/forum" className="h-10 w-10" />
+            <span className="text-sm text-white/70">Back</span>
+          </div>
       
           {/* Post Content */}
           <Card className="mb-8 bg-kenya-dark border-kenya-brown/20">

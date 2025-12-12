@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ type EventCardProps = {
 };
 
 const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
   const ticketLabel =
     event.price && event.price > 0 ? `KES ${event.price.toLocaleString()}` : 'Free';
 
@@ -25,7 +27,11 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
         variant === 'list' && 'flex flex-col md:flex-row'
       )}
     >
-      <Link to={`/events/${event.id}`} className={cn('block', variant === 'list' ? 'md:flex md:flex-1' : '')}>
+      <Link
+        to={`/events/${event.id}`}
+        state={{ returnTo }}
+        className={cn('block', variant === 'list' ? 'md:flex md:flex-1' : '')}
+      >
         <div
           className={cn(
             'relative overflow-hidden',

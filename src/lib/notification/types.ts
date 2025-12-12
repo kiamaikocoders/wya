@@ -9,15 +9,9 @@ export interface Notification {
   created_at: string;
   resource_type?: string;
   resource_id?: number;
-  data?: {
-    event_id?: number;
-    ticket_id?: number;
-    follower_id?: string;
-    follower_name?: string;
-    message_id?: string;
-    sender_id?: string;
-    [key: string]: any;
-  };
+  resource_uuid?: string;
+  link?: string;
+  data?: Record<string, any> | null;
 }
 
 export interface CreateNotificationData {
@@ -25,7 +19,11 @@ export interface CreateNotificationData {
   type: Notification['type'];
   title: string;
   message: string;
-  data?: Notification['data'];
+  resource_type?: string;
+  resource_id?: number;
+  resource_uuid?: string;
+  link?: string;
+  data?: Record<string, any> | null;
 }
 
 export interface NotificationSettings {

@@ -21,13 +21,21 @@ const LandingHero = ({
   return (
     <section
       id="hero"
-      className="relative overflow-hidden bg-gradient-to-b from-black/85 via-kenya-dark to-kenya-dark pb-24 pt-28"
+      className="relative overflow-hidden pb-24 pt-28"
     >
       <div className="absolute inset-0 -z-10">
+        {/* Background image */}
+        <img
+          src="/layout.jpeg"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
+        {/* Decorative gradients */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#FF800025,transparent_60%)]" />
         <div className="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-kenya-orange/20 blur-3xl" />
         <div className="absolute left-[-10%] top-1/4 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[url('/lovable-uploads/5a8a8680-15e8-4a23-b3d5-10e7c024f961.png')] bg-cover bg-center opacity-10 mix-blend-screen" />
       </div>
 
       <div className="container mx-auto px-4">

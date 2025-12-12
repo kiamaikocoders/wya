@@ -10,7 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 interface UserCardProps {
-  id: number;
+  id: string;
+  username?: string;
   name: string;
   avatar?: string;
   bio?: string;
@@ -22,6 +23,7 @@ interface UserCardProps {
 
 const UserCard: React.FC<UserCardProps> = ({
   id,
+  username,
   name,
   avatar,
   bio,
@@ -45,7 +47,7 @@ const UserCard: React.FC<UserCardProps> = ({
       
       setIsCheckingPermissions(true);
       try {
-        const canMsg = await followService.canMessage(id.toString());
+        const canMsg = await followService.canMessage(id);
         setCanMessage(canMsg);
       } catch (error) {
         console.error('Error checking messaging permissions:', error);
@@ -83,7 +85,7 @@ const UserCard: React.FC<UserCardProps> = ({
     
     setIsFollowLoading(true);
     try {
-      const success = await followService.followUser(id.toString());
+      const success = await followService.followUser(id);
       if (success) {
         onFollow();
       }
@@ -100,7 +102,7 @@ const UserCard: React.FC<UserCardProps> = ({
     
     setIsFollowLoading(true);
     try {
-      const success = await followService.unfollowUser(id.toString());
+      const success = await followService.unfollowUser(id);
       if (success) {
         onUnfollow();
       }
@@ -110,7 +112,18 @@ const UserCard: React.FC<UserCardProps> = ({
   };
 
   return (
-    <Card className="w-full hover:shadow-lg transition-shadow">
+    <Card
+      className="w-full hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={() => navigate(`/users/${username || id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/users/${username || id}`);
+        }
+      }}
+    >
       <CardContent className="p-6">
         <div className="flex items-start space-x-4">
           <Avatar className="w-12 h-12">
@@ -127,13 +140,16 @@ const UserCard: React.FC<UserCardProps> = ({
             )}
             
             <div className="flex items-center space-x-2 mt-4">
-              {isAuthenticated && currentUser?.id !== id.toString() && (
+              {isAuthenticated && currentUser?.id !== id && (
                 <>
                   {isFollowing ? (
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={handleUnfollow}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnfollow();
+                      }}
                       disabled={isFollowLoading}
                       className="flex items-center gap-2"
                     >
@@ -143,7 +159,10 @@ const UserCard: React.FC<UserCardProps> = ({
                   ) : (
                     <Button 
                       size="sm" 
-                      onClick={handleFollow}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollow();
+                      }}
                       disabled={isFollowLoading}
                       className="flex items-center gap-2"
                     >
@@ -155,7 +174,10 @@ const UserCard: React.FC<UserCardProps> = ({
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={handleMessage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMessage();
+                    }}
                     disabled={isCheckingPermissions || !canMessage}
                     className="flex items-center gap-2"
                     title={!canMessage ? "You can only message users you follow and who follow you back" : "Send message"}

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ForumPost } from "@/lib/forum-service"; 
 import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -23,6 +23,8 @@ interface PostCardProps {
 
 const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle }) => {
   const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   // Format creation date to relative time
   const formattedDate = post.created_at 
@@ -62,7 +64,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to={`/posts/${post.id}`}>View Post</Link>
+                <Link to={`/forum/${post.id}`} state={{ returnTo }}>View Post</Link>
               </DropdownMenuItem>
               {isAuthor && (
                 <DropdownMenuItem className="text-red-500">
@@ -76,7 +78,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle
       </CardHeader>
       
       <CardContent className="p-4">
-        <Link to={`/posts/${post.id}`} className="hover:underline">
+        <Link to={`/forum/${post.id}`} state={{ returnTo }} className="hover:underline">
           <h3 className="font-semibold text-lg mb-2">{post.title}</h3>
         </Link>
         <p className="text-muted-foreground whitespace-pre-line">{post.content}</p>
@@ -95,6 +97,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle
           <div className="mt-3">
             <Link 
               to={`/events/${post.event_id}`}
+              state={{ returnTo }}
               className="text-sm text-muted-foreground hover:underline flex items-center"
             >
               <span className="bg-primary/10 text-primary text-xs py-1 px-2 rounded">
@@ -124,7 +127,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle
             className="flex items-center gap-1"
             asChild
           >
-            <Link to={`/posts/${post.id}`}>
+            <Link to={`/forum/${post.id}`} state={{ returnTo }}>
               <MessageCircle className="h-4 w-4" />
               <span>Comment</span>
             </Link>
@@ -138,7 +141,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, isLiked = false, onLikeToggle
               navigator.share({
                 title: post.title,
                 text: post.content.substring(0, 50) + '...',
-                url: window.location.origin + `/posts/${post.id}`,
+                url: window.location.origin + `/forum/${post.id}`,
               }).catch(err => {
                 console.error('Share failed:', err);
               });

@@ -18,6 +18,7 @@ export const followNotifications = {
         .single();
 
       const followerName = followerProfile?.full_name || followerProfile?.username || 'Someone';
+      const followerIdentifier = followerProfile?.username || currentUserUuid;
 
       // Send notification to the followed user
       const notificationData = {
@@ -26,11 +27,12 @@ export const followNotifications = {
         title: 'New Follower',
         message: `${followerName} started following you`,
         resource_type: 'user',
-        resource_id: parseInt(currentUserUuid.replace(/-/g, '').substring(0, 8), 16), // Convert UUID to int for resource_id
+        resource_uuid: currentUserUuid,
+        link: `/users/${followerIdentifier}`,
         data: {
           follower_id: currentUserUuid,
-          follower_name: followerName
-        }
+          follower_name: followerName,
+        },
       };
 
       const success = await notificationService.createNotification(notificationData);

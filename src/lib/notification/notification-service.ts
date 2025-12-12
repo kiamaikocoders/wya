@@ -1,7 +1,7 @@
 
 import { toast } from 'sonner';
 import { supabase } from '../supabase';
-import type { Notification, NotificationSettings } from './types';
+import type { CreateNotificationData, Notification, NotificationSettings } from './types';
 
 // Create the notification service
 export const notificationService = {
@@ -82,12 +82,22 @@ export const notificationService = {
     }
   },
   
-  createNotification: async (notification: Omit<Notification, 'id' | 'created_at' | 'read'>): Promise<boolean> => {
+  createNotification: async (notification: CreateNotificationData): Promise<boolean> => {
     try {
+      // Insert only columns that exist in the DB schema.
+      const { user_id, type, title, message, resource_id, resource_type, resource_uuid, link, data } = notification;
       const { error } = await supabase
         .from('notifications')
         .insert({
-          ...notification,
+          user_id,
+          type,
+          title,
+          message,
+          resource_id,
+          resource_type,
+          resource_uuid,
+          link,
+          data,
           read: false
         });
         

@@ -1,0 +1,125 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import ContentCard, { SpotlightContent } from './ContentCard';
+import { cn } from '@/lib/utils';
+
+interface EventContentCarouselProps {
+  content: SpotlightContent[];
+  eventTitle?: string;
+  initialIndex?: number;
+  onItemChange?: (index: number) => void;
+  onItemClick?: (item: SpotlightContent) => void;
+  onLike?: (id: string | number) => void;
+  onShare?: (id: string | number) => void;
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
+}
+
+const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
+  content,
+  eventTitle,
+  initialIndex = 0,
+  onItemChange,
+  onItemClick,
+  onLike,
+  onShare,
+  autoPlay = false,
+  autoPlayInterval = 5000,
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(
+    Math.max(0, Math.min(initialIndex, content.length - 1))
+  );
+
+  const ids = useMemo(() => content.map((c) => `${c.type}-${c.id}`), [content]);
+
+  // Notify parent of index change
+  useEffect(() => {
+    onItemChange?.(currentIndex);
+  }, [currentIndex, onItemChange]);
+
+  // Snap to initial/current index when content changes
+  useEffect(() => {
+    const el = itemRefs.current[currentIndex];
+    el?.scrollIntoView({ behavior: 'instant' as ScrollBehavior, inline: 'center', block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join('|')]);
+
+  // Observe which card is centered in the horizontal scroller
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const root = scrollRef.current;
+
+    const observers = itemRefs.current.map((node, index) => {
+      if (!node) return null;
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+              setCurrentIndex(index);
+            }
+          });
+        },
+        { root, threshold: [0.6] }
+      );
+      obs.observe(node);
+      return obs;
+    });
+
+    return () => observers.forEach((o) => o?.disconnect());
+  }, [ids]);
+
+  // Optional autoplay: scroll to next item
+  useEffect(() => {
+    if (!autoPlay || content.length <= 1) return;
+    const t = setInterval(() => {
+      const next = (currentIndex + 1) % content.length;
+      itemRefs.current[next]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, autoPlayInterval);
+    return () => clearInterval(t);
+  }, [autoPlay, autoPlayInterval, content.length, currentIndex]);
+
+  if (!content || content.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="relative w-full">
+      <div
+        ref={scrollRef}
+        className={cn(
+          'flex w-full gap-4 overflow-x-auto scrollbar-hide',
+          'snap-x snap-mandatory',
+          'px-2'
+        )}
+      >
+        {content.map((item, index) => (
+          <div
+            key={`${item.type}-${item.id}`}
+            ref={(el) => {
+              itemRefs.current[index] = el;
+            }}
+                className={cn(
+              'snap-center shrink-0',
+              // Peek hint: slightly narrower than viewport so next item peeks
+              'w-[88vw] md:w-[520px]'
+            )}
+              >
+                <ContentCard
+              content={item}
+              isHero={true}
+              position="center"
+              onClick={() => onItemClick?.(item)}
+              onExpand={() => onItemClick?.(item)}
+                  onLike={onLike}
+                  onShare={onShare}
+                />
+              </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default EventContentCarousel;
+

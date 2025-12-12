@@ -148,4 +148,29 @@ export const profileService = {
       return null;
     }
   }
+  ,
+
+  /**
+   * Fetch by either username OR user id (uuid).
+   * The `/users/:userId` route can receive either.
+   */
+  getProfileByIdentifier: async (identifier: string): Promise<Profile | null> => {
+    const trimmed = (identifier || '').trim();
+    if (!trimmed) return null;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // Prefer direct id lookup when it looks like a UUID.
+    if (uuidRegex.test(trimmed)) {
+      const byId = await profileService.getProfile(trimmed);
+      if (byId) return byId;
+    }
+
+    // Try username lookup.
+    const byUsername = await profileService.getProfileByUsername(trimmed.replace(/^@/, ''));
+    if (byUsername) return byUsername;
+
+    // Fallback: if a non-uuid was passed but it's actually an id.
+    return await profileService.getProfile(trimmed);
+  },
 };
