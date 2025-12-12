@@ -1,20 +1,22 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SearchBar from '@/components/ui/SearchBar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import UserCard from '@/components/users/UserCard';
-import { Users, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, UserPlus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { profileService } from '@/lib/profile-service';
 import { followService } from '@/lib/follow';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface UserCardData {
   id: string;
+  username?: string;
   name: string;
   avatar_url?: string;
   bio?: string;
@@ -22,10 +24,13 @@ interface UserCardData {
 
 const UsersDirectory = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const queryClient = useQueryClient();
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+  const showBack = useMemo(() => !!returnTo, [returnTo]);
   
   // Fetch all users
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
@@ -42,7 +47,7 @@ const UsersDirectory = () => {
         
         // Filter out the current user
         return data.filter(profile => 
-          currentUser ? profile.id !== currentUser.id.toString() : true
+          currentUser ? profile.id !== currentUser.id : true
         );
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -54,13 +59,14 @@ const UsersDirectory = () => {
   // Fetch users the current user is following
   const { data: following = [], isLoading: isLoadingFollowing } = useQuery({
     queryKey: ['following', currentUser?.id],
-    queryFn: () => followService.getFollowing(''),
+    queryFn: () => followService.getFollowing(currentUser?.id || ''),
     enabled: !!currentUser,
   });
   
   // Map the profiles to the format expected by UserCard
   const mappedUsers: UserCardData[] = users.map(user => ({
     id: user.id,
+    username: user.username || undefined,
     name: user.full_name || user.username || 'Unknown User',
     avatar_url: user.avatar_url || undefined,
     bio: user.bio || undefined
@@ -113,7 +119,20 @@ const UsersDirectory = () => {
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Users Directory</h1>
+        <div className="flex items-center gap-3">
+          {showBack && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10"
+              aria-label="Back"
+              onClick={() => navigate(returnTo)}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <h1 className="text-2xl font-bold">Users Directory</h1>
+        </div>
       </div>
       
       <div className="space-y-6">
@@ -144,7 +163,8 @@ const UsersDirectory = () => {
                   filteredUsers.map(user => (
                     <UserCard
                       key={user.id}
-                      id={parseInt(user.id)}
+                      id={user.id}
+                      username={user.username}
                       name={user.name}
                       avatar={user.avatar_url}
                       bio={user.bio}
@@ -180,7 +200,8 @@ const UsersDirectory = () => {
                     .map(user => (
                       <UserCard
                         key={user.id}
-                        id={parseInt(user.id)}
+                        id={user.id}
+                        username={user.username}
                         name={user.name}
                         avatar={user.avatar_url}
                         bio={user.bio}

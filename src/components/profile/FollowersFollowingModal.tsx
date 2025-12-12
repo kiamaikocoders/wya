@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,16 @@ import { followService } from '@/lib/follow';
 import { userService } from '@/lib/user-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface FollowersFollowingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
-  type: 'followers' | 'following';
+  type: 'followers' | 'following' | 'mutuals';
 }
 
 interface UserProfile {
@@ -36,16 +37,33 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+  const [activeType, setActiveType] = useState<FollowersFollowingModalProps['type']>(type);
 
-  // Fetch user IDs (followers or following)
-  const { data: userIds = [], isLoading: isLoadingIds } = useQuery({
-    queryKey: [type === 'followers' ? 'followers' : 'following', userId],
-    queryFn: () => 
-      type === 'followers' 
-        ? followService.getFollowers(userId)
-        : followService.getFollowing(userId),
+  useEffect(() => {
+    setActiveType(type);
+  }, [type]);
+
+  // Fetch followers + following so we can compute mutuals.
+  const { data: followerIds = [], isLoading: isLoadingFollowers } = useQuery({
+    queryKey: ['followers', userId],
+    queryFn: () => followService.getFollowers(userId),
     enabled: open && !!userId,
   });
+
+  const { data: followingIds = [], isLoading: isLoadingFollowing } = useQuery({
+    queryKey: ['following', userId],
+    queryFn: () => followService.getFollowing(userId),
+    enabled: open && !!userId,
+  });
+
+  const userIds = useMemo(() => {
+    if (activeType === 'followers') return followerIds;
+    if (activeType === 'following') return followingIds;
+    const followerSet = new Set(followerIds);
+    return followingIds.filter((id) => followerSet.has(id));
+  }, [activeType, followerIds, followingIds]);
 
   // Fetch full user profiles
   const { data: users = [], isLoading: isLoadingProfiles } = useQuery({
@@ -120,21 +138,48 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
         const targetUser = users.find(u => u.id === targetUserId);
         const identifier = targetUser?.username || targetUserId;
         // Navigate to user profile page (using username if available, otherwise userId)
-        navigate(`/users/${identifier}`);
+        navigate(`/users/${identifier}`, { state: { returnTo } });
       }
     }, 100);
   };
 
-  const isLoading = isLoadingIds || isLoadingProfiles;
+  const isLoading = isLoadingFollowers || isLoadingFollowing || isLoadingProfiles;
+  const title = activeType === 'mutuals' ? 'Friends' : activeType === 'followers' ? 'Followers' : 'Following';
+  const emptyTitle =
+    activeType === 'mutuals'
+      ? "No friends yet"
+      : activeType === 'followers'
+        ? 'No followers yet'
+        : 'Not following anyone yet';
+  const emptyDescription =
+    activeType === 'mutuals'
+      ? 'Mutuals are people you follow who follow you back.'
+      : activeType === 'followers'
+        ? 'Start sharing content to get followers'
+        : 'Discover and follow interesting users';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-kenya-dark border-white/10 text-white max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-white capitalize">
-            {type === 'followers' ? 'Followers' : 'Following'}
+            {title}
           </DialogTitle>
         </DialogHeader>
+
+        <Tabs value={activeType} onValueChange={(v) => setActiveType(v as FollowersFollowingModalProps['type'])}>
+          <TabsList className="mt-1 grid w-full grid-cols-3 bg-white/5 border border-white/10 rounded-xl p-1 gap-1">
+            <TabsTrigger value="mutuals" className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70">
+              Friends
+            </TabsTrigger>
+            <TabsTrigger value="followers" className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70">
+              Followers
+            </TabsTrigger>
+            <TabsTrigger value="following" className="rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/70">
+              Following
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         
         <div className="flex-1 overflow-y-auto mt-4">
           {isLoading ? (
@@ -143,16 +188,17 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
             </div>
           ) : users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-white/70 text-lg">
-                {type === 'followers' 
-                  ? 'No followers yet' 
-                  : 'Not following anyone yet'}
-              </p>
-              <p className="text-white/50 text-sm mt-2">
-                {type === 'followers'
-                  ? 'Start sharing content to get followers'
-                  : 'Discover and follow interesting users'}
-              </p>
+              <p className="text-white/70 text-lg">{emptyTitle}</p>
+              <p className="text-white/50 text-sm mt-2">{emptyDescription}</p>
+              <Button
+                className="mt-5 bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black"
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => navigate('/users', { state: { returnTo } }), 100);
+                }}
+              >
+                Find Friends
+              </Button>
             </div>
           ) : (
             <div className="space-y-2">

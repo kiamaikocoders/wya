@@ -103,6 +103,14 @@
     display: none;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .glass-effect {
     @apply backdrop-blur-md bg-white/5 border border-white/10;
   }

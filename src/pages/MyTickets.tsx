@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, MapPin, CheckCircle, XCircle, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ticketService, Ticket } from '@/lib/ticket-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -139,6 +139,8 @@ interface TicketCardProps {
 }
 
 const TicketCard: React.FC<TicketCardProps> = ({ ticket, onCancel, getBadgeColor, isPast }) => {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
   const eventDate = new Date(ticket.event_date);
   const formattedDate = eventDate.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -201,7 +203,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onCancel, getBadgeColor
           <div className="border-t pt-4 mt-4">
             {isPast ? (
               <div className="flex justify-between">
-                <Link to={`/events/${ticket.event_id}`} className="flex-1 mr-2">
+                <Link to={`/events/${ticket.event_id}`} state={{ returnTo }} className="flex-1 mr-2">
                   <Button variant="outline" className="w-full">Event Details</Button>
                 </Link>
                 <Link to={`/events/${ticket.event_id}/feedback`} className="flex-1 ml-2">
@@ -210,7 +212,7 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onCancel, getBadgeColor
               </div>
             ) : (
               <div className="flex justify-between">
-                <Link to={`/tickets/${ticket.id}`} className="flex-1 mr-2">
+                <Link to={`/tickets/${ticket.id}`} state={{ returnTo }} className="flex-1 mr-2">
                   <Button className="w-full">View Ticket</Button>
                 </Link>
                 {ticket.status !== 'cancelled' && onCancel && (

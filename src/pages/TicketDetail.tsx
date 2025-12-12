@@ -1,18 +1,21 @@
 
 import React, { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams, Link } from 'react-router-dom';
+import { useLocation, useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Share2, Download, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Share2, Download } from 'lucide-react';
 import { ticketService } from '@/lib/ticket-service';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import BackButton from '@/components/navigation/BackButton';
 
 const TicketDetail = () => {
   const { ticketId } = useParams();
   const ticketRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
   
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', ticketId],
@@ -72,11 +75,7 @@ const TicketDetail = () => {
   return (
     <div className="container py-8">
       <div className="mb-6 flex items-center gap-2">
-        <Link to="/tickets">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
+        <BackButton fallbackHref="/tickets" className="h-10 w-10" />
         <h1 className="text-2xl font-bold text-white">Ticket Details</h1>
       </div>
       
@@ -155,7 +154,7 @@ const TicketDetail = () => {
         </Card>
         
         <div className="mt-8">
-          <Link to={`/events/${ticket.event_id}`}>
+          <Link to={`/events/${ticket.event_id}`} state={{ returnTo }}>
             <Button variant="outline" className="w-full">View Event Details</Button>
           </Link>
         </div>

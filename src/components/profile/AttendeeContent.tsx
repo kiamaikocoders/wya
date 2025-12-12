@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Calendar, MessageSquare, BarChart, Ticket } from "lucide-react";
 import EventCard from "@/components/ui/EventCard";
 import PostCard from "@/components/forum/PostCard";
@@ -24,6 +24,9 @@ const AttendeeContent: React.FC<AttendeeContentProps> = ({
   userPosts,
   userTickets,
 }) => {
+  const location = useLocation();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+
   return (
     <Tabs defaultValue="events" value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="mb-6">
@@ -118,7 +121,7 @@ const AttendeeContent: React.FC<AttendeeContentProps> = ({
                 </div>
               </CardContent>
               <CardFooter>
-                <Link to={`/tickets/${ticket.id}`} className="w-full">
+                <Link to={`/tickets/${ticket.id}`} state={{ returnTo }} className="w-full">
                   <Button variant="outline" className="w-full">View Ticket</Button>
                 </Link>
               </CardFooter>

@@ -1,20 +1,24 @@
 import React from 'react';
-import { Grid, Image, Video } from 'lucide-react';
+import { Grid, Video, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface Post {
   id: string | number;
   media_url?: string | null;
   media_type?: string;
   content?: string;
+  event_id?: number | null;
   created_at: string;
 }
 
 interface PostsGridProps {
   posts: Post[];
-  activeTab: 'posts' | 'reels' | 'tagged';
+  activeTab: 'posts' | 'spotlight' | 'tagged';
   onPostClick?: (post: Post) => void;
   className?: string;
+  emptyCtaLabel?: string;
+  onEmptyCtaClick?: () => void;
 }
 
 const PostsGrid: React.FC<PostsGridProps> = ({
@@ -22,10 +26,13 @@ const PostsGrid: React.FC<PostsGridProps> = ({
   activeTab,
   onPostClick,
   className,
+  emptyCtaLabel,
+  onEmptyCtaClick,
 }) => {
   const filteredPosts = React.useMemo(() => {
     if (activeTab === 'spotlight') {
-      return posts.filter(p => p.media_type === 'video');
+      // Spotlight = posts tagged to an event (i.e. "I was at this event")
+      return posts.filter(p => !!p.event_id);
     }
     if (activeTab === 'tagged') {
       // For now, return all posts. In the future, filter by tagged posts
@@ -38,7 +45,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
     return (
       <div className={cn('flex flex-col items-center justify-center py-16 text-center', className)}>
         <div className="mb-4 rounded-full bg-white/5 p-6">
-          {activeTab === 'reels' ? (
+          {activeTab === 'spotlight' ? (
             <Video className="h-12 w-12 text-white/40" />
           ) : (
             <Grid className="h-12 w-12 text-white/40" />
@@ -49,11 +56,21 @@ const PostsGrid: React.FC<PostsGridProps> = ({
         </p>
         <p className="mt-2 text-sm text-white/70">
           {activeTab === 'spotlight' 
-            ? 'Share your first spotlight post to get started'
+            ? 'Share a post and tag an event to show up here'
             : activeTab === 'tagged'
             ? "You haven't been tagged in any posts"
             : 'Share your first post to get started'}
         </p>
+
+        {!!emptyCtaLabel && !!onEmptyCtaClick && (
+          <Button
+            onClick={onEmptyCtaClick}
+            className="mt-6 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {emptyCtaLabel}
+          </Button>
+        )}
       </div>
     );
   }

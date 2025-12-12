@@ -32,9 +32,14 @@ export const ticketService = {
   // Get user tickets
   getUserTickets: async (): Promise<Ticket[]> => {
     try {
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth?.user;
+      if (!user) throw new Error('You must be logged in to view tickets');
+
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
+        .eq('user_id', user.id)
         .order('purchase_date', { ascending: false });
         
       if (error) throw error;

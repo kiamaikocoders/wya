@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Calendar, MapPin, Users, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
@@ -24,6 +24,8 @@ export interface EventCardProps {
 const EventCard: React.FC<EventCardProps> = (props) => {
   // Add hover state for touch devices
   const [isHovered, setIsHovered] = useState(false);
+  const routerLocation = useLocation();
+  const returnTo = `${routerLocation.pathname}${routerLocation.search}${routerLocation.hash}`;
   
   // Check if an event object was passed; if so, extract its properties
   const {
@@ -73,7 +75,11 @@ const EventCard: React.FC<EventCardProps> = (props) => {
       onTouchStart={() => setIsHovered(true)}
       onTouchEnd={() => setTimeout(() => setIsHovered(false), 500)}
     >
-      <Link to={`/events/${eventId}`} className="h-full flex flex-col">
+      <Link
+        to={`/events/${eventId}`}
+        state={{ returnTo }}
+        className="h-full flex flex-col"
+      >
         <div className="relative">
           <img 
             src={eventImage || 'https://placehold.co/600x400?text=Event+Image'} 
