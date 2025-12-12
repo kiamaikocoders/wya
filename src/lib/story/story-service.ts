@@ -43,7 +43,7 @@ export const storyService = {
       // Fetch profiles separately
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, full_name, avatar_url')
         .in('id', userIds);
       
       // Create a map of user_id to profile data
@@ -64,7 +64,7 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
         user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
