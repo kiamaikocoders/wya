@@ -17,7 +17,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
 
   useEffect(() => {
     const checkAuthState = async () => {
-      if (!isAuthenticated && authService.isAuthenticated()) {
+      const hasValidSession = !isAuthenticated && (await authService.isAuthenticated());
+      if (hasValidSession) {
         try {
           // Attempt to refresh auth state if token exists but context says not authenticated
           await refreshAuth();

@@ -124,6 +124,12 @@ const Profile: React.FC = () => {
     },
   });
 
+  // IMPORTANT: keep all hooks above any early returns to avoid hook order mismatches.
+  const mutualFriendsCount = useMemo(() => {
+    const followerSet = new Set(followers);
+    return following.filter((id) => followerSet.has(id)).length;
+  }, [followers, following]);
+
   const handlePostSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['userPosts', user?.id] });
   };
@@ -144,11 +150,6 @@ const Profile: React.FC = () => {
       </div>
     );
   }
-
-  const mutualFriendsCount = useMemo(() => {
-    const followerSet = new Set(followers);
-    return following.filter((id) => followerSet.has(id)).length;
-  }, [followers, following]);
 
   const stats = {
     posts: userPosts.length,
