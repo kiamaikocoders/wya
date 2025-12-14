@@ -23,19 +23,44 @@ export function useOnboarding() {
     if (!isAuthenticated || !user?.id) return;
 
     const checkLocation = async () => {
-      const cachedLocation = locationService.getCachedLocation();
-      if (!cachedLocation) {
-        // Check if user has location in profile
-        const { supabase } = await import('@/lib/supabase');
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('location')
-          .eq('id', user.id)
-          .single();
-        
-        if (!profile?.location) {
-          setShowLocationPrompt(true);
+      // Check if user has dismissed the prompt
+      const dismissed = localStorage.getItem('locationPromptDismissed') === 'true';
+      if (dismissed) {
+        setShowLocationPrompt(false);
+        return;
+      }
+
+      // Check browser geolocation permission status
+      let browserPermissionGranted = false;
+      if ('permissions' in navigator) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+          browserPermissionGranted = permissionStatus.state === 'granted';
+        } catch (error) {
+          // Permissions API not supported or geolocation not available
+          console.warn('Permissions API not available:', error);
         }
+      }
+
+      // Check cached location
+      const cachedLocation = locationService.getCachedLocation();
+      
+      // Check if user has location in profile
+      const { supabase } = await import('@/lib/supabase');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('location')
+        .eq('id', user.id)
+        .single();
+      
+      // Only show prompt if:
+      // 1. Browser permission is not granted
+      // 2. No cached location
+      // 3. No profile location
+      if (!browserPermissionGranted && !cachedLocation && !profile?.location) {
+        setShowLocationPrompt(true);
+      } else {
+        setShowLocationPrompt(false);
       }
     };
 
@@ -56,6 +81,14 @@ export function useOnboarding() {
     if (!user?.id) return;
     setShowLocationPrompt(false);
     await onboardingNotifications.requestLocationPermission(user.id);
+    // After requesting, check again to see if it was granted
+    // The useEffect will handle hiding the prompt if location is now available
+  };
+
+  // Dismiss location prompt (persist to localStorage)
+  const dismissLocationPrompt = () => {
+    localStorage.setItem('locationPromptDismissed', 'true');
+    setShowLocationPrompt(false);
   };
 
   // Dismiss profile reminder
@@ -68,6 +101,7 @@ export function useOnboarding() {
     showProfileReminder,
     showLocationPrompt,
     requestLocation,
+    dismissLocationPrompt,
     dismissProfileReminder,
   };
 }

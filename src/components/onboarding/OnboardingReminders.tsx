@@ -7,8 +7,7 @@ import { useOnboarding } from '@/hooks/use-onboarding';
 import { Link } from 'react-router-dom';
 
 const OnboardingReminders = () => {
-  const { profileCheck, showProfileReminder, showLocationPrompt, requestLocation, dismissProfileReminder } = useOnboarding();
-  const [dismissedLocation, setDismissedLocation] = useState(false);
+  const { profileCheck, showProfileReminder, showLocationPrompt, requestLocation, dismissLocationPrompt, dismissProfileReminder } = useOnboarding();
 
   if (!showProfileReminder && !showLocationPrompt) {
     return null;
@@ -58,7 +57,7 @@ const OnboardingReminders = () => {
       )}
 
       {/* Location Permission Prompt */}
-      {showLocationPrompt && !dismissedLocation && (
+      {showLocationPrompt && (
         <Card className="bg-blue-500/10 border-blue-500/30">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
@@ -76,7 +75,7 @@ const OnboardingReminders = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setDismissedLocation(true)}
+                onClick={dismissLocationPrompt}
                 className="h-8 w-8 text-kenya-brown-light hover:text-white"
               >
                 <X className="h-4 w-4" />

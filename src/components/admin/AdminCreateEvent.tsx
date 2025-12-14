@@ -13,9 +13,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { adminService } from '@/lib/admin-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
+
+interface Category {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  icon: string | null;
+  order_index: number;
+}
 
 interface AdminCreateEventProps {
   onSuccess?: () => void;
@@ -52,6 +60,38 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
+
+  // Fetch categories from database
+  const { data: categoriesData = [] } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('order_index', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Organize categories hierarchically
+  const organizedCategories = useMemo(() => {
+    const parents = categoriesData.filter(c => c.parent_id === null);
+    return parents.map(parent => ({
+      ...parent,
+      subcategories: categoriesData
+        .filter(c => c.parent_id === parent.id)
+        .sort((a, b) => a.order_index - b.order_index)
+    }));
+  }, [categoriesData]);
+
+  // Get selected category name for display
+  const selectedCategoryName = useMemo(() => {
+    if (!formData.category_id) return null;
+    const category = categoriesData.find(c => c.id === formData.category_id);
+    return category?.name || null;
+  }, [formData.category_id, categoriesData]);
 
   // Fetch users for organizer selection
   const { data: usersData } = useQuery({
@@ -204,7 +244,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please enter an event title');
           return false;
         }
-        if (!formData.category) {
+        if (!formData.category_id) {
           toast.error('Please select a category');
           return false;
         }
@@ -324,21 +364,54 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => handleSelectChange('category', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
+                {selectedCategoryName ? (
+                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
+                    <span className="text-sm font-medium">{selectedCategoryName}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, category_id: null }))}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full border rounded-lg">
+                    {organizedCategories.map((parentCategory) => (
+                      <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            {parentCategory.icon && <span>{parentCategory.icon}</span>}
+                            <span className="font-medium">{parentCategory.name}</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-2">
+                          <div className="space-y-1">
+                            {parentCategory.subcategories.map((subcategory) => (
+                              <Button
+                                key={subcategory.id}
+                                variant="ghost"
+                                className="w-full justify-start text-left font-normal"
+                                onClick={() => setFormData(prev => ({ ...prev, category_id: subcategory.id }))}
+                              >
+                                {subcategory.name}
+                              </Button>
+                            ))}
+                            {/* Also allow selecting parent category directly */}
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-left font-normal text-kenya-orange"
+                              onClick={() => setFormData(prev => ({ ...prev, category_id: parentCategory.id }))}
+                            >
+                              All {parentCategory.name}
+                            </Button>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </Accordion>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -703,7 +776,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Category</Label>
-                  <p className="font-medium">{formData.category || 'Not set'}</p>
+                  <p className="font-medium">{selectedCategoryName || 'Not set'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Location</Label>

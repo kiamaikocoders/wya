@@ -53,45 +53,64 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
   // Combine and transform content
   const allContent = useMemo(() => {
+    // Create event map for quick lookup
+    const eventMap = new Map<number, { id: number; title: string }>();
+    events.forEach(event => {
+      if (event.id) {
+        eventMap.set(event.id, {
+          id: event.id,
+          title: event.title,
+        });
+      }
+    });
+
     const content: SpotlightContent[] = [
-      ...stories.map(story => ({
-        id: story.id,
-        type: 'story' as const,
-        title: story.caption || story.content.slice(0, 70),
-        content: story.content,
-        media_url: story.media_url,
-        media_type: story.media_type || 'image',
-        user_id: story.user_id,
-        user_name: story.user_name || 'Anonymous',
-        user_image: story.user_image,
-        created_at: story.created_at,
-        likes_count: story.likes_count || 0,
-        comments_count: story.comments_count || 0,
-        views_count: 0,
-        event_id: story.event_id,
-        engagementScore: getEngagementScore(story),
-      })),
-      ...forumPosts.map(post => ({
-        id: post.id,
-        type: 'forum' as const,
-        title: post.title || post.content.slice(0, 70),
-        content: post.content,
-        media_url: post.media_url,
-        media_type: 'image',
-        user_id: post.user_id,
-        user_name: post.user?.username || post.user?.name || post.user_name || 'Anonymous',
-        user_image: post.user?.avatar_url || post.user_image,
-        created_at: post.created_at,
-        likes_count: post.likes_count || 0,
-        comments_count: post.comments_count || 0,
-        views_count: post.views_count || 0,
-        event_id: post.event_id,
-        engagementScore: getEngagementScore(post),
-      })),
+      ...stories.map(story => {
+        const eventInfo = story.event_id ? eventMap.get(story.event_id) : undefined;
+        return {
+          id: story.id,
+          type: 'story' as const,
+          title: story.caption || story.content.slice(0, 70),
+          content: story.content,
+          media_url: story.media_url,
+          media_type: story.media_type || 'image',
+          user_id: story.user_id,
+          user_name: story.user_name || 'Anonymous',
+          user_image: story.user_image,
+          created_at: story.created_at,
+          likes_count: story.likes_count || 0,
+          comments_count: story.comments_count || 0,
+          views_count: 0,
+          event_id: story.event_id,
+          event_title: eventInfo?.title,
+          engagementScore: getEngagementScore(story),
+        };
+      }),
+      ...forumPosts.map(post => {
+        const eventInfo = post.event_id ? eventMap.get(post.event_id) : undefined;
+        return {
+          id: post.id,
+          type: 'forum' as const,
+          title: post.title || post.content.slice(0, 70),
+          content: post.content,
+          media_url: post.media_url,
+          media_type: 'image',
+          user_id: post.user_id,
+          user_name: post.user?.username || post.user?.name || post.user_name || 'Anonymous',
+          user_image: post.user?.avatar_url || post.user_image,
+          created_at: post.created_at,
+          likes_count: post.likes_count || 0,
+          comments_count: post.comments_count || 0,
+          views_count: post.views_count || 0,
+          event_id: post.event_id,
+          event_title: eventInfo?.title,
+          engagementScore: getEngagementScore(post),
+        };
+      }),
     ];
 
     return content;
-  }, [stories, forumPosts]);
+  }, [stories, forumPosts, events]);
 
   // Group content by event
   const eventGroups = useMemo(() => {
