@@ -1,7 +1,8 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, Share2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Heart, Share2, MapPin } from 'lucide-react';
 import { formatDistance } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -21,6 +22,7 @@ export interface SpotlightContent {
   comments_count: number;
   views_count?: number;
   event_id?: number | null;
+  event_title?: string;
   engagementScore?: number;
 }
 
@@ -135,18 +137,15 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </button>
         </div>
 
-        {/* Bottom: Caption + Actions (no comments) */}
+        {/* Bottom: Title + Actions (no captions) */}
         <div className="flex items-end justify-between gap-4">
-          {/* Caption area (bottom-left) */}
+          {/* Title area (bottom-left) */}
           <div className="min-w-0">
             {content.title && (
               <h3 className="text-lg md:text-2xl font-bold text-white leading-tight line-clamp-2">
                 {content.title}
               </h3>
             )}
-            <p className="mt-2 text-sm md:text-base text-white/85 leading-relaxed line-clamp-3 whitespace-pre-wrap">
-              {content.content}
-            </p>
         </div>
 
           {/* Action rail (bottom-right, reels-like) */}

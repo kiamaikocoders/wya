@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { useMutation } from '@tanstack/react-query';
 
 const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -134,7 +134,8 @@ const Profile: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['userPosts', user?.id] });
   };
   
-  if (profileLoading) {
+  // Show loading while auth is loading
+  if (loading || profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
@@ -142,11 +143,22 @@ const Profile: React.FC = () => {
     );
   }
   
-  if (!user || !profile) {
+  // Check authentication first
+  if (!isAuthenticated || !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6">
         <h1 className="mb-4 text-xl font-bold text-white">Not Logged In</h1>
         <p className="mb-6 text-kenya-brown-light">Please log in to view your profile.</p>
+      </div>
+    );
+  }
+  
+  // Then check profile (with better error handling)
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-6">
+        <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
+        <p className="mt-4 text-kenya-brown-light">Loading profile...</p>
       </div>
     );
   }
