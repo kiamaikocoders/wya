@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +44,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     title: '',
     description: '',
     category: '',
+    category_id: null as number | null,
     date: '',
     time: '',
     location: '',
@@ -64,14 +65,14 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<Category[]> => {
+      const { data, error } = await (supabase as any)
         .from('categories')
         .select('*')
         .order('order_index', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Category[];
     },
   });
 
