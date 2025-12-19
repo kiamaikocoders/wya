@@ -238,6 +238,19 @@ const RequestEvent: React.FC = () => {
       if (error) {
         throw error;
       }
+      // Send notification to user about proposal submission
+      if (data && authUser) {
+        try {
+          await proposalNotifications.notifyProposalSubmitted(
+            authUser.id,
+            proposal.title,
+            data.id
+          );
+        } catch (notifError) {
+          console.warn('Failed to send proposal submission notification:', notifError);
+        }
+      }
+
       toast.success('Proposal sent! We’ll review and follow up shortly.');
       navigate(isAuthenticated ? '/home' : '/');
     } catch (error) {
