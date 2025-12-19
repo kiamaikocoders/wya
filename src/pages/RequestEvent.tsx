@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, Calendar, CheckCircle, ChevronLeft, ChevronRight, Rocket } from 'lucide-react';
+import { Loader2, Calendar, CheckCircle, ChevronLeft, ChevronRight, Rocket, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import Section from '@/components/ui/Section';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { proposalNotifications } from '@/lib/proposal-notifications';
 
 interface EventProposal {
   title: string;
@@ -31,6 +33,7 @@ interface EventProposal {
   contactEmail: string;
   contactPhone: string;
   additionalInfo: string;
+  imageUrl?: string;
 }
 
 const steps = [
@@ -98,6 +101,71 @@ const RequestEvent: React.FC = () => {
     setProposal((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      // Get current user for user-specific folder
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error('You must be logged in to upload images');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const bucket = 'event-images';
+      const folder = `proposals/${authUser.id}`; // Use user-specific folder
+      const filePath = `${folder}/${fileName}`;
+
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 10MB');
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      setProposal((prev) => ({ ...prev, imageUrl: data.publicUrl }));
+      setPreviewUrl(data.publicUrl);
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Create preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+
+    // Upload file
+    handleImageUpload(file);
+  };
+
+  const removeImage = () => {
+    setProposal((prev) => ({ ...prev, imageUrl: '' }));
+    setPreviewUrl(null);
+  };
+
   const goToStep = (step: number) => {
     if (step < 0 || step > steps.length - 1) return;
     setCurrentStep(step);
@@ -139,7 +207,37 @@ const RequestEvent: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+      // Get current authenticated user from Supabase (required for RLS)
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        throw new Error('You must be logged in to submit a proposal.');
+      }
+
+      // Insert proposal into database
+      const { data, error } = await supabase
+        .from('proposals')
+        .insert({
+          title: proposal.title,
+          description: proposal.description,
+          category: proposal.category,
+          estimated_date: proposal.estimatedDate || null,
+          location: proposal.location || null,
+          expected_attendees: proposal.expectedAttendees ? parseInt(proposal.expectedAttendees, 10) : null,
+          budget: proposal.budget || null,
+          sponsor_needs: proposal.sponsorNeeds || null,
+          image_url: proposal.imageUrl || null,
+          contact_email: proposal.contactEmail || null,
+          contact_phone: proposal.contactPhone || null,
+          submitted_by: authUser.id, // Use auth.uid() directly for RLS compliance
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
       toast.success('Proposal sent! We’ll review and follow up shortly.');
       navigate(isAuthenticated ? '/home' : '/');
     } catch (error) {
@@ -309,6 +407,62 @@ const RequestEvent: React.FC = () => {
               rows={5}
               required
             />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white">
+              Event Image (Optional)
+            </label>
+            {previewUrl ? (
+              <div className="relative">
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="w-full h-48 object-cover rounded-lg border border-white/10"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={isUploading}
+                />
+                <label
+                  htmlFor="image-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+                      <span className="text-sm text-white/60">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 text-kenya-orange" />
+                      <span className="text-sm text-white/60">
+                        Click to upload an image
+                      </span>
+                      <span className="text-xs text-white/40">
+                        PNG, JPG up to 10MB
+                      </span>
+                    </>
+                  )}
+                </label>
+              </div>
+            )}
           </div>
                 </div>
               )}
