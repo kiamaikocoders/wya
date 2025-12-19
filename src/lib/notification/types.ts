@@ -2,7 +2,7 @@
 export interface Notification {
   id: number;
   user_id: string;
-  type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'follow' | 'message';
+  type: 'event_update' | 'announcement' | 'ticket' | 'system' | 'follow' | 'message' | 'proposal_submitted' | 'proposal_approved' | 'proposal_rejected' | 'admin_action' | 'new_event' | 'event_created';
   title: string;
   message: string;
   read: boolean;
@@ -36,5 +36,7 @@ export interface NotificationSettings {
     announcements: boolean;
     system: boolean;
     reviews: boolean;
+    proposals: boolean;
+    new_events: boolean;
   };
 }

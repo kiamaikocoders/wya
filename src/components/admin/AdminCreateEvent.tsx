@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { adminService } from '@/lib/admin-service';
+import { notificationService } from '@/lib/notification/notification-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -303,10 +304,41 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
-      toast.success('Event created successfully');
+      
+      // Notify all users about new admin-created event
+      try {
+        const { data: allUsers } = await supabase
+          .from('profiles')
+          .select('id')
+          .limit(100); // Limit to avoid overwhelming
+        
+        if (allUsers && allUsers.length > 0) {
+          await Promise.all(
+            allUsers.map(userProfile =>
+              notificationService.createNotification({
+                user_id: userProfile.id,
+                type: 'new_event',
+                title: '🎉 New Event Posted!',
+                message: `"${data.title}" was just posted. Check it out!`,
+                resource_id: data.id,
+                resource_type: 'event',
+                link: `/events/${data.id}`,
+                data: {
+                  event_id: data.id,
+                  event_title: data.title,
+                }
+              })
+            )
+          );
+        }
+      } catch (notifError) {
+        console.warn('Failed to send event notifications:', notifError);
+      }
+      
+      toast.success('Event created successfully! Users will be notified.');
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
