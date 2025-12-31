@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import ContentCard, { SpotlightContent } from './ContentCard';
+import ContentCard, { SpotlightContent, EventMetadata } from './ContentCard';
 import { cn } from '@/lib/utils';
 
 interface EventContentCarouselProps {
   content: SpotlightContent[];
   eventTitle?: string;
+  eventMetadata?: EventMetadata;
   initialIndex?: number;
   onItemChange?: (index: number) => void;
   onItemClick?: (item: SpotlightContent) => void;
   onLike?: (id: string | number) => void;
   onShare?: (id: string | number) => void;
+  onEventClick?: (eventId: number) => void;
   autoPlay?: boolean;
   autoPlayInterval?: number;
 }
@@ -17,11 +19,13 @@ interface EventContentCarouselProps {
 const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
   content,
   eventTitle,
+  eventMetadata,
   initialIndex = 0,
   onItemChange,
   onItemClick,
   onLike,
   onShare,
+  onEventClick,
   autoPlay = false,
   autoPlayInterval = 5000,
 }) => {
@@ -115,6 +119,8 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
               onExpand={() => onItemClick?.(item)}
               onLike={onLike}
               onShare={onShare}
+              eventMetadata={eventMetadata}
+              onEventClick={onEventClick}
             />
           </div>
         ))}

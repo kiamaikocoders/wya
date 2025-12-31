@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 import FooterMinimal from "./FooterMinimal";
+import { cn } from "@/lib/utils";
 
 const Layout = () => {
   const location = useLocation();
@@ -41,11 +42,12 @@ const Layout = () => {
   const isAdminPage = location.pathname.startsWith("/admin");
   const isAuthPage = ["/login", "/signup", "/admin-login"].includes(location.pathname);
   const isLanding = location.pathname === "/";
+  const isSpotlightPage = location.pathname === "/spotlight";
 
   return (
     <div className="relative flex min-h-screen flex-col bg-kenya-dark">
       {!isAuthPage && <Navbar />}
-      <main className="flex-1 pb-20 md:pb-24">
+      <main className={cn("flex-1", !isSpotlightPage && "pb-20 md:pb-24")}>
         <Outlet />
       </main>
       {!isAuthPage && <BottomNav />}

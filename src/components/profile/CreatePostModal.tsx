@@ -37,8 +37,20 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
   const { data: events = [] } = useQuery({
-    queryKey: ['events'],
-    queryFn: eventService.getAllEvents,
+    queryKey: ['events', 'all-including-past'],
+    queryFn: () => eventService.queryEvents({
+      search: '',
+      category: null,
+      location: null,
+      tags: [],
+      featuredOnly: false,
+      startDate: null,
+      endDate: null,
+      page: 1,
+      pageSize: 200,
+      sort: 'latest',
+      includePast: true, // Allow past events for tagging
+    }).then(result => result.events),
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

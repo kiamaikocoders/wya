@@ -1,16 +1,21 @@
 import React from 'react';
 import SpotlightFeed from '@/components/spotlight/SpotlightFeed';
+import SpotlightHeader from '@/components/spotlight/SpotlightHeader';
 
 const SpotlightPage = () => {
   return (
     <div 
-      className="bg-kenya-dark overflow-y-auto"
+      className="relative bg-black overflow-y-auto"
       style={{
         scrollSnapType: 'y mandatory',
-        height: 'calc(100vh - 144px)', // Account for navbar (64px) + bottom nav (80px)
-        minHeight: 'calc(100vh - 144px)',
+        height: '100vh', // Full viewport - content bleeding (TikTok style)
+        minHeight: '100vh',
       }}
     >
+      {/* Transparent header overlay */}
+      <SpotlightHeader />
+      
+      {/* Content feed - full viewport height sections */}
       <SpotlightFeed />
     </div>
   );

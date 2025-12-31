@@ -533,9 +533,9 @@ const DashboardHome: React.FC = () => {
             >
               <div className="flex items-center gap-2 mb-2 w-full">
                 <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Review Proposals</span>
+                <span className="font-semibold whitespace-normal break-words">Review Proposals</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full">
+              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
                 Review and approve event proposals
               </p>
             </Button>

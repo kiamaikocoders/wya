@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Users, Link2, Share2, ImagePlus, Loader2, Heart, HeartOff, MessageSquare, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import { StoryModal } from '@/components/StoryModal';
 import EventSponsorsSection from '@/components/sponsors/EventSponsorsSection';
 import { toast } from 'sonner';
@@ -168,7 +168,7 @@ const EventDetails: React.FC = () => {
         {/* Event Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <div className="max-w-6xl mx-auto">
-            <Badge className="mb-3 bg-kenya-orange/90 text-white">{event.category}</Badge>
+            <Badge className="mb-3 bg-kenya-orange/90 text-white">{event.category || 'Uncategorized'}</Badge>
             <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
             <div className="flex flex-wrap items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
@@ -177,7 +177,16 @@ const EventDetails: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={16} />
-                <span>{format(new Date(event.date), 'h:mm a')}</span>
+                <span>
+                  {event.time 
+                    ? (() => {
+                        const [hours, minutes] = event.time.split(':');
+                        const date = new Date();
+                        date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
+                        return format(date, 'h:mm a');
+                      })()
+                    : format(new Date(event.date), 'h:mm a')}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin size={16} />
@@ -275,7 +284,16 @@ const EventDetails: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-kenya-brown-light">Time</span>
-                    <span>{format(new Date(event.date), 'h:mm a')}</span>
+                    <span>
+                      {event.time 
+                        ? (() => {
+                            const [hours, minutes] = event.time.split(':');
+                            const date = new Date();
+                            date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
+                            return format(date, 'h:mm a');
+                          })()
+                        : format(new Date(event.date), 'h:mm a')}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-kenya-brown-light">Venue</span>
