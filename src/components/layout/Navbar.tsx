@@ -42,6 +42,7 @@ const Navbar = () => {
 
   const homeHref = isAuthenticated ? '/home' : '/';
   const isOrganizer = isAdmin || user?.user_type === 'organizer';
+  const isSpotlightPage = location.pathname === '/spotlight';
 
   const handlePrimaryCta = () => {
     navigate('/ai-assistance');
@@ -79,30 +80,34 @@ const Navbar = () => {
             </div>
           )}
 
-          <Button
-            onClick={handlePrimaryCta}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-3 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_18px_rgba(255,128,0,0.3)] hover:shadow-[0_0_26px_rgba(255,128,0,0.45)] md:hidden"
-          >
-            <Brain className="h-4 w-4" />
-            <span>AI</span>
-          </Button>
+          {!isSpotlightPage && (
+            <>
+              <Button
+                onClick={handlePrimaryCta}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-3 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_18px_rgba(255,128,0,0.3)] hover:shadow-[0_0_26px_rgba(255,128,0,0.45)] md:hidden"
+              >
+                <Brain className="h-4 w-4" />
+                <span>AI</span>
+              </Button>
 
-          <div className="hidden items-center gap-2 md:flex">
-            {isAuthenticated && (
-              <>
-                <NotificationBell />
-                <ChatButton variant="ghost" />
-              </>
-            )}
-            <Button
-              onClick={handlePrimaryCta}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-4 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.35)] hover:shadow-[0_0_30px_rgba(255,128,0,0.45)]"
-            >
-              <Brain className="h-4 w-4" />
-              <span className="hidden lg:inline">AI Assistance</span>
-              <span className="lg:hidden">AI</span>
-            </Button>
-          </div>
+              <div className="hidden items-center gap-2 md:flex">
+                {isAuthenticated && (
+                  <>
+                    <NotificationBell />
+                    <ChatButton variant="ghost" />
+                  </>
+                )}
+                <Button
+                  onClick={handlePrimaryCta}
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-4 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.35)] hover:shadow-[0_0_30px_rgba(255,128,0,0.45)]"
+                >
+                  <Brain className="h-4 w-4" />
+                  <span className="hidden lg:inline">AI Assistance</span>
+                  <span className="lg:hidden">AI</span>
+                </Button>
+              </div>
+            </>
+          )}
 
           <ModeToggle />
 

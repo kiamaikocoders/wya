@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Heart, Share2, MapPin } from 'lucide-react';
-import { formatDistance } from 'date-fns';
+import { Heart, Share2, MapPin, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -26,6 +25,14 @@ export interface SpotlightContent {
   engagementScore?: number;
 }
 
+export interface EventMetadata {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+  totalContent?: number;
+}
+
 interface ContentCardProps {
   content: SpotlightContent;
   isHero: boolean;
@@ -36,6 +43,8 @@ interface ContentCardProps {
   onShare?: (id: string | number) => void;
   isLiked?: boolean;
   className?: string;
+  eventMetadata?: EventMetadata; // Event metadata for bottom-left overlay
+  onEventClick?: (eventId: number) => void; // Handler for event metadata click
 }
 
 const ContentCard: React.FC<ContentCardProps> = ({
@@ -48,10 +57,13 @@ const ContentCard: React.FC<ContentCardProps> = ({
   onShare,
   isLiked = false,
   className,
+  eventMetadata,
+  onEventClick,
 }) => {
   const isVideo = content.media_type === 'video';
   const navigate = useNavigate();
   const location = useLocation();
+  const [isEventExpanded, setIsEventExpanded] = useState(false);
 
   const displayName = (() => {
     const raw = (content.user_name || '').trim();
@@ -62,19 +74,25 @@ const ContentCard: React.FC<ContentCardProps> = ({
 
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
+  const handleEventClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (eventMetadata && eventMetadata.id !== 0 && onEventClick) {
+      onEventClick(eventMetadata.id);
+    }
+  };
+
   return (
     <div
       className={cn(
-        // Reels-style card: full-height, minimal blank space, rounded
-        'relative flex flex-col overflow-hidden rounded-3xl bg-black border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.55)]',
-        // Fill available vertical space (the parent section is full-height)
-        'h-[calc(100vh-220px)] md:h-[calc(100vh-180px)]',
+        // TikTok-style: Full viewport height, rounded corners, no border on mobile
+        'relative flex flex-col overflow-hidden rounded-none md:rounded-3xl bg-black',
+        'h-screen md:h-[calc(100vh-180px)]',
         'cursor-pointer',
         className
       )}
       onClick={onClick}
     >
-      {/* Media */}
+      {/* Media - Full bleed */}
       {content.media_url ? (
         <div className="absolute inset-0">
           {isVideo ? (
@@ -94,62 +112,108 @@ const ContentCard: React.FC<ContentCardProps> = ({
               loading="lazy"
             />
           )}
-          {/* bottom gradient for legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+          {/* Enhanced scrim gradient for text legibility - TikTok style */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
         </div>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-kenya-dark via-black to-kenya-brown-dark" />
       )}
 
-      {/* Content Overlay */}
-      <div className="relative z-10 flex h-full flex-col justify-between p-4 md:p-6">
-        {/* Top: User info */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            className="relative z-20 pointer-events-auto flex items-center gap-3 text-left rounded-xl hover:bg-white/5 px-2 py-1 -ml-2 transition-colors cursor-pointer"
-            onMouseDown={(e) => {
-              // Prevent parent card handlers from treating this as a card click/drag.
-              e.stopPropagation();
-            }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/users/${content.user_id}`, { state: { returnTo } });
-            }}
-          >
-            <Avatar className="h-10 w-10 border-2 border-white/20">
+      {/* Content Overlay - TikTok style layout */}
+      <div className="relative z-10 flex h-full flex-col justify-between">
+        {/* Top area - Empty for now (user info moved to right sidebar) */}
+        <div className="flex-1" />
+
+        {/* Bottom area - Event metadata (left) + Interactions (right) */}
+        <div className="flex items-end justify-between p-4 md:p-6 pb-24 md:pb-6">
+          {/* Bottom-left: Event metadata overlay (tappable/expandable) */}
+          <div className="flex-1 min-w-0 pr-4">
+            {eventMetadata && eventMetadata.id !== 0 && (
+              <div
+                className={cn(
+                  'bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 p-3 cursor-pointer',
+                  'transition-all duration-200 hover:bg-black/50',
+                  isEventExpanded ? 'mb-2' : ''
+                )}
+                onClick={handleEventClick}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base md:text-lg font-bold text-white line-clamp-1">
+                      {eventMetadata.title}
+                    </h3>
+                    {!isEventExpanded && (
+                      <div className="flex items-center gap-3 mt-1 text-xs text-white/80">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{format(new Date(eventMetadata.date), 'MMM d, yyyy')}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{eventMetadata.location}</span>
+                        </div>
+                      </div>
+                    )}
+                    {isEventExpanded && (
+                      <div className="mt-2 space-y-1 text-xs text-white/80">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{format(new Date(eventMetadata.date), 'EEEE, MMMM d, yyyy')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3" />
+                          <span>{eventMetadata.location}</span>
+                        </div>
+                        {eventMetadata.totalContent !== undefined && (
+                          <div className="text-white/60">
+                            {eventMetadata.totalContent} {eventMetadata.totalContent === 1 ? 'story' : 'stories'}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEventExpanded(!isEventExpanded);
+                    }}
+                    className="ml-2 p-1 rounded-full hover:bg-white/10 transition-colors"
+                  >
+                    {isEventExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-white/80" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-white/80" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Username and caption */}
+            <div className="mt-2">
+              <p className="text-base md:text-lg font-bold text-white drop-shadow-lg">
+                @{displayName}
+              </p>
+              {content.content && (
+                <p className="text-sm md:text-base text-white/90 mt-1 line-clamp-2 drop-shadow-lg">
+                  {content.content}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right sidebar: Interactions (thumb zone) - TikTok style */}
+          <div className="flex flex-col items-center gap-4 shrink-0">
+            {/* Profile picture - no follow button (TikTok patent) */}
+            <Avatar className="h-14 w-14 border-2 border-white shadow-lg">
               <AvatarImage src={content.user_image || undefined} />
-              <AvatarFallback className="bg-kenya-orange/20 text-white text-xs">
+              <AvatarFallback className="bg-kenya-orange/20 text-white font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-semibold text-sm md:text-base">
-                {displayName}
-              </p>
-              <p className="text-xs text-white/70">
-                {formatDistance(new Date(content.created_at), new Date(), { addSuffix: true })}
-              </p>
-            </div>
-          </button>
-        </div>
 
-        {/* Bottom: Title + Actions (no captions) */}
-        <div className="flex items-end justify-between gap-4">
-          {/* Title area (bottom-left) */}
-          <div className="min-w-0">
-            {content.title && (
-              <h3 className="text-lg md:text-2xl font-bold text-white leading-tight line-clamp-2">
-                {content.title}
-              </h3>
-            )}
-        </div>
-
-          {/* Action rail (bottom-right, reels-like) */}
-          <div className="flex flex-col items-center gap-3">
+            {/* Like button */}
+            <div className="flex flex-col items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -158,19 +222,34 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   onLike?.(content.id);
                 }}
                 className={cn(
-                'h-12 w-12 rounded-full bg-white/10 hover:bg-white/20',
-                  isLiked && 'bg-kenya-orange/20'
+                  'h-14 w-14 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/70',
+                  'border-2 border-white/30 shadow-xl transition-all',
+                  isLiked && 'bg-kenya-orange/50 border-kenya-orange/50'
                 )}
               >
                 <Heart
                   className={cn(
-                  'h-6 w-6 transition-all',
-                    isLiked && 'fill-kenya-orange text-kenya-orange'
+                    'h-7 w-7 transition-all drop-shadow-lg',
+                    isLiked && 'fill-white text-white'
                   )}
                 />
               </Button>
-            <span className="text-xs font-semibold text-white/80">{content.likes_count}</span>
+              <span className="text-sm font-bold text-white drop-shadow-lg">
+                {(() => {
+                  const count = content.likes_count || 0;
+                  if (count >= 1000000) {
+                    return `${(count / 1000000).toFixed(1)}M`;
+                  } else if (count >= 1000) {
+                    return `${(count / 1000).toFixed(1)}K`;
+                  } else {
+                    return count.toString();
+                  }
+                })()}
+              </span>
+            </div>
 
+            {/* Share button */}
+            <div className="flex flex-col items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
@@ -178,11 +257,12 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   e.stopPropagation();
                   onShare?.(content.id);
                 }}
-              className="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20"
+                className="h-14 w-14 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/70 border-2 border-white/30 shadow-xl"
               >
-              <Share2 className="h-6 w-6" />
+                <Share2 className="h-7 w-7 text-white drop-shadow-lg" />
               </Button>
-            <span className="text-xs font-semibold text-white/80">Share</span>
+              <span className="text-sm font-bold text-white drop-shadow-lg">Share</span>
+            </div>
           </div>
         </div>
       </div>
@@ -191,4 +271,3 @@ const ContentCard: React.FC<ContentCardProps> = ({
 };
 
 export default ContentCard;
-

@@ -76,44 +76,58 @@ const PostsGrid: React.FC<PostsGridProps> = ({
   }
 
   return (
-    <div className={cn('grid grid-cols-3 gap-1 md:gap-2', className)}>
-      {filteredPosts.map((post) => (
-        <div
-          key={post.id}
-          className="group relative aspect-square cursor-pointer overflow-hidden bg-white/5"
-          onClick={() => onPostClick?.(post)}
-        >
-          {post.media_url ? (
-            <>
-              {post.media_type === 'video' ? (
-                <video
-                  src={post.media_url}
-                  className="h-full w-full object-cover"
-                  muted
-                />
-              ) : (
-                <img
-                  src={post.media_url}
-                  alt={post.content || 'Post'}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                />
-              )}
-              <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
-              {post.media_type === 'video' && (
-                <div className="absolute top-2 right-2">
-                  <Video className="h-4 w-4 text-white" />
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center p-4">
-              <p className="text-center text-sm text-white/70 line-clamp-3">
-                {post.content}
-              </p>
-            </div>
-          )}
+    <div>
+      <div className={cn('grid grid-cols-3 gap-1 md:gap-2', className)}>
+        {filteredPosts.map((post) => (
+          <div
+            key={post.id}
+            className="group relative aspect-square cursor-pointer overflow-hidden bg-white/5"
+            onClick={() => onPostClick?.(post)}
+          >
+            {post.media_url ? (
+              <>
+                {post.media_type === 'video' ? (
+                  <video
+                    src={post.media_url}
+                    className="h-full w-full object-cover"
+                    muted
+                  />
+                ) : (
+                  <img
+                    src={post.media_url}
+                    alt={post.content || 'Post'}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" />
+                {post.media_type === 'video' && (
+                  <div className="absolute top-2 right-2">
+                    <Video className="h-4 w-4 text-white" />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center p-4">
+                <p className="text-center text-sm text-white/70 line-clamp-3">
+                  {post.content}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {/* Add create post button after posts */}
+      {filteredPosts.length > 0 && !!emptyCtaLabel && !!onEmptyCtaClick && (
+        <div className="mt-6 flex justify-center">
+          <Button
+            onClick={onEmptyCtaClick}
+            className="rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {activeTab === 'spotlight' ? 'Create a spotlight post' : 'Create another post'}
+          </Button>
         </div>
-      ))}
+      )}
     </div>
   );
 };

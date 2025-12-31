@@ -1,8 +1,10 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storyService } from '@/lib/story/story-service';
 import { forumService } from '@/lib/forum-service';
 import { eventService } from '@/lib/event-service';
+import { notificationService } from '@/lib/notification';
+import { supabase } from '@/lib/supabase';
 import EventSpotlightSection, { EventSpotlightGroup } from './EventSpotlightSection';
 import { SpotlightContent } from './ContentCard';
 import { differenceInHours } from 'date-fns';
@@ -29,10 +31,12 @@ const getEngagementScore = (item: {
 };
 
 const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, onContentClick }) => {
+  const queryClient = useQueryClient();
+
   const { data: stories = [], isLoading: isLoadingStories } = useQuery({
     queryKey: ['allStories'],
     queryFn: () => storyService.getAllStories(),
-    staleTime: 1000 * 60,
+    staleTime: 0, // Always allow refetch to ensure like counts update immediately
   });
 
   const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
@@ -41,10 +45,26 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
     staleTime: 1000 * 60,
   });
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['allEvents'],
-    queryFn: () => eventService.getAllEvents(),
-    staleTime: 1000 * 60 * 5,
+  const { data: events = [], isLoading: isLoadingEvents } = useQuery({
+    queryKey: ['allEvents', 'spotlight-including-past'],
+    queryFn: async () => {
+      const result = await eventService.queryEvents({
+        search: '',
+        category: null,
+        location: null,
+        tags: [],
+        featuredOnly: false,
+        startDate: null,
+        endDate: null,
+        page: 1,
+        pageSize: 500, // Increase page size to ensure we get all events
+        sort: 'latest',
+        includePast: true, // Include past events for event title lookup
+      });
+      console.log('Fetched events for spotlight:', result.events.length, 'events');
+      return result.events;
+    },
+    staleTime: 0, // Always refetch to ensure we have latest data
   });
 
   // Track active section for scroll snapping
@@ -111,6 +131,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
     return content;
   }, [stories, forumPosts, events]);
+
 
   // Group content by event
   const eventGroups = useMemo(() => {
@@ -187,7 +208,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
         const eventId = eventIdOrUngrouped as number;
         let event = eventMap.get(eventId);
         
-        // If event not found, create a placeholder event
+        // If event not found, create placeholder (events may still be loading)
         if (!event) {
           // Try to get event info from the content itself (if available)
           const firstContent = content[0];
@@ -197,6 +218,10 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
             date: firstContent?.created_at || new Date().toISOString(),
             location: 'Location TBD',
           };
+          // Only log warning if events have finished loading
+          if (!isLoadingEvents) {
+            console.warn(`Event ${eventId} not found in eventMap after events loaded. Events count: ${events.length}`);
+          }
         }
 
         // Sort content by engagement score, then recency
@@ -225,7 +250,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
       });
 
     return groups;
-  }, [allContent, events]);
+  }, [allContent, events, isLoadingEvents]);
 
   // Intersection Observer for active section detection
   useEffect(() => {
@@ -255,9 +280,114 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
     };
   }, [eventGroups.length]);
 
-  const handleLike = (id: string | number) => {
-    // TODO: Implement like functionality
-    console.log('Like:', id);
+  const handleLike = async (id: string | number) => {
+    try {
+      // Find the content item to determine its type
+      const contentItem = allContent.find(item => item.id === id);
+      if (!contentItem) {
+        console.error('Content not found for like:', id);
+        return;
+      }
+
+      // Call appropriate like function based on content type
+      if (contentItem.type === 'story') {
+        // Check if already liked to determine if we're liking or unliking
+        const wasLiked = await storyService.hasUserLikedStory(Number(id));
+        
+        // storyService.likeStory is a toggle: returns true if liked, false if unliked
+        const success = await storyService.likeStory(Number(id));
+        
+        // Optimistically update the cache immediately
+        queryClient.setQueryData(['allStories'], (oldData: any) => {
+          if (!oldData) return oldData;
+          return oldData.map((story: any) => {
+            if (story.id === Number(id)) {
+              // If success is true, we just liked it (increment)
+              // If success is false, we just unliked it (decrement)
+              const newCount = success 
+                ? (story.likes_count || 0) + 1
+                : Math.max((story.likes_count || 0) - 1, 0);
+              return { ...story, likes_count: newCount };
+            }
+            return story;
+          });
+        });
+        
+        // Invalidate to refetch and sync with database
+        queryClient.invalidateQueries({ queryKey: ['allStories'], refetchType: 'active' });
+        
+        // Only send notification if it was a new like (success === true)
+        if (success) {
+          await sendLikeNotification(contentItem.user_id, 'story', Number(id), contentItem.title || contentItem.content.slice(0, 50));
+        }
+      } else if (contentItem.type === 'forum') {
+        // forumService.likePost only likes (returns false if already liked)
+        const success = await forumService.likePost(Number(id));
+        if (success) {
+          // Optimistically update the cache for forum posts
+          queryClient.setQueryData(['forumPosts'], (oldData: any) => {
+            if (!oldData) return oldData;
+            return oldData.map((post: any) => 
+              post.id === Number(id) 
+                ? { ...post, likes_count: (post.likes_count || 0) + 1 }
+                : post
+            );
+          });
+          
+          // Invalidate to refetch and ensure correct count
+          queryClient.invalidateQueries({ queryKey: ['forumPosts'], refetchType: 'active' });
+          
+          // Send notification to content creator
+          await sendLikeNotification(contentItem.user_id, 'forum_post', Number(id), contentItem.title || contentItem.content.slice(0, 50));
+        }
+      }
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  };
+
+  // Helper function to send like notification
+  const sendLikeNotification = async (
+    creatorUserId: string,
+    resourceType: string,
+    resourceId: number,
+    contentTitle: string
+  ) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.id === creatorUserId) {
+        // Don't send notification if user is liking their own content
+        return;
+      }
+
+      // Get liker's name
+      const { data: likerProfile } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', user.id)
+        .single();
+
+      const likerName = likerProfile?.full_name || likerProfile?.username || 'Someone';
+
+      // Use database function to create notification (bypasses RLS)
+      const { error } = await supabase.rpc('create_like_notification', {
+        p_user_id: creatorUserId,
+        p_type: 'system',
+        p_title: 'New Like',
+        p_message: `${likerName} liked your ${resourceType === 'story' ? 'story' : 'post'}: "${contentTitle.slice(0, 50)}${contentTitle.length > 50 ? '...' : ''}"`,
+        p_resource_type: resourceType,
+        p_resource_id: resourceId,
+        p_link: resourceType === 'story' ? `/stories/${resourceId}` : `/forum/${resourceId}`,
+        p_data: null,
+      });
+
+      if (error) {
+        console.error('Error sending like notification:', error);
+      }
+    } catch (error) {
+      console.error('Error sending like notification:', error);
+      // Don't fail the like operation if notification fails
+    }
   };
 
   const handleShare = (id: string | number) => {
@@ -325,20 +455,8 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
   return (
     <div className={className}>
-      {/* Header */}
-      <div className="container mx-auto px-4 py-6 md:py-8">
-        <div className="mb-6">
-          <p className="text-sm uppercase tracking-[0.35em] text-kenya-orange">WYA Spotlight</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white md:text-4xl">
-            Discover what's trending
-          </h1>
-          <p className="mt-2 text-sm text-white/70">
-            Browse events and explore their stories
-          </p>
-        </div>
-      </div>
-
-      {/* Event Sections with Scroll Snapping */}
+      {/* Header removed - using transparent header in SpotlightPage instead */}
+      {/* Event Sections with Scroll Snapping - TikTok style */}
       <div className="space-y-0">
         {eventGroups.map((eventGroup, index) => (
           <div

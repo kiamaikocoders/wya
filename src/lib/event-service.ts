@@ -122,10 +122,11 @@ export const eventService = {
       const nowIso = new Date().toISOString();
 
       if (!includePast) {
+        // If includePast is false, only show future events
         query = query.gte('date', nowIso);
-      } else if (!endDate) {
-        query = query.lte('date', nowIso);
       }
+      // If includePast is true, don't filter by date (get all events)
+      // Only apply date filters if explicitly provided via startDate/endDate
 
       if (startDate) {
         query = query.gte('date', startDate);

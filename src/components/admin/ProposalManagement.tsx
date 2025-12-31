@@ -104,7 +104,7 @@ const ProposalManagement: React.FC = () => {
           toast.success('Proposal rejected. User has been notified.');
         }
       } else {
-        toast.success('Proposal status updated');
+      toast.success('Proposal status updated');
       }
     },
     onError: (err) => {
@@ -600,7 +600,7 @@ const ProposalManagement: React.FC = () => {
                       className="text-lg font-bold mb-2"
                     />
                   ) : (
-                    <h3 className="text-lg font-bold">{viewProposal.title}</h3>
+                  <h3 className="text-lg font-bold">{viewProposal.title}</h3>
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     {isEditing ? (
@@ -610,7 +610,7 @@ const ProposalManagement: React.FC = () => {
                         className="w-auto"
                       />
                     ) : (
-                      <Badge className="capitalize">{viewProposal.category}</Badge>
+                    <Badge className="capitalize">{viewProposal.category}</Badge>
                     )}
                     {getStatusBadge(viewProposal.status)}
                   </div>
@@ -627,7 +627,7 @@ const ProposalManagement: React.FC = () => {
                       rows={5}
                     />
                   ) : (
-                    <p className="text-sm">{viewProposal.description}</p>
+                  <p className="text-sm">{viewProposal.description}</p>
                   )}
                 </div>
                 
@@ -640,7 +640,7 @@ const ProposalManagement: React.FC = () => {
                         onChange={(e) => setEditedProposal({ ...editedProposal, location: e.target.value })}
                       />
                     ) : (
-                      <p className="text-sm">{viewProposal.location || 'N/A'}</p>
+                    <p className="text-sm">{viewProposal.location || 'N/A'}</p>
                     )}
                   </div>
                   
@@ -653,7 +653,7 @@ const ProposalManagement: React.FC = () => {
                         onChange={(e) => setEditedProposal({ ...editedProposal, estimatedDate: e.target.value })}
                       />
                     ) : (
-                      <p className="text-sm">{viewProposal.estimatedDate || 'N/A'}</p>
+                    <p className="text-sm">{viewProposal.estimatedDate || 'N/A'}</p>
                     )}
                   </div>
                   
@@ -666,7 +666,7 @@ const ProposalManagement: React.FC = () => {
                         onChange={(e) => setEditedProposal({ ...editedProposal, expectedAttendees: parseInt(e.target.value) || null })}
                       />
                     ) : (
-                      <p className="text-sm">{viewProposal.expectedAttendees?.toLocaleString() || 'N/A'}</p>
+                    <p className="text-sm">{viewProposal.expectedAttendees?.toLocaleString() || 'N/A'}</p>
                     )}
                   </div>
                   
@@ -678,7 +678,7 @@ const ProposalManagement: React.FC = () => {
                         onChange={(e) => setEditedProposal({ ...editedProposal, budget: e.target.value })}
                       />
                     ) : (
-                      <p className="text-sm">{viewProposal.budget || 'N/A'}</p>
+                    <p className="text-sm">{viewProposal.budget || 'N/A'}</p>
                     )}
                   </div>
                   
@@ -707,7 +707,7 @@ const ProposalManagement: React.FC = () => {
                     rows={3}
                   />
                 ) : (
-                  <p className="text-sm">{viewProposal.sponsorNeeds || "None specified"}</p>
+                <p className="text-sm">{viewProposal.sponsorNeeds || "None specified"}</p>
                 )}
               </div>
               

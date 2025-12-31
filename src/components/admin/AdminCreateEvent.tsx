@@ -367,10 +367,18 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
     setIsSubmitting(true);
     
+    // Get category name from category_id
+    let categoryName = formData.category;
+    if (formData.category_id && !categoryName) {
+      const selectedCategory = categoriesData.find(c => c.id === formData.category_id);
+      categoryName = selectedCategory?.name || '';
+    }
+    
     const eventData = {
       ...formData,
+      category: categoryName, // Ensure category name is set
       date: new Date(formData.date).toISOString(),
-      time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
+      time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
     };
     
     createEventMutation.mutate(eventData);

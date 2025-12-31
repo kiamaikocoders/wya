@@ -70,10 +70,22 @@ const Profile: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  // Get events from tickets
+  // Get events from tickets (including past events for event title lookup)
   const { data: allEvents = [] } = useQuery({
-    queryKey: ['allEvents'],
-    queryFn: () => eventService.getAllEvents(),
+    queryKey: ['allEvents', 'including-past'],
+    queryFn: () => eventService.queryEvents({
+      search: '',
+      category: null,
+      location: null,
+      tags: [],
+      featuredOnly: false,
+      startDate: null,
+      endDate: null,
+      page: 1,
+      pageSize: 500,
+      sort: 'latest',
+      includePast: true, // Include past events to resolve event titles for posts
+    }).then(result => result.events),
     staleTime: 1000 * 60 * 5,
   });
 

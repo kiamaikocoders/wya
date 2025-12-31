@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Sparkles, Calendar, Rocket, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,9 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const isSpotlightPage = location.pathname === '/spotlight';
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   
   const homePath = isAuthenticated ? '/home' : '/';
 
@@ -30,9 +33,41 @@ const BottomNav = () => {
     }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
+
+  // Hide/show nav on scroll for Spotlight page (TikTok style)
+  useEffect(() => {
+    if (!isSpotlightPage) {
+      setIsVisible(true);
+      return;
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show nav when scrolling up or at top, hide when scrolling down
+      if (currentScrollY < lastScrollY || currentScrollY < 10) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isSpotlightPage, lastScrollY]);
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[9999] border-t border-white/10 bg-gradient-to-t from-kenya-dark via-kenya-dark to-kenya-dark/95 backdrop-blur-lg shadow-2xl safe-area-bottom">
+    <nav 
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom transition-transform duration-300',
+        isSpotlightPage 
+          ? 'border-t border-white/20 bg-black/60 backdrop-blur-xl shadow-2xl' // Glassmorphism for Spotlight
+          : 'border-t border-white/10 bg-gradient-to-t from-kenya-dark via-kenya-dark to-kenya-dark/95 backdrop-blur-lg shadow-2xl', // Original style for other pages
+        !isVisible && isSpotlightPage && 'translate-y-full' // Hide when scrolling down
+      )}
+    >
       <div className="container mx-auto">
         {/* Mobile: Horizontal scrollable nav */}
         <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory md:justify-center md:overflow-x-visible">
