@@ -10,14 +10,22 @@ export const followNotifications = {
       const followingUuid = followingId.toString();
       const currentUserUuid = currentUserId.toString();
 
-      // Get follower's profile info for notification
+      // Get follower's profile info for notification (person doing the following)
       const { data: followerProfile } = await supabase
         .from('profiles')
         .select('full_name, username')
         .eq('id', currentUserUuid)
         .single();
 
+      // Get followed user's profile info for toast message (person being followed)
+      const { data: followedProfile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', followingUuid)
+        .single();
+
       const followerName = followerProfile?.full_name || followerProfile?.username || 'Someone';
+      const followedName = followedProfile?.full_name || followedProfile?.username || 'this user';
       const followerIdentifier = followerProfile?.username || currentUserUuid;
 
       // Send notification to the followed user
@@ -38,10 +46,10 @@ export const followNotifications = {
       const success = await notificationService.createNotification(notificationData);
       if (success) {
         console.log('Follow notification sent successfully');
-        toast.success(`You are now following ${followerName}`);
+        toast.success(`You are now following ${followedName}`);
       } else {
         console.error('Failed to send follow notification');
-        toast.success(`You are now following ${followerName}`);
+        toast.success(`You are now following ${followedName}`);
       }
     } catch (notifError) {
       console.error('Error sending follow notification:', notifError);

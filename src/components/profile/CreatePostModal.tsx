@@ -36,6 +36,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
+  const [eventSearchQuery, setEventSearchQuery] = useState('');
+
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'all-including-past'],
     queryFn: () => eventService.queryEvents({
@@ -47,10 +49,18 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       startDate: null,
       endDate: null,
       page: 1,
-      pageSize: 200,
+      pageSize: 500,
       sort: 'latest',
       includePast: true, // Allow past events for tagging
     }).then(result => result.events),
+  });
+
+  // Filter events based on search query
+  const filteredEvents = events.filter(event => {
+    if (!eventSearchQuery.trim()) return true;
+    const query = eventSearchQuery.toLowerCase();
+    return event.title.toLowerCase().includes(query) || 
+           event.location?.toLowerCase().includes(query);
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,18 +237,34 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   </Button>
                 </div>
               ) : (
-                <select
-                  value=""
-                  onChange={(e) => setSelectedEventId(Number(e.target.value) || null)}
-                  className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white"
-                >
-                  <option value="">Select an event...</option>
-                  {events.map((event) => (
-                    <option key={event.id} value={event.id}>
-                      {event.title} - {new Date(event.date).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Search events..."
+                    value={eventSearchQuery}
+                    onChange={(e) => setEventSearchQuery(e.target.value)}
+                    className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-kenya-orange/50"
+                  />
+                  <select
+                    value=""
+                    onChange={(e) => setSelectedEventId(Number(e.target.value) || null)}
+                    className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white max-h-48 overflow-y-auto"
+                  >
+                    <option value="">Select an event...</option>
+                    {filteredEvents.map((event) => {
+                      const eventDate = new Date(event.date);
+                      const formattedDate = `${String(eventDate.getMonth() + 1).padStart(2, '0')}/${eventDate.getFullYear()}`;
+                      return (
+                        <option key={event.id} value={event.id}>
+                          {event.title} - {formattedDate}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {eventSearchQuery && filteredEvents.length === 0 && (
+                    <p className="text-sm text-white/50">No events found</p>
+                  )}
+                </div>
               )}
             </div>
           </div>

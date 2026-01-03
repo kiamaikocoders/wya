@@ -127,6 +127,13 @@ const FriendActivitiesCarousel: React.FC = () => {
                         src={activity.media_url}
                         className="w-full h-full object-cover"
                         muted
+                        preload="metadata"
+                        onLoadedMetadata={(e) => {
+                          const video = e.currentTarget;
+                          if (video.duration) {
+                            video.currentTime = Math.min(0.5, video.duration * 0.1);
+                          }
+                        }}
                       />
                     ) : (
                       <img

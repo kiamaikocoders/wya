@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Heart, Share2, MapPin, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, Share2, MapPin, Calendar, ChevronDown, ChevronUp, Volume2, VolumeX } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -64,6 +64,20 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isEventExpanded, setIsEventExpanded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // TikTok-style: muted by default
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Sync muted state with video element
+  useEffect(() => {
+    if (videoRef.current && isVideo) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted, isVideo]);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(!isMuted);
+  };
 
   const displayName = (() => {
     const raw = (content.user_name || '').trim();
@@ -97,12 +111,14 @@ const ContentCard: React.FC<ContentCardProps> = ({
         <div className="absolute inset-0">
           {isVideo ? (
             <video
+              ref={videoRef}
               src={content.media_url}
               className="h-full w-full object-cover"
               loop
-              muted
+              muted={isMuted}
               playsInline
               autoPlay={true}
+              preload="metadata"
             />
           ) : (
             <img
@@ -211,6 +227,27 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 {displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
+
+            {/* Mute/Unmute button (only for videos) */}
+            {isVideo && (
+              <div className="flex flex-col items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMute}
+                  className={cn(
+                    'h-14 w-14 rounded-full bg-black/50 backdrop-blur-md hover:bg-black/70',
+                    'border-2 border-white/30 shadow-xl transition-all'
+                  )}
+                >
+                  {isMuted ? (
+                    <VolumeX className="h-7 w-7 text-white drop-shadow-lg" />
+                  ) : (
+                    <Volume2 className="h-7 w-7 text-white drop-shadow-lg" />
+                  )}
+                </Button>
+              </div>
+            )}
 
             {/* Like button */}
             <div className="flex flex-col items-center gap-1">
