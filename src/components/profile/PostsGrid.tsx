@@ -91,6 +91,14 @@ const PostsGrid: React.FC<PostsGridProps> = ({
                     src={post.media_url}
                     className="h-full w-full object-cover"
                     muted
+                    preload="metadata"
+                    onLoadedMetadata={(e) => {
+                      // Set currentTime to 0.1s to show a frame instead of black
+                      const video = e.currentTarget;
+                      if (video.duration) {
+                        video.currentTime = Math.min(0.5, video.duration * 0.1);
+                      }
+                    }}
                   />
                 ) : (
                   <img

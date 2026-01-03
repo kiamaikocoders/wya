@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,9 +6,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { adminService, AdminEvent } from '@/lib/admin-service';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+
+interface Category {
+  id: number;
+  name: string;
+  parent_id: number | null;
+  icon: string | null;
+  order_index: number;
+}
 
 const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
@@ -29,6 +40,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     title: event.title || '',
     description: event.description || '',
     category: event.category || '',
+    category_id: null as number | null,
+    category_ids: [] as number[], // Multiple categories
     date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
     time: event.time || '',
     location: event.location || '',
@@ -44,11 +57,100 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
 
+  // Fetch categories from database
+  const { data: categoriesData = [] } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: async (): Promise<Category[]> => {
+      const { data, error } = await (supabase as any)
+        .from('categories')
+        .select('*')
+        .order('order_index', { ascending: true });
+      
+      if (error) throw error;
+      return (data || []) as Category[];
+    },
+  });
+
+  // Organize categories hierarchically
+  const organizedCategories = useMemo(() => {
+    const parents = categoriesData.filter(c => c.parent_id === null);
+    return parents.map(parent => ({
+      ...parent,
+      subcategories: categoriesData
+        .filter(c => c.parent_id === parent.id)
+        .sort((a, b) => a.order_index - b.order_index)
+    }));
+  }, [categoriesData]);
+
+  // Fetch existing event categories from junction table
+  const { data: existingEventCategories = [] } = useQuery({
+    queryKey: ['event-categories', event.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('event_categories')
+        .select('category_id')
+        .eq('event_id', event.id);
+      
+      if (error) {
+        console.error('Error fetching event categories:', error);
+        return [];
+      }
+      return (data || []).map((ec: any) => ec.category_id) as number[];
+    },
+    enabled: !!event.id,
+  });
+
+  // Initialize category_ids from existing event categories
+  useEffect(() => {
+    if (existingEventCategories.length > 0 && formData.category_ids.length === 0) {
+      setFormData(prev => ({
+        ...prev,
+        category_ids: existingEventCategories,
+        category_id: existingEventCategories[0] || null,
+      }));
+    } else if (event.category_id && formData.category_ids.length === 0) {
+      // Fallback: use category_id from event if junction table is empty
+      setFormData(prev => ({
+        ...prev,
+        category_ids: event.category_id ? [event.category_id] : [],
+        category_id: event.category_id || null,
+      }));
+    }
+  }, [existingEventCategories, event.category_id]);
+
   useEffect(() => {
     if (event.image_url) {
       setPreviewUrl(event.image_url);
     }
   }, [event]);
+
+  // Get selected category names for display
+  const selectedCategoryNames = useMemo(() => {
+    if (formData.category_ids.length === 0) return [];
+    return formData.category_ids
+      .map(id => categoriesData.find(c => c.id === id)?.name)
+      .filter(Boolean) as string[];
+  }, [formData.category_ids, categoriesData]);
+
+  // Toggle category selection
+  const toggleCategory = (categoryId: number) => {
+    setFormData(prev => {
+      const categoryIds = prev.category_ids.includes(categoryId)
+        ? prev.category_ids.filter(id => id !== categoryId)
+        : [...prev.category_ids, categoryId];
+      
+      // Also update category_id to first selected (for backward compatibility)
+      const category_id = categoryIds.length > 0 ? categoryIds[0] : null;
+      const selectedCategory = categoriesData.find(c => c.id === category_id);
+      
+      return {
+        ...prev,
+        category_ids: categoryIds,
+        category_id,
+        category: selectedCategory?.name || prev.category,
+      };
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -213,8 +315,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       return;
     }
     
-    if (!formData.category) {
-      toast.error('Please select a category');
+    if (formData.category_ids.length === 0) {
+      toast.error('Please select at least one category');
       return;
     }
     
@@ -274,22 +376,71 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => handleSelectChange('category', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="category">Categories *</Label>
+                {selectedCategoryNames.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedCategoryNames.map((name, idx) => {
+                      const categoryId = formData.category_ids[idx];
+                      return (
+                        <Badge key={categoryId} variant="secondary" className="flex items-center gap-1">
+                          {name}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(categoryId)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <Accordion type="multiple" className="w-full border rounded-lg">
+                  {organizedCategories.map((parentCategory) => (
+                    <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          {parentCategory.icon && <span>{parentCategory.icon}</span>}
+                          <span className="font-medium">{parentCategory.name}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-2">
+                        <div className="space-y-2">
+                          {parentCategory.subcategories.map((subcategory) => (
+                            <div key={subcategory.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`category-${subcategory.id}`}
+                                checked={formData.category_ids.includes(subcategory.id)}
+                                onCheckedChange={() => toggleCategory(subcategory.id)}
+                              />
+                              <label
+                                htmlFor={`category-${subcategory.id}`}
+                                className="text-sm font-normal cursor-pointer flex-1"
+                              >
+                                {subcategory.name}
+                              </label>
+                            </div>
+                          ))}
+                          {/* Also allow selecting parent category directly */}
+                          <div className="flex items-center space-x-2 pt-1 border-t border-white/10">
+                            <Checkbox
+                              id={`category-${parentCategory.id}`}
+                              checked={formData.category_ids.includes(parentCategory.id)}
+                              onCheckedChange={() => toggleCategory(parentCategory.id)}
+                            />
+                            <label
+                              htmlFor={`category-${parentCategory.id}`}
+                              className="text-sm font-medium text-kenya-orange cursor-pointer flex-1"
+                            >
+                              All {parentCategory.name}
+                            </label>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
               
               <div className="space-y-2">

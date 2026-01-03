@@ -514,21 +514,21 @@ const DashboardHome: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Button
               variant="outline"
-              className="h-auto min-h-[100px] flex flex-col items-start justify-start p-4 hover:bg-accent"
+              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
               onClick={() => navigate('/admin/events')}
             >
               <div className="flex items-center gap-2 mb-2 w-full">
                 <Plus className="h-5 w-5 text-primary flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">Create Event</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full">
+              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
                 Create a new event for the platform
               </p>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto min-h-[100px] flex flex-col items-start justify-start p-4 hover:bg-accent"
+              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
               onClick={() => navigate('/admin/proposals')}
             >
               <div className="flex items-center gap-2 mb-2 w-full">
@@ -542,28 +542,28 @@ const DashboardHome: React.FC = () => {
 
             <Button
               variant="outline"
-              className="h-auto min-h-[100px] flex flex-col items-start justify-start p-4 hover:bg-accent"
+              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
               onClick={() => navigate('/admin/moderation')}
             >
               <div className="flex items-center gap-2 mb-2 w-full">
                 <MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">Content Review</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full">
+              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
                 Moderate user-generated content
               </p>
             </Button>
 
             <Button
               variant="outline"
-              className="h-auto min-h-[100px] flex flex-col items-start justify-start p-4 hover:bg-accent"
+              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
               onClick={() => navigate('/admin/analytics')}
             >
               <div className="flex items-center gap-2 mb-2 w-full">
                 <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">View Analytics</span>
               </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full">
+              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
                 View detailed analytics and insights
               </p>
             </Button>

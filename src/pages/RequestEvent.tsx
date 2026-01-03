@@ -60,6 +60,8 @@ const RequestEvent: React.FC = () => {
   const navigate = useNavigate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [proposal, setProposal] = useState<EventProposal>({
     title: '',

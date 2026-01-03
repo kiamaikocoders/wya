@@ -15,6 +15,7 @@ import { notificationService } from '@/lib/notification/notification-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
 
@@ -46,6 +47,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     description: '',
     category: '',
     category_id: null as number | null,
+    category_ids: [] as number[], // Multiple categories
     date: '',
     time: '',
     location: '',
@@ -246,8 +248,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please enter an event title');
           return false;
         }
-        if (!formData.category_id) {
-          toast.error('Please select a category');
+        if (formData.category_ids.length === 0) {
+          toast.error('Please select at least one category');
           return false;
         }
         if (!formData.location) {
@@ -367,16 +369,17 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
     setIsSubmitting(true);
     
-    // Get category name from category_id
+    // Get category name from first selected category_id
     let categoryName = formData.category;
-    if (formData.category_id && !categoryName) {
-      const selectedCategory = categoriesData.find(c => c.id === formData.category_id);
+    if (formData.category_ids.length > 0 && !categoryName) {
+      const firstCategoryId = formData.category_ids[0];
+      const selectedCategory = categoriesData.find(c => c.id === firstCategoryId);
       categoryName = selectedCategory?.name || '';
     }
     
     const eventData = {
       ...formData,
-      category: categoryName, // Ensure category name is set
+      category: categoryName, // Ensure category name is set (first category for backward compatibility)
       date: new Date(formData.date).toISOString(),
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
     };
@@ -404,55 +407,71 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Category *</Label>
-                {selectedCategoryName ? (
-                  <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
-                    <span className="text-sm font-medium">{selectedCategoryName}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, category_id: null }))}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                <Label htmlFor="category">Categories *</Label>
+                {selectedCategoryNames.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedCategoryNames.map((name, idx) => {
+                      const categoryId = formData.category_ids[idx];
+                      return (
+                        <Badge key={categoryId} variant="secondary" className="flex items-center gap-1">
+                          {name}
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(categoryId)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <Accordion type="single" collapsible className="w-full border rounded-lg">
-                    {organizedCategories.map((parentCategory) => (
-                      <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                          <div className="flex items-center gap-2">
-                            {parentCategory.icon && <span>{parentCategory.icon}</span>}
-                            <span className="font-medium">{parentCategory.name}</span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4 pb-2">
-                          <div className="space-y-1">
-                            {parentCategory.subcategories.map((subcategory) => (
-                              <Button
-                                key={subcategory.id}
-                                variant="ghost"
-                                className="w-full justify-start text-left font-normal"
-                                onClick={() => setFormData(prev => ({ ...prev, category_id: subcategory.id }))}
+                ) : null}
+                <Accordion type="multiple" className="w-full border rounded-lg">
+                  {organizedCategories.map((parentCategory) => (
+                    <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          {parentCategory.icon && <span>{parentCategory.icon}</span>}
+                          <span className="font-medium">{parentCategory.name}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-2">
+                        <div className="space-y-2">
+                          {parentCategory.subcategories.map((subcategory) => (
+                            <div key={subcategory.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`category-${subcategory.id}`}
+                                checked={formData.category_ids.includes(subcategory.id)}
+                                onCheckedChange={() => toggleCategory(subcategory.id)}
+                              />
+                              <label
+                                htmlFor={`category-${subcategory.id}`}
+                                className="text-sm font-normal cursor-pointer flex-1"
                               >
                                 {subcategory.name}
-                              </Button>
-                            ))}
-                            {/* Also allow selecting parent category directly */}
-                            <Button
-                              variant="ghost"
-                              className="w-full justify-start text-left font-normal text-kenya-orange"
-                              onClick={() => setFormData(prev => ({ ...prev, category_id: parentCategory.id }))}
+                              </label>
+                            </div>
+                          ))}
+                          {/* Also allow selecting parent category directly */}
+                          <div className="flex items-center space-x-2 pt-1 border-t border-white/10">
+                            <Checkbox
+                              id={`category-${parentCategory.id}`}
+                              checked={formData.category_ids.includes(parentCategory.id)}
+                              onCheckedChange={() => toggleCategory(parentCategory.id)}
+                            />
+                            <label
+                              htmlFor={`category-${parentCategory.id}`}
+                              className="text-sm font-medium text-kenya-orange cursor-pointer flex-1"
                             >
                               All {parentCategory.name}
-                            </Button>
+                            </label>
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
               
               <div className="space-y-2">
