@@ -18,9 +18,9 @@ const Logo: React.FC<LogoProps> = ({
   onClick 
 }) => {
   const sizeClasses = {
-    sm: 'h-8',
-    md: 'h-10',
-    lg: 'h-14',
+    sm: 'h-12',
+    md: 'h-20',
+    lg: 'h-24',
   };
 
   const taglineSizeClasses = {
@@ -42,7 +42,7 @@ const Logo: React.FC<LogoProps> = ({
       className={cn('flex flex-col items-start gap-1', className)}
       onClick={onClick}
     >
-      <div className="relative flex items-center min-w-[120px]">
+      <div className="relative flex items-center min-w-[150px]">
         {!imageError ? (
           /* Logo Image - Primary */
           <img
@@ -50,7 +50,7 @@ const Logo: React.FC<LogoProps> = ({
             alt="WYA - Where You At"
             className={cn(
               sizeClasses[size],
-              'w-auto min-w-[100px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
+              'w-auto min-w-[150px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
               'transition-transform hover:scale-105',
               'object-contain',
               'max-w-none',
@@ -59,7 +59,7 @@ const Logo: React.FC<LogoProps> = ({
               'relative'
             )}
             style={{ 
-              height: size === 'sm' ? '32px' : size === 'md' ? '40px' : '56px',
+              height: size === 'sm' ? '48px' : size === 'md' ? '72px' : '96px',
               width: 'auto',
               display: 'block',
               visibility: 'visible',

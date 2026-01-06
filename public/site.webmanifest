@@ -1,0 +1,24 @@
+{
+  "name": "WYA - Where You At",
+  "short_name": "WYA",
+  "description": "Discover and connect with events happening in Kenya",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#FF8000",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "start_url": "/"
+}
+
