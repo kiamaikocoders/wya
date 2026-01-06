@@ -58,9 +58,9 @@ const MarketingNavbar = () => {
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
         <Logo 
           href={isAuthenticated ? "/home" : "/"} 
-          size="md"
+          size="lg"
           showTagline={false}
-          className="flex-row items-center gap-2 min-w-[120px]"
+          className="flex-row items-center gap-2 min-w-[150px]"
         />
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-kenya-brown-light">
