@@ -46,7 +46,7 @@ const Logo: React.FC<LogoProps> = ({
         {!imageError ? (
           /* Logo Image - Primary */
           <img
-            src="/wyalogo.jpg"
+            src="/WYA LOGO 2.png"
             alt="WYA - Where You At"
             className={cn(
               sizeClasses[size],

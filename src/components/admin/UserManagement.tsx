@@ -52,6 +52,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -66,6 +73,8 @@ const UserManagement = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [viewingUser, setViewingUser] = useState<AdminUser | null>(null);
+  const [emailDebugInfo, setEmailDebugInfo] = useState<string | null>(null);
 
   // Fetch user stats
   const { data: userStats, isLoading: isLoadingStats } = useQuery({
@@ -237,6 +246,26 @@ const UserManagement = () => {
     }
   };
 
+  // Test email RPC on mount to help debug email issues
+  useEffect(() => {
+    const testEmailRPC = async () => {
+      try {
+        const result = await adminService.testEmailRPC();
+        if (!result.success) {
+          setEmailDebugInfo(`Email RPC Issue: ${result.message}`);
+          console.error('Email RPC Test Failed:', result);
+        } else {
+          setEmailDebugInfo(null);
+          console.log('Email RPC Test Passed:', result);
+        }
+      } catch (error) {
+        console.error('Error testing email RPC:', error);
+        setEmailDebugInfo('Error testing email RPC - check console');
+      }
+    };
+    testEmailRPC();
+  }, []);
+
   // Real-time updates for users
   useEffect(() => {
     const channel = supabase
@@ -315,6 +344,40 @@ const UserManagement = () => {
         </div>
       </div>
       
+      {/* Email Debug Info */}
+      {emailDebugInfo && (
+        <Card className="bg-orange-50 border-orange-200 dark:bg-orange-950 dark:border-orange-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <p className="font-semibold text-orange-800 dark:text-orange-200">Email Fetching Issue Detected</p>
+                <p className="text-orange-700 dark:text-orange-300 mt-1">{emailDebugInfo}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">
+                  Check browser console for detailed error logs. Emails should exist if users verified their email during signup.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const result = await adminService.testEmailRPC();
+                  if (result.success) {
+                    setEmailDebugInfo(null);
+                    toast.success('Email RPC is now working!');
+                    queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+                  } else {
+                    setEmailDebugInfo(`Email RPC Issue: ${result.message}`);
+                    toast.error(`Email RPC still failing: ${result.message}`);
+                  }
+                }}
+              >
+                Retry Test
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -621,7 +684,13 @@ const UserManagement = () => {
                     </Avatar>
                     <div>
                       <div>{user.name}</div>
-                            <div className="text-sm text-muted-foreground">{user.email || 'No email'}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {user.email ? (
+                                <span>{user.email}</span>
+                              ) : (
+                                <span className="italic text-orange-500">No email (check console for details)</span>
+                              )}
+                            </div>
                     </div>
                   </div>
                 </TableCell>
@@ -651,6 +720,9 @@ const UserManagement = () => {
                   </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setViewingUser(user)}>
+                              View Details
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleRoleChange(user.id, 'attendee')}>
                               Set as Attendee
                             </DropdownMenuItem>
@@ -708,6 +780,110 @@ const UserManagement = () => {
           </>
         )}
       </TabsContent>
+
+      {/* User Details Dialog */}
+      <Dialog open={!!viewingUser} onOpenChange={(open) => !open && setViewingUser(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>
+              Complete information about the selected user
+            </DialogDescription>
+          </DialogHeader>
+          {viewingUser && (
+            <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="flex items-start gap-4 pb-4 border-b">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={viewingUser.profile_picture} alt={viewingUser.name} />
+                  <AvatarFallback className="text-2xl">{viewingUser.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold">{viewingUser.name}</h3>
+                  {viewingUser.username && (
+                    <p className="text-muted-foreground">@{viewingUser.username}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Badge variant={viewingUser.role === 'organizer' ? 'outline' : viewingUser.role === 'admin' ? 'default' : 'secondary'}>
+                      {viewingUser.role}
+                    </Badge>
+                    <Badge variant={viewingUser.status === 'active' ? 'default' : 'destructive'}>
+                      {viewingUser.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-lg">Contact Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Email</p>
+                    <p className="font-medium">{viewingUser.email || <span className="text-muted-foreground italic">No email available</span>}</p>
+                  </div>
+                  {viewingUser.location && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Location</p>
+                      <p className="font-medium">{viewingUser.location}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bio */}
+              {viewingUser.bio && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-lg">Bio</h4>
+                  <p className="text-muted-foreground">{viewingUser.bio}</p>
+                </div>
+              )}
+
+              {/* Activity Statistics */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-lg">Activity Statistics</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Events Attended</p>
+                    <p className="text-2xl font-bold">{viewingUser.events_attended || 0}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Events Created</p>
+                    <p className="text-2xl font-bold">{viewingUser.events_created || 0}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Followers</p>
+                    <p className="text-2xl font-bold">{viewingUser.followers_count || 0}</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">Following</p>
+                    <p className="text-2xl font-bold">{viewingUser.following_count || 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-semibold text-lg">Account Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">User ID</p>
+                    <p className="font-mono text-xs break-all">{viewingUser.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Joined</p>
+                    <p className="font-medium">{new Date(viewingUser.created_at).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Tabs>
   );
 };

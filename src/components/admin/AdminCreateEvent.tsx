@@ -90,12 +90,43 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     }));
   }, [categoriesData]);
 
-  // Get selected category name for display
+  // Get selected category name for display (singular, for backward compatibility)
   const selectedCategoryName = useMemo(() => {
     if (!formData.category_id) return null;
     const category = categoriesData.find(c => c.id === formData.category_id);
     return category?.name || null;
   }, [formData.category_id, categoriesData]);
+
+  // Get selected category names for display (plural, for multiple categories)
+  const selectedCategoryNames = useMemo(() => {
+    if (!formData.category_ids || formData.category_ids.length === 0) return [];
+    return formData.category_ids
+      .map(id => {
+        const category = categoriesData.find(c => c.id === id);
+        return category?.name || null;
+      })
+      .filter((name): name is string => name !== null);
+  }, [formData.category_ids, categoriesData]);
+
+  // Toggle category selection
+  const toggleCategory = (categoryId: number) => {
+    setFormData(prev => {
+      const categoryIds = prev.category_ids.includes(categoryId)
+        ? prev.category_ids.filter(id => id !== categoryId)
+        : [...prev.category_ids, categoryId];
+      
+      // Also update category_id to first selected (for backward compatibility)
+      const category_id = categoryIds.length > 0 ? categoryIds[0] : null;
+      const selectedCategory = categoriesData.find(c => c.id === category_id);
+      
+      return {
+        ...prev,
+        category_ids: categoryIds,
+        category_id,
+        category: selectedCategory?.name || prev.category,
+      };
+    });
+  };
 
   // Fetch users for organizer selection
   const { data: usersData } = useQuery({
