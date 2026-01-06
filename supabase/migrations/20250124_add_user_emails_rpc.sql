@@ -18,8 +18,8 @@ BEGIN
   -- Return user IDs and emails from auth.users
   RETURN QUERY
   SELECT 
-    au.id,
-    au.email::TEXT
+    au.id AS id,
+    au.email::TEXT AS email
   FROM auth.users au
   WHERE au.id = ANY(user_ids);
 END;

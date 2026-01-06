@@ -63,7 +63,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
           <Link to={homeHref} className="flex items-center gap-2 text-white">
             <img
-              src="/wya logo.png"
+              src="/WYA LOGO 2.png"
               alt="WYA"
               className="h-8 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]"
             />

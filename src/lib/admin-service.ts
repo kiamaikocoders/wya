@@ -72,6 +72,55 @@ export const adminService = {
   // USER MANAGEMENT
   // ==========================================
   
+  // Test function to verify RPC and admin status
+  testEmailRPC: async (): Promise<{ success: boolean; message: string; data?: any }> => {
+    try {
+      // First, verify we're an admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, message: 'No authenticated user' };
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || profile.username !== 'admin') {
+        return { 
+          success: false, 
+          message: `Not an admin. Current username: ${profile?.username || 'not found'}` 
+        };
+      }
+
+      // Test RPC with a single user ID (the current admin)
+      const { data: testEmails, error: testError } = await supabase.rpc('get_user_emails', {
+        user_ids: [user.id]
+      });
+
+      if (testError) {
+        return {
+          success: false,
+          message: `RPC Error: ${testError.message}`,
+          data: testError
+        };
+      }
+
+      return {
+        success: true,
+        message: `RPC working! Found ${testEmails?.length || 0} email(s)`,
+        data: testEmails
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: `Exception: ${error?.message || error}`,
+        data: error
+      };
+    }
+  },
+  
   getUsers: async (options: {
     page?: number;
     pageSize?: number;
@@ -137,20 +186,40 @@ export const adminService = {
           });
           
           if (emailError) {
-            // Log error for debugging but don't throw - emails are optional
-            console.warn('Failed to fetch user emails via RPC:', emailError.message);
-            console.warn('Make sure the get_user_emails RPC function exists. Run migration: 20250124_add_user_emails_rpc.sql');
+            // Log error for debugging - this is important to see
+            console.error('Failed to fetch user emails via RPC:', {
+              error: emailError,
+              message: emailError.message,
+              details: emailError.details,
+              hint: emailError.hint,
+              userIdsCount: userIds.length
+            });
+            console.error('Make sure the get_user_emails RPC function exists. Run migration: 20250124_add_user_emails_rpc.sql');
+            // Don't throw - continue without emails but log the error clearly
           } else if (userEmails && Array.isArray(userEmails)) {
-            userEmails.forEach((u: { id: string; email: string }) => {
-              if (u.id && u.email) {
-                emailMap.set(u.id, u.email);
+            console.log(`Successfully fetched ${userEmails.length} emails for ${userIds.length} users`);
+            userEmails.forEach((u: { user_id?: string; id?: string; email: string | null }) => {
+              // Handle both old format (id) and new format (user_id)
+              const userId = u.user_id || u.id;
+              // Only add to map if email exists and is not null/empty
+              if (userId && u.email && u.email.trim() !== '') {
+                emailMap.set(userId, u.email);
+              } else {
+                console.warn(`User ${userId} has no email or empty email`);
               }
             });
+            console.log(`Email map contains ${emailMap.size} entries`);
+          } else {
+            console.warn('RPC returned unexpected data format:', userEmails);
           }
         } catch (error: any) {
           // Log but continue - emails are optional
-          console.warn('Error fetching user emails:', error?.message || error);
-          console.warn('To fix: Run migration 20250124_add_user_emails_rpc.sql to create the RPC function');
+          console.error('Exception fetching user emails:', {
+            error,
+            message: error?.message,
+            stack: error?.stack
+          });
+          console.error('To fix: Run migration 20250124_add_user_emails_rpc.sql to create the RPC function');
         }
       }
       
