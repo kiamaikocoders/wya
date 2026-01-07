@@ -332,8 +332,18 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
 
     setIsSubmitting(true);
     
+    // Get category ID from first selected category_id
+    let categoryId = formData.category_id;
+    if (formData.category_ids.length > 0) {
+      categoryId = formData.category_ids[0];
+    }
+    
+    // Remove category_ids from the data being sent to the events table
+    const { category_ids, ...eventDataWithoutCategoryIds } = formData;
+    
     const eventData = {
-      ...formData,
+      ...eventDataWithoutCategoryIds,
+      category_id: categoryId, // Set category_id to first selected category
       date: new Date(formData.date).toISOString(),
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
     };

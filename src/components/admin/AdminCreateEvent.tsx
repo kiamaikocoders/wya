@@ -400,17 +400,23 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
     setIsSubmitting(true);
     
-    // Get category name from first selected category_id
+    // Get category name and ID from first selected category_id
     let categoryName = formData.category;
-    if (formData.category_ids.length > 0 && !categoryName) {
+    let categoryId = formData.category_id;
+    if (formData.category_ids.length > 0) {
       const firstCategoryId = formData.category_ids[0];
       const selectedCategory = categoriesData.find(c => c.id === firstCategoryId);
-      categoryName = selectedCategory?.name || '';
+      categoryName = selectedCategory?.name || categoryName;
+      categoryId = firstCategoryId;
     }
     
+    // Remove category_ids and other fields that don't exist in the events table
+    const { category_ids, category_id, ...eventDataWithoutCategoryIds } = formData;
+    
     const eventData = {
-      ...formData,
+      ...eventDataWithoutCategoryIds,
       category: categoryName, // Ensure category name is set (first category for backward compatibility)
+      category_id: categoryId, // Set category_id to first selected category
       date: new Date(formData.date).toISOString(),
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
     };
