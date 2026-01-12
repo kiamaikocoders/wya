@@ -29,7 +29,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
 
   if (!events || events.length === 0) {
-    return <p className="text-center text-kenya-brown-light py-4">{emptyMessage}</p>;
+    return <p className="text-center text-text-white/70 py-4">{emptyMessage}</p>;
   }
 
   return (
@@ -83,8 +83,8 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
               key={index}
               className={`w-2 h-2 rounded-full transition-all ${
                 activeIndex === index 
-                  ? "bg-kenya-orange w-4" 
-                  : "bg-kenya-brown-light opacity-50"
+                  ? "bg-gradient-accent w-4" 
+                  : "bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-light opacity-50"
               }`}
               onClick={() => {
                 const carousel = document.querySelector('[role="region"][aria-roledescription="carousel"]');

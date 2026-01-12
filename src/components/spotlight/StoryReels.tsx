@@ -72,7 +72,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
 
   if (!stories || stories.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-kenya-dark">
+      <div className="flex items-center justify-center h-screen bg-gradient-promo">
         <p className="text-white text-lg">No stories available</p>
       </div>
     );
@@ -105,7 +105,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
                   />
                 )
               ) : (
-                <div className="w-full h-full bg-gradient-to-b from-kenya-orange/30 to-kenya-brown/30 flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-b from-gradient-orange-accent/30 to-gradient-purple-medium/30 flex items-center justify-center">
                   <p className="text-white text-2xl px-8 text-center italic">
                     "{currentStory.content}"
                   </p>
@@ -118,7 +118,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
               {/* User Info */}
               <div className="absolute top-8 left-4 right-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-kenya-brown rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                     {currentStory.user_image ? (
                       <img
                         src={currentStory.user_image}

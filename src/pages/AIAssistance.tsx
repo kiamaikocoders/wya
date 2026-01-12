@@ -40,10 +40,10 @@ const AIAssistance: React.FC = () => {
     <div className="container mx-auto px-4 py-8 animate-fade-in">
       <div className="flex flex-col items-center mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <Brain className="h-8 w-8 text-kenya-orange" />
+          <Brain className="h-8 w-8 text-gradient-orange-accent" />
           <h1 className="text-3xl font-bold text-white">AI Assistance Hub</h1>
         </div>
-        <p className="text-kenya-brown-light text-lg max-w-2xl text-center">
+        <p className="text-text-white/70 text-lg max-w-2xl text-center">
           Enhance your event experience with our suite of AI-powered tools
         </p>
       </div>
@@ -79,7 +79,7 @@ const AIAssistance: React.FC = () => {
         
         <TabsContent value="recommendations" className="space-y-6">
           <h2 className="text-xl font-semibold text-white">Personalized Event Recommendations</h2>
-          <p className="text-kenya-brown-light">
+          <p className="text-text-white/70">
             Our AI analyzes your interests and preferences to recommend events that match your taste.
           </p>
           
@@ -88,15 +88,15 @@ const AIAssistance: React.FC = () => {
           </div>
           
           {selectedCategory && (
-            <div className="mt-4 p-4 bg-kenya-brown/10 rounded-lg">
+            <div className="mt-4 p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-2 flex items-center gap-2">
-                <Badge className="bg-kenya-orange">{selectedCategory}</Badge>
+                <Badge className="bg-gradient-accent">{selectedCategory}</Badge>
                 <span>Events Selected</span>
               </h3>
-              <p className="text-kenya-brown-light">
+              <p className="text-text-white/70">
                 You've selected {selectedCategory} events. 
                 <span 
-                  className="text-kenya-orange ml-1 cursor-pointer hover:underline"
+                  className="text-gradient-orange-accent ml-1 cursor-pointer hover:underline"
                   onClick={() => navigate(`/events?category=${selectedCategory}`)}
                 >
                   Browse all {selectedCategory} events
@@ -108,7 +108,7 @@ const AIAssistance: React.FC = () => {
         
         <TabsContent value="content" className="space-y-6">
           <h2 className="text-xl font-semibold text-white">AI Content Generator</h2>
-          <p className="text-kenya-brown-light">
+          <p className="text-text-white/70">
             Let our AI help you generate engaging stories and descriptions for your events.
           </p>
           
@@ -117,16 +117,16 @@ const AIAssistance: React.FC = () => {
           </div>
           
           {generatedContent && (
-            <div className="mt-4 p-4 bg-kenya-brown/10 rounded-lg">
+            <div className="mt-4 p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-2">Generated Content</h3>
-              <p className="text-kenya-brown-light">{generatedContent}</p>
+              <p className="text-text-white/70">{generatedContent}</p>
             </div>
           )}
         </TabsContent>
         
         <TabsContent value="images" className="space-y-6">
           <h2 className="text-xl font-semibold text-white">AI Image Generator</h2>
-          <p className="text-kenya-brown-light">
+          <p className="text-text-white/70">
             Create unique images for your events with our AI image generator.
           </p>
           
@@ -135,7 +135,7 @@ const AIAssistance: React.FC = () => {
           </div>
           
           {generatedImage && (
-            <div className="mt-4 p-4 bg-kenya-brown/10 rounded-lg">
+            <div className="mt-4 p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-2">Generated Image</h3>
               <div className="aspect-video rounded-lg overflow-hidden">
                 <img src={generatedImage} alt="Generated event image" className="w-full h-full object-cover" />
@@ -146,7 +146,7 @@ const AIAssistance: React.FC = () => {
         
         <TabsContent value="categories" className="space-y-6">
           <h2 className="text-xl font-semibold text-white">Smart Event Categorization</h2>
-          <p className="text-kenya-brown-light">
+          <p className="text-text-white/70">
             Our AI can analyze your event description and suggest the most appropriate categories.
           </p>
           
@@ -158,16 +158,16 @@ const AIAssistance: React.FC = () => {
             />
           </div>
           
-          <div className="mt-4 p-4 bg-kenya-orange/10 border border-kenya-orange/30 rounded-lg">
+          <div className="mt-4 p-4 bg-gradient-accent/10 border border-kenya-orange/30 rounded-lg">
             <h3 className="text-lg font-medium text-white mb-2">Demo Content</h3>
             <p className="text-sm font-medium text-white">{sampleEventTitle}</p>
-            <p className="text-sm text-kenya-brown-light mt-2">{sampleEventDescription}</p>
+            <p className="text-sm text-text-white/70 mt-2">{sampleEventDescription}</p>
           </div>
         </TabsContent>
         
         <TabsContent value="assistant" className="space-y-6">
           <h2 className="text-xl font-semibold text-white">AI Event Planning Assistant</h2>
-          <p className="text-kenya-brown-light">
+          <p className="text-text-white/70">
             Get real-time help with planning and organizing your events.
           </p>
           

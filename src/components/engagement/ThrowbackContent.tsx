@@ -181,7 +181,7 @@ const ThrowbackContent: React.FC<ThrowbackContentProps> = ({ eventId, onSuccess 
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleFileChange}
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-kenya-brown file:text-white hover:file:bg-kenya-brown-dark"
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 file:text-white hover:file:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
                   />
                   {previewUrl && (
                     <div className="relative">

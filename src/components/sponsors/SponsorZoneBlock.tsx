@@ -115,8 +115,8 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
               />
             ) : (
               <div className="flex flex-col items-center justify-center h-full">
-                <Video size={48} className={getSponsorClasses(sponsor) || "text-kenya-brown-light"} />
-                <p className="text-kenya-brown-light text-sm">Video preview</p>
+                <Video size={48} className={getSponsorClasses(sponsor) || "text-text-white/70"} />
+                <p className="text-text-white/70 text-sm">Video preview</p>
               </div>
             )}
           </div>
@@ -159,7 +159,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
             )}
             {block.expires_at && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock size={16} className={getSponsorClasses(sponsor) || "text-kenya-orange"} />
+                <Clock size={16} className={getSponsorClasses(sponsor) || "text-gradient-orange-accent"} />
                 <span>{formatExpiration()}</span>
               </div>
             )}
@@ -188,7 +188,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
             )}
             {block.expires_at && (
               <div className="flex items-center gap-2 text-sm">
-                <Calendar size={16} className={getSponsorClasses(sponsor) || "text-kenya-orange"} />
+                <Calendar size={16} className={getSponsorClasses(sponsor) || "text-gradient-orange-accent"} />
                 <span>{formatExpiration()}</span>
               </div>
             )}
@@ -362,7 +362,7 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
 
   return (
     <Card 
-      className="w-full bg-black/20 border-kenya-brown/20"
+      className="w-full bg-black/20 border-white/20"
       style={{
         ...colorVars as React.CSSProperties,
         borderColor: sponsor?.brand_color ? `${sponsor.brand_color}20` : undefined

@@ -172,14 +172,14 @@ const AuthCallback = () => {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
           <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-kenya-orange/20 rounded-full flex items-center justify-center">
-              <Loader2 className="h-8 w-8 text-kenya-orange animate-spin" />
+            <div className="mx-auto mb-4 w-16 h-16 bg-gradient-accent/20 rounded-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-gradient-orange-accent animate-spin" />
             </div>
             <CardTitle className="text-2xl font-bold text-white">{getTitle()}</CardTitle>
-            <CardDescription className="text-kenya-brown-light">
+            <CardDescription className="text-text-white/70">
               Please wait while we verify your request...
             </CardDescription>
           </CardHeader>
@@ -190,21 +190,21 @@ const AuthCallback = () => {
 
   if (status === 'success') {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
             <CardTitle className="text-2xl font-bold text-white">{getSuccessTitle()}</CardTitle>
-            <CardDescription className="text-kenya-brown-light">
+            <CardDescription className="text-text-white/70">
               {message}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
-            <div className="p-4 bg-kenya-brown-dark/50 rounded-lg">
-              <p className="text-sm text-kenya-brown-light text-center">
+            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/50 rounded-lg">
+              <p className="text-sm text-text-white/70 text-center">
                 Redirecting you now...
               </p>
             </div>
@@ -215,21 +215,21 @@ const AuthCallback = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-      <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+      <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
             <XCircle className="h-8 w-8 text-red-500" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">Verification Failed</CardTitle>
-          <CardDescription className="text-kenya-brown-light">
+          <CardDescription className="text-text-white/70">
             {message}
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4">
-          <div className="p-4 bg-kenya-brown-dark/50 rounded-lg">
-            <p className="text-sm text-kenya-brown-light text-center">
+          <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/50 rounded-lg">
+            <p className="text-sm text-text-white/70 text-center">
               The verification link may have expired or is invalid. Please request a new one.
             </p>
           </div>
@@ -238,14 +238,14 @@ const AuthCallback = () => {
         <CardContent className="flex flex-col space-y-2">
           <Button
             onClick={() => navigate('/login')}
-            className="w-full bg-kenya-orange hover:bg-opacity-90"
+            className="w-full bg-gradient-accent hover:bg-opacity-90"
           >
             Go to Login
           </Button>
           <Button
             onClick={() => navigate('/forgot-password')}
             variant="outline"
-            className="w-full border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+            className="w-full border-gradient-purple-medium/30 text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
           >
             Request New Link
           </Button>

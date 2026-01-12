@@ -27,7 +27,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ stories, className }) => 
         <CarouselContent>
           {stories.map((story) => (
             <CarouselItem key={story.id} className="sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-              <Card className="overflow-hidden h-80 bg-kenya-brown bg-opacity-20 border-0">
+              <Card className="overflow-hidden h-80 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 bg-opacity-20 border-0">
                 <CardContent className="p-0 h-full flex flex-col">
                   {story.media_url ? (
                     <div className="h-2/3 overflow-hidden">
@@ -38,7 +38,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ stories, className }) => 
                       />
                     </div>
                   ) : (
-                    <div className="h-1/2 bg-gradient-to-b from-kenya-orange/30 to-kenya-brown/30 flex items-center justify-center">
+                    <div className="h-1/2 bg-gradient-to-b from-gradient-orange-accent/30 to-gradient-purple-medium/30 flex items-center justify-center">
                       <p className="text-white text-lg px-4 text-center italic">"{story.content.substring(0, 50)}{story.content.length > 50 ? '...' : ''}"</p>
                     </div>
                   )}
@@ -46,7 +46,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ stories, className }) => 
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 bg-kenya-brown rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                           {story.user_image ? (
                             <img 
                               src={story.user_image} 
@@ -59,7 +59,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ stories, className }) => 
                         </div>
                         <div>
                           <p className="text-white font-medium text-sm leading-tight">{story.user_name || 'Anonymous'}</p>
-                          <p className="text-kenya-brown-light text-xs">
+                          <p className="text-text-white/70 text-xs">
                             {formatDistance(new Date(story.created_at), new Date(), { addSuffix: true })}
                           </p>
                         </div>
@@ -70,7 +70,7 @@ const StoryCarousel: React.FC<StoryCarouselProps> = ({ stories, className }) => 
                       </p>
                     </div>
                     
-                    <div className="flex items-center justify-between text-kenya-brown-light text-xs mt-3">
+                    <div className="flex items-center justify-between text-text-white/70 text-xs mt-3">
                       <div className="flex items-center gap-1">
                         <Heart size={14} />
                         <span>{story.likes_count || 0}</span>

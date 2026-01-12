@@ -18,7 +18,7 @@ const LandingFAQ = ({ items }: LandingFAQProps) => {
       aria-labelledby="faq-heading"
     >
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
           Frequently asked questions
         </span>
         <h2
@@ -40,7 +40,7 @@ const LandingFAQ = ({ items }: LandingFAQProps) => {
               value={`item-${index}`}
               className="border-b border-white/10"
             >
-              <AccordionTrigger className="text-left text-base font-medium text-white hover:text-kenya-orange">
+              <AccordionTrigger className="text-left text-base font-medium text-white hover:text-gradient-orange-accent">
                 {item.question}
               </AccordionTrigger>
               <AccordionContent className="text-sm leading-relaxed text-white/70">

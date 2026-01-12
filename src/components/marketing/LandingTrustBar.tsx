@@ -14,7 +14,7 @@ const LandingTrustBar = ({ metrics }: LandingTrustBarProps) => {
             className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_0_20px_rgba(0,0,0,0.25)] transition-transform duration-300 hover:-translate-y-1"
           >
             <p className="text-4xl font-bold text-white">{metric.value}</p>
-            <p className="mt-2 text-sm uppercase tracking-wide text-kenya-brown-light">
+            <p className="mt-2 text-sm uppercase tracking-wide text-text-white/70">
               {metric.label}
             </p>
             <p className="mt-3 text-sm text-white/70">{metric.description}</p>

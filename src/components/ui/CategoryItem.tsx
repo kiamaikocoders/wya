@@ -12,7 +12,7 @@ type CategoryItemProps = {
 };
 
 const CategoryItem = ({ name, image, slug, icon, isActive, onClick }: CategoryItemProps) => {
-  const baseClassName = `flex h-full flex-1 flex-col gap-4 rounded-lg min-w-60 transition-transform hover:scale-[1.03] animate-fade-in ${isActive ? 'bg-kenya-orange/20 p-3' : ''}`;
+  const baseClassName = `flex h-full flex-1 flex-col gap-4 rounded-lg min-w-60 transition-transform hover:scale-[1.03] animate-fade-in ${isActive ? 'bg-gradient-accent/20 p-3' : ''}`;
   
   // Separate rendering based on component type
   if (onClick) {

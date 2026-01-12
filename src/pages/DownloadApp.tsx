@@ -63,11 +63,11 @@ const DownloadApp = () => {
 
           {/* Update Available Banner */}
           {hasUpdate && versionInfo && (
-            <Card className="mb-6 border-kenya-orange bg-kenya-orange/10">
+            <Card className="mb-6 border-kenya-orange bg-gradient-accent/10">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-kenya-orange" />
-                  <CardTitle className="text-kenya-orange">Update Available!</CardTitle>
+                  <AlertCircle className="h-5 w-5 text-gradient-orange-accent" />
+                  <CardTitle className="text-gradient-orange-accent">Update Available!</CardTitle>
                 </div>
                 <CardDescription className="text-white/80">
                   Version {versionInfo.version} is now available
@@ -76,7 +76,7 @@ const DownloadApp = () => {
               {versionInfo.releaseNotes && (
                 <CardContent>
                   <p className="text-sm text-white/70 mb-4">{versionInfo.releaseNotes}</p>
-                  <Button onClick={handleDownload} className="bg-kenya-orange hover:bg-kenya-orange/90">
+                  <Button onClick={handleDownload} className="bg-gradient-accent hover:bg-gradient-accent/90">
                     <Download className="mr-2 h-4 w-4" />
                     Download Update
                   </Button>
@@ -110,7 +110,7 @@ const DownloadApp = () => {
               {/* Download Button */}
               <Button
                 size="lg"
-                className="w-full bg-kenya-orange hover:bg-kenya-orange/90 text-white h-14 text-lg"
+                className="w-full bg-gradient-accent hover:bg-gradient-accent/90 text-white h-14 text-lg"
                 onClick={handleDownload}
               >
                 <Download className="mr-3 h-6 w-6" />
@@ -120,7 +120,7 @@ const DownloadApp = () => {
               {/* Features */}
               <div className="grid md:grid-cols-2 gap-4 pt-4">
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-kenya-orange mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-gradient-orange-accent mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Discover Events</p>
                     <p className="text-sm text-gray-600">
@@ -129,7 +129,7 @@ const DownloadApp = () => {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-kenya-orange mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-gradient-orange-accent mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Connect & Share</p>
                     <p className="text-sm text-gray-600">
@@ -138,7 +138,7 @@ const DownloadApp = () => {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-kenya-orange mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-gradient-orange-accent mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Get Notifications</p>
                     <p className="text-sm text-gray-600">
@@ -147,7 +147,7 @@ const DownloadApp = () => {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-kenya-orange mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-gradient-orange-accent mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold">Offline Access</p>
                     <p className="text-sm text-gray-600">

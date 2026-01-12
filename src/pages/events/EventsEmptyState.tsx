@@ -10,8 +10,8 @@ type EventsEmptyStateProps = {
 const EventsEmptyState = ({ onResetFilters, isAdmin }: EventsEmptyStateProps) => {
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/30 px-8 py-16 text-center text-white/70">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-kenya-orange/20">
-        <Sparkles className="h-8 w-8 text-kenya-orange" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-accent/20">
+        <Sparkles className="h-8 w-8 text-gradient-orange-accent" />
       </div>
       <h3 className="mt-6 text-2xl font-semibold text-white">No events match these filters yet</h3>
       <p className="mt-2 max-w-md text-sm text-white/60">
@@ -29,7 +29,7 @@ const EventsEmptyState = ({ onResetFilters, isAdmin }: EventsEmptyStateProps) =>
         {isAdmin ? (
           <Button
             asChild
-            className="rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark"
+            className="rounded-full bg-gradient-to-r bg-gradient-accent text-kenya-dark"
           >
             <Link to="/create-event">Create an event</Link>
           </Button>

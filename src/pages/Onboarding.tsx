@@ -150,7 +150,7 @@ const Onboarding: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-kenya-dark pb-16">
+    <div className="min-h-screen bg-gradient-promo pb-16">
       <Section
         title="Let’s co-create your perfect WYA experience"
         subtitle="A few prompts now means smarter recommendations, stronger sponsor matches, and fewer cold outreach messages later."
@@ -172,7 +172,7 @@ const Onboarding: React.FC = () => {
                 <span
                   className={cn(
                     'flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white',
-                    index < currentStep && 'bg-kenya-orange text-kenya-dark'
+                    index < currentStep && 'bg-gradient-accent text-white'
                   )}
                 >
                   {index < currentStep ? <CheckCircle className="h-4 w-4" /> : index + 1}
@@ -188,7 +188,7 @@ const Onboarding: React.FC = () => {
             <Card className="border-white/10 bg-white/5">
               <CardHeader>
                 <div className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
-                  <Sparkles className="h-4 w-4 text-kenya-orange" />
+                  <Sparkles className="h-4 w-4 text-gradient-orange-accent" />
                   Step {currentStep + 1} of {stepDescriptions.length}
                 </div>
                 <CardTitle className="mt-3 text-2xl text-white">
@@ -220,7 +220,7 @@ const Onboarding: React.FC = () => {
                           )}
                         >
                           <span>{interest}</span>
-                          {selected && <CheckCircle className="h-4 w-4 text-kenya-orange" />}
+                          {selected && <CheckCircle className="h-4 w-4 text-gradient-orange-accent" />}
                         </button>
                       );
                     })}
@@ -229,7 +229,7 @@ const Onboarding: React.FC = () => {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-white">
-                        Where are you primarily based? <span className="text-kenya-orange">*</span>
+                        Where are you primarily based? <span className="text-gradient-orange-accent">*</span>
                       </p>
                       <Input
                         placeholder="e.g. Nairobi, Westlands"
@@ -310,7 +310,7 @@ const Onboarding: React.FC = () => {
                             <p className="text-sm font-semibold text-white">{item.title}</p>
                             <p className="text-xs text-white/60">{item.description}</p>
                           </div>
-                          {enabled && <CheckCircle className="h-4 w-4 text-kenya-orange" />}
+                          {enabled && <CheckCircle className="h-4 w-4 text-gradient-orange-accent" />}
                         </button>
                       );
                     })}
@@ -338,7 +338,7 @@ const Onboarding: React.FC = () => {
                             <CheckCircle
                               className={cn(
                                 'h-4 w-4',
-                                value ? 'text-kenya-orange' : 'text-white/25'
+                                value ? 'text-gradient-orange-accent' : 'text-white/25'
                               )}
                             />
                             <span className={cn(!value && 'text-white/45')}>

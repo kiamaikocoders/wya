@@ -81,7 +81,7 @@ const TicketDetail = () => {
       
       <div className="max-w-2xl mx-auto">
         <Card className="overflow-hidden" ref={ticketRef}>
-          <div className="bg-kenya-orange p-6">
+          <div className="bg-gradient-accent p-6">
             <Badge className={ticket.status === 'confirmed' ? 'bg-green-500' : ticket.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'}>
               {ticket.status.toUpperCase()}
             </Badge>

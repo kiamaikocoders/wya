@@ -21,14 +21,14 @@ const SpotlightGuideCard: React.FC<{ item: SpotlightGuideItem; className?: strin
       )}
     >
       <CardContent className="flex h-full flex-col gap-3 p-5">
-        <span className="text-xs font-semibold uppercase tracking-wide text-kenya-orange">{item.category}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-gradient-orange-accent">{item.category}</span>
         <div className="space-y-2">
           <h3 className="text-lg font-semibold text-white">{item.title}</h3>
           <p className="text-sm text-white/70 line-clamp-3">{item.description}</p>
         </div>
         {item.location && <p className="text-xs text-white/50">Near {item.location}</p>}
         <button
-          className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-kenya-orange transition-colors group-hover:text-white"
+          className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-gradient-orange-accent transition-colors group-hover:text-white"
           onClick={() => item.link && window.open(item.link, '_blank')}
         >
           Explore <ArrowUpRight size={16} />

@@ -40,7 +40,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
     : '?';
 
   return (
-    <Card className={cn("overflow-hidden flex flex-col border-none bg-kenya-brown bg-opacity-20", className)}>
+    <Card className={cn("overflow-hidden flex flex-col border-none bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 bg-opacity-20", className)}>
       {story.media_url && (
         <div className="relative h-48 overflow-hidden">
           <img 
@@ -58,7 +58,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
       
       <CardContent className={cn(
         "flex-1 p-4",
-        !story.media_url && "bg-gradient-to-b from-kenya-orange/30 to-kenya-brown/30 h-48 flex items-center justify-center"
+        !story.media_url && "bg-gradient-to-b from-gradient-orange-accent/30 to-gradient-purple-medium/30 h-48 flex items-center justify-center"
       )}>
         {!story.media_url ? (
           <p className="text-white text-lg px-4 text-center italic">"{story.content}"</p>
@@ -69,7 +69,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
         {story.hashtags && story.hashtags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {story.hashtags.map((tag, index) => (
-              <span key={index} className="text-kenya-orange text-xs">#{tag}</span>
+              <span key={index} className="text-gradient-orange-accent text-xs">#{tag}</span>
             ))}
           </div>
         )}
@@ -78,11 +78,11 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
       <CardFooter className="flex-col items-stretch p-3 gap-3 bg-black/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Avatar className="w-8 h-8 border border-kenya-brown">
+            <Avatar className="w-8 h-8 border border-white/20">
               {story.user_image ? (
                 <AvatarImage src={story.user_image} alt={story.user_name || 'User'} />
               ) : (
-                <AvatarFallback className="bg-kenya-brown text-white text-xs">
+                <AvatarFallback className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 text-white text-xs">
                   {initials}
                 </AvatarFallback>
               )}
@@ -91,7 +91,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
               <p className="text-white font-medium text-sm leading-tight">
                 {story.user_name || 'Anonymous'}
               </p>
-              <p className="text-kenya-brown-light text-xs">
+              <p className="text-text-white/70 text-xs">
                 {formatDistance(new Date(story.created_at), new Date(), { addSuffix: true })}
               </p>
             </div>
@@ -102,7 +102,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
               variant="ghost" 
               size="sm"
               onClick={() => onDelete(story.id)} 
-              className="text-kenya-brown-light hover:text-white hover:bg-red-900"
+              className="text-text-white/70 hover:text-white hover:bg-red-900"
             >
               <Trash2 size={16} />
             </Button>
@@ -110,7 +110,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
         </div>
         
         {showActions && (
-          <div className="flex items-center justify-between text-kenya-brown-light text-xs">
+          <div className="flex items-center justify-between text-text-white/70 text-xs">
             <Button
               variant="ghost"
               size="sm"
@@ -118,7 +118,7 @@ const StoryCard: React.FC<StoryCardProps> = ({ story, onDelete, showActions = tr
               disabled={isToggling}
               className={cn(
                 "flex items-center gap-1 text-xs font-normal h-auto py-1",
-                hasLiked && "text-kenya-orange"
+                hasLiked && "text-gradient-orange-accent"
               )}
             >
               <Heart size={14} className={cn(hasLiked && "fill-kenya-orange")} />

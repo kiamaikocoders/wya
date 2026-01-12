@@ -226,8 +226,8 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
         <div 
           className={`max-w-[80%] ${
             isOwnMessage 
-              ? 'bg-kenya-orange/90 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg' 
-              : 'bg-kenya-brown-dark/80 text-white rounded-tl-lg rounded-tr-lg rounded-br-lg'
+              ? 'bg-gradient-accent/90 text-white rounded-tl-lg rounded-tr-lg rounded-bl-lg' 
+              : 'bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/80 text-white rounded-tl-lg rounded-tr-lg rounded-br-lg'
           } p-3 shadow`}
         >
           {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
@@ -279,8 +279,8 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
   };
 
   return (
-    <Card className="w-full h-full flex flex-col overflow-hidden bg-kenya-brown/10">
-      <CardHeader className="py-3 px-4 border-b border-kenya-brown-dark flex-shrink-0">
+    <Card className="w-full h-full flex flex-col overflow-hidden bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10">
+      <CardHeader className="py-3 px-4 border-b border-white/20-dark flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Avatar className="h-10 w-10 mr-3">
@@ -330,7 +330,7 @@ const DirectMessage: React.FC<DirectMessageProps> = ({
         </div>
       </CardContent>
       
-      <CardFooter className="p-4 border-t border-kenya-brown-dark flex-shrink-0">
+      <CardFooter className="p-4 border-t border-white/20-dark flex-shrink-0">
         <div className="flex items-end w-full gap-2">
           <div className="flex-1">
             <Textarea

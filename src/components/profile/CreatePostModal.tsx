@@ -142,7 +142,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-kenya-dark border-white/10 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-promo border-white/10 text-white">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create Post</DialogTitle>
         </DialogHeader>
@@ -223,7 +223,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
               {selectedEventId ? (
                 <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-kenya-orange" />
+                    <MapPin className="h-4 w-4 text-gradient-orange-accent" />
                     <span className="text-sm">
                       {events.find(e => e.id === selectedEventId)?.title}
                     </span>
@@ -243,7 +243,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                     placeholder="Search events..."
                     value={eventSearchQuery}
                     onChange={(e) => setEventSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-kenya-orange/50"
+                    className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-gradient-orange-accent/50"
                   />
                   <select
                     value=""
@@ -282,7 +282,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <Button
               onClick={handleSubmit}
               disabled={isUploading || (!caption.trim() && !selectedFile)}
-              className="bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black hover:opacity-90"
+              className="bg-gradient-to-r bg-gradient-accent text-black hover:opacity-90"
             >
               {isUploading ? 'Posting...' : 'Post'}
             </Button>

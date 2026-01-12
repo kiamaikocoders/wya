@@ -423,7 +423,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-white/70">
-          <p className="text-sm uppercase tracking-[0.3em] text-kenya-orange">Loading Spotlight</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Loading Spotlight</p>
           <h2 className="mt-3 text-2xl font-semibold">Gathering the latest vibes...</h2>
         </div>
       </div>
@@ -433,7 +433,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
   if (eventGroups.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center text-center text-white/70">
-        <p className="text-sm uppercase tracking-[0.3em] text-kenya-orange">Spotlight</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Spotlight</p>
         <h2 className="mt-4 text-3xl font-semibold text-white">
           {allContent.length === 0 
             ? 'No content available yet.' 

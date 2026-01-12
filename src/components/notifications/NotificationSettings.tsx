@@ -94,7 +94,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-kenya-orange" />
+          <Bell className="h-5 w-5 text-gradient-orange-accent" />
           Notification Settings
         </CardTitle>
       </CardHeader>
@@ -102,7 +102,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
       <CardContent className="space-y-6">
         {isLoading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+            <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
           </div>
         ) : (
           <>

@@ -65,7 +65,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
         {!!emptyCtaLabel && !!onEmptyCtaClick && (
           <Button
             onClick={onEmptyCtaClick}
-            className="mt-6 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
+            className="mt-6 rounded-full bg-gradient-to-r bg-gradient-accent px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
           >
             <Plus className="mr-2 h-4 w-4" />
             {emptyCtaLabel}
@@ -129,7 +129,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
         <div className="mt-6 flex justify-center">
           <Button
             onClick={onEmptyCtaClick}
-            className="rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
+            className="rounded-full bg-gradient-to-r bg-gradient-accent px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
           >
             <Plus className="mr-2 h-4 w-4" />
             {activeTab === 'spotlight' ? 'Create a spotlight post' : 'Create another post'}

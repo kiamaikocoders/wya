@@ -76,7 +76,7 @@ const SurveyPage: React.FC = () => {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <h1 className="text-xl font-bold mb-4">Survey not found</h1>
-        <p className="text-kenya-brown-light mb-6">The survey you're looking for doesn't exist or has been removed.</p>
+        <p className="text-text-white/70 mb-6">The survey you're looking for doesn't exist or has been removed.</p>
         <Button 
           onClick={() => navigate('/surveys')}
           className="flex items-center gap-2"
@@ -214,7 +214,7 @@ const SurveyPage: React.FC = () => {
                 key={rating}
                 type="button"
                 variant={answers[currentQuestion.id] === rating ? "default" : "outline"}
-                className={`w-12 h-12 rounded-full ${answers[currentQuestion.id] === rating ? 'bg-kenya-orange text-white' : ''}`}
+                className={`w-12 h-12 rounded-full ${answers[currentQuestion.id] === rating ? 'bg-gradient-accent text-white' : ''}`}
                 onClick={() => handleAnswerChange(currentQuestion.id, rating)}
               >
                 {rating}
@@ -233,12 +233,12 @@ const SurveyPage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-2">{survey.title}</h1>
-          <p className="text-kenya-brown-light">{survey.description}</p>
+          <p className="text-text-white/70">{survey.description}</p>
         </div>
         
         <div className="mb-4">
           <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-1 text-sm text-kenya-brown-light">
+          <div className="flex justify-between mt-1 text-sm text-text-white/70">
             <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
             <span>{Math.round(progress)}% complete</span>
           </div>
@@ -295,7 +295,7 @@ const SurveyPage: React.FC = () => {
           </CardFooter>
         </Card>
         
-        <div className="text-center text-sm text-kenya-brown-light">
+        <div className="text-center text-sm text-text-white/70">
           <p>Your responses will be kept confidential and used only for the purposes stated in our privacy policy.</p>
         </div>
       </div>

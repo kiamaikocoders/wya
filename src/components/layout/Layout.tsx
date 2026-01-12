@@ -45,7 +45,7 @@ const Layout = () => {
   const isSpotlightPage = location.pathname === "/spotlight";
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-kenya-dark">
+    <div className="relative flex min-h-screen flex-col bg-background">
       {!isAuthPage && <Navbar />}
       <main className={cn("flex-1", !isSpotlightPage && "pb-20 md:pb-24")}>
         <Outlet />
@@ -56,7 +56,7 @@ const Layout = () => {
       {scrollToTop && (
         <button
           onClick={scrollTop}
-          className="fixed bottom-24 right-6 z-40 rounded-full bg-kenya-orange p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 md:bottom-28 sm:right-10"
+          className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"
           aria-label="Scroll to top"
         >
           <svg

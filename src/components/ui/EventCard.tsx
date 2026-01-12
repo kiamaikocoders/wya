@@ -68,8 +68,8 @@ const EventCard: React.FC<EventCardProps> = (props) => {
   
   return (
     <Card 
-      className={`overflow-hidden bg-kenya-brown/10 transition-all duration-300 h-full flex flex-col
-        ${isHovered ? 'bg-kenya-brown/30 scale-[1.02] shadow-lg' : 'hover:bg-kenya-brown/20'}`}
+      className={`overflow-hidden bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 transition-all duration-300 h-full flex flex-col
+        ${isHovered ? 'bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/30 scale-[1.02] shadow-lg' : 'hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={() => setIsHovered(true)}
@@ -88,7 +88,7 @@ const EventCard: React.FC<EventCardProps> = (props) => {
           />
           {eventIsFeatured && (
             <div className="absolute top-2 right-2">
-              <Badge className="bg-kenya-orange text-white flex items-center gap-1 text-xs">
+              <Badge className="bg-gradient-accent text-white flex items-center gap-1 text-xs">
                 <Star className="h-3 w-3" /> Featured
               </Badge>
             </div>
@@ -102,17 +102,17 @@ const EventCard: React.FC<EventCardProps> = (props) => {
           <h3 className="text-base sm:text-lg font-semibold mb-2 line-clamp-2 leading-tight">{eventTitle}</h3>
           
           <div className="space-y-1.5 sm:space-y-2 mb-3 flex-1">
-            <div className="flex items-center text-xs sm:text-sm text-kenya-brown-light">
+            <div className="flex items-center text-xs sm:text-sm text-text-white/70">
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
               <span className="truncate">{formattedDate}</span>
             </div>
-            <div className="flex items-center text-xs sm:text-sm text-kenya-brown-light">
+            <div className="flex items-center text-xs sm:text-sm text-text-white/70">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
               <span className="truncate">{eventLocation}</span>
             </div>
             {eventPrice !== undefined && (
               <div className="flex items-center text-xs sm:text-sm font-medium">
-                <span className="text-kenya-orange">
+                <span className="text-gradient-orange-accent">
                   {eventPrice === 0 ? 'Free' : `${eventPrice} KES`}
                 </span>
               </div>
@@ -134,7 +134,7 @@ const EventCard: React.FC<EventCardProps> = (props) => {
             
             <div className="w-full bg-gray-700 rounded-full h-1 sm:h-1.5 mt-2">
               <div 
-                className={`${isAlmostFull ? 'bg-red-500' : 'bg-kenya-orange'} h-1 sm:h-1.5 rounded-full transition-all duration-300`} 
+                className={`${isAlmostFull ? 'bg-red-500' : 'bg-gradient-accent'} h-1 sm:h-1.5 rounded-full transition-all duration-300`} 
                 style={{ width: `${capacityPercentage}%` }}
               ></div>
             </div>

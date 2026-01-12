@@ -109,7 +109,7 @@ const EventsToolbar = ({
           onClick={onOpenFilters}
           className="inline-flex items-center gap-2 rounded-full border-white/15 text-white hover:border-kenya-orange hover:text-white"
         >
-          <SlidersHorizontal className="h-4 w-4 text-kenya-orange" />
+          <SlidersHorizontal className="h-4 w-4 text-gradient-orange-accent" />
           Filters
         </Button>
       </div>
@@ -127,7 +127,7 @@ const EventsToolbar = ({
               <MoreHorizontal className="h-4 w-4 text-white/50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 border-white/10 bg-kenya-dark/95 text-white">
+          <DropdownMenuContent className="w-56 border-white/10 bg-gradient-promo/95 text-white">
             <DropdownMenuLabel className="text-xs uppercase tracking-wide text-white/60">
               Sort by
             </DropdownMenuLabel>
@@ -138,11 +138,11 @@ const EventsToolbar = ({
                 onClick={() => onSortChange(option.value)}
                 className={cn(
                   'flex items-center justify-between text-sm',
-                  option.value === sortOption && 'text-kenya-orange'
+                  option.value === sortOption && 'text-gradient-orange-accent'
                 )}
               >
                 {option.label}
-                {option.value === sortOption && <Badge className="bg-kenya-orange/20 text-kenya-orange">Active</Badge>}
+                {option.value === sortOption && <Badge className="bg-gradient-accent/20 text-gradient-orange-accent">Active</Badge>}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -160,7 +160,7 @@ const EventsToolbar = ({
                 onClick={() => onViewChange(button.value)}
                 className={cn(
                   'h-9 w-9 rounded-full text-white/70 hover:bg-white/10',
-                  isActive && 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.25)]'
+                  isActive && 'bg-gradient-to-r bg-gradient-accent text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.25)]'
                 )}
                 aria-label={`Switch to ${button.label} view`}
               >
@@ -176,11 +176,11 @@ const EventsToolbar = ({
               variant="outline"
               className="inline-flex items-center gap-2 rounded-full border-kenya-orange/50 text-white hover:bg-white/10"
             >
-              <Save className="h-4 w-4 text-kenya-orange" />
+              <Save className="h-4 w-4 text-gradient-orange-accent" />
               Save filters
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 border-white/10 bg-kenya-dark/95 text-white">
+          <PopoverContent className="w-64 border-white/10 bg-gradient-promo/95 text-white">
             <div className="space-y-3">
               <div>
                 <p className="text-sm font-semibold text-white">Save current filters</p>
@@ -195,7 +195,7 @@ const EventsToolbar = ({
                 className="bg-white/5 text-sm text-white placeholder:text-white/40"
               />
               <Button
-                className="w-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark"
+                className="w-full bg-gradient-to-r bg-gradient-accent text-kenya-dark"
                 onClick={handleSaveFilter}
                 disabled={isSaving || !filterName.trim()}
               >
@@ -208,11 +208,11 @@ const EventsToolbar = ({
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" className="inline-flex items-center gap-2 rounded-full text-white/80 hover:text-white">
-              <Bookmark className="h-4 w-4 text-kenya-orange" />
+              <Bookmark className="h-4 w-4 text-gradient-orange-accent" />
               Saved views
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-72 border-white/10 bg-kenya-dark/95 text-white">
+          <PopoverContent className="w-72 border-white/10 bg-gradient-promo/95 text-white">
             <Command className="bg-transparent">
               <CommandInput placeholder="Search saved filters..." className="text-sm" />
               <CommandList>

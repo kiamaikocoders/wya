@@ -159,8 +159,8 @@ const Profile: React.FC = () => {
   if (!isAuthenticated || !user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6">
-        <h1 className="mb-4 text-xl font-bold text-white">Not Logged In</h1>
-        <p className="mb-6 text-kenya-brown-light">Please log in to view your profile.</p>
+        <h1 className="mb-4 text-xl font-bold text-foreground">Not Logged In</h1>
+        <p className="mb-6 text-muted-foreground">Please log in to view your profile.</p>
       </div>
     );
   }
@@ -169,8 +169,8 @@ const Profile: React.FC = () => {
   if (!profile) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-6">
-        <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
-        <p className="mt-4 text-kenya-brown-light">Loading profile...</p>
+        <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-primary" />
+        <p className="mt-4 text-muted-foreground">Loading profile...</p>
       </div>
     );
   }
@@ -182,7 +182,7 @@ const Profile: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-black pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="container mx-auto max-w-4xl px-4 py-8">
         {/* Profile Header */}
         <ProfileHeader
@@ -209,32 +209,32 @@ const Profile: React.FC = () => {
                       <Button
             onClick={() => setIsCreatePostOpen(true)}
           aria-label="Create post"
-          className="fixed bottom-32 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange p-0 text-black shadow-[0_0_26px_rgba(255,128,0,0.35)] transition-transform hover:scale-105 hover:shadow-[0_0_36px_rgba(255,128,0,0.55)] md:bottom-10 md:right-10"
+          className="fixed bottom-32 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 p-0 text-white shadow-md shadow-orange-500/20 transition-transform hover:scale-105 md:bottom-10 md:right-10"
                       >
           <Plus className="h-6 w-6" />
                       </Button>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <div className="rounded-xl border border-white/8 bg-[#1A1A1A] p-2 mb-6">
+          <div className="rounded-xl border border-border bg-card p-2 mb-6 shadow-sm">
             <TabsList className="grid w-full grid-cols-3 bg-transparent border-none rounded-lg gap-1">
             <TabsTrigger
               value="posts"
-                className="data-[state=active]:bg-kenya-orange/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-kenya-orange/30 text-white/60 rounded-lg transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
                 >
               <Grid className="mr-2 h-4 w-4" />
               Posts
             </TabsTrigger>
             <TabsTrigger
               value="spotlight"
-                className="data-[state=active]:bg-kenya-orange/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-kenya-orange/30 text-white/60 rounded-lg transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
             >
               <Video className="mr-2 h-4 w-4" />
               Spotlight
             </TabsTrigger>
             <TabsTrigger
                 value="events"
-                className="data-[state=active]:bg-kenya-orange/20 data-[state=active]:text-white data-[state=active]:border data-[state=active]:border-kenya-orange/30 text-white/60 rounded-lg transition-all"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
             >
                 <Calendar className="mr-2 h-4 w-4" />
                 Events

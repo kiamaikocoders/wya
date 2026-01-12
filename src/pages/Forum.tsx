@@ -172,7 +172,7 @@ const Forum: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kenya-brown mx-auto"></div>
           <p className="text-gray-400 mt-2">Loading...</p>
@@ -183,7 +183,7 @@ const Forum: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-400">Please log in to access the forum.</p>

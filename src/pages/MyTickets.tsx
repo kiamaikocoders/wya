@@ -156,17 +156,17 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onCancel, getBadgeColor
   
   return (
     <Card className="overflow-hidden flex flex-col md:flex-row">
-      <div className="md:w-1/3 bg-kenya-brown p-6 flex flex-col justify-between">
+      <div className="md:w-1/3 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 p-6 flex flex-col justify-between">
         <div>
           <Badge className={`${getBadgeColor(ticket.status)} capitalize`}>
             {ticket.status}
           </Badge>
           <h3 className="mt-4 text-xl font-bold text-white">{ticket.event_title}</h3>
-          <div className="mt-2 flex items-center text-kenya-brown-light gap-2">
+          <div className="mt-2 flex items-center text-text-white/70 gap-2">
             <Calendar className="h-4 w-4" />
             <span className="text-sm">{formattedDate}</span>
           </div>
-          <div className="mt-1 flex items-center text-kenya-brown-light gap-2">
+          <div className="mt-1 flex items-center text-text-white/70 gap-2">
             <MapPin className="h-4 w-4" />
             <span className="text-sm">Location Info</span>
           </div>

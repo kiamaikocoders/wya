@@ -63,7 +63,7 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-kenya-dark border-white/10 text-white max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl bg-gradient-promo border-white/10 text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold">{event.title}</DialogTitle>
           <DialogDescription className="text-white/70">
@@ -85,7 +85,7 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
           {/* Event Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-white/90">
-              <Calendar className="h-5 w-5 text-kenya-orange" />
+              <Calendar className="h-5 w-5 text-gradient-orange-accent" />
               <span>
                 {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
               </span>
@@ -93,26 +93,26 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
 
             {event.time && (
               <div className="flex items-center gap-3 text-white/90">
-                <Clock className="h-5 w-5 text-kenya-orange" />
+                <Clock className="h-5 w-5 text-gradient-orange-accent" />
                 <span>{event.time.slice(0, 5)}</span>
               </div>
             )}
 
             <div className="flex items-center gap-3 text-white/90">
-              <MapPin className="h-5 w-5 text-kenya-orange" />
+              <MapPin className="h-5 w-5 text-gradient-orange-accent" />
               <span>{event.location}</span>
             </div>
 
             {event.performing_artists && event.performing_artists.length > 0 && (
               <div className="flex items-start gap-3 text-white/90">
-                <Music className="h-5 w-5 text-kenya-orange mt-0.5" />
+                <Music className="h-5 w-5 text-gradient-orange-accent mt-0.5" />
                 <div className="flex-1">
                   <p className="font-medium mb-1">Performing Artists:</p>
                   <div className="flex flex-wrap gap-2">
                     {event.performing_artists.map((artist, index) => (
                       <Badge
                         key={index}
-                        className="bg-kenya-orange/20 text-kenya-orange border-kenya-orange/30"
+                        className="bg-gradient-accent/20 text-gradient-orange-accent border-kenya-orange/30"
                       >
                         {artist}
                       </Badge>
@@ -172,7 +172,7 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
           {event.price && (
             <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-lg font-semibold text-white">Total</p>
-              <p className="text-2xl font-bold text-kenya-orange">
+              <p className="text-2xl font-bold text-gradient-orange-accent">
                 KSh {totalPrice.toLocaleString()}
               </p>
             </div>
@@ -191,7 +191,7 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             <Button
               onClick={handlePurchase}
               disabled={isPurchasing}
-              className="flex-1 bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black hover:opacity-90"
+              className="flex-1 bg-gradient-to-r bg-gradient-accent text-black hover:opacity-90"
             >
               <Ticket className="mr-2 h-4 w-4" />
               {isPurchasing ? 'Processing...' : 'Get Tickets'}

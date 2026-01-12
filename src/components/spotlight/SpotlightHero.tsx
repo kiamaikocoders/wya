@@ -38,7 +38,7 @@ const SpotlightHero: React.FC<SpotlightHeroProps> = ({ items, onSelect, classNam
       <div
         key={item.id}
         className={cn(
-          'relative group rounded-3xl overflow-hidden bg-kenya-brown/20 flex flex-col justify-end',
+          'relative group rounded-3xl overflow-hidden bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20 flex flex-col justify-end',
           isPrimary ? 'min-h-[420px]' : 'min-h-[200px]'
         )}
       >
@@ -57,7 +57,7 @@ const SpotlightHero: React.FC<SpotlightHeroProps> = ({ items, onSelect, classNam
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         <div className={cn('relative p-8 flex flex-col gap-4', isPrimary ? '' : 'p-6')}>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center rounded-full bg-kenya-orange/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-black">
+            <span className="inline-flex items-center rounded-full bg-gradient-accent/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-black">
               {item.tag}
             </span>
             <span className="text-xs text-white/60">

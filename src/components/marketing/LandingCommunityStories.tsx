@@ -15,7 +15,7 @@ const LandingCommunityStories = ({
       aria-labelledby="stories-heading"
     >
       <div className="mx-auto max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
           By the community, for the community
         </span>
         <h2
@@ -36,13 +36,13 @@ const LandingCommunityStories = ({
             key={testimonial.quote}
             className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-transparent to-black/20 p-8 backdrop-blur"
           >
-            <Quote className="absolute -top-6 -left-2 h-20 w-20 text-kenya-orange/20" />
+            <Quote className="absolute -top-6 -left-2 h-20 w-20 text-gradient-orange-accent/20" />
             <p className="text-lg text-white/80">{testimonial.quote}</p>
             <footer className="mt-8">
               <p className="text-sm font-semibold text-white">
                 {testimonial.author}
               </p>
-              <p className="text-xs uppercase tracking-wide text-kenya-brown-light">
+              <p className="text-xs uppercase tracking-wide text-text-white/70">
                 {testimonial.role}
               </p>
             </footer>

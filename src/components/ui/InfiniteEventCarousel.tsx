@@ -97,7 +97,7 @@ const InfiniteEventCarousel: React.FC<InfiniteEventCarouselProps> = ({
   };
 
   if (!events || events.length === 0) {
-    return <p className="text-center text-kenya-brown-light py-4">{emptyMessage}</p>;
+    return <p className="text-center text-text-white/70 py-4">{emptyMessage}</p>;
   }
 
   return (
@@ -146,8 +146,8 @@ const InfiniteEventCarousel: React.FC<InfiniteEventCarouselProps> = ({
             key={index}
             className={`w-2 h-2 rounded-full transition-all duration-300 ${
               currentIndex === index 
-                ? "bg-kenya-orange w-6" 
-                : "bg-kenya-brown-light opacity-50"
+                ? "bg-gradient-accent w-6" 
+                : "bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-light opacity-50"
             }`}
             onClick={() => setCurrentIndex(index)}
           />

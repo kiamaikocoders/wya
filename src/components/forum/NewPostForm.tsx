@@ -143,7 +143,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
           {user && (
             <Avatar className="h-10 w-10">
               <AvatarImage src={user.profile_picture || "/placeholder.svg"} alt={user.name} />
-              <AvatarFallback className="bg-kenya-orange text-white">
+              <AvatarFallback className="bg-gradient-accent text-white">
                 {user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -166,7 +166,7 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAITools(!showAITools)}
-                className="text-kenya-orange hover:text-kenya-orange/80 hover:bg-transparent"
+                className="text-gradient-orange-accent hover:text-gradient-orange-accent/80 hover:bg-transparent"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 {showAITools ? "Hide AI Tools" : "Show AI Tools"}

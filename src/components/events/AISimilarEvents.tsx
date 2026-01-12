@@ -91,10 +91,10 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
   }
   
   return (
-    <Card className="border-kenya-orange/20 bg-kenya-dark/50">
+    <Card className="border-kenya-orange/20 bg-gradient-promo/50">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-white text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           Similar Events You Might Like
         </CardTitle>
         <Button 
@@ -102,7 +102,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
           size="icon"
           onClick={() => void findSimilarEvents()}
           disabled={isLoading}
-          className="text-white hover:text-kenya-orange hover:bg-transparent"
+          className="text-white hover:text-gradient-orange-accent hover:bg-transparent"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
@@ -118,7 +118,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
               <Link 
                 key={event.id} 
                 to={`/events/${event.id}`}
-                className="block hover:bg-kenya-brown/10 rounded-lg p-3 transition-colors"
+                className="block hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg p-3 transition-colors"
               >
                 <div className="flex gap-3">
                   <div className="h-16 w-16 rounded overflow-hidden flex-shrink-0">
@@ -131,7 +131,7 @@ const AISimilarEvents: React.FC<AISimilarEventsProps> = ({ currentEvent }) => {
                   <div>
                     <h3 className="font-semibold text-white">{event.title}</h3>
                     <p className="text-sm text-white/70">{event.date} • {event.location}</p>
-                    <p className="text-xs text-kenya-orange mt-1">{event.category}</p>
+                    <p className="text-xs text-gradient-orange-accent mt-1">{event.category}</p>
                   </div>
                 </div>
               </Link>

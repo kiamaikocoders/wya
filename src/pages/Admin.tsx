@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Users, MessageSquare, ActivitySquare, FileText, BarChart3 } from 'lucide-react';
+import { Calendar, Users, MessageSquare, ActivitySquare, FileText, BarChart3, Ghost } from 'lucide-react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EventManagement from '@/components/admin/EventManagement';
 import UserManagement from '@/components/admin/UserManagement';
@@ -11,6 +11,7 @@ import Analytics from '@/components/admin/Analytics';
 import ContentModeration from '@/components/admin/ContentModeration';
 import ProposalManagement from '@/components/admin/ProposalManagement';
 import SponsorAnalytics from '@/components/admin/SponsorAnalytics';
+import GhostManagement from '@/components/admin/GhostManagement';
 import { toast } from 'sonner';
 
 const Admin = () => {
@@ -79,6 +80,10 @@ const Admin = () => {
             <MessageSquare className="h-4 w-4" />
             Content Moderation
           </TabsTrigger>
+          <TabsTrigger value="ghost" className="flex items-center gap-2">
+            <Ghost className="h-4 w-4" />
+            Ghost Management
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="events" className="space-y-4">
@@ -103,6 +108,10 @@ const Admin = () => {
 
         <TabsContent value="moderation" className="space-y-4">
           <ContentModeration />
+        </TabsContent>
+
+        <TabsContent value="ghost" className="space-y-4">
+          <GhostManagement />
         </TabsContent>
       </Tabs>
     </div>

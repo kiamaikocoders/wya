@@ -58,7 +58,7 @@ const ConversationsList = ({
                   className={`
                     flex items-center gap-3 p-3 rounded-lg cursor-pointer
                     ${conversation.id.toString() === activeConversationId ? 'bg-accent' : 'hover:bg-muted'}
-                    ${conversation.unread_count > 0 ? 'dark:bg-kenya-brown/50' : ''}
+                    ${conversation.unread_count > 0 ? 'dark:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/50' : ''}
                     transition-colors
                   `}
                   onClick={() => navigate(`/chat/${conversation.id}`)}
@@ -80,7 +80,7 @@ const ConversationsList = ({
                         {conversation.last_message.content}
                       </p>
                       {conversation.unread_count > 0 && (
-                        <span className="bg-kenya-orange text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <span className="bg-gradient-accent text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
                           {conversation.unread_count}
                         </span>
                       )}

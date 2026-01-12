@@ -47,14 +47,14 @@ const MapView: React.FC<MapViewProps> = ({
   return (
     <div 
       ref={mapContainerRef}
-      className={`relative overflow-hidden rounded-lg border border-kenya-brown ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-white/20 ${className}`}
     >
       {location === 'Kenya' || !location ? (
         // Fallback map UI when no specific location is provided
-        <div className="bg-kenya-brown/10 h-full w-full flex items-center justify-center p-6">
+        <div className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 h-full w-full flex items-center justify-center p-6">
           <div className="text-center">
-            <Map size={32} className="mx-auto mb-2 text-kenya-orange" />
-            <p className="text-kenya-brown-light">Explore events across Kenya</p>
+            <Map size={32} className="mx-auto mb-2 text-gradient-orange-accent" />
+            <p className="text-text-white/70">Explore events across Kenya</p>
           </div>
         </div>
       ) : (
@@ -65,14 +65,14 @@ const MapView: React.FC<MapViewProps> = ({
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <MapPin size={32} className="text-kenya-orange drop-shadow-lg" />
+            <MapPin size={32} className="text-gradient-orange-accent drop-shadow-lg" />
           </div>
           
           {interactive && (
             <div className="absolute bottom-4 right-4 pointer-events-auto">
               <button
                 onClick={openGoogleMaps}
-                className="px-4 py-2 bg-kenya-orange text-white text-sm rounded-lg hover:bg-opacity-90 transition-colors shadow-lg"
+                className="px-4 py-2 bg-gradient-accent text-white text-sm rounded-lg hover:bg-opacity-90 transition-colors shadow-lg"
               >
                 View on Google Maps
               </button>

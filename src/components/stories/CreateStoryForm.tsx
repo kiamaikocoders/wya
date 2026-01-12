@@ -115,7 +115,7 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
               <FormControl>
                 <Textarea
                   placeholder="Share your experience..."
-                  className="min-h-[100px] bg-black/10 border-kenya-brown/30 text-white placeholder:text-gray-400"
+                  className="min-h-[100px] bg-black/10 border-white/20/30 text-white placeholder:text-gray-400"
                   {...field}
                 />
               </FormControl>
@@ -148,15 +148,15 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
           ) : (
             <label
               htmlFor="story-image"
-              className="cursor-pointer flex items-center justify-center h-20 w-20 border border-dashed border-kenya-brown/50 rounded hover:bg-kenya-brown/10 transition-colors"
+              className="cursor-pointer flex items-center justify-center h-20 w-20 border border-dashed border-white/20/50 rounded hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 transition-colors"
             >
-              <ImagePlus size={24} className="text-kenya-brown-light" />
+              <ImagePlus size={24} className="text-text-white/70" />
             </label>
           )}
 
           <Button
             type="submit"
-            className="ml-auto bg-kenya-orange hover:bg-kenya-orange/90"
+            className="ml-auto bg-gradient-accent hover:bg-gradient-accent/90"
             disabled={isUploading || isCreating || form.formState.isSubmitting}
           >
             {isUploading || isCreating ? 'Posting...' : 'Post Story'}

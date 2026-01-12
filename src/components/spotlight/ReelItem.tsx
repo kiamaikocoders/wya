@@ -152,7 +152,7 @@ const ReelItem: React.FC<ReelItemProps> = ({
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border-2 border-white/20">
               <AvatarImage src={user_image || undefined} />
-              <AvatarFallback className="bg-kenya-orange/20 text-white">
+              <AvatarFallback className="bg-gradient-accent/20 text-white">
                 {user_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -206,13 +206,13 @@ const ReelItem: React.FC<ReelItemProps> = ({
               onClick={handleLike}
               className={cn(
                 'h-12 w-12 rounded-full bg-white/10 hover:bg-white/20',
-                liked && 'bg-kenya-orange/20'
+                liked && 'bg-gradient-accent/20'
               )}
             >
               <Heart
                 className={cn(
                   'h-6 w-6 transition-all',
-                  liked && 'fill-kenya-orange text-kenya-orange'
+                  liked && 'fill-kenya-orange text-gradient-orange-accent'
                 )}
               />
             </Button>

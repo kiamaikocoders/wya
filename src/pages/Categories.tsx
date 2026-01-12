@@ -53,7 +53,7 @@ const Categories = () => {
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full bg-kenya-brown hover:bg-kenya-brown-dark transition-colors"
+            className="p-2 rounded-full bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark transition-colors"
           >
             <ArrowLeft size={20} className="text-white" />
           </button>
@@ -65,7 +65,7 @@ const Categories = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
           </div>
         ) : error ? (
-          <div className="text-center text-kenya-orange p-8">
+          <div className="text-center text-gradient-orange-accent p-8">
             <p>Failed to load events. Please try again.</p>
           </div>
         ) : events && events.length > 0 ? (
@@ -84,9 +84,9 @@ const Categories = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center text-kenya-brown-light p-8">
+          <div className="text-center text-text-white/70 p-8">
             <p>No events found in this category.</p>
-            <Link to="/events" className="text-kenya-orange hover:underline mt-4 inline-block">
+            <Link to="/events" className="text-gradient-orange-accent hover:underline mt-4 inline-block">
               Browse all events
             </Link>
           </div>

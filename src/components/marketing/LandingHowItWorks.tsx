@@ -12,7 +12,7 @@ const LandingHowItWorks = ({ steps }: LandingHowItWorksProps) => {
     >
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
             How it works
           </span>
           <h2
@@ -33,7 +33,7 @@ const LandingHowItWorks = ({ steps }: LandingHowItWorksProps) => {
               key={step.title}
               className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-8"
             >
-              <span className="absolute -top-6 left-8 inline-flex h-12 w-12 items-center justify-center rounded-full bg-kenya-orange text-lg font-bold text-kenya-dark shadow-[0_15px_45px_rgba(255,128,0,0.25)]">
+              <span className="absolute -top-6 left-8 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-accent text-lg font-bold text-kenya-dark shadow-[0_15px_45px_rgba(255,128,0,0.25)]">
                 {index + 1}
               </span>
               <h3 className="mt-6 text-xl font-semibold text-white">

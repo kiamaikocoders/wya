@@ -42,9 +42,9 @@ const SponsorBanner: React.FC<SponsorBannerProps> = ({
   const otherSponsors = sortedSponsors.filter(s => s.sponsorship_type !== 'title');
   
   return (
-    <div className="w-full bg-kenya-dark/50 backdrop-blur-md rounded-lg p-2 md:p-3">
+    <div className="w-full bg-gradient-promo/50 backdrop-blur-md rounded-lg p-2 md:p-3">
       {showLabels && (
-        <p className="text-xs text-kenya-brown-light text-center mb-2">
+        <p className="text-xs text-text-white/70 text-center mb-2">
           {titleSponsor ? 'Proudly Sponsored By' : 'Sponsors'}
         </p>
       )}

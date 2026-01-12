@@ -27,6 +27,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminModeration from "./pages/AdminModeration";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSponsorAnalytics from "./pages/AdminSponsorAnalytics";
+import AdminGhost from "./pages/AdminGhost";
 import RequestEvent from "./pages/RequestEvent";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -118,6 +119,7 @@ const App = () => {
                 <Route path="moderation" element={<AdminModeration />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
+                <Route path="ghost" element={<AdminGhost />} />
               </Route>
 
               <Route element={<Layout />}>

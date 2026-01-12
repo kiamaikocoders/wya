@@ -29,11 +29,11 @@ interface ProfileCardProps {
 
 const ProfileCard = ({ userData, isCurrentUser, onMessage }: ProfileCardProps) => {
   return (
-    <Card className="dark:bg-kenya-brown-dark animate-fade-in">
+    <Card className="dark:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark animate-fade-in">
       <CardHeader className="text-center">
         <Avatar className="h-24 w-24 mx-auto">
           <AvatarImage src={userData.profile_picture} alt={userData.name} />
-          <AvatarFallback className="bg-kenya-orange text-white text-2xl">
+          <AvatarFallback className="bg-gradient-accent text-white text-2xl">
             {userData.name.charAt(0)}
           </AvatarFallback>
         </Avatar>
