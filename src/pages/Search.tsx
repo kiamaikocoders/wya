@@ -84,7 +84,7 @@ const SearchPage = () => {
                           {event.tags && event.tags.length > 0 && (
                             <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
                               {event.tags.slice(0, 2).map((tag, i) => (
-                                <Badge key={i} variant="outline" className="bg-black bg-opacity-70 text-white border-0 text-xs">
+                                <Badge key={i} variant="outline" className="bg-background bg-opacity-70 text-white border-0 text-xs">
                                   {tag}
                                 </Badge>
                               ))}
@@ -106,7 +106,7 @@ const SearchPage = () => {
                       <Button 
                         variant="outline" 
                         asChild
-                        className="border-kenya-orange text-kenya-orange hover:bg-kenya-orange hover:text-white"
+                        className="border-kenya-orange text-gradient-orange-accent hover:bg-gradient-accent hover:text-white"
                       >
                         <Link to={`/events?q=${searchTerm}`}>
                           See all {filteredEvents.length} events

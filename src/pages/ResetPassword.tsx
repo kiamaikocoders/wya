@@ -78,21 +78,21 @@ const ResetPassword = () => {
 
   if (isSuccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
           <CardHeader className="space-y-1 text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
             <CardTitle className="text-2xl font-bold text-white">Password Reset Successful</CardTitle>
-            <CardDescription className="text-kenya-brown-light">
+            <CardDescription className="text-text-white/70">
               Your password has been reset successfully
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-4">
-            <div className="p-4 bg-kenya-brown-dark/50 rounded-lg">
-              <p className="text-sm text-kenya-brown-light text-center">
+            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/50 rounded-lg">
+              <p className="text-sm text-text-white/70 text-center">
                 You can now sign in with your new password.
               </p>
             </div>
@@ -101,7 +101,7 @@ const ResetPassword = () => {
           <CardFooter className="flex flex-col space-y-4">
             <Button
               onClick={() => navigate('/login')}
-              className="w-full bg-kenya-orange hover:bg-opacity-90"
+              className="w-full bg-gradient-accent hover:bg-opacity-90"
             >
               Go to Login
             </Button>
@@ -113,11 +113,11 @@ const ResetPassword = () => {
 
   if (!hasSession) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-        <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
           <CardHeader className="space-y-1 text-center">
             <CardTitle className="text-2xl font-bold text-white">Invalid Reset Link</CardTitle>
-            <CardDescription className="text-kenya-brown-light">
+            <CardDescription className="text-text-white/70">
               Redirecting to forgot password page...
             </CardDescription>
           </CardHeader>
@@ -127,11 +127,11 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-      <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+      <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-white">Reset Password</CardTitle>
-          <CardDescription className="text-kenya-brown-light">
+          <CardDescription className="text-text-white/70">
             Enter your new password below
           </CardDescription>
         </CardHeader>
@@ -148,11 +148,11 @@ const ResetPassword = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-kenya-brown-dark text-white border-kenya-brown-dark focus:border-kenya-orange"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
                 required
                 minLength={6}
               />
-              <p className="text-xs text-kenya-brown-light">Must be at least 6 characters</p>
+              <p className="text-xs text-text-white/70">Must be at least 6 characters</p>
             </div>
             
             <div className="space-y-2">
@@ -165,7 +165,7 @@ const ResetPassword = () => {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-kenya-brown-dark text-white border-kenya-brown-dark focus:border-kenya-orange"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
                 required
                 minLength={6}
               />
@@ -173,7 +173,7 @@ const ResetPassword = () => {
             
             <Button 
               type="submit" 
-              className="w-full bg-kenya-orange hover:bg-opacity-90"
+              className="w-full bg-gradient-accent hover:bg-opacity-90"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -187,9 +187,9 @@ const ResetPassword = () => {
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-kenya-brown-light">
+          <div className="text-sm text-center text-text-white/70">
             Remember your password?{' '}
-            <Link to="/login" className="text-kenya-orange hover:underline">
+            <Link to="/login" className="text-gradient-orange-accent hover:underline">
               Sign in
             </Link>
           </div>

@@ -84,7 +84,7 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
                 variant="outline" 
                 size="sm"
                 onClick={() => onSelectCategory(category)}
-                className="bg-kenya-brown/10 hover:bg-kenya-brown/20"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20"
               >
                 {category} Events
               </Button>
@@ -96,10 +96,10 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
   };
   
   return (
-    <Card className="bg-kenya-dark border-kenya-brown/30">
+    <Card className="bg-gradient-promo border-white/20/30">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-white text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Event Recommendations
         </CardTitle>
         <Button 
@@ -107,7 +107,7 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
           size="icon"
           onClick={() => void getRecommendations()}
           disabled={isLoading}
-          className="text-white hover:text-kenya-orange hover:bg-transparent"
+          className="text-white hover:text-gradient-orange-accent hover:bg-transparent"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         </Button>
@@ -115,7 +115,7 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-8 w-8 text-kenya-orange animate-spin" />
+            <Loader2 className="h-8 w-8 text-gradient-orange-accent animate-spin" />
           </div>
         ) : (
           renderRecommendations()

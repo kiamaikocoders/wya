@@ -30,7 +30,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
         
         {!isLoading && unreadCount > 0 && (
           <Badge 
-            className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-kenya-orange text-white border-0"
+            className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-accent text-white border-0"
             variant="default"
           >
             {unreadCount > 9 ? '9+' : unreadCount}

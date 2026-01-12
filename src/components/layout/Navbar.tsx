@@ -57,15 +57,16 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-gradient-to-b from-black/85 via-kenya-dark/95 to-kenya-dark/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:py-4">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link to={homeHref} className="flex items-center gap-2 text-white">
             <img
-              src="/WYA LOGO 2.png"
+              src="/WYA_LOGO_2.png"
               alt="WYA"
               className="h-16 sm:h-20 md:h-24 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)] transition-transform hover:scale-105"
+              style={{ mixBlendMode: 'normal' }}
             />
           </Link>
         </div>
@@ -83,7 +84,7 @@ const Navbar = () => {
             <>
               <Button
                 onClick={handlePrimaryCta}
-                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-3 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_18px_rgba(255,128,0,0.3)] hover:shadow-[0_0_26px_rgba(255,128,0,0.45)] md:hidden"
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition-all transform hover:scale-105 md:hidden"
               >
                 <Brain className="h-4 w-4" />
                 <span>AI</span>
@@ -98,7 +99,7 @@ const Navbar = () => {
                 )}
                 <Button
                   onClick={handlePrimaryCta}
-                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-4 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.35)] hover:shadow-[0_0_30px_rgba(255,128,0,0.45)]"
+                  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition-all transform hover:scale-105"
                 >
                   <Brain className="h-4 w-4" />
                   <span className="hidden lg:inline">AI Assistance</span>
@@ -125,22 +126,22 @@ const Navbar = () => {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 border border-white/10 bg-kenya-dark/95 text-white backdrop-blur">
+              <DropdownMenuContent className="w-64 border border-border bg-card/95 text-foreground backdrop-blur">
                 <DropdownMenuLabel className="flex flex-col space-y-1">
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm font-semibold text-foreground">
                     {profile?.full_name || user?.name || 'Explorer'}
                   </span>
-                  <span className="text-xs text-white/60">{user?.email}</span>
+                  <span className="text-xs text-muted-foreground">{user?.email}</span>
                   {isAdmin && (
-                    <span className="text-xs font-semibold uppercase tracking-wide text-kenya-orange">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-primary">
                       Administrator
                     </span>
                   )}
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to={homeHref} className="flex w-full items-center gap-2">
-                    <HomeIcon className="h-4 w-4 text-kenya-orange" />
+                    <HomeIcon className="h-4 w-4 text-primary" />
                     <span>Overview</span>
                   </Link>
                 </DropdownMenuItem>
@@ -173,7 +174,7 @@ const Navbar = () => {
                 {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="flex w-full items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-kenya-orange" />
+                      <ShieldAlert className="h-4 w-4 text-primary" />
                       <span>Admin Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
@@ -196,7 +197,7 @@ const Navbar = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/80 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={handleLogin}
               >
                 <LogIn className="mr-1.5 h-4 w-4" />

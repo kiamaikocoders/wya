@@ -240,7 +240,7 @@ const Analytics = () => {
       <TabsContent value="overview" className="space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+            <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
           </div>
         ) : (
           <>
@@ -386,7 +386,7 @@ const Analytics = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-kenya-orange" />
+                    <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
                     AI Performance Insights
                   </CardTitle>
                   <CardDescription>AI-powered analysis of platform performance</CardDescription>
@@ -396,7 +396,7 @@ const Analytics = () => {
                   size="sm" 
                   onClick={runPerformanceAnalysis}
                   disabled={isAnalyzing || !eventStats || !userStats}
-                  className="border-kenya-orange/50 text-kenya-orange hover:bg-kenya-orange/10"
+                  className="border-kenya-orange/50 text-gradient-orange-accent hover:bg-gradient-accent/10"
                 >
                   {isAnalyzing ? (
                     <>
@@ -424,7 +424,7 @@ const Analytics = () => {
                   <div className="text-center py-8 text-muted-foreground">
                     {isAnalyzing ? (
                       <div className="flex flex-col items-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-kenya-orange mb-2" />
+                        <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent mb-2" />
                         <p>Analyzing platform performance...</p>
                       </div>
                     ) : (

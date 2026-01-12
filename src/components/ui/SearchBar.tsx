@@ -37,8 +37,8 @@ const SearchBar = ({
 
   return (
     <form onSubmit={handleSubmit} className={cn("w-full", className)}>
-      <div className="flex w-full items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur focus-within:border-kenya-orange/60">
-        <div className="flex items-center justify-center rounded-full bg-white/5 p-2 text-white/60">
+      <div className="flex w-full items-center gap-3 rounded-full border border-border bg-card px-4 py-2 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+        <div className="flex items-center justify-center rounded-full bg-muted p-2 text-muted-foreground">
           <Search size={18} />
         </div>
         <input
@@ -46,11 +46,11 @@ const SearchBar = ({
           placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-white placeholder:text-white/45 focus:outline-none"
+          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <button 
           type="submit"
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-4 py-2 text-sm font-semibold text-kenya-dark shadow-[0_0_20px_rgba(255,128,0,0.35)] hover:shadow-[0_0_28px_rgba(255,128,0,0.45)]"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition-all transform hover:scale-105"
         >
           Search
         </button>

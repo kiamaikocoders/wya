@@ -34,12 +34,12 @@ const Notifications = () => {
       case 'ticket':
         return <CheckCircle className="h-6 w-6 text-green-500" />;
       case 'follow':
-        return <UserPlus className="h-6 w-6 text-kenya-orange" />;
+        return <UserPlus className="h-6 w-6 text-gradient-orange-accent" />;
       case 'message':
         return <MessageCircle className="h-6 w-6 text-blue-600" />;
       case 'system':
       default:
-        return <Bell className="h-6 w-6 text-kenya-orange" />;
+        return <Bell className="h-6 w-6 text-gradient-orange-accent" />;
     }
   };
   
@@ -86,7 +86,7 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <Card 
                 key={notification.id} 
-                className={`transition-colors ${!notification.read ? 'bg-kenya-brown/10 border-kenya-orange/50' : ''}`}
+                className={`transition-colors ${!notification.read ? 'bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 border-kenya-orange/50' : ''}`}
               >
                 <CardHeader className="flex flex-row items-start space-x-4 pb-2">
                   <div className="mt-1">

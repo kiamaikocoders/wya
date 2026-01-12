@@ -168,21 +168,21 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   relative flex h-12 w-12 items-center justify-center 
                   rounded-full transition-all duration-300
                   ${isSelected 
-                    ? 'bg-gradient-to-br from-kenya-orange via-amber-400 to-kenya-orange scale-125' 
-                    : 'bg-gradient-to-br from-kenya-orange via-amber-400 to-kenya-orange'
+                    ? 'bg-gradient-to-br bg-gradient-accent scale-125' 
+                    : 'bg-gradient-to-br bg-gradient-accent'
                   }
                   ${isHovered ? 'scale-110 shadow-[0_0_30px_rgba(255,128,0,0.6)]' : 'shadow-[0_0_20px_rgba(255,128,0,0.4)]'}
                 `}>
                   <MapPin className={`h-6 w-6 ${isSelected ? 'text-white' : 'text-kenya-dark'}`} />
                   
                   {/* Pulse Animation */}
-                  <div className="absolute inset-0 rounded-full bg-kenya-orange animate-ping opacity-20" />
+                  <div className="absolute inset-0 rounded-full bg-gradient-accent animate-ping opacity-20" />
                 </div>
 
                 {/* Hover Banner */}
                 {isHovered && (
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 z-50">
-                    <Card className="bg-kenya-brown border-kenya-orange/30 shadow-xl">
+                    <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-kenya-orange/30 shadow-xl">
                       <CardContent className="p-3">
                         {/* Event Image */}
                         {event.image_url && (
@@ -202,7 +202,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                             {event.title}
                           </h3>
                           
-                          <div className="flex items-center gap-2 text-xs text-kenya-brown-light">
+                          <div className="flex items-center gap-2 text-xs text-text-white/70">
                             <Calendar className="h-3 w-3" />
                             <span>{format(new Date(event.date), 'MMM dd, yyyy')}</span>
                             {event.time && (
@@ -213,7 +213,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-1 text-xs text-kenya-brown-light">
+                          <div className="flex items-center gap-1 text-xs text-text-white/70">
                             <MapPin className="h-3 w-3" />
                             <span className="line-clamp-1">{event.location}</span>
                           </div>
@@ -222,7 +222,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                           <div className="flex gap-2 mt-3">
                             <Button
                               size="sm"
-                              className="flex-1 bg-kenya-orange hover:bg-opacity-90 text-white text-xs h-7"
+                              className="flex-1 bg-gradient-accent hover:bg-opacity-90 text-white text-xs h-7"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleViewEvent(event);
@@ -233,7 +233,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-kenya-orange/50 text-kenya-orange hover:bg-kenya-orange/10 text-xs h-7 px-2"
+                              className="border-kenya-orange/50 text-gradient-orange-accent hover:bg-gradient-accent/10 text-xs h-7 px-2"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDirections(event);
@@ -276,7 +276,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1 bg-kenya-orange hover:bg-opacity-90 text-white text-xs"
+                  className="flex-1 bg-gradient-accent hover:bg-opacity-90 text-white text-xs"
                   onClick={() => handleViewEvent(selectedEvent)}
                 >
                   View Details

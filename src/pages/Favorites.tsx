@@ -33,10 +33,10 @@ const Favorites = () => {
   if (!isAuthenticated) {
     return (
       <div className="container py-16 flex flex-col items-center justify-center">
-        <div className="bg-kenya-brown/20 rounded-lg p-8 text-center max-w-md mx-auto">
-          <Bookmark className="mx-auto mb-4 text-kenya-orange" size={48} />
+        <div className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20 rounded-lg p-8 text-center max-w-md mx-auto">
+          <Bookmark className="mx-auto mb-4 text-gradient-orange-accent" size={48} />
           <h2 className="text-2xl font-bold text-white mb-2">Login to view favorites</h2>
-          <p className="text-kenya-brown-light mb-6">You need to be logged in to view and manage your favorite events.</p>
+          <p className="text-text-white/70 mb-6">You need to be logged in to view and manage your favorite events.</p>
           <Link to="/login">
             <Button>Login now</Button>
           </Link>
@@ -76,10 +76,10 @@ const Favorites = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-kenya-brown/20 rounded-lg p-8 text-center max-w-md mx-auto">
-          <Bookmark className="mx-auto mb-4 text-kenya-brown-light" size={48} />
+        <div className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20 rounded-lg p-8 text-center max-w-md mx-auto">
+          <Bookmark className="mx-auto mb-4 text-text-white/70" size={48} />
           <h2 className="text-xl font-bold text-white mb-2">No favorites yet</h2>
-          <p className="text-kenya-brown-light mb-6">Explore events and save your favorites to find them here.</p>
+          <p className="text-text-white/70 mb-6">Explore events and save your favorites to find them here.</p>
           <Link to="/events">
             <Button>Explore Events</Button>
           </Link>

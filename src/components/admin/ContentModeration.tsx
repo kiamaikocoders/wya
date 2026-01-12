@@ -150,7 +150,7 @@ const ContentModeration = () => {
                 key={post.id} 
                 className={`p-4 rounded-lg mb-4 border ${
                   selectedPost === post.id ? 'border-kenya-orange' : 'border-border'
-                } ${selectedPost === post.id ? 'bg-kenya-orange/5' : 'bg-card'}`}
+                } ${selectedPost === post.id ? 'bg-gradient-accent/5' : 'bg-card'}`}
               >
                 <div className="flex items-start gap-3">
                   <Avatar>
@@ -303,7 +303,7 @@ const ContentModeration = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-kenya-orange" />
+              <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
               AI Content Moderation
             </CardTitle>
             <CardDescription>

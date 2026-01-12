@@ -39,7 +39,7 @@ const SpotlightMediaCard: React.FC<{ item: SpotlightMediaItem; className?: strin
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-kenya-brown/20">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20">
               <span className="text-sm text-white/60">No media</span>
             </div>
           )}
@@ -47,7 +47,7 @@ const SpotlightMediaCard: React.FC<{ item: SpotlightMediaItem; className?: strin
             <span
               className={cn(
                 'absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide text-black',
-                item.accentClassName || 'bg-kenya-orange/80'
+                item.accentClassName || 'bg-gradient-accent/80'
               )}
             >
               {item.tag}
@@ -56,9 +56,9 @@ const SpotlightMediaCard: React.FC<{ item: SpotlightMediaItem; className?: strin
         </div>
         <div className="space-y-4 p-4">
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9 bg-kenya-brown/60">
+            <Avatar className="h-9 w-9 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/60">
               <AvatarImage src={item.user_image || undefined} alt={item.user_name} />
-              <AvatarFallback className="bg-kenya-brown text-white">
+              <AvatarFallback className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 text-white">
                 {item.user_name?.slice(0, 1) || 'U'}
               </AvatarFallback>
             </Avatar>

@@ -96,22 +96,22 @@ const EmailConfirmationPending = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-kenya-dark animate-fade-in">
-      <Card className="w-full max-w-md bg-kenya-brown border-kenya-brown-dark">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+      <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 w-16 h-16 bg-kenya-orange/20 rounded-full flex items-center justify-center">
-            <Mail className="h-8 w-8 text-kenya-orange" />
+          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-accent/20 rounded-full flex items-center justify-center">
+            <Mail className="h-8 w-8 text-gradient-orange-accent" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">Check Your Email</CardTitle>
-          <CardDescription className="text-kenya-brown-light">
+          <CardDescription className="text-text-white/70">
             We've sent a confirmation link to your email address
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-6">
           {email && (
-            <div className="p-4 bg-kenya-brown-dark/50 rounded-lg border border-kenya-brown-dark">
-              <p className="text-sm text-kenya-brown-light mb-1">Email sent to:</p>
+            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/50 rounded-lg border border-gradient-purple-medium/30">
+              <p className="text-sm text-text-white/70 mb-1">Email sent to:</p>
               <p className="text-white font-medium">{email}</p>
             </div>
           )}
@@ -127,12 +127,12 @@ const EmailConfirmationPending = () => {
           )}
 
           <div className="space-y-4">
-            <div className="p-4 bg-kenya-brown-dark/30 rounded-lg border-l-4 border-kenya-orange">
+            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/30 rounded-lg border-l-4 border-kenya-orange">
               <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
                 What to do next:
               </h3>
-              <ul className="text-sm text-kenya-brown-light space-y-2 ml-6 list-disc">
+              <ul className="text-sm text-text-white/70 space-y-2 ml-6 list-disc">
                 <li>Check your inbox for an email from WYA</li>
                 <li>Click the confirmation link in the email</li>
                 <li>Check your spam/junk folder if you don't see it</li>
@@ -152,7 +152,7 @@ const EmailConfirmationPending = () => {
                   placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-kenya-brown-dark text-white border-kenya-brown-dark focus:border-kenya-orange"
+                  className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
                 />
               )}
               
@@ -160,7 +160,7 @@ const EmailConfirmationPending = () => {
                 onClick={handleResendEmail}
                 disabled={isResending || !email}
                 variant="outline"
-                className="w-full border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+                className="w-full border-gradient-purple-medium/30 text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
               >
                 {isResending ? (
                   <div className="flex items-center justify-center">
@@ -177,8 +177,8 @@ const EmailConfirmationPending = () => {
             </div>
 
             {/* Change Email Section */}
-            <div className="pt-4 border-t border-kenya-brown-dark">
-              <p className="text-sm text-kenya-brown-light mb-3">Used the wrong email address?</p>
+            <div className="pt-4 border-t border-gradient-purple-medium/30">
+              <p className="text-sm text-text-white/70 mb-3">Used the wrong email address?</p>
               
               <div className="space-y-2">
                 <Input
@@ -186,14 +186,14 @@ const EmailConfirmationPending = () => {
                   placeholder="Enter new email address"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="bg-kenya-brown-dark text-white border-kenya-brown-dark focus:border-kenya-orange"
+                  className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
                 />
                 
                 <Button
                   onClick={handleChangeEmail}
                   disabled={isChangingEmail || !newEmail}
                   variant="outline"
-                  className="w-full border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+                  className="w-full border-gradient-purple-medium/30 text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
                 >
                   {isChangingEmail ? (
                     <div className="flex items-center justify-center">
@@ -210,9 +210,9 @@ const EmailConfirmationPending = () => {
         </CardContent>
         
         <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-kenya-brown-light">
+          <div className="text-sm text-center text-text-white/70">
             Already confirmed your email?{' '}
-            <Link to="/login" className="text-kenya-orange hover:underline">
+            <Link to="/login" className="text-gradient-orange-accent hover:underline">
               Sign in
             </Link>
           </div>
@@ -220,7 +220,7 @@ const EmailConfirmationPending = () => {
           <Button
             onClick={() => navigate('/signup')}
             variant="ghost"
-            className="w-full text-kenya-brown-light hover:text-white"
+            className="w-full text-text-white/70 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sign Up

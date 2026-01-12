@@ -38,7 +38,7 @@ const DarkModeToggle: React.FC = () => {
       title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {darkMode ? (
-        <Sun size={20} className="text-kenya-orange" />
+        <Sun size={20} className="text-gradient-orange-accent" />
       ) : (
         <Moon size={20} />
       )}

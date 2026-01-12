@@ -129,7 +129,7 @@ const EventDetails: React.FC = () => {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <h1 className="text-xl font-bold mb-4">Event not found</h1>
-        <p className="text-kenya-brown-light mb-6">The event you're looking for doesn't exist or has been removed.</p>
+        <p className="text-text-white/70 mb-6">The event you're looking for doesn't exist or has been removed.</p>
         <Button asChild>
           <Link to="/events">Back to Events</Link>
         </Button>
@@ -168,7 +168,7 @@ const EventDetails: React.FC = () => {
         {/* Event Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <div className="max-w-6xl mx-auto">
-            <Badge className="mb-3 bg-kenya-orange/90 text-white">{event.category || 'Uncategorized'}</Badge>
+            <Badge className="mb-3 bg-gradient-accent/90 text-white">{event.category || 'Uncategorized'}</Badge>
             <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
             <div className="flex flex-wrap items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ const EventDetails: React.FC = () => {
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Event Highlights/Stories Gallery */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ImagePlus size={20} />
@@ -228,7 +228,7 @@ const EventDetails: React.FC = () => {
                     {eventStories.slice(0, 8).map(story => (
                       <div key={story.id} className="aspect-square bg-cover bg-center rounded-lg relative overflow-hidden group cursor-pointer"
                            style={{ backgroundImage: `url(${story.media_url})` }}>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="flex items-center gap-2 mb-1">
                             <Avatar className="h-4 w-4">
@@ -244,20 +244,20 @@ const EventDetails: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <ImagePlus size={48} className="mx-auto text-kenya-brown-light mb-4" />
-                    <p className="text-kenya-brown-light">No highlights yet. Be the first to share!</p>
+                    <ImagePlus size={48} className="mx-auto text-text-white/70 mb-4" />
+                    <p className="text-text-white/70">No highlights yet. Be the first to share!</p>
                   </div>
                 )}
               </CardContent>
             </Card>
             
             {/* About Event */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader>
                 <CardTitle>About this Event</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-kenya-brown-light leading-relaxed">{event.description}</p>
+                <p className="text-text-white/70 leading-relaxed">{event.description}</p>
               </CardContent>
             </Card>
           </div>
@@ -265,7 +265,7 @@ const EventDetails: React.FC = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Ticket Purchase */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Get Tickets</CardTitle>
@@ -279,11 +279,11 @@ const EventDetails: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-kenya-brown-light">Date</span>
+                    <span className="text-text-white/70">Date</span>
                     <span>{format(new Date(event.date), 'MMM d, yyyy')}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-kenya-brown-light">Time</span>
+                    <span className="text-text-white/70">Time</span>
                     <span>
                       {event.time 
                         ? (() => {
@@ -296,7 +296,7 @@ const EventDetails: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-kenya-brown-light">Venue</span>
+                    <span className="text-text-white/70">Venue</span>
                     <span className="text-right">{event.location}</span>
                   </div>
                 </div>
@@ -305,7 +305,7 @@ const EventDetails: React.FC = () => {
                 
                 {isAuthenticated ? (
                   <Button 
-                    className="w-full bg-kenya-orange hover:bg-kenya-orange/90"
+                    className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
                     onClick={() => {
                       if (event.ticket_link) {
                         window.open(event.ticket_link, '_blank', 'noopener,noreferrer');
@@ -321,11 +321,11 @@ const EventDetails: React.FC = () => {
                 ) : (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button className="w-full bg-kenya-orange hover:bg-kenya-orange/90">
+                      <Button className="w-full bg-gradient-accent hover:bg-gradient-accent/90">
                         Get Tickets
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-kenya-dark border-kenya-brown/20">
+                    <AlertDialogContent className="bg-gradient-promo border-white/20">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Login Required</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -360,8 +360,8 @@ const EventDetails: React.FC = () => {
       
       {/* Share Modal */}
       {isShareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-kenya-dark border-kenya-brown/20 p-6 rounded-lg w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background bg-opacity-50">
+          <div className="bg-gradient-promo border-white/20 p-6 rounded-lg w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Share this Event</h2>
             <div className="flex items-center gap-2 mb-4">
               <Input type="text" value={shareLink} readOnly className="flex-1" />

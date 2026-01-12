@@ -125,7 +125,7 @@ const EventsFiltersPanel = ({
               className={cn(
                 'rounded-full text-xs',
                 filters.category === category
-                  ? 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark'
+                  ? 'bg-gradient-accent text-white'
                   : 'border-white/20 text-white/70 hover:border-kenya-orange hover:text-white'
               )}
             >
@@ -162,7 +162,7 @@ const EventsFiltersPanel = ({
               className={cn(
                 'rounded-full text-xs whitespace-nowrap',
                 filters.location === location
-                  ? 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark'
+                  ? 'bg-gradient-accent text-white'
                   : 'border-white/20 text-white/70 hover:border-kenya-orange hover:text-white'
               )}
               onClick={() => updateFilter('location', filters.location === location ? null : location)}
@@ -224,7 +224,7 @@ const EventsFiltersPanel = ({
                 Choose range
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto border-white/10 bg-kenya-dark/95 text-white">
+            <PopoverContent className="w-auto border-white/10 bg-gradient-promo/95 text-white">
               <Calendar
                 mode="range"
                 selected={selectedRange}
@@ -240,7 +240,7 @@ const EventsFiltersPanel = ({
 
         {(filters.startDate || filters.endDate) && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-            <Clock className="h-4 w-4 text-kenya-orange" />
+            <Clock className="h-4 w-4 text-gradient-orange-accent" />
             <span>
               {filters.startDate ? format(new Date(filters.startDate), 'MMM d, yyyy') : 'Any time'} –{' '}
               {filters.endDate ? format(new Date(filters.endDate), 'MMM d, yyyy') : 'Any time'}
@@ -278,7 +278,7 @@ const EventsFiltersPanel = ({
                 className={cn(
                   'cursor-pointer rounded-full px-3 py-1 text-xs',
                   selected
-                    ? 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark'
+                    ? 'bg-gradient-accent text-white'
                     : 'border border-white/15 bg-transparent text-white/70 hover:border-kenya-orange hover:text-white'
                 )}
               >
@@ -293,8 +293,8 @@ const EventsFiltersPanel = ({
 
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-kenya-orange/20">
-            <Flame className="h-4 w-4 text-kenya-orange" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-accent/20">
+            <Flame className="h-4 w-4 text-gradient-orange-accent" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white">Featured only</p>
@@ -316,7 +316,7 @@ const EventsFiltersPanel = ({
           Reset all
         </Button>
         <Button
-          className="flex-1 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark"
+          className="flex-1 rounded-full bg-gradient-accent text-white"
           onClick={() => onOpenChange(false)}
         >
           Apply filters
@@ -328,7 +328,7 @@ const EventsFiltersPanel = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="flex h-full flex-col gap-5 border-white/10 bg-kenya-dark/95 text-white">
+        <SheetContent className="flex h-full flex-col gap-5 border-white/10 bg-gradient-promo/95 text-white">
           <SheetHeader className="space-y-1 text-left">
             <SheetTitle>Refine your search</SheetTitle>
             <SheetDescription className="text-white/60">

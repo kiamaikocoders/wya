@@ -96,7 +96,7 @@ const TrendingContent: React.FC<TrendingContentProps> = ({ onContentClick }) => 
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kenya-brown mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/20 mx-auto"></div>
           <p className="mt-2 text-gray-500">Loading trending content...</p>
         </div>
       </div>
@@ -219,7 +219,7 @@ const TrendingContent: React.FC<TrendingContentProps> = ({ onContentClick }) => 
                       <h4 className="font-semibold text-sm">Top Moments:</h4>
                       {event.top_stories.slice(0, 3).map((story: any, index: number) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-white/50 rounded-md">
-                          <div className="w-8 h-8 bg-kenya-brown rounded-full flex items-center justify-center">
+                          <div className="w-8 h-8 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                             <span className="text-white text-xs font-semibold">
                               {story.username?.charAt(0) || 'U'}
                             </span>
@@ -250,7 +250,7 @@ const TrendingContent: React.FC<TrendingContentProps> = ({ onContentClick }) => 
               <Card key={creator.creator_id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-kenya-brown rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                       <span className="text-white font-semibold">
                         {creator.username?.charAt(0) || 'U'}
                       </span>

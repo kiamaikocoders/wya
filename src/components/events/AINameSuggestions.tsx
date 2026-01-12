@@ -56,7 +56,7 @@ const AINameSuggestions: React.FC<AINameSuggestionsProps> = ({
     <Card className="border border-dashed border-kenya-orange/30">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Event Name Suggestions
         </CardTitle>
       </CardHeader>
@@ -76,7 +76,7 @@ const AINameSuggestions: React.FC<AINameSuggestionsProps> = ({
           <Button
             onClick={generateSuggestions}
             disabled={isLoading}
-            className="bg-kenya-orange hover:bg-kenya-orange/90"
+            className="bg-gradient-accent hover:bg-gradient-accent/90"
           >
             {isLoading ? (
               <>
@@ -100,7 +100,7 @@ const AINameSuggestions: React.FC<AINameSuggestionsProps> = ({
                 <Button
                   key={index}
                   variant="outline"
-                  className="justify-start text-left h-auto py-2 border-kenya-orange/30 hover:bg-kenya-orange/10"
+                  className="justify-start text-left h-auto py-2 border-kenya-orange/30 hover:bg-gradient-accent/10"
                   onClick={() => onSelect(name)}
                 >
                   {name}

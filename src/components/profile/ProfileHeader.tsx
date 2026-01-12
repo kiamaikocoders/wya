@@ -67,7 +67,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   return (
     <div className="relative mb-8">
       {/* Ambient Glow - Behind Avatar */}
-      <div className="absolute left-1/2 top-16 h-64 w-64 -translate-x-1/2 rounded-full bg-kenya-orange/15 blur-3xl pointer-events-none md:left-8 md:translate-x-0" />
+      <div className="absolute left-1/2 top-16 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-accent/15 blur-3xl pointer-events-none md:left-8 md:translate-x-0" />
 
       {/* Profile Card Container */}
       <div className="relative rounded-2xl border border-white/8 bg-[#1A1A1A] shadow-[0_4px_24px_rgba(0,0,0,0.5)] overflow-hidden">
@@ -86,7 +86,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <div className="absolute left-6 top-0 md:left-8" style={{ transform: 'translateY(-50%)' }}>
             <div className="relative">
               {/* Avatar Glow Effect */}
-              <div className="absolute inset-0 rounded-full bg-kenya-orange/20 blur-xl" />
+              <div className="absolute inset-0 rounded-full bg-gradient-accent/20 blur-xl" />
               <Avatar className="relative h-32 w-32 border-4 border-[#1A1A1A] shadow-[0_8px_32px_rgba(0,0,0,0.6)] md:h-36 md:w-36">
             <AvatarImage src={profile.avatar_url} />
                 <AvatarFallback className="bg-gradient-to-br from-kenya-orange to-kenya-brown text-3xl text-white">
@@ -134,7 +134,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                           'px-6 transition-all',
                       isFollowing
                             ? 'border border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white/30'
-                            : 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black shadow-[0_0_20px_rgba(255,128,0,0.3)] hover:shadow-[0_0_30px_rgba(255,128,0,0.5)]'
+                            : 'bg-gradient-to-r bg-gradient-accent text-black shadow-[0_0_20px_rgba(255,128,0,0.3)] hover:shadow-[0_0_30px_rgba(255,128,0,0.5)]'
                     )}
                   >
                     {isFollowing ? (
@@ -168,10 +168,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   type="button"
                   onClick={onPostsClick}
                   aria-label="View posts"
-                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-kenya-orange/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-kenya-orange/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
+                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-gradient-accent/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-gradient-accent/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
                 >
                   <div className="flex items-center gap-2">
-                    <Grid className="h-4 w-4 text-kenya-orange/80" />
+                    <Grid className="h-4 w-4 text-gradient-orange-accent/80" />
                     <div>
                       <p className="text-2xl font-bold text-white leading-none">{stats.posts}</p>
                       <p className="text-xs text-white/60 font-medium mt-0.5">posts</p>
@@ -198,10 +198,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   type="button"
                   onClick={onEventsClick}
                   aria-label="View events"
-                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-kenya-orange/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-kenya-orange/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
+                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-gradient-accent/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-gradient-accent/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
                 >
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-kenya-orange/80" />
+                    <Calendar className="h-4 w-4 text-gradient-orange-accent/80" />
                     <div>
                       <p className="text-2xl font-bold text-white leading-none">{stats.eventsAttended}</p>
                       <p className="text-xs text-white/60 font-medium mt-0.5">events</p>

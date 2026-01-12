@@ -57,14 +57,14 @@ const AIEventCategorizer: React.FC<AIEventCategorizerProps> = ({
     <Card className="border border-dashed border-primary/50">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Category Suggestions
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-6 w-6 text-kenya-orange animate-spin" />
+            <Loader2 className="h-6 w-6 text-gradient-orange-accent animate-spin" />
           </div>
         ) : suggestions.length > 0 ? (
           <div className="space-y-3">
@@ -77,7 +77,7 @@ const AIEventCategorizer: React.FC<AIEventCategorizerProps> = ({
                   key={suggestion.name}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1 bg-kenya-brown/10 hover:bg-kenya-brown/20"
+                  className="flex items-center gap-1 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20"
                   onClick={() => onSelectCategory(suggestion.name)}
                 >
                   {suggestion.name}

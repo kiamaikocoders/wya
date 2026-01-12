@@ -51,7 +51,7 @@ const SponsorZone: React.FC = () => {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <h1 className="text-xl font-bold mb-4">Sponsor not found</h1>
-        <p className="text-kenya-brown-light mb-6">The sponsor you're looking for doesn't exist or has been removed.</p>
+        <p className="text-text-white/70 mb-6">The sponsor you're looking for doesn't exist or has been removed.</p>
         <Button 
           onClick={() => navigate(-1)}
           className="flex items-center gap-2"
@@ -81,7 +81,7 @@ const SponsorZone: React.FC = () => {
         >
           <Button
             onClick={() => navigate(-1)}
-            className="absolute top-4 left-4 bg-black bg-opacity-50 p-2 rounded-full text-white"
+            className="absolute top-4 left-4 bg-background bg-opacity-50 p-2 rounded-full text-white"
             size="icon"
             variant="ghost"
           >
@@ -100,14 +100,14 @@ const SponsorZone: React.FC = () => {
       {/* Sponsor Details */}
       <div className="mt-20 px-4 pt-4 text-center">
         <h1 className="text-2xl font-bold mb-1">{sponsor.name}</h1>
-        <div className="inline-flex items-center gap-1 text-sm text-kenya-brown-light">
+        <div className="inline-flex items-center gap-1 text-sm text-text-white/70">
           <span className={`capitalize px-2 py-0.5 rounded-full ${getSponsorClasses(sponsor, 'background')} bg-opacity-20`}>
             {sponsor.partnership_level} Partner
           </span>
         </div>
         
         {sponsor.description && (
-          <p className="mt-4 text-kenya-brown-light">{sponsor.description}</p>
+          <p className="mt-4 text-text-white/70">{sponsor.description}</p>
         )}
         
         {sponsor.website_url && (
@@ -130,7 +130,7 @@ const SponsorZone: React.FC = () => {
         </h2>
         
         {sponsorZone?.description && (
-          <p className="text-kenya-brown-light mb-6">{sponsorZone.description}</p>
+          <p className="text-text-white/70 mb-6">{sponsorZone.description}</p>
         )}
         
         {sponsorZone?.content_blocks && sponsorZone.content_blocks.length > 0 ? (
@@ -149,7 +149,7 @@ const SponsorZone: React.FC = () => {
             }
           </div>
         ) : (
-          <div className="text-center py-8 text-kenya-brown-light">
+          <div className="text-center py-8 text-text-white/70">
             <p>No content available in this zone yet.</p>
           </div>
         )}

@@ -96,10 +96,10 @@ const AIEventAssistant: React.FC = () => {
   };
   
   return (
-    <Card className="flex flex-col h-[500px] border-kenya-brown/30">
+    <Card className="flex flex-col h-[500px] border-white/20/30">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           Event Planning Assistant
         </CardTitle>
       </CardHeader>
@@ -114,7 +114,7 @@ const AIEventAssistant: React.FC = () => {
               <div
                 className={`max-w-[80%] rounded-lg p-3 ${
                   message.sender === 'user'
-                    ? 'bg-kenya-orange text-white'
+                    ? 'bg-gradient-accent text-white'
                     : 'bg-secondary'
                 }`}
               >
@@ -179,7 +179,7 @@ const AIEventAssistant: React.FC = () => {
             size="icon"
             onClick={handleSendMessage}
             disabled={isLoading || !input.trim()}
-            className="bg-kenya-orange hover:bg-kenya-orange/90"
+            className="bg-gradient-accent hover:bg-gradient-accent/90"
           >
             <Send className="h-4 w-4" />
           </Button>

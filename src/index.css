@@ -1,70 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 20px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(71, 85, 105, 0.5);
+}
+
 @layer base {
   :root {
-    --background: 24 18% 8%;
-    --foreground: 0 0% 100%;
+    /* Light Mode - Slate-based palette */
+    --background: 210 40% 98%; /* #F8FAFC - Slate-50 */
+    --foreground: 222 47% 11%; /* Slate-900 */
 
-    --card: 24 18% 8%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 222 47% 11%;
 
-    --popover: 24 18% 15%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 29 100% 50%;
-    --primary-foreground: 24 18% 8%;
+    --primary: 21 90% 48%; /* #F97316 - Orange-500 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 18% 15%;
+    --secondary: 215 20% 40%; /* #64748B - Slate-500 */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 24 18% 15%;
-    --muted-foreground: 28 20% 67%;
+    --muted: 214 32% 91%; /* #F1F5F9 - Slate-100 */
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 24 18% 15%;
+    --accent: 258 90% 66%; /* #8B5CF6 - Violet-500 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 12% 22%;
-    --input: 24 12% 22%;
-    --ring: 29 100% 50%;
+    --border: 214 32% 91%; /* Slate-200 */
+    --input: 214 32% 91%;
+    --ring: 21 90% 48%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 24 18% 4%;
-    --foreground: 0 0% 100%;
+    /* Dark Mode - Deep slate palette */
+    --background: 222 47% 6%; /* #0B1121 - Darker Slate-950 */
+    --foreground: 210 40% 98%;
 
-    --card: 24 18% 5%;
-    --card-foreground: 0 0% 100%;
+    --card: 217 33% 10%; /* #151F32 - Custom Slate-900 */
+    --card-foreground: 210 40% 98%;
 
-    --popover: 24 18% 5%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 217 33% 10%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 29 100% 50%;
-    --primary-foreground: 24 18% 8%;
+    --primary: 21 90% 48%; /* #F97316 - Orange-500 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 24 18% 12%;
+    --secondary: 215 16% 60%; /* #94A3B8 - Slate-400 */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 24 18% 10%;
-    --muted-foreground: 28 20% 67%;
+    --muted: 217 33% 17%; /* #1E293B - Slate-800 */
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 24 18% 10%;
+    --accent: 258 90% 66%; /* #8B5CF6 - Violet-500 */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 12% 15%;
-    --input: 24 12% 15%;
-    --ring: 29 100% 50%;
+    --border: 217 33% 17%; /* Slate-800 */
+    --input: 217 33% 17%;
+    --ring: 21 90% 48%;
   }
 }
 
@@ -75,12 +95,12 @@
   }
   
   body {
-    @apply bg-kenya-dark text-foreground antialiased font-sans overflow-x-hidden min-h-screen;
+    @apply bg-background text-foreground antialiased font-sans overflow-x-hidden min-h-screen transition-colors duration-300;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans; /* Using the custom font for headings */
-    letter-spacing: 0.02em;
+    @apply font-display; /* Plus Jakarta Sans for headings */
+    letter-spacing: -0.02em; /* Tighter tracking for display font */
   }
 
   html {
@@ -112,11 +132,27 @@
   }
 
   .glass-effect {
-    @apply backdrop-blur-md bg-white/5 border border-white/10;
+    @apply backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800;
   }
   
   .text-gradient {
-    @apply bg-gradient-to-br from-kenya-orange via-kenya-orange/90 to-kenya-orange/70 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-orange {
+    @apply bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent;
+  }
+
+  .bg-hero-gradient {
+    @apply bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950;
+  }
+
+  .bg-subtle-glow {
+    background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%);
+  }
+
+  .dark .bg-subtle-glow {
+    background: radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 45%);
   }
   
   /* Touch-specific utility classes */

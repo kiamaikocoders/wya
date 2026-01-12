@@ -65,23 +65,23 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-kenya-dark pb-20">
+    <div className="min-h-screen bg-gradient-promo pb-20">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
-            <SettingsIcon className="h-8 w-8 text-kenya-orange" />
+            <SettingsIcon className="h-8 w-8 text-gradient-orange-accent" />
             <h1 className="text-3xl font-bold text-white">Settings</h1>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Account Settings */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Account
                 </CardTitle>
-                <CardDescription className="text-kenya-brown-light">
+                <CardDescription className="text-text-white/70">
                   Manage your account information
                 </CardDescription>
               </CardHeader>
@@ -113,13 +113,13 @@ const Settings: React.FC = () => {
             </Card>
 
             {/* Notification Settings */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Bell className="h-5 w-5" />
                   Notifications
                 </CardTitle>
-                <CardDescription className="text-kenya-brown-light">
+                <CardDescription className="text-text-white/70">
                   Control your notification preferences
                 </CardDescription>
               </CardHeader>
@@ -127,7 +127,7 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Email Notifications</Label>
-                    <p className="text-sm text-kenya-brown-light">Receive updates via email</p>
+                    <p className="text-sm text-text-white/70">Receive updates via email</p>
                   </div>
                   <Switch
                     checked={settings.email_notifications}
@@ -139,7 +139,7 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Push Notifications</Label>
-                    <p className="text-sm text-kenya-brown-light">Receive push notifications</p>
+                    <p className="text-sm text-text-white/70">Receive push notifications</p>
                   </div>
                   <Switch
                     checked={settings.push_notifications}
@@ -151,7 +151,7 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Marketing Emails</Label>
-                    <p className="text-sm text-kenya-brown-light">Receive promotional content</p>
+                    <p className="text-sm text-text-white/70">Receive promotional content</p>
                   </div>
                   <Switch
                     checked={settings.marketing_emails}
@@ -164,13 +164,13 @@ const Settings: React.FC = () => {
             </Card>
 
             {/* Privacy & Security */}
-            <Card className="bg-kenya-dark border-kenya-brown/20">
+            <Card className="bg-gradient-promo border-white/20">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Shield className="h-5 w-5" />
                   Privacy & Security
                 </CardTitle>
-                <CardDescription className="text-kenya-brown-light">
+                <CardDescription className="text-text-white/70">
                   Manage your privacy and security settings
                 </CardDescription>
               </CardHeader>
@@ -178,7 +178,7 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Profile Visibility</Label>
-                    <p className="text-sm text-kenya-brown-light">Who can see your profile</p>
+                    <p className="text-sm text-text-white/70">Who can see your profile</p>
                   </div>
                   <select
                     value={settings.profile_visibility}
@@ -193,7 +193,7 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Two-Factor Authentication</Label>
-                    <p className="text-sm text-kenya-brown-light">Add extra security</p>
+                    <p className="text-sm text-text-white/70">Add extra security</p>
                   </div>
                   <Switch
                     checked={settings.two_factor_auth}
@@ -211,7 +211,7 @@ const Settings: React.FC = () => {
             <div className="mt-6 flex justify-end">
               <Button
                 onClick={handleSaveSettings}
-                className="bg-kenya-brown hover:bg-kenya-brown-dark"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Settings
@@ -219,7 +219,7 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          <Separator className="my-8 bg-kenya-brown/20" />
+          <Separator className="my-8 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20" />
 
           {/* Danger Zone */}
           <Card className="bg-red-900/20 border-red-500/20">

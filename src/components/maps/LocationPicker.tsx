@@ -256,10 +256,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   return (
     <div className="space-y-4" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <Card className="bg-kenya-brown border-kenya-brown-dark">
+      <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-white/20-dark">
         <CardHeader>
           <CardTitle className="text-white">{displayTitle}</CardTitle>
-          <CardDescription className="text-kenya-brown-light">
+          <CardDescription className="text-text-white/70">
             {displayDescription}
           </CardDescription>
         </CardHeader>
@@ -267,7 +267,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {/* Search Bar */}
           <div className="flex gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-kenya-brown-light" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-white/70" />
               <Input
                 type="text"
                 placeholder="Search for a location (e.g., Nairobi, Mombasa)"
@@ -280,7 +280,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     handleSearch(e);
                   }
                 }}
-                className="pl-10 bg-kenya-brown-dark text-white border-kenya-brown-dark focus:border-kenya-orange"
+                className="pl-10 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-white/20-dark focus:border-gradient-orange-accent"
               />
             </div>
             <Button
@@ -291,7 +291,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 handleSearch(e);
               }}
               disabled={isSearching || !searchQuery.trim()}
-              className="bg-kenya-orange hover:bg-opacity-90"
+              className="bg-gradient-accent hover:bg-opacity-90"
             >
               {isSearching ? 'Searching...' : 'Search'}
             </Button>
@@ -303,7 +303,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 handleUseCurrentLocation(e);
               }}
               variant="outline"
-              className="border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+              className="border-white/20-dark text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
             >
               <Navigation className="h-4 w-4 mr-2" />
               My Location
@@ -335,7 +335,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     setSearchResults([]);
                     toast.success(`Selected: ${result.place_name}`);
                   }}
-                  className="w-full text-left p-2 rounded bg-kenya-brown-dark hover:bg-kenya-brown-dark/80 text-white text-sm transition-colors"
+                  className="w-full text-left p-2 rounded bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/80 text-white text-sm transition-colors"
                 >
                   {result.place_name}
                 </button>
@@ -364,10 +364,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                   anchor="bottom"
                 >
                   <div className="relative">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-kenya-orange via-amber-400 to-kenya-orange shadow-[0_0_30px_rgba(255,128,0,0.6)]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br bg-gradient-accent shadow-[0_0_30px_rgba(255,128,0,0.6)]">
                       <MapPin className="h-6 w-6 text-white" />
                     </div>
-                    <div className="absolute inset-0 rounded-full bg-kenya-orange animate-ping opacity-20" />
+                    <div className="absolute inset-0 rounded-full bg-gradient-accent animate-ping opacity-20" />
                   </div>
                 </Marker>
               )}
@@ -394,21 +394,21 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
           {/* Selected Location Info */}
           {selectedLocation && (
-            <div className="p-4 bg-kenya-brown-dark rounded-lg border border-kenya-orange/30">
+            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark rounded-lg border border-kenya-orange/30">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-kenya-orange" />
+                    <MapPin className="h-4 w-4 text-gradient-orange-accent" />
                     <p className="text-white font-medium">Selected Location</p>
                   </div>
-                  <p className="text-sm text-kenya-brown-light">{selectedLocation.address}</p>
+                  <p className="text-sm text-text-white/70">{selectedLocation.address}</p>
                   {selectedLocation.city && (
-                    <p className="text-xs text-kenya-brown-light mt-1">
+                    <p className="text-xs text-text-white/70 mt-1">
                       {selectedLocation.city}
                       {selectedLocation.country && `, ${selectedLocation.country}`}
                     </p>
                   )}
-                  <p className="text-xs text-kenya-brown-light mt-1">
+                  <p className="text-xs text-text-white/70 mt-1">
                     Coordinates: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
                   </p>
                 </div>
@@ -420,7 +420,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                     handleConfirm(e);
                   }}
                   size="sm"
-                  className="bg-kenya-orange hover:bg-opacity-90 text-white"
+                  className="bg-gradient-accent hover:bg-opacity-90 text-white"
                 >
                   <Check className="h-4 w-4 mr-1" />
                   Confirm

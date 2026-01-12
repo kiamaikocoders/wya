@@ -115,10 +115,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-kenya-brown border-kenya-brown-dark">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-white/20-dark">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl">Edit Profile</DialogTitle>
-          <DialogDescription className="text-kenya-brown-light">
+          <DialogDescription className="text-text-white/70">
             Update your profile information
           </DialogDescription>
         </DialogHeader>
@@ -136,7 +136,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
               <Button
                 type="button"
                 variant="outline"
-                className="border-kenya-orange/50 text-kenya-orange hover:bg-kenya-orange/10"
+                className="border-kenya-orange/50 text-gradient-orange-accent hover:bg-gradient-accent/10"
                 disabled={isUploading}
                 onClick={(e) => {
                   e.preventDefault();
@@ -193,7 +193,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
                 value={formData.full_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                 placeholder="Enter your full name"
-                className="bg-kenya-brown-dark border-kenya-brown-dark text-white focus:border-kenya-orange"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark border-white/20-dark text-white focus:border-gradient-orange-accent"
                 required
               />
             </div>
@@ -205,10 +205,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
                 value={formData.username}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
                 placeholder="username"
-                className="bg-kenya-brown-dark border-kenya-brown-dark text-white focus:border-kenya-orange"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark border-white/20-dark text-white focus:border-gradient-orange-accent"
                 required
               />
-              <p className="text-xs text-kenya-brown-light">Username must be unique and contain only letters, numbers, and underscores</p>
+              <p className="text-xs text-text-white/70">Username must be unique and contain only letters, numbers, and underscores</p>
             </div>
 
             <div className="space-y-2">
@@ -219,16 +219,16 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
                 onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell us about yourself"
                 rows={4}
-                className="bg-kenya-brown-dark border-kenya-brown-dark text-white focus:border-kenya-orange resize-none"
+                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark border-white/20-dark text-white focus:border-gradient-orange-accent resize-none"
                 maxLength={500}
               />
-              <p className="text-xs text-kenya-brown-light">{formData.bio.length}/500 characters</p>
+              <p className="text-xs text-text-white/70">{formData.bio.length}/500 characters</p>
             </div>
 
             {/* Location Picker */}
             <div className="space-y-2">
               <Label className="text-white">Your Location</Label>
-              <p className="text-xs text-kenya-brown-light mb-2">
+              <p className="text-xs text-text-white/70 mb-2">
                 Set your location to receive personalized event recommendations near you
               </p>
               <LocationPicker
@@ -252,14 +252,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
               type="button"
               variant="outline"
               onClick={onClose}
-              className="border-kenya-brown-dark text-white hover:bg-kenya-brown-dark"
+              className="border-white/20-dark text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-kenya-orange hover:bg-opacity-90 text-white"
+              className="bg-gradient-accent hover:bg-opacity-90 text-white"
             >
               {isSubmitting ? (
                 <>

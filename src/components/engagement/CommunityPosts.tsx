@@ -257,7 +257,7 @@ const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleFileChange}
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-kenya-brown file:text-white hover:file:bg-kenya-brown-dark"
+                    className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 file:text-white hover:file:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
                   />
                   {previewUrl && (
                     <div className="relative">
@@ -333,7 +333,7 @@ const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-kenya-brown rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold">
                           {post.user?.username?.charAt(0) || 'U'}
                         </span>

@@ -47,12 +47,12 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
             )}
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/40 to-transparent" />
 
           <div className="absolute inset-x-0 bottom-0 p-4">
             <div className="flex items-center justify-between">
               {event.featured && (
-                <Badge className="rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark shadow-[0_0_18px_rgba(255,128,0,0.45)]">
+                <Badge className="rounded-full bg-gradient-to-r bg-gradient-accent text-kenya-dark shadow-[0_0_18px_rgba(255,128,0,0.45)]">
                   Featured
                 </Badge>
               )}
@@ -83,28 +83,28 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
 
         <div className="flex flex-1 flex-col gap-4 p-6 text-white">
           <div>
-            <h3 className="text-lg font-semibold tracking-tight text-white group-hover:text-kenya-orange">
+            <h3 className="text-lg font-semibold tracking-tight text-white group-hover:text-gradient-orange-accent">
               {event.title}
             </h3>
             <p className="mt-2 text-sm text-white/70 line-clamp-2">{event.description}</p>
           </div>
           <div className="grid gap-3 text-sm text-white/70 sm:grid-cols-2">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-kenya-orange" />
+              <Calendar className="h-4 w-4 text-gradient-orange-accent" />
               <span>{formatDate(event.date)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-kenya-orange" />
+              <MapPin className="h-4 w-4 text-gradient-orange-accent" />
               <span>{event.location}</span>
             </div>
             {event.capacity && (
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-kenya-orange" />
+                <User className="h-4 w-4 text-gradient-orange-accent" />
                 <span>{event.capacity} slots</span>
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Ticket className="h-4 w-4 text-kenya-orange" />
+              <Ticket className="h-4 w-4 text-gradient-orange-accent" />
               <span>{ticketLabel}</span>
             </div>
           </div>

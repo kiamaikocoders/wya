@@ -191,60 +191,38 @@ const Home: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-kenya-dark pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Onboarding Reminders */}
       {isAuthenticated && <OnboardingReminders />}
       <section className="relative overflow-hidden">
-        {/* Blurred Background Image */}
-        <div className="absolute inset-0 -z-10 overflow-hidden" style={{ zIndex: 0 }}>
-          <img
-            src="/concert-background.jpg"
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-            style={{
-              filter: 'blur(40px)',
-              transform: 'scale(1.1)', // Scale up to avoid blur edges
-              width: '100%',
-              height: '100%',
-            }}
-            onError={(e) => {
-              // Fallback to a gradient if image fails to load
-              console.error('Background image failed to load:', e);
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-          {/* Fallback gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-pink-900/50 to-orange-900/50" />
-        </div>
-        {/* Dark overlay for readability */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/85 via-black/70 to-black/60" style={{ zIndex: 1 }} />
-        {/* Gradient fade at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 -z-10 bg-gradient-to-t from-kenya-dark to-transparent" style={{ zIndex: 2 }} />
+        {/* Hero gradient background - matches reference design exactly */}
+        <div className="absolute inset-0 -z-20 bg-gradient-to-br from-indigo-50 via-purple-50/30 to-violet-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950" />
+        {/* Subtle glow effect */}
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.12),transparent_45%)] dark:bg-subtle-glow" />
         <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 relative z-10">
           <div className="space-y-8">
             {/* Mobile AI Feed - Shows FIRST on mobile, hidden on desktop */}
             <div className="block md:hidden">
-              <Card className="border-white/20 bg-black/40 backdrop-blur-sm p-6 text-white shadow-none">
+              <Card className="border-border bg-card p-6 shadow-sm">
                 <CardHeader>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
-                    <Wand2 className="h-4 w-4 text-kenya-orange" />
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                    <Wand2 className="h-4 w-4 text-primary" />
                     AI feed
                   </span>
-                  <CardTitle className="mt-4 text-xl text-white">
+                  <CardTitle className="mt-4 text-xl">
                     Today's picks
                   </CardTitle>
-                  <p className="text-sm text-white/65">
+                  <p className="text-sm text-muted-foreground">
                     Based on your vibe and trending moments in Kenya.
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-4 text-sm text-white/80">
+                <CardContent className="space-y-4 text-sm text-muted-foreground">
                   {trendingEvents.length > 0 ? (
                     (() => {
                       const featuredEvent = trendingEvents[0];
                       return (
                         <div
-                          className="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition-all active:border-kenya-orange/50 active:bg-black/40"
+                          className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-muted/50 hover:bg-muted transition-all hover:border-primary/30"
                           onClick={() => handleEventClick(String(featuredEvent.id))}
                         >
                           {/* Event Image */}
@@ -255,8 +233,8 @@ const Home: React.FC = () => {
                                 alt={featuredEvent.title}
                                 className="h-full w-full object-cover transition-transform duration-300 group-active:scale-105"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                              <Badge className="absolute top-3 right-3 bg-black/60 text-xs text-white backdrop-blur-sm">
+                              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                              <Badge className="absolute top-3 right-3 bg-background/90 text-xs backdrop-blur-sm border border-border">
                                 {format(new Date(featuredEvent.date), 'MMM d')}
                               </Badge>
                             </div>
@@ -264,28 +242,28 @@ const Home: React.FC = () => {
                           
                           {/* Event Info */}
                           <div className="p-4">
-                            <h3 className="mb-2 text-base font-semibold text-white">
+                            <h3 className="mb-2 text-base font-bold text-foreground group-hover:text-primary transition-colors">
                               {featuredEvent.title}
                             </h3>
-                            <div className="space-y-1 text-xs text-white/70">
+                            <div className="space-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline" className="border-white/20 text-white/80">
+                                <Badge variant="outline" className="text-[10px] font-medium">
                                   {featuredEvent.category}
                                 </Badge>
-                                <span className="text-white/50">•</span>
+                                <span className="text-muted-foreground/50">•</span>
                                 <span className="flex items-center gap-1">
                                   <MapPin className="h-3 w-3" />
                                   {featuredEvent.location}
                                 </span>
                               </div>
                               {featuredEvent.time && (
-                                <div className="flex items-center gap-1 text-white/60">
+                                <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   <span>{featuredEvent.time.slice(0, 5)}</span>
                                 </div>
                               )}
                               {featuredEvent.performing_artists && featuredEvent.performing_artists.length > 0 && (
-                                <div className="flex items-center gap-1 text-white/60">
+                                <div className="flex items-center gap-1">
                                   <Music className="h-3 w-3" />
                                   <span className="line-clamp-1">
                                     {featuredEvent.performing_artists.slice(0, 2).join(', ')}
@@ -294,7 +272,7 @@ const Home: React.FC = () => {
                                 </div>
                               )}
                               {featuredEvent.price !== undefined && (
-                                <div className="pt-2 text-sm font-semibold text-kenya-orange">
+                                <div className="pt-2 text-sm font-semibold text-primary">
                                   KSh {featuredEvent.price.toLocaleString()}
                                 </div>
                               )}
@@ -304,14 +282,14 @@ const Home: React.FC = () => {
                       );
                     })()
                   ) : (
-                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-center text-white/60">
+                    <div className="rounded-2xl border border-border bg-muted/50 p-4 text-center text-muted-foreground">
                       <p className="text-sm">No trending events yet</p>
                       <p className="text-xs mt-1">Check back soon for updates</p>
                     </div>
                   )}
                   <Button 
                     variant="outline"
-                    className="w-full border-white/20 text-white/80 hover:text-white touch-target"
+                    className="w-full touch-target"
                     onClick={() => navigate('/spotlight')}
                   >
                     View complete feed
@@ -325,11 +303,11 @@ const Home: React.FC = () => {
               {/* Left Column - Main Content */}
               <div className="space-y-6 md:space-y-8">
                 <div className="space-y-3">
-                  <Badge className="bg-white/10 text-white">Curated for you</Badge>
-                  <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl">
-                    Discover what's happening in Kenya this week.
+                  <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Curated for you</Badge>
+                  <h1 className="text-3xl font-display font-extrabold leading-tight text-foreground sm:text-4xl md:text-5xl tracking-tight">
+                    Discover what's happening in <span className="text-gradient">Kenya</span> this week.
                   </h1>
-                  <p className="text-base text-white/70 sm:text-lg">
+                  <p className="text-base text-muted-foreground sm:text-lg">
                     We combine cultural insight, real-time data, and AI curation to
                     surface events that feel made for you—whether you're attending,
                     hosting, or scouting partnerships.
@@ -341,7 +319,7 @@ const Home: React.FC = () => {
                     <SearchBar onSearch={handleSearch} />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => navigate('/events')} size="sm" className="touch-target">
+                    <Button onClick={() => navigate('/events')} size="sm" className="touch-target bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md shadow-orange-500/20">
                       Explore Events
                     </Button>
                     <Button 
@@ -356,7 +334,7 @@ const Home: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => navigate('/onboarding')}
-                      className="border-white/25 text-white/80 hover:text-white touch-target"
+                      className="touch-target"
                     >
                       Personalise Feed
                     </Button>
@@ -364,9 +342,9 @@ const Home: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate('/ai-assistance')}
-                      className="text-white/80 hover:text-white touch-target"
+                      className="touch-target"
                     >
-                      <Brain className="mr-2 h-4 w-4 text-kenya-orange" />
+                      <Brain className="mr-2 h-4 w-4 text-accent" />
                       <span className="hidden sm:inline">AI Studio</span>
                       <span className="sm:hidden">AI</span>
                     </Button>
@@ -374,34 +352,35 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="space-y-1">
-                      <span className="text-sm text-white/60">Happening now</span>
-                      <CardTitle className="text-xl sm:text-2xl text-white">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Happening now</span>
+                      <CardTitle className="text-3xl font-display font-bold">
                         {events?.length || 0}+
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="text-sm text-white/70">
+                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
                       Live events across Nairobi, Mombasa, Kisumu, Eldoret, and
                       more.
                     </CardContent>
                   </Card>
-                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
                     <CardHeader className="space-y-1">
-                      <span className="text-sm text-white/60">For creators</span>
-                      <CardTitle className="text-xl sm:text-2xl text-white">350+</CardTitle>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">For creators</span>
+                      <CardTitle className="text-3xl font-display font-bold">350+</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-sm text-white/70">
+                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
                       Organizers partnering with WYA to fill venues and manage
                       audiences.
                     </CardContent>
                   </Card>
-                  <Card className="border-white/20 bg-black/40 backdrop-blur-sm shadow-none">
+                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-accent/10 to-transparent rounded-bl-full"></div>
                     <CardHeader className="space-y-1">
-                      <span className="text-sm text-white/60">Powered by AI</span>
-                      <CardTitle className="text-xl sm:text-2xl text-white">Smart</CardTitle>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Powered by AI</span>
+                      <CardTitle className="text-3xl font-display font-bold text-gradient">Smart</CardTitle>
                     </CardHeader>
-                    <CardContent className="text-sm text-white/70">
+                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
                       Recommendations refresh every morning with cultural cues and
                       community signals.
                     </CardContent>
@@ -411,27 +390,26 @@ const Home: React.FC = () => {
               
               {/* Right Column - Desktop AI Feed Sidebar */}
               <div className="hidden md:block relative h-full">
-                <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-kenya-orange/20 via-white/10 to-transparent blur-2xl" />
-                <Card className="flex h-full flex-col justify-between border-white/20 bg-black/40 backdrop-blur-sm p-6 text-white shadow-none sticky top-24">
+                <Card className="flex h-full flex-col justify-between border-border bg-card shadow-xl p-6 sticky top-24">
                   <CardHeader>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-black/40 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
-                      <Wand2 className="h-4 w-4 text-kenya-orange" />
+                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                      <Wand2 className="h-3 w-3 text-primary" />
                       AI feed
                     </span>
-                    <CardTitle className="mt-4 text-2xl text-white">
+                    <CardTitle className="mt-4 text-2xl font-display font-bold">
                       Today's picks
                     </CardTitle>
-                    <p className="text-sm text-white/65">
+                    <p className="text-sm text-muted-foreground">
                       Based on your vibe and trending moments in Kenya.
                     </p>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm text-white/80">
+                  <CardContent className="space-y-4 text-sm">
                     {trendingEvents.length > 0 ? (
                       (() => {
                         const featuredEvent = trendingEvents[0];
                         return (
                           <div
-                            className="group cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-black/30 transition-all hover:border-kenya-orange/50 hover:bg-black/40"
+                            className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-muted/50 hover:bg-muted transition-all hover:border-primary/30"
                             onClick={() => handleEventClick(String(featuredEvent.id))}
                           >
                             {/* Event Image */}
@@ -442,8 +420,8 @@ const Home: React.FC = () => {
                                   alt={featuredEvent.title}
                                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                <Badge className="absolute top-3 right-3 bg-black/60 text-xs text-white backdrop-blur-sm">
+                                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+                                <Badge className="absolute top-3 right-3 bg-background/90 text-xs backdrop-blur-sm border border-border">
                                   {format(new Date(featuredEvent.date), 'MMM d')}
                                 </Badge>
                               </div>
@@ -451,22 +429,22 @@ const Home: React.FC = () => {
                             
                             {/* Event Info */}
                             <div className="p-4">
-                              <h3 className="mb-2 text-lg font-semibold text-white">
+                              <h3 className="mb-2 text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                                 {featuredEvent.title}
                               </h3>
-                              <div className="space-y-1 text-xs text-white/70">
+                              <div className="space-y-1 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="border-white/20 text-white/80">
+                                  <Badge variant="outline" className="text-[10px] font-medium">
                                     {featuredEvent.category}
                                   </Badge>
-                                  <span className="text-white/50">•</span>
+                                  <span className="text-muted-foreground/50">•</span>
                                   <span className="flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
                                     {featuredEvent.location}
                                   </span>
                                 </div>
                                 {featuredEvent.time && (
-                                  <div className="flex items-center gap-1 text-white/60">
+                                  <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
                                     <span>{featuredEvent.time.slice(0, 5)}</span>
                                   </div>
@@ -491,14 +469,14 @@ const Home: React.FC = () => {
                         );
                       })()
                     ) : (
-                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-center text-white/60">
+                      <div className="rounded-2xl border border-border bg-muted/50 p-4 text-center text-muted-foreground">
                         <p className="text-sm">No trending events yet</p>
                         <p className="text-xs mt-1">Check back soon for updates</p>
                       </div>
                     )}
                     <Button 
                       variant="outline"
-                      className="w-full border-white/20 text-white/80 hover:text-white"
+                      className="w-full"
                       onClick={() => navigate('/spotlight')}
                     >
                       View complete feed

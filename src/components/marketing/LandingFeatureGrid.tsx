@@ -13,7 +13,7 @@ const LandingFeatureGrid = ({ features }: LandingFeatureGridProps) => {
       aria-labelledby="features-heading"
     >
       <div className="mx-auto mb-12 max-w-2xl text-center">
-        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+        <span className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
           Everything in one place
         </span>
         <h2
@@ -35,7 +35,7 @@ const LandingFeatureGrid = ({ features }: LandingFeatureGridProps) => {
             className="group h-full border-white/10 bg-white/5 bg-gradient-to-br from-white/5 via-white/10 to-transparent text-left backdrop-blur transition-all duration-300 hover:border-kenya-orange/60 hover:shadow-[0_0_25px_rgba(255,128,0,0.25)]"
           >
             <CardHeader className="space-y-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kenya-orange/20 text-kenya-orange transition-transform duration-300 group-hover:scale-110">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-accent/20 text-gradient-orange-accent transition-transform duration-300 group-hover:scale-110">
                 <feature.icon className="h-6 w-6" />
               </div>
               <CardTitle className="text-xl text-white">

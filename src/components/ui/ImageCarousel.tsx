@@ -72,7 +72,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, className }) => {
                       
                       {image.link && (
                         <Button 
-                          className="mt-3 bg-kenya-orange text-white rounded-full w-12 h-12 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="mt-3 bg-gradient-accent text-white rounded-full w-12 h-12 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                           asChild
                         >
                           <a href={image.link}>
@@ -93,7 +93,7 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({ images, className }) => {
             <button
               key={index}
               className={`w-2 h-2 rounded-full ${
-                activeIndex === index ? "bg-kenya-orange" : "bg-kenya-brown-light opacity-50"
+                activeIndex === index ? "bg-gradient-accent" : "bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-light opacity-50"
               }`}
               onClick={() => {
                 const carousel = document.querySelector('[role="region"][aria-roledescription="carousel"]');

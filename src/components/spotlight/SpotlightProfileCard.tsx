@@ -22,15 +22,15 @@ const SpotlightProfileCard: React.FC<SpotlightProfileCardProps> = ({ profile, he
     >
       <CardContent className="flex flex-col gap-4 p-5">
         <div className="flex items-center gap-4">
-          <Avatar className="h-14 w-14 bg-kenya-brown/60">
+          <Avatar className="h-14 w-14 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/60">
             <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name || profile.username || ''} />
-            <AvatarFallback className="bg-kenya-brown text-white text-lg">
+            <AvatarFallback className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 text-white text-lg">
               {(profile.full_name || profile.username || 'U').charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
             <h3 className="text-lg font-semibold text-white">{profile.full_name || profile.username || 'Unknown'}</h3>
-            {headline && <p className="text-sm text-kenya-orange">{headline}</p>}
+            {headline && <p className="text-sm text-gradient-orange-accent">{headline}</p>}
           </div>
         </div>
         {highlight && <p className="text-sm text-white/70 line-clamp-3">{highlight}</p>}

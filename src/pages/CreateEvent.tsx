@@ -246,7 +246,7 @@ const CreateEvent: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-kenya-brown-light">
+                  <p className="text-xs text-text-white/70">
                     Or use the map below to set precise coordinates
                   </p>
                 </div>
@@ -283,7 +283,7 @@ const CreateEvent: React.FC = () => {
               {/* Location Picker Map */}
               <div className="space-y-2">
                 <Label>Set Event Location on Map</Label>
-                <p className="text-xs text-kenya-brown-light mb-2">
+                <p className="text-xs text-text-white/70 mb-2">
                   Click on the map or search to set precise coordinates. This will pin your event on the map.
                 </p>
                 <LocationPicker
@@ -389,13 +389,13 @@ const CreateEvent: React.FC = () => {
                     {formData.tags.map((tag, index) => (
                       <div 
                         key={index} 
-                        className="bg-kenya-brown-dark text-white px-3 py-1 rounded-full text-sm flex items-center space-x-1"
+                        className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white px-3 py-1 rounded-full text-sm flex items-center space-x-1"
                       >
                         <span>{tag}</span>
                         <button 
                           type="button" 
                           onClick={() => handleRemoveTag(tag)}
-                          className="text-white hover:text-kenya-orange ml-1 focus:outline-none"
+                          className="text-white hover:text-gradient-orange-accent ml-1 focus:outline-none"
                         >
                           ×
                         </button>

@@ -43,7 +43,7 @@ const FooterMinimal = () => {
               aria-label={label}
               className={`rounded-full border border-white/10 bg-white/5 p-2 transition ${
                 active 
-                  ? 'text-kenya-orange border-kenya-orange/60 hover:border-kenya-orange hover:text-kenya-orange' 
+                  ? 'text-gradient-orange-accent border-kenya-orange/60 hover:border-kenya-orange hover:text-gradient-orange-accent' 
                   : 'text-white/30 opacity-50 cursor-not-allowed hover:border-white/10 hover:text-white/30'
               }`}
             >

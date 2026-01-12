@@ -64,7 +64,7 @@ const AIReviewAnalysis: React.FC<AIReviewAnalysisProps> = ({
     <Card className="border border-dashed border-primary/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Review Analysis
         </CardTitle>
       </CardHeader>
@@ -81,7 +81,7 @@ const AIReviewAnalysis: React.FC<AIReviewAnalysisProps> = ({
         <Button
           onClick={handleAnalyze}
           disabled={isAnalyzing || !review.trim()}
-          className="w-full bg-kenya-orange hover:bg-kenya-orange/90"
+          className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
         >
           {isAnalyzing ? (
             <>
@@ -97,7 +97,7 @@ const AIReviewAnalysis: React.FC<AIReviewAnalysisProps> = ({
         </Button>
         
         {analysis && (
-          <div className="mt-4 p-4 bg-kenya-brown/10 rounded-lg">
+          <div className="mt-4 p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-lg font-medium text-white">Analysis Result</h3>
               {sentiment && (
@@ -116,7 +116,7 @@ const AIReviewAnalysis: React.FC<AIReviewAnalysisProps> = ({
                 </div>
               )}
             </div>
-            <p className="text-kenya-brown-light">{analysis}</p>
+            <p className="text-text-white/70">{analysis}</p>
           </div>
         )}
       </CardContent>

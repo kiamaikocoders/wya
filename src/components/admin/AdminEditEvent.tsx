@@ -441,7 +441,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                             />
                             <label
                               htmlFor={`category-${parentCategory.id}`}
-                              className="text-sm font-medium text-kenya-orange cursor-pointer flex-1"
+                              className="text-sm font-medium text-gradient-orange-accent cursor-pointer flex-1"
                             >
                               All {parentCategory.name}
                             </label>

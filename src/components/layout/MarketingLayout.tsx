@@ -4,7 +4,7 @@ import Footer from "./Footer";
 
 const MarketingLayout = () => {
   return (
-    <div className="min-h-screen bg-kenya-dark text-white">
+    <div className="min-h-screen bg-gradient-promo text-white">
       <MarketingNavbar />
       <main className="flex-1">
         <Outlet />

@@ -46,7 +46,7 @@ const Logo: React.FC<LogoProps> = ({
         {!imageError ? (
           /* Logo Image - Primary */
           <img
-            src="/WYA LOGO 2.png"
+            src="/WYA_LOGO_2.png"
             alt="WYA - Where You At"
             className={cn(
               sizeClasses[size],
@@ -56,7 +56,8 @@ const Logo: React.FC<LogoProps> = ({
               'max-w-none',
               'block',
               'z-10',
-              'relative'
+              'relative',
+              'bg-transparent'
             )}
             style={{ 
               height: size === 'sm' ? '48px' : size === 'md' ? '72px' : '96px',
@@ -64,7 +65,8 @@ const Logo: React.FC<LogoProps> = ({
               display: 'block',
               visibility: 'visible',
               opacity: 1,
-              maxWidth: 'none'
+              maxWidth: 'none',
+              backgroundColor: 'transparent'
             }}
             loading="eager"
             onError={(e) => {

@@ -15,7 +15,7 @@ const SpotlightPage = () => {
   return (
     <div 
       ref={containerRef}
-      className="relative bg-black overflow-y-auto"
+      className="relative bg-background overflow-y-auto"
       style={{
         scrollSnapType: 'y mandatory',
         height: '100vh', // Full viewport - content bleeding (TikTok style)

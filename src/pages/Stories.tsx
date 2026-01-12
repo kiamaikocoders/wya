@@ -25,12 +25,12 @@ const StoriesPage = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-kenya-orange">Stories</h1>
+        <h1 className="text-3xl font-bold text-gradient-orange-accent">Stories</h1>
         
         {user && (
           <Button 
             onClick={() => setShowForm(!showForm)} 
-            className={showForm ? "bg-gray-600" : "bg-kenya-orange"}
+            className={showForm ? "bg-gray-600" : "bg-gradient-accent"}
           >
             {showForm ? <><X size={18} className="mr-2" /> Cancel</> : <><Plus size={18} className="mr-2" /> Add Story</>}
           </Button>
@@ -38,7 +38,7 @@ const StoriesPage = () => {
       </div>
 
       {showForm && (
-        <Card className="p-4 mb-8 bg-gray-900 border border-kenya-brown/20">
+        <Card className="p-4 mb-8 bg-gray-900 border border-white/20">
           <h2 className="text-xl font-semibold mb-4 text-white">Share Your Experience</h2>
           <CreateStoryForm onSuccess={() => setShowForm(false)} />
         </Card>

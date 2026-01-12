@@ -320,10 +320,10 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
   const categoryAverages = getCategoryAverages();
 
   return (
-    <Card className="bg-kenya-brown-dark/20">
+    <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/20">
       <CardHeader>
         <CardTitle className="text-xl flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-kenya-orange" />
+          <MessageSquare className="h-5 w-5 text-gradient-orange-accent" />
           Event Reviews {reviews.length > 0 && `(${reviews.length})`}
         </CardTitle>
       </CardHeader>
@@ -338,14 +338,14 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
           <TabsContent value="read" className="space-y-6">
             {reviews.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-kenya-brown/10 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 p-4 rounded-lg">
                   <div className="flex flex-col items-center justify-center">
                     <div className="text-4xl font-bold text-white">{averageRating.toFixed(1)}</div>
                     <div className="flex items-center mt-2">
                       {[1, 2, 3, 4, 5].map(i => (
                         <Star
                           key={i}
-                          className={`h-5 w-5 ${i <= Math.round(averageRating) ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                          className={`h-5 w-5 ${i <= Math.round(averageRating) ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                         />
                       ))}
                     </div>
@@ -360,7 +360,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         <div className="w-8 text-right">{rating}★</div>
                         <div className="w-full bg-gray-700 rounded-full h-2.5">
                           <div 
-                            className="bg-kenya-orange h-2.5 rounded-full" 
+                            className="bg-gradient-accent h-2.5 rounded-full" 
                             style={{ width: `${reviews.length ? (count / reviews.length) * 100 : 0}%` }}
                           ></div>
                         </div>
@@ -376,7 +376,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         {[1, 2, 3, 4, 5].map(i => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.service) ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.service) ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                           />
                         ))}
                       </div>
@@ -387,7 +387,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         {[1, 2, 3, 4, 5].map(i => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.venue) ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.venue) ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                           />
                         ))}
                       </div>
@@ -398,7 +398,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         {[1, 2, 3, 4, 5].map(i => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.value) ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.value) ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                           />
                         ))}
                       </div>
@@ -409,7 +409,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         {[1, 2, 3, 4, 5].map(i => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.atmosphere) ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                            className={`h-4 w-4 ${i <= Math.round(categoryAverages.atmosphere) ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                           />
                         ))}
                       </div>
@@ -452,7 +452,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                 
                 <div className="space-y-4 mt-4">
                   {sortedAndFilteredReviews.map(review => (
-                    <Card key={review.id} className="bg-kenya-brown/5 border-kenya-brown/20">
+                    <Card key={review.id} className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/5 border-white/20">
                       <CardContent className="pt-6">
                         <div className="flex items-start gap-4">
                           <Avatar>
@@ -472,7 +472,7 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                                 {[1, 2, 3, 4, 5].map(i => (
                                   <Star
                                     key={i}
-                                    className={`h-4 w-4 ${i <= review.rating ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'}`}
+                                    className={`h-4 w-4 ${i <= review.rating ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'}`}
                                   />
                                 ))}
                               </div>
@@ -605,8 +605,8 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                         >
                           <Star
                             className={`h-10 w-10 ${
-                              rating <= overallRating ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'
-                            } hover:text-kenya-orange transition-colors`}
+                              rating <= overallRating ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'
+                            } hover:text-gradient-orange-accent transition-colors`}
                           />
                         </button>
                       ))}
@@ -626,8 +626,8 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                           >
                             <Star
                               className={`h-6 w-6 ${
-                                rating <= categoryRatings.service ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'
-                              } hover:text-kenya-orange transition-colors`}
+                                rating <= categoryRatings.service ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'
+                              } hover:text-gradient-orange-accent transition-colors`}
                             />
                           </button>
                         ))}
@@ -646,8 +646,8 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                           >
                             <Star
                               className={`h-6 w-6 ${
-                                rating <= categoryRatings.venue ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'
-                              } hover:text-kenya-orange transition-colors`}
+                                rating <= categoryRatings.venue ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'
+                              } hover:text-gradient-orange-accent transition-colors`}
                             />
                           </button>
                         ))}
@@ -666,8 +666,8 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                           >
                             <Star
                               className={`h-6 w-6 ${
-                                rating <= categoryRatings.value ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'
-                              } hover:text-kenya-orange transition-colors`}
+                                rating <= categoryRatings.value ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'
+                              } hover:text-gradient-orange-accent transition-colors`}
                             />
                           </button>
                         ))}
@@ -686,8 +686,8 @@ const ReviewSystem: React.FC<ReviewSystemProps> = ({
                           >
                             <Star
                               className={`h-6 w-6 ${
-                                rating <= categoryRatings.atmosphere ? 'text-kenya-orange fill-kenya-orange' : 'text-gray-500'
-                              } hover:text-kenya-orange transition-colors`}
+                                rating <= categoryRatings.atmosphere ? 'text-gradient-orange-accent fill-kenya-orange' : 'text-gray-500'
+                              } hover:text-gradient-orange-accent transition-colors`}
                             />
                           </button>
                         ))}

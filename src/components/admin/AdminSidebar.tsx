@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   ActivitySquare, 
   BarChart3,
+  Ghost,
   ChevronLeft,
   Menu,
   X
@@ -29,6 +30,7 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Content Moderation', path: '/admin/moderation', icon: MessageSquare },
   { label: 'Analytics', path: '/admin/analytics', icon: ActivitySquare },
   { label: 'Sponsor Analytics', path: '/admin/sponsor-analytics', icon: BarChart3 },
+  { label: 'Ghost Management', path: '/admin/ghost', icon: Ghost },
 ];
 
 interface AdminSidebarProps {

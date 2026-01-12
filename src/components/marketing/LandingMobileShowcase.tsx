@@ -5,7 +5,7 @@ const LandingMobileShowcase = () => {
     <section className="container mx-auto px-4 py-20">
       <div className="grid items-center gap-12 md:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-6">
-          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+          <span className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
             Mobile ready
           </span>
           <h2 className="text-3xl font-bold text-white md:text-4xl">
@@ -26,7 +26,7 @@ const LandingMobileShowcase = () => {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-md justify-center">
-          <div className="absolute -left-12 top-1/4 h-44 w-44 rounded-full bg-kenya-orange/15 blur-3xl" />
+          <div className="absolute -left-12 top-1/4 h-44 w-44 rounded-full bg-gradient-accent/15 blur-3xl" />
           <div className="absolute -right-8 bottom-0 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
 
           <div className="relative flex items-end gap-6">

@@ -85,7 +85,7 @@ const NotificationBell = () => {
       <Bell size={20} />
       {unreadCount > 0 && (
         <Badge 
-          className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-kenya-orange text-white border-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
+          className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-accent text-white border-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
           variant="default"
         >
           {unreadCount > 99 ? '99+' : unreadCount}

@@ -41,7 +41,7 @@ const AIStoryGenerator: React.FC<AIStoryGeneratorProps> = ({ onGenerate }) => {
     <Card className="border border-dashed border-primary/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Story Assistant
         </CardTitle>
       </CardHeader>
@@ -58,7 +58,7 @@ const AIStoryGenerator: React.FC<AIStoryGeneratorProps> = ({ onGenerate }) => {
         <Button
           onClick={handleGenerate}
           disabled={isGenerating || !prompt.trim()}
-          className="bg-kenya-orange hover:bg-kenya-orange/90"
+          className="bg-gradient-accent hover:bg-gradient-accent/90"
         >
           {isGenerating ? (
             <>

@@ -160,7 +160,7 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-kenya-dark border-white/10 text-white max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-md bg-gradient-promo border-white/10 text-white max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-white capitalize">
             {title}
@@ -184,14 +184,14 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
         <div className="flex-1 overflow-y-auto mt-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+              <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
             </div>
           ) : users.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-white/70 text-lg">{emptyTitle}</p>
               <p className="text-white/50 text-sm mt-2">{emptyDescription}</p>
               <Button
-                className="mt-5 bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black"
+                className="mt-5 bg-gradient-to-r bg-gradient-accent text-black"
                 onClick={() => {
                   onOpenChange(false);
                   setTimeout(() => navigate('/users', { state: { returnTo } }), 100);
@@ -247,7 +247,7 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
                           'ml-2 shrink-0',
                           isFollowing
                             ? 'border-white/20 text-white hover:bg-white/10'
-                            : 'bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-black'
+                            : 'bg-gradient-to-r bg-gradient-accent text-black'
                         )}
                         onClick={(e) => {
                           e.stopPropagation();

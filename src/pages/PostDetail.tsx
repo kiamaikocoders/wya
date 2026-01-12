@@ -103,7 +103,7 @@ const PostDetail: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-400">Please log in to view this post.</p>
@@ -114,7 +114,7 @@ const PostDetail: React.FC = () => {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kenya-brown mx-auto"></div>
           <p className="text-gray-400 mt-2">Loading post...</p>
@@ -125,13 +125,13 @@ const PostDetail: React.FC = () => {
   
   if (!post) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Post Not Found</h1>
           <p className="text-gray-400 mb-4">The post you're looking for doesn't exist.</p>
           <Button
             onClick={() => navigate('/forum')}
-            className="bg-kenya-brown hover:bg-kenya-brown-dark"
+            className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
           >
             Back to Forum
           </Button>
@@ -147,7 +147,7 @@ const PostDetail: React.FC = () => {
         <meta name="description" content={post.content.substring(0, 160)} />
       </Helmet>
       
-      <div className="min-h-screen bg-kenya-dark">
+      <div className="min-h-screen bg-gradient-promo">
         <div className="container mx-auto px-4 py-8">
           {/* Back Button */}
           <div className="mb-6 flex items-center gap-3">
@@ -156,11 +156,11 @@ const PostDetail: React.FC = () => {
           </div>
       
           {/* Post Content */}
-          <Card className="mb-8 bg-kenya-dark border-kenya-brown/20">
+          <Card className="mb-8 bg-gradient-promo border-white/20">
         <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-kenya-brown rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold text-lg">
                       {post.user?.username?.charAt(0) || 'U'}
                     </span>
@@ -197,7 +197,7 @@ const PostDetail: React.FC = () => {
                 </div>
               )}
               
-              <div className="flex items-center gap-4 mt-6 pt-4 border-t border-kenya-brown/20">
+              <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/20">
                 <Button
                   variant="ghost"
                   onClick={handleLikePost}
@@ -234,7 +234,7 @@ const PostDetail: React.FC = () => {
 
             {/* Add Comment Form */}
             {isAuthenticated && (
-              <Card className="bg-kenya-dark border-kenya-brown/20">
+              <Card className="bg-gradient-promo border-white/20">
           <CardContent className="pt-6">
                   <form onSubmit={handleSubmitComment} className="space-y-4">
                     <div>
@@ -253,7 +253,7 @@ const PostDetail: React.FC = () => {
                   <Button 
                     type="submit" 
                         disabled={isSubmittingComment || !newComment.trim()}
-                        className="bg-kenya-brown hover:bg-kenya-brown-dark"
+                        className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
                       >
                         {isSubmittingComment ? (
                           'Posting...'
@@ -272,7 +272,7 @@ const PostDetail: React.FC = () => {
 
             {/* Comments List */}
             {comments.length === 0 ? (
-              <Card className="bg-kenya-dark border-kenya-brown/20">
+              <Card className="bg-gradient-promo border-white/20">
                 <CardContent className="text-center py-8">
                   <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No comments yet</h3>
@@ -282,10 +282,10 @@ const PostDetail: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {comments.map((comment) => (
-                  <Card key={comment.id} className="bg-kenya-dark border-kenya-brown/20">
+                  <Card key={comment.id} className="bg-gradient-promo border-white/20">
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-kenya-brown rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                           <span className="text-white font-semibold text-sm">
                             {comment.user?.username?.charAt(0) || 'U'}
                           </span>

@@ -72,7 +72,7 @@ const EventsAttendedCarousel: React.FC<EventsAttendedCarouselProps> = ({
         {!!emptyCtaLabel && (
           <Link to={emptyCtaHref} className="inline-block">
             <Button
-              className="mt-6 rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
+              className="mt-6 rounded-full bg-gradient-to-r bg-gradient-accent px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
             >
               {emptyCtaLabel}
             </Button>

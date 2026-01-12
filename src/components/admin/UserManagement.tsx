@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -377,7 +378,7 @@ const UserManagement = () => {
           </CardContent>
         </Card>
       )}
-
+      
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -677,13 +678,16 @@ const UserManagement = () => {
                         />
                       </TableCell>
                 <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
+                  <Link 
+                    to={`/users/${user.id}`}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  >
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.profile_picture} alt={user.name} />
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <div>{user.name}</div>
+                      <div className="font-semibold hover:underline">{user.name}</div>
                             <div className="text-sm text-muted-foreground">
                               {user.email ? (
                                 <span>{user.email}</span>
@@ -692,7 +696,7 @@ const UserManagement = () => {
                               )}
                             </div>
                     </div>
-                  </div>
+                  </Link>
                 </TableCell>
                 <TableCell>
                         <Badge variant={user.role === 'organizer' ? 'outline' : user.role === 'admin' ? 'default' : 'secondary'}>

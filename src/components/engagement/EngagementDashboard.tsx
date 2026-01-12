@@ -88,7 +88,7 @@ const EngagementDashboard: React.FC<EngagementDashboardProps> = ({ eventId }) =>
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kenya-brown mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white/20 mx-auto"></div>
           <p className="mt-4 text-gray-500">Loading engagement dashboard...</p>
         </div>
       </div>

@@ -19,7 +19,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
 
       <div className="container mx-auto grid items-center gap-12 px-4 md:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-kenya-brown-light">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-text-white/70">
             Personalized to you
           </p>
           <h2
@@ -38,7 +38,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
                 key={point}
                 className="flex items-start gap-3 rounded-2xl border border-white/5 bg-white/5 p-4"
               >
-                <span className="mt-1 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-kenya-orange/20 text-kenya-orange">
+                <span className="mt-1 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-accent/20 text-gradient-orange-accent">
                   ✦
                 </span>
                 <span>{point}</span>
@@ -47,7 +47,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
           </ul>
 
           <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-black/30 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-kenya-orange/15 text-kenya-orange">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-accent/15 text-gradient-orange-accent">
               <StatIcon className="h-6 w-6" />
             </div>
             <div>
@@ -63,7 +63,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={onTryAi}
-              className="bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange text-kenya-dark shadow-[0_0_25px_rgba(255,128,0,0.35)] hover:shadow-[0_0_35px_rgba(255,128,0,0.45)]"
+              className="bg-gradient-to-r bg-gradient-accent text-kenya-dark shadow-[0_0_25px_rgba(255,128,0,0.35)] hover:shadow-[0_0_35px_rgba(255,128,0,0.45)]"
             >
               {landingAiSnippet.buttonLabel}
             </Button>
@@ -77,7 +77,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
           <div className="absolute inset-0 -z-10 bg-[url('/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7.png')] bg-cover bg-center opacity-60" />
           <div className="space-y-4">
             <div className="rounded-2xl bg-black/40 p-4 text-sm text-white/80 backdrop-blur-lg">
-              <p className="text-xs uppercase tracking-wide text-kenya-orange">
+              <p className="text-xs uppercase tracking-wide text-gradient-orange-accent">
                 Today’s picks
               </p>
               <p className="mt-2 font-semibold text-white">
@@ -106,7 +106,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/75 backdrop-blur">
-              <p className="text-xs uppercase tracking-wide text-kenya-orange">
+              <p className="text-xs uppercase tracking-wide text-gradient-orange-accent">
                 Organizers
               </p>
               <p className="mt-2">

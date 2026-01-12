@@ -8,7 +8,7 @@ const EngagementHub: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-kenya-dark flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-promo flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-400">Please log in to access the Engagement Hub.</p>
@@ -24,7 +24,7 @@ const EngagementHub: React.FC = () => {
         <meta name="description" content="Keep the community buzzing with engaging content, throwbacks, and local tips." />
       </Helmet>
       
-      <div className="min-h-screen bg-kenya-dark">
+      <div className="min-h-screen bg-gradient-promo">
         <div className="container mx-auto px-4 py-8">
           <EngagementDashboard />
         </div>

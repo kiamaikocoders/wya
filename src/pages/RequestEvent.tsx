@@ -288,7 +288,7 @@ const RequestEvent: React.FC = () => {
       <span
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white',
-          isCompleted && 'bg-kenya-orange text-kenya-dark'
+          isCompleted && 'bg-gradient-accent text-white'
         )}
       >
         {isCompleted ? <CheckCircle className="h-4 w-4" /> : step + 1}
@@ -301,7 +301,7 @@ const RequestEvent: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-kenya-dark pb-16">
+    <div className="min-h-screen bg-gradient-promo pb-16">
       <Section
         title="Bring a new experience to life"
         subtitle="Share the story behind your idea. We’ll help with visibility, partnerships, and insights along the way."
@@ -326,7 +326,7 @@ const RequestEvent: React.FC = () => {
             <Card className="border-white/10 bg-white/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm text-white/80">
-                  <Rocket className="h-4 w-4 text-kenya-orange" />
+                  <Rocket className="h-4 w-4 text-gradient-orange-accent" />
                   Proposal snapshot
                 </CardTitle>
               </CardHeader>
@@ -358,7 +358,7 @@ const RequestEvent: React.FC = () => {
           <Card className="border-white/10 bg-white/5">
             <CardHeader className="space-y-1">
               <div className="flex items-center gap-3 text-sm text-white/60">
-                <Calendar className="h-4 w-4 text-kenya-orange" />
+                <Calendar className="h-4 w-4 text-gradient-orange-accent" />
                 Step {currentStep + 1} of {steps.length}
               </div>
               <CardTitle className="text-2xl text-white">
@@ -373,7 +373,7 @@ const RequestEvent: React.FC = () => {
                 <div className="space-y-4">
             <div className="space-y-2">
                     <label htmlFor="title" className="text-sm font-medium text-white">
-                      Event title <span className="text-kenya-orange">*</span>
+                      Event title <span className="text-gradient-orange-accent">*</span>
               </label>
               <Input
                 id="title"
@@ -386,7 +386,7 @@ const RequestEvent: React.FC = () => {
             </div>
             <div className="space-y-2">
                     <label htmlFor="category" className="text-sm font-medium text-white">
-                      Category <span className="text-kenya-orange">*</span>
+                      Category <span className="text-gradient-orange-accent">*</span>
               </label>
               <Select
                 value={proposal.category}
@@ -411,7 +411,7 @@ const RequestEvent: React.FC = () => {
                       htmlFor="description"
                       className="text-sm font-medium text-white"
                     >
-                      Event description <span className="text-kenya-orange">*</span>
+                      Event description <span className="text-gradient-orange-accent">*</span>
             </label>
             <Textarea
               id="description"
@@ -461,12 +461,12 @@ const RequestEvent: React.FC = () => {
                 >
                   {isUploading ? (
                     <>
-                      <Loader2 className="h-8 w-8 animate-spin text-kenya-orange" />
+                      <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
                       <span className="text-sm text-white/60">Uploading...</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="h-8 w-8 text-kenya-orange" />
+                      <Upload className="h-8 w-8 text-gradient-orange-accent" />
                       <span className="text-sm text-white/60">
                         Click to upload an image
                       </span>
@@ -490,7 +490,7 @@ const RequestEvent: React.FC = () => {
                         htmlFor="estimatedDate"
                         className="text-sm font-medium text-white"
                       >
-                        Estimated date <span className="text-kenya-orange">*</span>
+                        Estimated date <span className="text-gradient-orange-accent">*</span>
               </label>
               <Input
                 id="estimatedDate"
@@ -505,7 +505,7 @@ const RequestEvent: React.FC = () => {
                         htmlFor="location"
                         className="text-sm font-medium text-white"
                       >
-                        Location <span className="text-kenya-orange">*</span>
+                        Location <span className="text-gradient-orange-accent">*</span>
               </label>
               <Input
                 id="location"
@@ -576,7 +576,7 @@ const RequestEvent: React.FC = () => {
                         htmlFor="contactEmail"
                         className="text-sm font-medium text-white"
                       >
-                        Contact email <span className="text-kenya-orange">*</span>
+                        Contact email <span className="text-gradient-orange-accent">*</span>
               </label>
               <Input
                 id="contactEmail"

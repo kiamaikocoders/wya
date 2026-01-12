@@ -24,10 +24,10 @@ const TermsOfService = () => {
         </Link>
       </div>
       
-      <Card className="max-w-4xl mx-auto bg-kenya-brown/5">
+      <Card className="max-w-4xl mx-auto bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
-            <BookText className="h-6 w-6 text-kenya-orange" />
+            <BookText className="h-6 w-6 text-gradient-orange-accent" />
             Terms of Service
           </CardTitle>
         </CardHeader>

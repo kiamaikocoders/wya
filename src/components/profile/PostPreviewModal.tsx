@@ -200,7 +200,7 @@ const PostPreviewModal: React.FC<PostPreviewModalProps> = ({
                   value={draftContent}
                   onChange={(e) => setDraftContent(e.target.value)}
                   rows={4}
-                  className="w-full resize-none rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-kenya-orange/40"
+                  className="w-full resize-none rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-gradient-orange-accent/40"
                   placeholder="Write a caption…"
                 />
               ) : (

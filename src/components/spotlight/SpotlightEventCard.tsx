@@ -30,13 +30,13 @@ const SpotlightEventCard: React.FC<{ item: SpotlightEventItem; className?: strin
       {item.image_url ? (
         <img src={item.image_url} alt={item.title} className="h-40 w-full object-cover" />
       ) : (
-        <div className="flex h-40 w-full items-center justify-center bg-kenya-brown/20">
+        <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20">
           <span className="text-sm text-white/60">Event preview coming soon</span>
         </div>
       )}
       <CardContent className="flex flex-1 flex-col gap-4 p-5">
         {item.tag && (
-          <span className="inline-flex w-fit items-center rounded-full bg-kenya-orange/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-black">
+          <span className="inline-flex w-fit items-center rounded-full bg-gradient-accent/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-black">
             {item.tag}
           </span>
         )}
@@ -46,11 +46,11 @@ const SpotlightEventCard: React.FC<{ item: SpotlightEventItem; className?: strin
         </div>
         <div className="space-y-2 text-sm text-white/70">
           <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-kenya-orange" />
+            <CalendarDays size={16} className="text-gradient-orange-accent" />
             <span>{formattedDate}</span>
           </div>
           <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-kenya-orange" />
+            <MapPin size={16} className="text-gradient-orange-accent" />
             <span className="line-clamp-1">{item.location}</span>
           </div>
         </div>

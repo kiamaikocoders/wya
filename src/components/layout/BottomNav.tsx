@@ -62,9 +62,9 @@ const BottomNav = () => {
     <nav 
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom transition-transform duration-300',
-        isSpotlightPage 
-          ? 'border-t border-white/20 bg-black/60 backdrop-blur-xl shadow-2xl' // Glassmorphism for Spotlight
-          : 'border-t border-white/10 bg-gradient-to-t from-kenya-dark via-kenya-dark to-kenya-dark/95 backdrop-blur-lg shadow-2xl', // Original style for other pages
+        'border-t border-slate-200 dark:border-slate-800',
+        'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl',
+        'shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]',
         !isVisible && isSpotlightPage && 'translate-y-full' // Hide when scrolling down
       )}
     >
@@ -82,15 +82,15 @@ const BottomNav = () => {
                     to={item.path}
                     className={cn(
                       'flex min-w-[60px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200',
-                      'hover:bg-white/5 active:scale-95',
+                      'hover:bg-muted active:scale-95',
                       isActive 
-                        ? 'text-kenya-orange' 
-                        : 'text-white/60 hover:text-white/80'
+                        ? 'text-primary' 
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     <div className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                      isActive ? 'bg-kenya-orange/20' : ''
+                      isActive ? 'bg-primary/10' : ''
                     )}>
                       <Icon 
                         size={20} 

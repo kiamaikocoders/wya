@@ -61,7 +61,7 @@ const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({ onGenerate, initial
     <Card className="border border-dashed border-primary/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-kenya-orange" />
+          <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Image Generator
         </CardTitle>
       </CardHeader>
@@ -99,7 +99,7 @@ const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({ onGenerate, initial
             </div>
             <Button 
               onClick={handleAccept} 
-              className="w-full bg-kenya-orange hover:bg-kenya-orange/90"
+              className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
             >
               Use This Image
             </Button>
@@ -110,7 +110,7 @@ const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({ onGenerate, initial
           <Button
             onClick={handleGenerate}
             disabled={isGenerating || !prompt.trim()}
-            className="w-full bg-kenya-orange hover:bg-kenya-orange/90"
+            className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
           >
             {isGenerating ? (
               <>

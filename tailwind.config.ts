@@ -21,7 +21,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['"Be Vietnam Pro"', '"Noto Sans"', 'sans-serif'],
+				sans: ['Inter', 'sans-serif'],
+				display: ['"Plus Jakarta Sans"', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -65,12 +66,23 @@ export default {
 						light: '#BCAB9A',
 						dark: '#28211B'
 					}
-				}
+				},
+				slate: {
+					950: '#0B1121',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				xl: '1rem',
+				'2xl': '1.5rem',
+			},
+			backgroundImage: {
+				'hero-gradient-light': 'linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%)',
+				'hero-gradient-dark': 'linear-gradient(135deg, #0B1121 0%, #171638 100%)',
+				'subtle-glow-light': 'radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%)',
+				'subtle-glow-dark': 'radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 45%)',
 			},
 			keyframes: {
 				'accordion-down': {

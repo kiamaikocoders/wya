@@ -44,7 +44,7 @@ const MessageList = ({ messages }: MessageListProps) => {
                     className={`
                       px-4 py-2 rounded-2xl 
                       ${isCurrentUser 
-                        ? 'bg-kenya-orange text-white rounded-tr-none' 
+                        ? 'bg-gradient-accent text-white rounded-tr-none' 
                         : 'bg-muted rounded-tl-none'
                       }
                     `}

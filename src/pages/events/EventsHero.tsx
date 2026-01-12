@@ -40,17 +40,16 @@ const EventsHero = memo(
         : 'Vibrant experiences curated from Kenya’s creative pulse.';
 
     return (
-      <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-kenya-dark/90 via-black/80 to-kenya-dark/95 px-6 py-8 md:px-10 md:py-12">
+      <section className="relative overflow-hidden rounded-3xl border border-border bg-card px-6 py-8 md:px-10 md:py-12 shadow-sm">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/3 top-[-30%] h-64 w-64 rounded-full bg-kenya-orange/15 blur-3xl" />
-          <div className="absolute right-[-10%] top-1/2 h-72 w-72 rounded-full bg-amber-400/10 blur-[120px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#FF800015,transparent_65%)]" />
+          <div className="absolute left-1/3 top-[-30%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+          <div className="absolute right-[-10%] top-1/2 h-72 w-72 rounded-full bg-primary/5 blur-[120px]" />
         </div>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/60">
-              <Sparkles className="h-3.5 w-3.5 text-kenya-orange" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Curated for explorers
             </div>
 
@@ -58,34 +57,34 @@ const EventsHero = memo(
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="text-3xl font-semibold tracking-tight text-white md:text-4xl"
+              className="text-3xl font-display font-bold tracking-tight text-foreground md:text-4xl"
             >
               Explore Events
               {contextCity ? (
-                <span className="block text-lg font-normal text-white/70 md:text-xl">
+                <span className="block text-lg font-normal text-muted-foreground md:text-xl">
                   Handpicked highlights for {contextCity}
                 </span>
               ) : (
-                <span className="block text-lg font-normal text-white/70 md:text-xl">
+                <span className="block text-lg font-normal text-muted-foreground md:text-xl">
                   Fresh line-up across Kenya
                 </span>
               )}
             </motion.h1>
 
-            <p className="max-w-xl text-sm text-white/70 md:text-base">{heroCopy}</p>
+            <p className="max-w-xl text-sm text-muted-foreground md:text-base">{heroCopy}</p>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2 text-sm text-white/70">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-                <CalendarDays className="h-4 w-4 text-kenya-orange" />
+            <div className="flex flex-wrap items-center gap-3 pt-2 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1">
+                <CalendarDays className="h-4 w-4 text-primary" />
                 {metrics.thisWeek} events this week
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-                <Sparkles className="h-4 w-4 text-kenya-orange" />
+              <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1">
+                <Sparkles className="h-4 w-4 text-primary" />
                 {metrics.featured} featured picks
               </span>
               {metrics.curatedCity && (
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
-                  <MapPin className="h-4 w-4 text-kenya-orange" />
+                <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1">
+                  <MapPin className="h-4 w-4 text-primary" />
                   {metrics.curatedCount} in {metrics.curatedCity}
                 </span>
               )}
@@ -96,7 +95,7 @@ const EventsHero = memo(
                 <Button
                   asChild
                   size="sm"
-                  className="rounded-full bg-gradient-to-r from-kenya-orange via-amber-400 to-kenya-orange px-5 text-kenya-dark shadow-[0_0_24px_rgba(255,128,0,0.35)]"
+                  className="rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 px-5 text-white shadow-md shadow-orange-500/20"
                 >
                   <Link to="/create-event">
                     Create event
@@ -108,7 +107,7 @@ const EventsHero = memo(
                   asChild
                   variant="outline"
                   size="sm"
-                  className="rounded-full border-white/20 text-white hover:border-kenya-orange hover:bg-white/10"
+                  className="rounded-full"
                 >
                   <Link to="/request-event">
                     Submit an idea
@@ -117,7 +116,7 @@ const EventsHero = memo(
                 </Button>
               )}
 
-              <Badge className="rounded-full bg-white/10 text-white">
+              <Badge className="rounded-full bg-muted text-foreground">
                 {metrics.total} live events
               </Badge>
             </div>
@@ -146,10 +145,10 @@ const EventsHero = memo(
                 key={item.label}
                 variants={metricCardVariants}
                 transition={{ duration: 0.35, delay: 0.05 * idx }}
-                className="flex h-24 flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-4 text-white shadow-[0_15px_40px_rgba(0,0,0,0.35)] backdrop-blur"
+                className="flex h-24 flex-col justify-between rounded-2xl border border-border bg-muted/50 p-4 shadow-sm hover:shadow-md transition-shadow"
               >
-                <span className="text-xs uppercase tracking-wide text-white/60">{item.label}</span>
-                <span className="text-2xl font-semibold">{item.value}</span>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">{item.label}</span>
+                <span className="text-2xl font-display font-bold text-foreground">{item.value}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -157,18 +156,18 @@ const EventsHero = memo(
 
         <div className="mt-8">
           <Tabs value={activeTab} onValueChange={value => onTabChange(value as EventsTab)}>
-            <TabsList className="flex flex-wrap gap-2 rounded-full bg-white/10 p-1 backdrop-blur">
+            <TabsList className="flex flex-wrap gap-2 rounded-full bg-muted p-1">
               {tabs.map(tab => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
                   className={cn(
-                    'flex flex-col rounded-full px-4 py-2 text-left text-xs uppercase tracking-wide text-white/70 transition data-[state=active]:bg-gradient-to-r data-[state=active]:from-kenya-orange data-[state=active]:via-amber-400 data-[state=active]:to-kenya-orange data-[state=active]:text-kenya-dark',
+                    'flex flex-col rounded-full px-4 py-2 text-left text-xs uppercase tracking-wide text-muted-foreground transition data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white',
                     'sm:w-auto sm:flex-row sm:items-center sm:gap-3 sm:text-sm'
                   )}
                 >
                   <span className="font-semibold">{tab.label}</span>
-                  <span className="hidden text-xs font-normal normal-case text-white/60 sm:block">
+                  <span className="hidden text-xs font-normal normal-case opacity-70 sm:block">
                     {tab.description}
                   </span>
                 </TabsTrigger>

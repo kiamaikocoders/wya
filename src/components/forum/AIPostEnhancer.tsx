@@ -67,10 +67,10 @@ const AIPostEnhancer: React.FC<AIPostEnhancerProps> = ({ initialContent, onEnhan
   };
   
   return (
-    <Card className="bg-kenya-brown/5 border-dashed border-kenya-orange/30">
+    <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/5 border-dashed border-kenya-orange/30">
       <CardHeader className="pb-2">
         <CardTitle className="text-md flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-kenya-orange" />
+          <Sparkles className="h-4 w-4 text-gradient-orange-accent" />
           AI Tools
         </CardTitle>
       </CardHeader>
@@ -85,7 +85,7 @@ const AIPostEnhancer: React.FC<AIPostEnhancerProps> = ({ initialContent, onEnhan
           size="sm"
           onClick={handleEnhance}
           disabled={isEnhancing || !initialContent}
-          className="text-kenya-orange border-kenya-orange/50 hover:bg-kenya-orange/10"
+          className="text-gradient-orange-accent border-kenya-orange/50 hover:bg-gradient-accent/10"
         >
           {isEnhancing ? (
             <>
@@ -105,7 +105,7 @@ const AIPostEnhancer: React.FC<AIPostEnhancerProps> = ({ initialContent, onEnhan
           size="sm"
           onClick={generateTags}
           disabled={isEnhancing || !initialContent}
-          className="text-kenya-orange border-kenya-orange/50 hover:bg-kenya-orange/10"
+          className="text-gradient-orange-accent border-kenya-orange/50 hover:bg-gradient-accent/10"
         >
           {isEnhancing ? (
             <>

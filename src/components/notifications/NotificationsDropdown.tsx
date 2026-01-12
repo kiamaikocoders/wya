@@ -73,7 +73,7 @@ const NotificationsDropdown = () => {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-kenya-orange">
+            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-gradient-accent">
               {unreadCount}
             </Badge>
           )}
@@ -119,7 +119,7 @@ const NotificationsDropdown = () => {
                     </div>
                   </div>
                   {!notification.read && (
-                    <Badge variant="outline" className="h-2 w-2 rounded-full bg-kenya-orange" />
+                    <Badge variant="outline" className="h-2 w-2 rounded-full bg-gradient-accent" />
                   )}
                 </div>
               </Link>
