@@ -323,6 +323,7 @@ export const ghostService = {
 
   /**
    * Get ghost system statistics
+   * Uses the same query method as getGhostUsers to ensure counts match
    */
   getStatistics: async (): Promise<{
     total_ghost_users: number;
@@ -332,19 +333,40 @@ export const ghostService = {
     failed_actions: number;
   }> => {
     try {
-      // Get ghost user count
-      const { count: ghostCount } = await supabase
+      // Get ghost users using the same method as getGhostUsers to ensure counts match
+      const { data: ghostUsers, error: ghostError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('is_ghost', true);
 
+      if (ghostError) {
+        console.error('Error fetching ghost users for statistics:', ghostError);
+        // Fallback to count query
+        const { count: ghostCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_ghost', true);
+        
+        return {
+          total_ghost_users: ghostCount || 0,
+          total_queued_actions: 0,
+          pending_actions: 0,
+          completed_actions: 0,
+          failed_actions: 0
+        };
+      }
+
       // Get action queue stats
-      const { data: actions } = await supabase
+      const { data: actions, error: actionsError } = await supabase
         .from('ghost_action_queue')
         .select('status');
 
+      if (actionsError) {
+        console.error('Error fetching action queue for statistics:', actionsError);
+      }
+
       const stats = {
-        total_ghost_users: ghostCount || 0,
+        total_ghost_users: ghostUsers?.length || 0,
         total_queued_actions: actions?.length || 0,
         pending_actions: actions?.filter(a => a.status === 'pending').length || 0,
         completed_actions: actions?.filter(a => a.status === 'completed').length || 0,
