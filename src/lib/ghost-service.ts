@@ -362,5 +362,33 @@ export const ghostService = {
         failed_actions: 0
       };
     }
+  },
+
+  // ==========================================
+  // PROCESS ACTIONS
+  // ==========================================
+
+  /**
+   * Trigger Edge Function to process pending actions
+   */
+  processActions: async (): Promise<{ processed: number; message: string }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('process-ghost-actions', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      const result = data as { processed?: number; message?: string };
+      toast.success(`Processed ${result.processed || 0} actions`);
+      return {
+        processed: result.processed || 0,
+        message: result.message || 'Actions processed successfully'
+      };
+    } catch (error: any) {
+      console.error('Error processing actions:', error);
+      toast.error(error.message || 'Failed to process actions');
+      throw error;
+    }
   }
 };
