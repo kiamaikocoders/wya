@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Calendar, 
   Users, 
@@ -23,15 +24,31 @@ import {
   Trash2,
   CreditCard,
   ExternalLink,
-  RotateCw
+  RotateCw,
+  Sparkles,
+  Mountain,
+  Activity
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminService } from '@/lib/admin-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { format, subDays, subWeeks, subMonths } from 'date-fns';
+import { format, subDays, subWeeks, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 
 type TimeRange = '24h' | 'week' | '30d' | '3m';
 
@@ -64,6 +81,8 @@ interface ActivityItem {
 const DashboardHome: React.FC = () => {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
 
   // Calculate date range based on selection
   const getDateRange = (range: TimeRange) => {
@@ -176,6 +195,114 @@ const DashboardHome: React.FC = () => {
     },
     refetchInterval: 30000,
   });
+
+  // Fetch events this month
+  const { data: eventsThisMonth } = useQuery({
+    queryKey: ['events-this-month'],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const { count } = await supabase
+        .from('events')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', monthStart.toISOString());
+      return count || 0;
+    },
+  });
+
+  // Fetch new users this month
+  const { data: newUsersThisMonth } = useQuery({
+    queryKey: ['new-users-this-month'],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const { count } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', monthStart.toISOString());
+      return count || 0;
+    },
+  });
+
+  // Fetch tickets sold count
+  const { data: ticketsSold } = useQuery({
+    queryKey: ['tickets-sold'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('tickets')
+        .select('id', { count: 'exact', head: true });
+      return count || 0;
+    },
+  });
+
+  // Fetch monthly events and revenue data for line chart
+  const { data: monthlyData } = useQuery({
+    queryKey: ['monthly-events-revenue'],
+    queryFn: async () => {
+      const now = new Date();
+      const startDate = subMonths(now, 2);
+      const months = eachMonthOfInterval({
+        start: startDate,
+        end: now,
+      });
+
+      const { data: events } = await supabase
+        .from('events')
+        .select('created_at')
+        .gte('created_at', startDate.toISOString());
+
+      const { data: tickets } = await supabase
+        .from('tickets')
+        .select('purchase_date, price')
+        .gte('purchase_date', startDate.toISOString());
+
+      return months.map(month => {
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+        const monthKey = format(month, 'MMM');
+        
+        const monthEvents = events?.filter(e => {
+          const eventDate = new Date(e.created_at);
+          return eventDate >= monthStart && eventDate <= monthEnd;
+        }) || [];
+
+        const monthTickets = tickets?.filter(t => {
+          const ticketDate = new Date(t.purchase_date);
+          return ticketDate >= monthStart && ticketDate <= monthEnd;
+        }) || [];
+
+        const revenue = monthTickets.reduce((sum, t) => sum + (t.price || 0), 0);
+
+        return {
+          month: monthKey,
+          events: monthEvents.length,
+          revenue: revenue,
+        };
+      });
+    },
+  });
+
+  // Fetch events by category for pie chart
+  const { data: eventsByCategory } = useQuery({
+    queryKey: ['events-by-category'],
+    queryFn: async () => {
+      const { data: events } = await supabase
+        .from('events')
+        .select('category')
+        .not('category', 'is', null);
+
+      const categoryCounts = new Map<string, number>();
+      events?.forEach(event => {
+        if (event.category) {
+          categoryCounts.set(event.category, (categoryCounts.get(event.category) || 0) + 1);
+        }
+      });
+
+      return Array.from(categoryCounts.entries()).map(([name, value]) => ({ name, value }));
+    },
+  });
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0'];
 
   // Fetch recent activity with more details
   const { data: recentActivity } = useQuery({
@@ -375,135 +502,128 @@ const DashboardHome: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Welcome back! Here's what's happening with your platform.
-          </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>Last updated: Just now</span>
-          </div>
-          <Select value={timeRange} onValueChange={(value: TimeRange) => setTimeRange(value)}>
+          <Select value="last-month" onValueChange={() => {}}>
             <SelectTrigger className="w-[140px]">
-              <SelectValue />
+              <SelectValue>Last Month</SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="24h">Last 24 hours</SelectItem>
-              <SelectItem value="week">Last week</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="3m">Last 3 months</SelectItem>
+              <SelectItem value="last-month">Last Month</SelectItem>
+              <SelectItem value="last-week">Last Week</SelectItem>
+              <SelectItem value="last-quarter">Last Quarter</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{eventStats?.total_events || 0}</div>
-                <div className="flex items-center gap-1 text-xs mt-1">
-                  {eventsTrend >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-red-500" />
-                  )}
-                  <span className={eventsTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    {Math.abs(eventsTrend).toFixed(1)}% vs last period
-                  </span>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* Navigation Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Mountain className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="events" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Events
+          </TabsTrigger>
+          <TabsTrigger value="engagement" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Engagement
+          </TabsTrigger>
+          <TabsTrigger value="revenue" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Revenue
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{userStats?.total_users || 0}</div>
-                <div className="flex items-center gap-1 text-xs mt-1">
-                  {usersTrend >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-red-500" />
-                  )}
-                  <span className={usersTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    {Math.abs(usersTrend).toFixed(1)}% vs last period
-                  </span>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{eventStats?.total_events || 0}</div>
+                    <p className="text-xs text-green-500 mt-1">
+                      {eventsThisMonth || 0} this month
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  KES {(revenueData?.totalRevenue || 0).toLocaleString()}
-                </div>
-                <div className="flex items-center gap-1 text-xs mt-1">
-                  {revenueTrend >= 0 ? (
-                    <ArrowUpRight className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-red-500" />
-                  )}
-                  <span className={revenueTrend >= 0 ? 'text-green-500' : 'text-red-500'}>
-                    {Math.abs(revenueTrend).toFixed(1)}% vs last period
-                  </span>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{userStats?.total_users || 0}</div>
+                    <p className="text-xs text-green-500 mt-1">
+                      {newUsersThisMonth || 0} new this month
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Items</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {(pendingData?.events || 0) + (pendingData?.proposals || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {pendingData?.events || 0} events, {pendingData?.proposals || 0} proposals
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">
+                      KES {(revenueData?.totalRevenue || 0).toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total revenue
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-      {/* Quick Actions */}
-      <div className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
+                <Ticket className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">
+                      {ticketsSold || 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total tickets
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="space-y-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
@@ -565,6 +685,225 @@ const DashboardHome: React.FC = () => {
           </div>
         </div>
       </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Events & Revenue Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Events & Revenue</CardTitle>
+                <CardDescription>Monthly trends</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {monthlyData ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke="hsl(var(--muted-foreground))"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        stroke="hsl(var(--muted-foreground))"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis 
+                        yAxisId="right" 
+                        orientation="right"
+                        stroke="hsl(var(--muted-foreground))"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        yAxisId="left"
+                        type="monotone" 
+                        dataKey="events" 
+                        stroke="#0088FE" 
+                        strokeWidth={2}
+                        name="Events"
+                      />
+                      <Line 
+                        yAxisId="right"
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke="#FF8042" 
+                        strokeWidth={2}
+                        name="Revenue (KES)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Events by Category Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Events by Category</CardTitle>
+                <CardDescription>Distribution of events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {eventsByCategory && eventsByCategory.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="relative flex items-center justify-center">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={eventsByCategory}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={100}
+                            innerRadius={60}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {eventsByCategory.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px'
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold">Total</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      {eventsByCategory.map((entry, index) => {
+                        const total = eventsByCategory.reduce((sum, e) => sum + e.value, 0);
+                        const percentage = ((entry.value / total) * 100).toFixed(0);
+                        return (
+                          <div key={entry.name} className="flex items-center gap-2 text-sm">
+                            <div 
+                              className="w-3 h-3 rounded-sm flex-shrink-0" 
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <span className="text-foreground">{entry.name}</span>
+                            <span className="text-muted-foreground ml-auto">{percentage}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* AI Performance Insights */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    AI Performance Insights
+                  </CardTitle>
+                  <CardDescription>AI-powered analysis of platform performance</CardDescription>
+                </div>
+                <Button
+                  onClick={() => {
+                    setIsGeneratingInsights(true);
+                    setTimeout(() => {
+                      setIsGeneratingInsights(false);
+                    }, 2000);
+                  }}
+                  disabled={isGeneratingInsights}
+                >
+                  {isGeneratingInsights ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Insights
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Click "Generate Insights" to create AI-powered analysis and recommendations.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* User Engagement Metrics */}
+          <Card>
+            <CardHeader>
+              <CardTitle>User Engagement Metrics</CardTitle>
+              <CardDescription>Key engagement statistics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                {/* Placeholder for engagement metrics */}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="events" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Events Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Events management and analytics coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="engagement" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Engagement Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Engagement metrics and analytics coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="revenue" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Revenue analytics coming soon...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Recent Activity */}
       <Card>
