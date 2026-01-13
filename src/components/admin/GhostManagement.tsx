@@ -129,6 +129,12 @@ const GhostManagement: React.FC = () => {
       setGhostUsers(users);
       setPersonaGroups(groups);
       setQueuedActions(actions);
+      
+      // Update statistics to reflect filtered count if persona group is selected
+      if (selectedPersonaGroup !== 'all') {
+        stats.total_ghost_users = users.length;
+      }
+      
       setStatistics(stats);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -430,6 +436,11 @@ const GhostManagement: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{statistics.total_ghost_users}</div>
+              {ghostUsers.length !== statistics.total_ghost_users && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Displayed: {ghostUsers.length}
+                </p>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -579,7 +590,14 @@ const GhostManagement: React.FC = () => {
             <CardHeader>
               <CardTitle>Ghost Users</CardTitle>
               <CardDescription>
-                View all ghost accounts ({ghostUsers.length} total)
+                View all ghost accounts
+                {statistics && ghostUsers.length !== statistics.total_ghost_users ? (
+                  <span className="text-yellow-600 dark:text-yellow-400">
+                    {' '}(Showing {ghostUsers.length} of {statistics.total_ghost_users} total)
+                  </span>
+                ) : (
+                  <span> ({ghostUsers.length} total)</span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>

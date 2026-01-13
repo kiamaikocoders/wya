@@ -22,7 +22,8 @@ import {
   Edit,
   Trash2,
   CreditCard,
-  ExternalLink
+  ExternalLink,
+  RotateCw
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { adminService } from '@/lib/admin-service';
@@ -502,74 +503,68 @@ const DashboardHome: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Quick Actions
-          </CardTitle>
-          <CardDescription>Common administrative tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
-              onClick={() => navigate('/admin/events')}
-            >
-              <div className="flex items-center gap-2 mb-2 w-full">
-                <Plus className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Create Event</span>
-              </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <h2 className="text-2xl font-bold">Quick Actions</h2>
+          </div>
+          <p className="text-sm text-muted-foreground ml-7">Common administrative tasks</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div
+            onClick={() => navigate('/admin/events')}
+            className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
+          >
+            <div className="flex flex-col gap-2">
+              <Plus className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">Create Event</h3>
+              <p className="text-sm text-muted-foreground">
                 Create a new event for the platform
               </p>
-            </Button>
+            </div>
+          </div>
 
-            <Button
-              variant="outline"
-              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
-              onClick={() => navigate('/admin/proposals')}
-            >
-              <div className="flex items-center gap-2 mb-2 w-full">
-                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="font-semibold whitespace-normal break-words">Review Proposals</span>
-              </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
+          <div
+            onClick={() => navigate('/admin/proposals')}
+            className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
+          >
+            <div className="flex flex-col gap-2">
+              <RotateCw className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">Review Proposals</h3>
+              <p className="text-sm text-muted-foreground">
                 Review and approve event proposals
               </p>
-            </Button>
+            </div>
+          </div>
 
-            <Button
-              variant="outline"
-              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
-              onClick={() => navigate('/admin/moderation')}
-            >
-              <div className="flex items-center gap-2 mb-2 w-full">
-                <MessageSquare className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Content Review</span>
-              </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
+          <div
+            onClick={() => navigate('/admin/moderation')}
+            className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
+          >
+            <div className="flex flex-col gap-2">
+              <MessageSquare className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">Content Review</h3>
+              <p className="text-sm text-muted-foreground">
                 Moderate user-generated content
               </p>
-            </Button>
+            </div>
+          </div>
 
-            <Button
-              variant="outline"
-              className="h-auto min-h-[120px] flex flex-col items-start justify-start p-4 hover:bg-accent"
-              onClick={() => navigate('/admin/analytics')}
-            >
-              <div className="flex items-center gap-2 mb-2 w-full">
-                <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">View Analytics</span>
-              </div>
-              <p className="text-sm text-muted-foreground text-left break-words w-full line-clamp-2">
+          <div
+            onClick={() => navigate('/admin/analytics')}
+            className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
+          >
+            <div className="flex flex-col gap-2">
+              <TrendingUp className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">View Analytics</h3>
+              <p className="text-sm text-muted-foreground">
                 View detailed analytics and insights
               </p>
-            </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Recent Activity */}
       <Card>
