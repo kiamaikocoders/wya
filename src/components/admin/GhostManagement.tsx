@@ -130,9 +130,13 @@ const GhostManagement: React.FC = () => {
       setPersonaGroups(groups);
       setQueuedActions(actions);
       
-      // Update statistics to reflect filtered count if persona group is selected
+      // Always use the actual database count from statistics (not filtered list)
+      // The statistics already reflect the total from database
+      // Only override if we're filtering by persona group
       if (selectedPersonaGroup !== 'all') {
-        stats.total_ghost_users = users.length;
+        // When filtered, show both: filtered count and total
+        stats.total_ghost_users = stats.total_ghost_users; // Keep total
+        stats.filtered_ghost_users = users.length; // Add filtered count
       }
       
       setStatistics(stats);
@@ -436,9 +440,14 @@ const GhostManagement: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{statistics.total_ghost_users}</div>
-              {ghostUsers.length !== statistics.total_ghost_users && (
+              {selectedPersonaGroup !== 'all' && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Displayed: {ghostUsers.length}
+                  Filtered: {ghostUsers.length} of {statistics.total_ghost_users}
+                </p>
+              )}
+              {selectedPersonaGroup === 'all' && ghostUsers.length !== statistics.total_ghost_users && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                  ⚠️ Mismatch: Displayed {ghostUsers.length}, DB has {statistics.total_ghost_users}
                 </p>
               )}
             </CardContent>
