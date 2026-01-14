@@ -250,12 +250,10 @@ export const engagementService = {
     limit: number = 20
   ): Promise<CommunityPost[]> => {
     try {
+      // First get posts without the join to avoid relationship error
       let query = supabase
         .from('community_posts')
-        .select(`
-          *,
-          profiles:user_id(id, username, avatar_url)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -263,11 +261,37 @@ export const engagementService = {
         query = query.eq('category', category);
       }
 
-      const { data, error } = await query;
+      const { data: posts, error: postsError } = await query;
 
-      if (error) throw error;
+      if (postsError) throw postsError;
 
-      return data || [];
+      if (!posts || posts.length === 0) return [];
+
+      // Get user profiles separately
+      const userIds = [...new Set(posts.map(p => p.user_id).filter(Boolean))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.warn('Error fetching profiles for community posts:', profilesError);
+      }
+
+      // Create a map of user profiles
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      // Combine posts with user data
+      const postsWithUsers = posts.map(post => ({
+        ...post,
+        user: profilesMap.get(post.user_id) ? {
+          id: profilesMap.get(post.user_id)!.id,
+          username: profilesMap.get(post.user_id)!.username || 'Unknown',
+          avatar_url: profilesMap.get(post.user_id)!.avatar_url
+        } : undefined
+      }));
+
+      return postsWithUsers;
     } catch (error) {
       console.error('Error getting community posts:', error);
       throw error;
