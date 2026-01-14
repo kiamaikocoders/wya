@@ -882,19 +882,23 @@ const GhostManagement: React.FC = () => {
                           </SelectContent>
                         </Select>
                         <Select
-                          value={selectedEventId}
-                          onValueChange={setSelectedEventId}
+                          value={selectedEventId || undefined}
+                          onValueChange={(value) => setSelectedEventId(value === 'none' ? '' : value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select event (optional)" />
                           </SelectTrigger>
                           <SelectContent className="max-h-[300px]">
-                            <SelectItem value="">None</SelectItem>
-                            {filteredEvents.map((event) => (
-                              <SelectItem key={event.id} value={event.id.toString()}>
-                                {event.title} - {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="none">None</SelectItem>
+                            {filteredEvents && filteredEvents.length > 0 ? (
+                              filteredEvents.map((event) => (
+                                <SelectItem key={event.id} value={event.id.toString()}>
+                                  {event.title} - {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No events found</div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
