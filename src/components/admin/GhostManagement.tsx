@@ -165,32 +165,47 @@ const GhostManagement: React.FC = () => {
     });
   }, [events, eventFilter]);
 
-  // Filter targets by search query
+  // Filter targets by search query (with error handling)
   const filteredStories = useMemo(() => {
-    if (!targetSearchQuery) return stories.slice(0, 20);
-    const query = targetSearchQuery.toLowerCase();
-    return stories.filter(s => 
-      s.content?.toLowerCase().includes(query) ||
-      s.caption?.toLowerCase().includes(query)
-    ).slice(0, 20);
+    try {
+      if (!targetSearchQuery || !stories) return stories?.slice(0, 20) || [];
+      const query = targetSearchQuery.toLowerCase();
+      return stories.filter(s => 
+        s?.content?.toLowerCase().includes(query) ||
+        s?.caption?.toLowerCase().includes(query)
+      ).slice(0, 20);
+    } catch (error) {
+      console.error('Error filtering stories:', error);
+      return stories?.slice(0, 20) || [];
+    }
   }, [stories, targetSearchQuery]);
 
   const filteredForumPosts = useMemo(() => {
-    if (!targetSearchQuery) return forumPosts.slice(0, 20);
-    const query = targetSearchQuery.toLowerCase();
-    return forumPosts.filter(p => 
-      p.title?.toLowerCase().includes(query) ||
-      p.content?.toLowerCase().includes(query)
-    ).slice(0, 20);
+    try {
+      if (!targetSearchQuery || !forumPosts) return forumPosts?.slice(0, 20) || [];
+      const query = targetSearchQuery.toLowerCase();
+      return forumPosts.filter(p => 
+        p?.title?.toLowerCase().includes(query) ||
+        p?.content?.toLowerCase().includes(query)
+      ).slice(0, 20);
+    } catch (error) {
+      console.error('Error filtering forum posts:', error);
+      return forumPosts?.slice(0, 20) || [];
+    }
   }, [forumPosts, targetSearchQuery]);
 
   const filteredCommunityPosts = useMemo(() => {
-    if (!targetSearchQuery) return communityPosts.slice(0, 20);
-    const query = targetSearchQuery.toLowerCase();
-    return communityPosts.filter(p => 
-      p.title?.toLowerCase().includes(query) ||
-      p.content?.toLowerCase().includes(query)
-    ).slice(0, 20);
+    try {
+      if (!targetSearchQuery || !communityPosts) return communityPosts?.slice(0, 20) || [];
+      const query = targetSearchQuery.toLowerCase();
+      return communityPosts.filter(p => 
+        p?.title?.toLowerCase().includes(query) ||
+        p?.content?.toLowerCase().includes(query)
+      ).slice(0, 20);
+    } catch (error) {
+      console.error('Error filtering community posts:', error);
+      return communityPosts?.slice(0, 20) || [];
+    }
   }, [communityPosts, targetSearchQuery]);
 
   // Handle file upload
@@ -303,7 +318,7 @@ const GhostManagement: React.FC = () => {
           media_url: mediaUrl || undefined
         };
         // For create_story, event_id goes in target_id if event is selected
-        if (selectedEventId) {
+        if (selectedEventId && selectedEventId !== 'none') {
           finalTargetId = parseInt(selectedEventId);
           finalTargetType = 'event';
         }
@@ -314,7 +329,7 @@ const GhostManagement: React.FC = () => {
           media_url: mediaUrl || undefined
         };
         // For create_post, event_id goes in target_id if event is selected
-        if (selectedEventId) {
+        if (selectedEventId && selectedEventId !== 'none') {
           finalTargetId = parseInt(selectedEventId);
           finalTargetType = 'event';
         }
@@ -729,9 +744,15 @@ const GhostManagement: React.FC = () => {
                   <Label>Select Target</Label>
                   <div className="space-y-2">
                     <Input
-                      placeholder="Search..."
+                      placeholder="Search by title or content..."
                       value={targetSearchQuery}
-                      onChange={(e) => setTargetSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        try {
+                          setTargetSearchQuery(e.target.value);
+                        } catch (error) {
+                          console.error('Error updating search query:', error);
+                        }
+                      }}
                       className="mb-2"
                     />
                     <Select
@@ -745,7 +766,7 @@ const GhostManagement: React.FC = () => {
                         {getTargetTypeForAction() === 'story' && (
                           <>
                             {filteredStories.length === 0 ? (
-                              <SelectItem value="" disabled>No stories found</SelectItem>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No stories found</div>
                             ) : (
                               filteredStories.map((story) => (
                                 <SelectItem key={story.id} value={story.id.toString()}>
@@ -758,7 +779,7 @@ const GhostManagement: React.FC = () => {
                         {getTargetTypeForAction() === 'forum_post' && (
                           <>
                             {filteredForumPosts.length === 0 ? (
-                              <SelectItem value="" disabled>No forum posts found</SelectItem>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No forum posts found</div>
                             ) : (
                               filteredForumPosts.map((post) => (
                                 <SelectItem key={post.id} value={post.id.toString()}>
@@ -771,7 +792,7 @@ const GhostManagement: React.FC = () => {
                         {getTargetTypeForAction() === 'community_post' && (
                           <>
                             {filteredCommunityPosts.length === 0 ? (
-                              <SelectItem value="" disabled>No community posts found</SelectItem>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No community posts found</div>
                             ) : (
                               filteredCommunityPosts.map((post) => (
                                 <SelectItem key={post.id} value={post.id.toString()}>
@@ -782,7 +803,7 @@ const GhostManagement: React.FC = () => {
                           </>
                         )}
                         {getTargetTypeForAction() === 'user' && (
-                          <SelectItem value="" disabled>User selection coming soon</SelectItem>
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">User selection coming soon</div>
                         )}
                       </SelectContent>
                     </Select>
