@@ -140,6 +140,44 @@ interface GhostUserData {
   personaGroup: string;
 }
 
+/**
+ * Generate fun, diverse avatar URLs
+ * Mix of animations, scenic views, abstract art, and fun graphics
+ */
+function generateFunAvatarUrl(userIndex: number, userData: GhostUserData): string {
+  // Use userIndex as seed for consistency
+  const seed = userIndex;
+  
+  // Categorize avatars into different types
+  const avatarType = seed % 4; // 0-3 for 4 different types
+  
+  switch (avatarType) {
+    case 0: // Animations & Cartoons (DiceBear Avataaars)
+      // Fun cartoon-style avatars with various expressions
+      const avataaarSeed = `avatar_${seed}`;
+      return `https://api.dicebear.com/7.x/avataaars/svg?seed=${avataaarSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+    
+    case 1: // Scenic Views & Nature (Picsum Photos)
+      // Beautiful scenic photos (mountains, landscapes, nature)
+      const picsumSeed = 1000 + seed; // Offset to get scenic images
+      return `https://picsum.photos/seed/${picsumSeed}/400/400`;
+    
+    case 2: // Abstract & Artistic (DiceBear Shapes)
+      // Colorful abstract shapes and patterns
+      const shapesSeed = `shapes_${seed}`;
+      return `https://api.dicebear.com/7.x/shapes/svg?seed=${shapesSeed}&backgroundColor=ffd5dc,b6e3f4,c0aede,d1d4f9,ffdfbf`;
+    
+    case 3: // Fun Graphics & Icons (DiceBear Bottts)
+      // Robot/tech-style fun avatars
+      const botttsSeed = `bot_${seed}`;
+      return `https://api.dicebear.com/7.x/bottts/svg?seed=${botttsSeed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+    
+    default:
+      // Fallback to scenic photos
+      return `https://picsum.photos/seed/${seed}/400/400`;
+  }
+}
+
 function generateGhostUser(index: number, gender: 'male' | 'female', personaGroup: string): GhostUserData {
   const firstNames = kenyanFirstNames[gender];
   const lastName = kenyanLastNames[Math.floor(Math.random() * kenyanLastNames.length)];
@@ -197,14 +235,9 @@ async function createGhostUser(userData: GhostUserData, userIndex: number): Prom
     // Wait a moment for the trigger to create the profile
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Generate profile picture URL using a real image service
-    // Using Picsum Photos (random real photos) with seed for consistency
-    // Format: https://picsum.photos/seed/{seed}/400/400
-    // Using user index as seed to get consistent but diverse images
-    const genderParam = userData.gender === 'male' ? 'men' : 'women';
-    const imageIndex = userIndex % 100; // Cycle through 100 different images
-    // Using a diverse people photo API - this gives real profile photos
-    const avatarUrl = `https://randomuser.me/api/portraits/${genderParam}/${imageIndex}.jpg`;
+    // Generate fun, diverse avatar URLs (animations, scenic views, random fun images)
+    // Mix of different sources for variety: animations, nature, abstract, fun graphics
+    const avatarUrl = generateFunAvatarUrl(userIndex, userData);
 
     // Update profile (trigger may have already created it)
     const { error: profileError } = await supabaseAdmin
