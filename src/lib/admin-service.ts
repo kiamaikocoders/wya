@@ -312,10 +312,24 @@ export const adminService = {
   getUserStats: async (): Promise<AdminUserStats> => {
     try {
       // Get total users (EXCLUDE ghost users from total count)
-      const { count: totalUsers } = await supabase
+      // Get all profiles first, then filter out ghost users by is_ghost flag
+      // Note: Some ghost users might have is_ghost=false, so we'll filter by checking auth users
+      const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_ghost', false); // Exclude ghost users from total
+        .select('id, is_ghost')
+        .eq('is_ghost', false);
+      
+      // Also get auth users to check for ghost email pattern
+      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers();
+      const ghostUserIds = new Set(
+        authUsers
+          ?.filter(u => u.email?.includes('ghost.') && u.email?.endsWith('@wya.local'))
+          .map(u => u.id) || []
+      );
+      
+      // Filter out any profiles that are ghost users (by email pattern)
+      const realUserProfiles = allProfiles?.filter(p => !ghostUserIds.has(p.id)) || [];
+      const totalUsers = realUserProfiles.length;
 
       // Get admins
       const { count: admins } = await supabase
@@ -335,15 +349,19 @@ export const adminService = {
       const attendees = (totalUsers || 0) - admins - organizers;
 
       // Get active users (users who logged in within last 30 days)
-      // EXCLUDE ghost users from active count
+      // EXCLUDE ghost users from active count (by is_ghost flag AND email pattern)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { count: activeUsers } = await supabase
+      const { data: activeProfiles } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_ghost', false) // Exclude ghost users
+        .select('id')
+        .eq('is_ghost', false)
         .gte('updated_at', thirtyDaysAgo.toISOString());
+      
+      // Filter out ghost users by email pattern
+      const realActiveUsers = activeProfiles?.filter(p => !ghostUserIds.has(p.id)) || [];
+      const activeUsers = realActiveUsers.length;
 
       // Get new users this month
       const startOfMonth = new Date();
