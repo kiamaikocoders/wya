@@ -34,7 +34,7 @@ import {
   Upload,
   Calendar,
   Search,
-  HelpCircle
+  HelpCircle,
   RefreshCw
 } from 'lucide-react';
 import { ghostService, type GhostActionQueue, type GhostPersonaGroup, type GhostUser } from '@/lib/ghost-service';
@@ -421,7 +421,7 @@ const GhostManagement: React.FC = () => {
   
   // Determine target type based on action type
   const getTargetTypeForAction = () => {
-    if (actionType.startsWith('like_') || actionType.startsWith('comment_')) {
+    if (actionType.startsWith('like_')) {
       if (actionType.includes('story')) return 'story';
       if (actionType.includes('post') && !actionType.includes('community')) return 'forum_post';
       if (actionType.includes('community_post')) return 'community_post';
@@ -748,9 +748,6 @@ const GhostManagement: React.FC = () => {
                     <SelectItem value="like_story">Like Story</SelectItem>
                     <SelectItem value="like_post">Like Forum Post</SelectItem>
                     <SelectItem value="like_community_post">Like Community Post</SelectItem>
-                    <SelectItem value="comment_story">Comment on Story</SelectItem>
-                    <SelectItem value="comment_post">Comment on Forum Post</SelectItem>
-                    <SelectItem value="comment_community_post">Comment on Community Post</SelectItem>
                     <SelectItem value="create_story">Create Story</SelectItem>
                     <SelectItem value="create_post">Create Forum Post</SelectItem>
                     <SelectItem value="create_community_post">Create Community Post</SelectItem>
