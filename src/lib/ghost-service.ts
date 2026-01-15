@@ -412,5 +412,29 @@ export const ghostService = {
       toast.error(error.message || 'Failed to process actions');
       throw error;
     }
+  },
+
+  /**
+   * Reset actions stuck in processing state (due to timeouts)
+   */
+  resetStuckActions: async (): Promise<{ reset_count: number; action_ids: number[] }> => {
+    try {
+      const { data, error } = await supabase.rpc('reset_stuck_processing_actions');
+      
+      if (error) throw error;
+      
+      const result = data as { reset_count: number; action_ids: number[] } | null;
+      if (result && result.reset_count > 0) {
+        toast.success(`Reset ${result.reset_count} stuck action(s)`);
+      } else {
+        toast.info('No stuck actions found');
+      }
+      
+      return result || { reset_count: 0, action_ids: [] };
+    } catch (error: any) {
+      console.error('Error resetting stuck actions:', error);
+      toast.error(error.message || 'Failed to reset stuck actions');
+      throw error;
+    }
   }
 };
