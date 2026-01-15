@@ -310,6 +310,16 @@ async function executeGhostAction(
       case "create_story":
         const storyContent = action.metadata?.content || "Great event! 🎉";
         const storyMedia = action.metadata?.media_url || null;
+        
+        // Determine media type from URL or default to 'image'
+        let mediaType = "image";
+        if (storyMedia) {
+          // Check if it's a video based on file extension
+          const videoExtensions = ['.mp4', '.webm', '.mov', '.quicktime'];
+          const isVideo = videoExtensions.some(ext => storyMedia.toLowerCase().includes(ext));
+          mediaType = isVideo ? "video" : "image";
+        }
+        
         const { error: createStoryError } = await supabase
           .from("stories")
           .insert({
@@ -318,9 +328,12 @@ async function executeGhostAction(
             content: storyContent,
             caption: storyContent,
             media_url: storyMedia,
-            media_type: storyMedia ? "image" : null,
+            media_type: mediaType, // Always set to 'image' or 'video', never null
           });
-        if (createStoryError) throw createStoryError;
+        if (createStoryError) {
+          console.error("Error creating story:", createStoryError);
+          throw createStoryError;
+        }
         break;
 
       case "create_post":
