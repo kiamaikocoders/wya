@@ -35,6 +35,7 @@ import {
   Calendar,
   Search,
   HelpCircle
+  RefreshCw
 } from 'lucide-react';
 import { ghostService, type GhostActionQueue, type GhostPersonaGroup, type GhostUser } from '@/lib/ghost-service';
 import { eventService } from '@/lib/event-service';
@@ -520,25 +521,45 @@ const GhostManagement: React.FC = () => {
                     Monitor and manage queued ghost actions
                   </CardDescription>
                 </div>
-                {statistics?.pending_actions > 0 && (
+                <div className="flex gap-2">
+                  {statistics?.pending_actions > 0 && (
+                    <Button
+                      onClick={handleProcessActions}
+                      disabled={isProcessing}
+                      className="flex items-center gap-2"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4" />
+                          Process Now
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
-                    onClick={handleProcessActions}
-                    disabled={isProcessing}
+                    onClick={async () => {
+                      try {
+                        const result = await ghostService.resetStuckActions();
+                        if (result.reset_count > 0) {
+                          loadData(); // Refresh the queue
+                        }
+                      } catch (error) {
+                        console.error('Error resetting stuck actions:', error);
+                      }
+                    }}
+                    variant="outline"
                     className="flex items-center gap-2"
+                    title="Reset actions stuck in processing state (older than 10 minutes)"
                   >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4" />
-                        Process Now
-                      </>
-                    )}
+                    <RefreshCw className="h-4 w-4" />
+                    Reset Stuck
                   </Button>
-                )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
