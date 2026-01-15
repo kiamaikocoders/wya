@@ -89,14 +89,13 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
 
   return (
     // Center the reel experience on desktop.
-    // On mobile we keep it edge-to-edge with swipe/peek.
     <div className="relative w-full md:max-w-[560px] lg:max-w-[620px] md:mx-auto">
       <div
         ref={scrollRef}
         className={cn(
-          'flex w-full gap-4 overflow-x-auto scrollbar-hide',
+          'flex w-full overflow-x-auto scrollbar-hide',
           'snap-x snap-mandatory',
-          'px-2 md:px-0'
+          'px-0'
         )}
       >
         {content.map((item, index) => (
@@ -106,9 +105,7 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
               itemRefs.current[index] = el;
             }}
             className={cn(
-              'snap-center shrink-0',
-              // Peek hint: slightly narrower than viewport so next item peeks
-              'w-[88vw] md:w-full'
+              'snap-center shrink-0 grow-0 basis-full'
             )}
           >
             <ContentCard

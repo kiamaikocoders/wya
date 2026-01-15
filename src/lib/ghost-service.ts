@@ -19,9 +19,19 @@ export interface GhostPersonaGroup {
 
 export interface GhostActionQueue {
   id: number;
-  action_type: 'like_story' | 'like_post' | 'like_community_post' | 'create_story' | 'create_post' | 'create_community_post' | 'follow_user';
-  target_id: number | null;
-  target_type: 'story' | 'forum_post' | 'community_post' | 'event' | 'user';
+  action_type: 'like_story' | 'create_story' | 'follow_user';
+  target_id: number | string | null; // Can be number (event_id) or string (user_id UUID)
+  target_type: 'event' | 'user';
+  persona_group_id: number | null;
+  ghost_user_ids: string[] | null;
+  scheduled_at: string;
+  executed_at: string | null;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  metadata: any;
+  created_by: string;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
   persona_group_id: number | null;
   ghost_user_ids: string[] | null;
   scheduled_at: string;
@@ -47,7 +57,7 @@ export interface GhostUser {
 
 export interface CreateGhostActionParams {
   action_type: GhostActionQueue['action_type'];
-  target_id?: number;
+  target_id?: number | string | null; // Can be number (event_id) or string (user_id UUID)
   target_type: GhostActionQueue['target_type'];
   persona_group_id?: number;
   ghost_user_ids?: string[];
