@@ -19,7 +19,7 @@ export interface GhostPersonaGroup {
 
 export interface GhostActionQueue {
   id: number;
-  action_type: 'like_story' | 'like_post' | 'like_community_post' | 'comment_story' | 'comment_post' | 'comment_community_post' | 'create_story' | 'create_post' | 'create_community_post' | 'follow_user';
+  action_type: 'like_story' | 'like_post' | 'like_community_post' | 'create_story' | 'create_post' | 'create_community_post' | 'follow_user';
   target_id: number | null;
   target_type: 'story' | 'forum_post' | 'community_post' | 'event' | 'user';
   persona_group_id: number | null;
