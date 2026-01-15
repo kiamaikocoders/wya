@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import SpotlightFeed from '@/components/spotlight/SpotlightFeed';
 import SpotlightHeader from '@/components/spotlight/SpotlightHeader';
+import SpotlightSwipeHint from '@/components/spotlight/SpotlightSwipeHint';
 
 const SpotlightPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,6 +25,9 @@ const SpotlightPage = () => {
     >
       {/* Transparent header overlay */}
       <SpotlightHeader />
+
+      {/* One-time coachmark: horizontal swipe hint */}
+      <SpotlightSwipeHint />
       
       {/* Content feed - full viewport height sections */}
       <SpotlightFeed />

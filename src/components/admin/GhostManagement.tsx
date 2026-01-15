@@ -35,13 +35,11 @@ import {
   Calendar,
   Search,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 import { ghostService, type GhostActionQueue, type GhostPersonaGroup, type GhostUser } from '@/lib/ghost-service';
 import { eventService } from '@/lib/event-service';
 import { storyService } from '@/lib/story/story-service';
-import { forumService } from '@/lib/forum-service';
-import { engagementService } from '@/lib/engagement-service';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -73,6 +71,7 @@ const GhostManagement: React.FC = () => {
   // Target selection state
   const [targetSearchQuery, setTargetSearchQuery] = useState<string>('');
   const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'ongoing' | 'past'>('all');
+  const [eventSearchQuery, setEventSearchQuery] = useState<string>('');
 
   // Fetch events, stories, posts for target selection
   const { data: events = [] } = useQuery({
@@ -99,17 +98,38 @@ const GhostManagement: React.FC = () => {
     staleTime: 1000 * 60,
   });
 
-  const { data: forumPosts = [] } = useQuery({
-    queryKey: ['forumPosts', 'ghost-management'],
-    queryFn: () => forumService.getAllPosts(),
-    staleTime: 1000 * 60,
+  // Fetch users for follow_user action
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['allUsers', 'ghost-management', targetSearchQuery],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .neq('is_ghost', true) // Exclude ghost users
+          .order('full_name', { ascending: true })
+          .limit(500);
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+      }
+    },
+    enabled: actionType === 'follow_user',
+    staleTime: 1000 * 60 * 5,
   });
 
-  const { data: communityPosts = [] } = useQuery({
-    queryKey: ['communityPosts', 'ghost-management'],
-    queryFn: () => engagementService.getCommunityPosts(),
-    staleTime: 1000 * 60,
-  });
+  // Filter users by search query
+  const filteredUsers = useMemo(() => {
+    if (!targetSearchQuery || !allUsers) return allUsers?.slice(0, 50) || [];
+    const query = targetSearchQuery.toLowerCase();
+    return allUsers.filter(u => 
+      u?.full_name?.toLowerCase().includes(query) ||
+      u?.username?.toLowerCase().includes(query)
+    ).slice(0, 50);
+  }, [allUsers, targetSearchQuery]);
 
   useEffect(() => {
     loadData();
@@ -180,34 +200,6 @@ const GhostManagement: React.FC = () => {
       return stories?.slice(0, 20) || [];
     }
   }, [stories, targetSearchQuery]);
-
-  const filteredForumPosts = useMemo(() => {
-    try {
-      if (!targetSearchQuery || !forumPosts) return forumPosts?.slice(0, 20) || [];
-      const query = targetSearchQuery.toLowerCase();
-      return forumPosts.filter(p => 
-        p?.title?.toLowerCase().includes(query) ||
-        p?.content?.toLowerCase().includes(query)
-      ).slice(0, 20);
-    } catch (error) {
-      console.error('Error filtering forum posts:', error);
-      return forumPosts?.slice(0, 20) || [];
-    }
-  }, [forumPosts, targetSearchQuery]);
-
-  const filteredCommunityPosts = useMemo(() => {
-    try {
-      if (!targetSearchQuery || !communityPosts) return communityPosts?.slice(0, 20) || [];
-      const query = targetSearchQuery.toLowerCase();
-      return communityPosts.filter(p => 
-        p?.title?.toLowerCase().includes(query) ||
-        p?.content?.toLowerCase().includes(query)
-      ).slice(0, 20);
-    } catch (error) {
-      console.error('Error filtering community posts:', error);
-      return communityPosts?.slice(0, 20) || [];
-    }
-  }, [communityPosts, targetSearchQuery]);
 
   // Handle file upload
   const handleFileUpload = async (file: File) => {
@@ -282,7 +274,7 @@ const GhostManagement: React.FC = () => {
 
   const handleCreateAction = async () => {
     // Validate target ID for non-create actions
-    if (actionType !== 'create_story' && actionType !== 'create_post' && actionType !== 'create_community_post') {
+    if (actionType !== 'create_story') {
       if (!targetId) {
         toast.error('Please select a target');
         return;
@@ -290,19 +282,9 @@ const GhostManagement: React.FC = () => {
     }
 
     // Validate content for create actions
-    if (actionType === 'create_story' || actionType === 'create_post' || actionType === 'create_community_post') {
+    if (actionType === 'create_story') {
       if (!contentText.trim()) {
         toast.error('Please enter content');
-        return;
-      }
-      if (actionType === 'create_post' || actionType === 'create_community_post') {
-        if (!contentTitle.trim()) {
-          toast.error('Please enter a title');
-          return;
-        }
-      }
-      if (actionType === 'create_community_post' && !contentCategory) {
-        toast.error('Please select a category');
         return;
       }
     }
@@ -310,7 +292,7 @@ const GhostManagement: React.FC = () => {
     try {
       // Build metadata from form fields
       let metadata: any = {};
-      let finalTargetId: number | undefined = undefined;
+      let finalTargetId: number | string | undefined = undefined;
       let finalTargetType: GhostActionQueue['target_type'] = targetType;
       
       if (actionType === 'create_story') {
@@ -323,28 +305,17 @@ const GhostManagement: React.FC = () => {
           finalTargetId = parseInt(selectedEventId);
           finalTargetType = 'event';
         }
-      } else if (actionType === 'create_post') {
-        metadata = {
-          title: contentTitle,
-          content: contentText,
-          media_url: mediaUrl || undefined
-        };
-        // For create_post, event_id goes in target_id if event is selected
-        if (selectedEventId && selectedEventId !== 'none') {
-          finalTargetId = parseInt(selectedEventId);
-          finalTargetType = 'event';
-        }
-      } else if (actionType === 'create_community_post') {
-        metadata = {
-          title: contentTitle,
-          content: contentText,
-          category: contentCategory,
-          media_url: mediaUrl || undefined
-        };
-        // Community posts don't have event_id
+      } else if (actionType === 'follow_user') {
+        // For follow_user, target_id is a UUID string, not a number
+        finalTargetId = targetId || undefined;
+        finalTargetType = 'user';
+      } else if (actionType === 'like_story') {
+        // For like_story, target_id is an event_id (stored as string in DB)
+        finalTargetId = targetId || undefined;
+        finalTargetType = 'event';
       } else {
-        // For non-create actions, use the selected target_id
-        finalTargetId = targetId ? parseInt(targetId) : undefined;
+        // For other non-create actions, use the selected target_id
+        finalTargetId = targetId || undefined;
       }
       
       const params = {
@@ -366,6 +337,7 @@ const GhostManagement: React.FC = () => {
         setSelectedEventId('');
         setMediaPreview(null);
         setTargetSearchQuery('');
+        setEventSearchQuery('');
         // Reload actions
         loadData();
       }
@@ -417,15 +389,11 @@ const GhostManagement: React.FC = () => {
   };
 
   // Determine if action needs target ID
-  const needsTargetId = actionType !== 'create_story' && actionType !== 'create_post' && actionType !== 'create_community_post';
+  const needsTargetId = actionType !== 'create_story';
   
   // Determine target type based on action type
   const getTargetTypeForAction = () => {
-    if (actionType.startsWith('like_')) {
-      if (actionType.includes('story')) return 'story';
-      if (actionType.includes('post') && !actionType.includes('community')) return 'forum_post';
-      if (actionType.includes('community_post')) return 'community_post';
-    }
+    if (actionType === 'like_story') return 'event'; // Like story targets events, not individual stories
     if (actionType === 'follow_user') return 'user';
     return targetType;
   };
@@ -717,15 +685,6 @@ const GhostManagement: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Help Alert for Forum vs Community Posts */}
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Forum Posts</strong> can be linked to events (event-specific discussions). 
-                  <strong> Community Posts</strong> are general discussions with categories (not event-specific).
-                </AlertDescription>
-              </Alert>
-
               <div className="space-y-2">
                 <Label>Action Type</Label>
                 <Select
@@ -746,11 +705,7 @@ const GhostManagement: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="like_story">Like Story</SelectItem>
-                    <SelectItem value="like_post">Like Forum Post</SelectItem>
-                    <SelectItem value="like_community_post">Like Community Post</SelectItem>
                     <SelectItem value="create_story">Create Story</SelectItem>
-                    <SelectItem value="create_post">Create Forum Post</SelectItem>
-                    <SelectItem value="create_community_post">Create Community Post</SelectItem>
                     <SelectItem value="follow_user">Follow User</SelectItem>
                   </SelectContent>
                 </Select>
@@ -762,7 +717,13 @@ const GhostManagement: React.FC = () => {
                   <Label>Select Target</Label>
                   <div className="space-y-2">
                     <Input
-                      placeholder="Search by title or content..."
+                      placeholder={
+                        getTargetTypeForAction() === 'event' 
+                          ? "Search events by title, location, or description..."
+                          : getTargetTypeForAction() === 'user'
+                          ? "Search users by name or username..."
+                          : "Search by title or content..."
+                      }
                       value={targetSearchQuery}
                       onChange={(e) => {
                         try {
@@ -781,47 +742,35 @@ const GhostManagement: React.FC = () => {
                         <SelectValue placeholder="Select target..." />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
-                        {getTargetTypeForAction() === 'story' && (
+                        {getTargetTypeForAction() === 'event' && (
                           <>
-                            {filteredStories.length === 0 ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No stories found</div>
+                            {filteredEvents.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                {targetSearchQuery ? 'No events match your search' : 'No events found'}
+                              </div>
                             ) : (
-                              filteredStories.map((story) => (
-                                <SelectItem key={story.id} value={story.id.toString()}>
-                                  Story #{story.id} - {story.content?.substring(0, 50) || story.caption?.substring(0, 50) || 'No content'}
-                                </SelectItem>
-                              ))
-                            )}
-                          </>
-                        )}
-                        {getTargetTypeForAction() === 'forum_post' && (
-                          <>
-                            {filteredForumPosts.length === 0 ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No forum posts found</div>
-                            ) : (
-                              filteredForumPosts.map((post) => (
-                                <SelectItem key={post.id} value={post.id.toString()}>
-                                  Forum Post #{post.id} - {post.title || post.content.substring(0, 50)}
-                                </SelectItem>
-                              ))
-                            )}
-                          </>
-                        )}
-                        {getTargetTypeForAction() === 'community_post' && (
-                          <>
-                            {filteredCommunityPosts.length === 0 ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No community posts found</div>
-                            ) : (
-                              filteredCommunityPosts.map((post) => (
-                                <SelectItem key={post.id} value={post.id.toString()}>
-                                  Community Post #{post.id} - {post.title || post.content.substring(0, 50)}
+                              filteredEvents.map((event) => (
+                                <SelectItem key={event.id} value={event.id.toString()}>
+                                  {event.title} - {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
                                 </SelectItem>
                               ))
                             )}
                           </>
                         )}
                         {getTargetTypeForAction() === 'user' && (
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">User selection coming soon</div>
+                          <>
+                            {filteredUsers.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                {targetSearchQuery ? 'No users found' : 'Start typing to search users...'}
+                              </div>
+                            ) : (
+                              filteredUsers.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.full_name || user.username || 'Unknown User'} {user.username && `(@${user.username})`}
+                                </SelectItem>
+                              ))
+                            )}
+                          </>
                         )}
                       </SelectContent>
                     </Select>
@@ -835,28 +784,16 @@ const GhostManagement: React.FC = () => {
               )}
 
               {/* Content Creation Form Fields (replaces JSON) */}
-              {(actionType === 'create_story' || actionType === 'create_post' || actionType === 'create_community_post') && (
+              {actionType === 'create_story' && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                   <div className="flex items-center gap-2 mb-2">
                     <HelpCircle className="h-4 w-4 text-muted-foreground" />
                     <Label className="text-base font-semibold">Content Details</Label>
                   </div>
 
-                  {/* Title (for posts) */}
-                  {(actionType === 'create_post' || actionType === 'create_community_post') && (
-                    <div className="space-y-2">
-                      <Label>Title *</Label>
-                      <Input
-                        placeholder="Enter post title"
-                        value={contentTitle}
-                        onChange={(e) => setContentTitle(e.target.value)}
-                      />
-                    </div>
-                  )}
-
                   {/* Content */}
                   <div className="space-y-2">
-                    <Label>Content *</Label>
+                    <Label>Content (Optional)</Label>
                     <Textarea
                       placeholder="Enter content..."
                       value={contentText}
@@ -865,63 +802,104 @@ const GhostManagement: React.FC = () => {
                     />
                   </div>
 
-                  {/* Category (for community posts) */}
-                  {actionType === 'create_community_post' && (
+                  {/* Event ID (for stories) */}
+                  <div className="space-y-2">
+                    <Label>Link to Event (Optional)</Label>
                     <div className="space-y-2">
-                      <Label>Category *</Label>
-                      <Select value={contentCategory} onValueChange={setContentCategory}>
-                        <SelectTrigger>
+                      <Select value={eventFilter} onValueChange={(v) => setEventFilter(v as typeof eventFilter)}>
+                        <SelectTrigger className="w-[200px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="general">General</SelectItem>
-                          <SelectItem value="tips">Tips</SelectItem>
-                          <SelectItem value="culture">Culture</SelectItem>
-                          <SelectItem value="trending">Trending</SelectItem>
+                          <SelectItem value="all">All Events</SelectItem>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="ongoing">Ongoing</SelectItem>
+                          <SelectItem value="past">Past</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  )}
-
-                  {/* Event ID (for forum posts and stories) */}
-                  {(actionType === 'create_story' || actionType === 'create_post') && (
-                    <div className="space-y-2">
-                      <Label>Link to Event (Optional)</Label>
-                      <div className="space-y-2">
-                        <Select value={eventFilter} onValueChange={(v) => setEventFilter(v as typeof eventFilter)}>
-                          <SelectTrigger className="w-[200px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Events</SelectItem>
-                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                            <SelectItem value="ongoing">Ongoing</SelectItem>
-                            <SelectItem value="past">Past</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={selectedEventId || undefined}
-                          onValueChange={(value) => setSelectedEventId(value === 'none' ? '' : value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select event (optional)" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-[300px]">
-                            <SelectItem value="none">None</SelectItem>
-                            {filteredEvents && filteredEvents.length > 0 ? (
-                              filteredEvents.map((event) => (
-                                <SelectItem key={event.id} value={event.id.toString()}>
-                                  {event.title} - {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
-                                </SelectItem>
-                              ))
+                      <div className="relative">
+                        <Input
+                          placeholder="Search events by title, location, or description..."
+                          value={eventSearchQuery}
+                          onChange={(e) => setEventSearchQuery(e.target.value)}
+                          className="mb-2"
+                        />
+                        {/* Show filtered events list only when there's a search query */}
+                        {eventSearchQuery && (
+                          <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
+                            {filteredEvents.length > 0 ? (
+                              <>
+                                <div className="p-2 border-b text-xs text-muted-foreground">
+                                  {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
+                                  {eventSearchQuery && ` matching "${eventSearchQuery}"`}
+                                </div>
+                                <div className="p-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedEventId('');
+                                      setEventSearchQuery('');
+                                    }}
+                                    className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors ${
+                                      !selectedEventId ? 'bg-accent' : ''
+                                    }`}
+                                  >
+                                    None
+                                  </button>
+                                  {filteredEventsForStory.map((event) => (
+                                    <button
+                                      key={event.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedEventId(event.id.toString());
+                                        setEventSearchQuery('');
+                                      }}
+                                      className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors ${
+                                        selectedEventId === event.id.toString() ? 'bg-accent' : ''
+                                      }`}
+                                    >
+                                      <div className="font-medium">{event.title}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
                             ) : (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No events found</div>
+                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                {eventSearchQuery ? `No events match "${eventSearchQuery}"` : 'No events found'}
+                              </div>
                             )}
-                          </SelectContent>
-                        </Select>
+                          </div>
+                        )}
                       </div>
+                      {/* Show selected event */}
+                      {selectedEventId && selectedEventId !== 'none' && (() => {
+                        const selectedEvent = events.find(e => e.id.toString() === selectedEventId);
+                        return selectedEvent ? (
+                          <div className="p-3 border rounded-md bg-muted/50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{selectedEvent.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(selectedEvent.date), 'MMM d, yyyy')} • {selectedEvent.location}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedEventId('')}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
-                  )}
+                  </div>
 
                   {/* Media Upload */}
                   <div className="space-y-2">

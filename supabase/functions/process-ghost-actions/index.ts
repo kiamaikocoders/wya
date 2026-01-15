@@ -8,12 +8,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 interface GhostAction {
   id: number;
   action_type: string;
-  target_id: number | null;
+  target_id: number | string | null; // Can be number (event_id) or string (user_id UUID)
   target_type: string;
   persona_group_id: number | null;
   ghost_user_ids: string[] | null;
@@ -156,7 +157,7 @@ serve(async (req) => {
                 p_queue_id: action.id,
                 p_ghost_user_id: userId,
                 p_action_type: action.action_type,
-                p_target_id: action.target_id,
+                p_target_id: action.target_id?.toString() || null,
                 p_target_type: action.target_type,
                 p_success: true,
               });
@@ -167,7 +168,7 @@ serve(async (req) => {
                 p_queue_id: action.id,
                 p_ghost_user_id: userId,
                 p_action_type: action.action_type,
-                p_target_id: action.target_id,
+                p_target_id: action.target_id?.toString() || null,
                 p_target_type: action.target_type,
                 p_success: false,
                 p_error_message: result.error || "Unknown error",
@@ -180,7 +181,7 @@ serve(async (req) => {
               p_queue_id: action.id,
               p_ghost_user_id: userId,
               p_action_type: action.action_type,
-              p_target_id: action.target_id,
+              p_target_id: action.target_id?.toString() || null,
               p_target_type: action.target_type,
               p_success: false,
               p_error_message: error.message,
@@ -242,73 +243,69 @@ async function executeGhostAction(
   try {
     switch (action.action_type) {
       case "like_story":
-        if (!action.target_id) throw new Error("Target ID required");
-        const { error: likeStoryError } = await supabase
-          .from("story_likes")
-          .insert({
-            story_id: action.target_id,
-            user_id: ghostUserId,
-          })
-          .select()
-          .single();
-        if (likeStoryError && !likeStoryError.message.includes("duplicate")) {
-          throw likeStoryError;
-        }
-        // Update story likes count
-        await supabase.rpc("increment_story_likes_count", {
-          p_story_id: action.target_id,
-        });
-        break;
-
-      case "like_post":
-        if (!action.target_id) throw new Error("Target ID required");
-        const { error: likePostError } = await supabase
-          .from("forum_post_likes")
-          .insert({
-            post_id: action.target_id,
-            user_id: ghostUserId,
-          })
-          .select()
-          .single();
-        if (likePostError && !likePostError.message.includes("duplicate")) {
-          throw likePostError;
-        }
-        // Update post likes count
-        await supabase.rpc("like_forum_post", {
-          p_post_id: action.target_id,
-        });
-        break;
-
-      case "like_community_post":
-        if (!action.target_id) throw new Error("Target ID required");
-        const { error: likeCommError } = await supabase
-          .from("community_post_likes")
-          .insert({
-            post_id: action.target_id,
-            user_id: ghostUserId,
-          })
-          .select()
-          .single();
-        if (likeCommError && !likeCommError.message.includes("duplicate")) {
-          throw likeCommError;
-        }
-        // Update community post likes count
-        const { data: currentPost } = await supabase
-          .from("community_posts")
-          .select("likes_count")
-          .eq("id", action.target_id)
-          .single();
+        // Target ID is now an event_id, not a story_id
+        // Randomly select stories from the event and like them
+        if (!action.target_id) throw new Error("Event ID required");
         
-        await supabase
-          .from("community_posts")
-          .update({
-            likes_count: (currentPost?.likes_count || 0) + 1,
-          })
-          .eq("id", action.target_id);
+        // Convert target_id to number (it's stored as TEXT but represents an integer)
+        const eventId = typeof action.target_id === 'string' 
+          ? parseInt(action.target_id) 
+          : action.target_id;
+        
+        if (isNaN(eventId)) throw new Error("Invalid event ID");
+        
+        // Get all stories for this event
+        const { data: eventStories, error: storiesError } = await supabase
+          .from("stories")
+          .select("id")
+          .eq("event_id", eventId);
+        
+        if (storiesError) throw storiesError;
+        
+        if (!eventStories || eventStories.length === 0) {
+          console.log(`No stories found for event ${eventId}`);
+          break; // No stories to like, but not an error
+        }
+        
+        // Randomly select 1-3 stories to like (to avoid looking too bot-like)
+        const numStoriesToLike = Math.min(
+          Math.floor(Math.random() * 3) + 1,
+          eventStories.length
+        );
+        
+        // Shuffle and take random stories
+        const shuffled = [...eventStories].sort(() => Math.random() - 0.5);
+        const storiesToLike = shuffled.slice(0, numStoriesToLike);
+        
+        // Like each selected story
+        for (const story of storiesToLike) {
+          const { error: likeStoryError } = await supabase
+            .from("story_likes")
+            .insert({
+              story_id: story.id,
+              user_id: ghostUserId,
+            })
+            .select()
+            .single();
+          
+          if (likeStoryError && !likeStoryError.message.includes("duplicate")) {
+            console.error(`Error liking story ${story.id}:`, likeStoryError);
+            // Continue with other stories even if one fails
+            continue;
+          }
+          
+          // Update story likes count
+          await supabase.rpc("increment_story_likes_count", {
+            p_story_id: story.id,
+          });
+        }
         break;
 
       case "create_story":
-        const storyContent = action.metadata?.content || "Great event! 🎉";
+        // Use provided content if it exists (even if empty), otherwise use default
+        const storyContent = action.metadata?.content !== undefined 
+          ? action.metadata.content 
+          : "Great event! 🎉";
         const storyMedia = action.metadata?.media_url || null;
         
         // Determine media type from URL or default to 'image'
@@ -320,11 +317,16 @@ async function executeGhostAction(
           mediaType = isVideo ? "video" : "image";
         }
         
+        // Convert target_id to number if it exists (for event_id)
+        const storyEventId = action.target_id 
+          ? (typeof action.target_id === 'string' ? parseInt(action.target_id) : action.target_id)
+          : null;
+        
         const { error: createStoryError } = await supabase
           .from("stories")
           .insert({
             user_id: ghostUserId,
-            event_id: action.target_id || null,
+            event_id: storyEventId,
             content: storyContent,
             caption: storyContent,
             media_url: storyMedia,
@@ -336,52 +338,24 @@ async function executeGhostAction(
         }
         break;
 
-      case "create_post":
-        const postContent = action.metadata?.content || "Interesting topic!";
-        const postTitle = action.metadata?.title || "New Post";
-        const { error: createPostError } = await supabase
-          .from("forum_posts")
-          .insert({
-            user_id: ghostUserId,
-            event_id: action.target_id || null,
-            title: postTitle,
-            content: postContent,
-          });
-        if (createPostError) throw createPostError;
-        break;
-
       case "follow_user":
         if (!action.target_id) throw new Error("Target ID required");
+        // target_id is a UUID string for user actions
+        const targetUserId = typeof action.target_id === 'number' 
+          ? action.target_id.toString() 
+          : action.target_id;
+        
         const { error: followError } = await supabase
           .from("follows")
           .insert({
             follower_id: ghostUserId,
-            following_id: action.target_id.toString(),
+            following_id: targetUserId,
           })
           .select()
           .single();
         if (followError && !followError.message.includes("duplicate")) {
           throw followError;
         }
-        break;
-
-
-      case "create_community_post":
-        const communityPostTitle = action.metadata?.title || "Community Discussion";
-        const communityPostContent = action.metadata?.content || "Great topic to discuss!";
-        const communityPostCategory = action.metadata?.category || "general";
-        const communityPostMedia = action.metadata?.media_url || null;
-        const { error: createCommunityPostError } = await supabase
-          .from("community_posts")
-          .insert({
-            user_id: ghostUserId,
-            title: communityPostTitle,
-            content: communityPostContent,
-            category: communityPostCategory,
-            media_url: communityPostMedia,
-            media_type: communityPostMedia ? "image" : null,
-          });
-        if (createCommunityPostError) throw createCommunityPostError;
         break;
 
       default:
