@@ -9,6 +9,8 @@ export const storyService = {
    */
   getAllStories: async (eventId?: number): Promise<Story[]> => {
     try {
+      console.log('Fetching stories, eventId:', eventId);
+      
       let query = supabase
         .from('stories')
         .select(`
@@ -35,22 +37,39 @@ export const storyService = {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      console.log('Fetched stories from DB:', data?.length || 0);
+
+      if (!data || data.length === 0) {
+        console.log('No stories found in database');
+        return [];
+      }
 
       // Get profiles for these stories
-      const userIds = data.map(story => story.user_id).filter(Boolean);
+      const userIds = [...new Set(data.map(story => story.user_id).filter(Boolean))];
+      
+      console.log('Fetching profiles for user IDs:', userIds.length);
       
       // Fetch profiles separately
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url')
         .in('id', userIds);
       
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+        // Continue without profiles - use fallback values
+      }
+      
       // Create a map of user_id to profile data
-      const profileMap = (profiles || []).reduce((map, profile) => {
+      const profileMap = (profiles || []).reduce((map: any, profile: any) => {
         map[profile.id] = profile;
         return map;
-      }, {});
+      }, {} as Record<string, any>);
 
       // Transform the data to match our Story interface
       const stories: Story[] = data.map(item => ({
@@ -72,10 +91,22 @@ export const storyService = {
         expires_at: item.expires_at
       }));
 
+      console.log('Returning stories:', stories.length);
       return stories;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stories:', error);
-      toast.error('Failed to load stories');
+      console.error('Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint
+      });
+      // Don't show toast for network errors - they're usually temporary
+      if (error?.message?.includes('NetworkError')) {
+        console.warn('Network error - stories may not be available');
+      } else {
+        toast.error('Failed to load stories');
+      }
       return [];
     }
   },
