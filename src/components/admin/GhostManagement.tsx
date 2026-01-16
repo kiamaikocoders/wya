@@ -302,13 +302,7 @@ const GhostManagement: React.FC = () => {
       }
     }
 
-    // Validate content for create actions
-    if (actionType === 'create_story') {
-      if (!contentText.trim()) {
-        toast.error('Please enter content');
-        return;
-      }
-    }
+    // Content is optional for create_story - Edge Function will use default if empty
 
     try {
       // Build metadata from form fields
