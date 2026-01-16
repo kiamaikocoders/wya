@@ -186,6 +186,27 @@ const GhostManagement: React.FC = () => {
     });
   }, [events, eventFilter]);
 
+  // Filter events for the "create story" event picker (search within filteredEvents)
+  const filteredEventsForStory = useMemo(() => {
+    try {
+      const base = filteredEvents || [];
+      const q = eventSearchQuery.trim().toLowerCase();
+      if (!q) return base.slice(0, 50);
+
+      return base
+        .filter((event: any) => {
+          const title = (event?.title || '').toString().toLowerCase();
+          const location = (event?.location || '').toString().toLowerCase();
+          const description = (event?.description || '').toString().toLowerCase();
+          return title.includes(q) || location.includes(q) || description.includes(q);
+        })
+        .slice(0, 50);
+    } catch (error) {
+      console.error('Error filtering events for story:', error);
+      return (filteredEvents || []).slice(0, 50);
+    }
+  }, [filteredEvents, eventSearchQuery]);
+
   // Filter targets by search query (with error handling)
   const filteredStories = useMemo(() => {
     try {
@@ -827,10 +848,10 @@ const GhostManagement: React.FC = () => {
                         {/* Show filtered events list only when there's a search query */}
                         {eventSearchQuery && (
                           <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
-                            {filteredEvents.length > 0 ? (
+                            {filteredEventsForStory.length > 0 ? (
                               <>
                                 <div className="p-2 border-b text-xs text-muted-foreground">
-                                  {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} found
+                                  {filteredEventsForStory.length} event{filteredEventsForStory.length !== 1 ? 's' : ''} found
                                   {eventSearchQuery && ` matching "${eventSearchQuery}"`}
                                 </div>
                                 <div className="p-1">
