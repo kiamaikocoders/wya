@@ -50,7 +50,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     capacity: event.capacity || 0,
     tags: [] as string[],
     performing_artists: [] as string[],
-    ticket_link: '',
+    ticket_link: (event as any).ticket_link || '',
     featured: event.featured || false,
   });
   
@@ -275,8 +275,23 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     handleFileUpload(file);
   };
 
+  const syncEventCategories = async (eventId: number, categoryIds: number[]) => {
+    // Replace existing category relations with the selected set
+    const { error: deleteError } = await supabase
+      .from('event_categories')
+      .delete()
+      .eq('event_id', eventId);
+    if (deleteError) throw deleteError;
+
+    if (categoryIds.length === 0) return;
+    const rows = categoryIds.map((category_id) => ({ event_id: eventId, category_id }));
+    const { error: insertError } = await supabase.from('event_categories').insert(rows);
+    if (insertError) throw insertError;
+  };
+
   const updateEventMutation = useMutation({
-    mutationFn: async (eventData: any) => {
+    mutationFn: async (vars: { eventData: any; categoryIds: number[] }) => {
+      const { eventData, categoryIds } = vars;
       const { data, error } = await supabase
         .from('events')
         .update({
@@ -288,17 +303,22 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
         .single();
 
       if (error) throw error;
+      await syncEventCategories(event.id, categoryIds);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['event-categories', event.id] });
       toast.success('Event updated successfully');
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
       console.error('Error updating event:', error);
       toast.error(error.message || 'Failed to update event');
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     },
   });
 
@@ -348,8 +368,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
     };
     
-    updateEventMutation.mutate(eventData);
-    setIsSubmitting(false);
+    updateEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
   };
 
   return (
@@ -529,6 +548,20 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   onChange={handleInputChange}
                   placeholder="Leave empty for unlimited"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticket_link">External Ticket Link</Label>
+                <Input
+                  id="ticket_link"
+                  name="ticket_link"
+                  type="url"
+                  value={formData.ticket_link}
+                  onChange={handleInputChange}
+                  placeholder="https://eventbrite.com/..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Users will be redirected here when clicking "Get Tickets"
+                </p>
               </div>
               
               <div className="space-y-2">

@@ -323,7 +323,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   };
 
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: any) => {
+    mutationFn: async (vars: { eventData: any; categoryIds: number[] }) => {
+      const { eventData } = vars;
       const { data, error } = await supabase
         .from('events')
         .insert([{
@@ -337,7 +338,22 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       if (error) throw error;
       return data;
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data, vars) => {
+      const categoryIds = vars?.categoryIds || [];
+      // Persist multi-category selections to the junction table (in addition to category/category_id on events)
+      try {
+        // Replace any existing mappings (should be none for a new event)
+        await supabase.from('event_categories').delete().eq('event_id', data.id);
+        if (categoryIds.length > 0) {
+          const rows = categoryIds.map((category_id) => ({ event_id: data.id, category_id }));
+          const { error: insertError } = await supabase.from('event_categories').insert(rows);
+          if (insertError) throw insertError;
+        }
+      } catch (catError: any) {
+        console.error('Failed to persist event categories:', catError);
+        toast.error(catError?.message || 'Event created, but categories failed to save');
+      }
+
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       
@@ -377,6 +393,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     onError: (error: any) => {
       console.error('Error creating event:', error);
       toast.error(error.message || 'Failed to create event');
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     },
   });
 
@@ -421,8 +440,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
     };
     
-    createEventMutation.mutate(eventData);
-    setIsSubmitting(false);
+    createEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
   };
 
   const renderStepContent = () => {

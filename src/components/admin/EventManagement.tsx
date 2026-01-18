@@ -92,6 +92,10 @@ const EventManagement = () => {
       setSelectedEvent(null);
       toast.success('Event approved');
     },
+    onError: (error: any) => {
+      console.error('Error approving event:', error);
+      toast.error(error?.message || 'Failed to approve event');
+    },
   });
 
   // Reject event mutation
@@ -103,16 +107,44 @@ const EventManagement = () => {
       setSelectedEvent(null);
       toast.success('Event rejected');
     },
+    onError: (error: any) => {
+      console.error('Error rejecting event:', error);
+      toast.error(error?.message || 'Failed to reject event');
+    },
   });
 
   // Delete event mutation
   const deleteEventMutation = useMutation({
     mutationFn: (eventId: number) => adminService.deleteEvent(eventId),
+    onMutate: async (eventId: number) => {
+      // Optimistic UI: remove the event from all cached admin-events pages immediately.
+      await queryClient.cancelQueries({ queryKey: ['admin-events'] });
+      const previous = queryClient.getQueriesData({ queryKey: ['admin-events'] });
+      queryClient.setQueriesData({ queryKey: ['admin-events'] }, (old: any) => {
+        if (!old || !old.data) return old;
+        return {
+          ...old,
+          data: old.data.filter((e: any) => e.id !== eventId),
+          total: typeof old.total === 'number' ? Math.max(0, old.total - 1) : old.total,
+        };
+      });
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       setSelectedEvent(null);
       toast.success('Event deleted');
+    },
+    onError: (error: any, _eventId, context: any) => {
+      console.error('Error deleting event:', error);
+      // Roll back optimistic update
+      if (context?.previous) {
+        for (const [key, data] of context.previous) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+      toast.error(error?.message || 'Failed to delete event');
     },
   });
 
@@ -124,6 +156,10 @@ const EventManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       setSelectedEvents([]);
     },
+    onError: (error: any) => {
+      console.error('Error bulk approving events:', error);
+      toast.error(error?.message || 'Failed to approve events');
+    },
   });
 
   const bulkRejectMutation = useMutation({
@@ -133,6 +169,10 @@ const EventManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       setSelectedEvents([]);
     },
+    onError: (error: any) => {
+      console.error('Error bulk rejecting events:', error);
+      toast.error(error?.message || 'Failed to reject events');
+    },
   });
 
   const bulkDeleteMutation = useMutation({
@@ -141,6 +181,10 @@ const EventManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       setSelectedEvents([]);
+    },
+    onError: (error: any) => {
+      console.error('Error bulk deleting events:', error);
+      toast.error(error?.message || 'Failed to delete events');
     },
   });
 
