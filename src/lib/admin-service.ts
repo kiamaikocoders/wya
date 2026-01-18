@@ -40,6 +40,7 @@ export interface AdminEvent {
   capacity?: number;
   price?: number;
   category?: string;
+  category_id?: number | null;
   organizer_id?: string;
   organizer_name?: string;
   featured?: boolean;
@@ -48,6 +49,7 @@ export interface AdminEvent {
   updated_at?: string;
   tickets_sold?: number;
   attendees_count?: number;
+  ticket_link?: string | null;
 }
 
 export interface AdminEventStats {
@@ -531,6 +533,7 @@ export const adminService = {
           capacity: event.capacity,
           price: event.price,
           category: event.category,
+          category_id: event.category_id ?? null,
           organizer_id: event.organizer_id,
           organizer_name: organizer?.full_name || organizer?.username || 'Unknown',
           featured: event.featured,
@@ -539,6 +542,7 @@ export const adminService = {
           updated_at: event.updated_at,
           tickets_sold: ticketCountMap.get(event.id) || 0,
           attendees_count: ticketCountMap.get(event.id) || 0,
+          ticket_link: event.ticket_link ?? null,
         };
       });
 
@@ -623,7 +627,7 @@ export const adminService = {
     }
   },
 
-  approveEvent: async (eventId: number): Promise<boolean> => {
+  approveEvent: async (eventId: number): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -631,16 +635,13 @@ export const adminService = {
         .eq('id', eventId);
 
       if (error) throw error;
-      toast.success('Event approved');
-      return true;
     } catch (error) {
       console.error('Error approving event:', error);
-      toast.error('Failed to approve event');
-      return false;
+      throw error;
     }
   },
 
-  rejectEvent: async (eventId: number, reason?: string): Promise<boolean> => {
+  rejectEvent: async (eventId: number, reason?: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -648,16 +649,13 @@ export const adminService = {
         .eq('id', eventId);
 
       if (error) throw error;
-      toast.success('Event rejected');
-      return true;
     } catch (error) {
       console.error('Error rejecting event:', error);
-      toast.error('Failed to reject event');
-      return false;
+      throw error;
     }
   },
 
-  deleteEvent: async (eventId: number): Promise<boolean> => {
+  deleteEvent: async (eventId: number): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -665,12 +663,9 @@ export const adminService = {
         .eq('id', eventId);
 
       if (error) throw error;
-      toast.success('Event deleted');
-      return true;
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
-      return false;
+      throw error;
     }
   },
 
@@ -798,7 +793,7 @@ export const adminService = {
   // BULK OPERATIONS
   // ==========================================
 
-  bulkApproveEvents: async (eventIds: number[]): Promise<boolean> => {
+  bulkApproveEvents: async (eventIds: number[]): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -806,16 +801,13 @@ export const adminService = {
         .in('id', eventIds);
 
       if (error) throw error;
-      toast.success(`${eventIds.length} events approved`);
-      return true;
     } catch (error) {
       console.error('Error bulk approving events:', error);
-      toast.error('Failed to approve events');
-      return false;
+      throw error;
     }
   },
 
-  bulkRejectEvents: async (eventIds: number[]): Promise<boolean> => {
+  bulkRejectEvents: async (eventIds: number[]): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -823,16 +815,13 @@ export const adminService = {
         .in('id', eventIds);
 
       if (error) throw error;
-      toast.success(`${eventIds.length} events rejected`);
-      return true;
     } catch (error) {
       console.error('Error bulk rejecting events:', error);
-      toast.error('Failed to reject events');
-      return false;
+      throw error;
     }
   },
 
-  bulkDeleteEvents: async (eventIds: number[]): Promise<boolean> => {
+  bulkDeleteEvents: async (eventIds: number[]): Promise<void> => {
     try {
       const { error } = await supabase
         .from('events')
@@ -840,12 +829,9 @@ export const adminService = {
         .in('id', eventIds);
 
       if (error) throw error;
-      toast.success(`${eventIds.length} events deleted`);
-      return true;
     } catch (error) {
       console.error('Error bulk deleting events:', error);
-      toast.error('Failed to delete events');
-      return false;
+      throw error;
     }
   },
 
