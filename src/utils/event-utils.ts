@@ -10,7 +10,7 @@ export const filterEventsByCategory = (events: Event[], category: string): Event
 };
 
 export const getFeaturedEvents = (events: Event[]): Event[] => {
-  return events.filter(event => event.is_featured);
+  return events.filter(event => event.featured || event.is_featured);
 };
 
 export const getUpcomingEvents = (events: Event[]): Event[] => {

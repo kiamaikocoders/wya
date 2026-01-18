@@ -21,7 +21,9 @@ export interface Event {
   created_at?: string;
   updated_at?: string;
   tags?: string[]; // Add tags property to match with types/event.types.ts
-  is_featured?: boolean; // Also add is_featured for compatibility
+  // Back-compat only: some older code paths still read this. Do NOT select it from `events`
+  // unless the column exists in the database.
+  is_featured?: boolean;
   latitude?: number;
   longitude?: number;
   performing_artists?: string[]; // Array of performing artist names
@@ -74,6 +76,25 @@ export const eventService = {
     return result.events;
   },
 
+  // Lightweight home feed (avoids count/stats queries and returns a small payload)
+  getHomeFeedEvents: async (limit = 50): Promise<Event[]> => {
+    const { data, error } = await supabase
+      .from('events')
+      .select(
+        'id,title,date,time,location,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+      )
+      .gte('date', new Date().toISOString())
+      .order('date', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching home feed events:', error);
+      throw error;
+    }
+
+    return data || [];
+  },
+
   queryEvents: async (options: EventQueryOptions): Promise<EventQueryResponse> => {
     try {
       const {
@@ -92,7 +113,13 @@ export const eventService = {
         includePast,
       } = options;
 
-      let query = supabase.from('events').select('*', { count: 'exact' });
+      // Avoid select('*') to reduce payload size; keep fields used across event screens.
+      let query = supabase
+        .from('events')
+        .select(
+          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
+          { count: 'exact' }
+        );
 
       if (search) {
         const term = search.trim();
@@ -277,7 +304,9 @@ export const eventService = {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select(
+          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists'
+        )
         .eq('id', id)
         .single();
       
