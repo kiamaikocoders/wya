@@ -60,7 +60,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Refresh authentication state from Supabase
   const refreshAuth = async () => {
     try {
-      console.log('Refreshing auth...');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -69,63 +68,79 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       
-      console.log('Session:', session?.user?.id);
-      
       if (session) {
-        // Get profile information from profiles table with error handling
-        const { data: profile, error: profileError } = await supabase
+        // Session exists: set minimal user immediately (no network), then fetch profile in background.
+        setUser((prev) => ({
+          id: session.user.id,
+          name: prev?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          user_type: prev?.user_type || 'attendee',
+          created_at: prev?.created_at || session.user.created_at || new Date().toISOString(),
+          bio: prev?.bio,
+          profile_picture: prev?.profile_picture,
+          avatar_url: prev?.avatar_url,
+          full_name: prev?.full_name,
+          username: prev?.username,
+          preferences: prev?.preferences,
+        }));
+
+        // Unblock UI immediately — profile enrichment happens in the background.
+        setLoading(false);
+
+        // Fetch profile data in background (avoid select('*'))
+        supabase
           .from('profiles')
-          .select('*')
+          .select('id, full_name, username, avatar_url, bio, created_at')
           .eq('id', session.user.id)
-          .single();
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.warn('Profile fetch error:', profileError);
-        }
-        
-        console.log('Profile found:', !!profile);
-          
-        if (profile) {
-          const userData: User = {
-            id: profile.id,
-            name: profile.full_name || '',
-            email: session.user.email || '',
-            user_type: profile.username === 'admin' ? 'admin' : 'attendee',
-            created_at: profile.created_at,
-            bio: profile.bio,
-            profile_picture: profile.avatar_url,
-            avatar_url: profile.avatar_url,
-            full_name: profile.full_name,
-            username: profile.username
-          };
-          
-          setUser(userData);
-          setIsAdmin(userData.user_type === 'admin');
-        } else {
-          // User authenticated but no profile found - create one
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: session.user.id,
-              full_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-              username: session.user.email?.split('@')[0] || 'user'
+          .single()
+          .then(async ({ data: profile, error: profileError }) => {
+            // PGRST116 = no rows; treat as "profile missing"
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.warn('Profile fetch error:', profileError);
+              return;
+            }
+
+            if (!profile) {
+              // Best-effort profile creation (do not block UI)
+              const { error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  full_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                  username: session.user.email?.split('@')[0] || 'user',
+                });
+
+              if (createError) {
+                console.warn('Profile creation failed:', createError);
+                return;
+              }
+
+              return;
+            }
+
+            setUser((prev) => {
+              if (!prev) return prev;
+              const userType: User['user_type'] =
+                profile.username === 'admin' ? 'admin' : prev.user_type || 'attendee';
+
+              return {
+                ...prev,
+                name: profile.full_name || prev.name,
+                user_type: userType,
+                created_at: profile.created_at || prev.created_at,
+                bio: profile.bio ?? prev.bio,
+                profile_picture: profile.avatar_url ?? prev.profile_picture,
+                avatar_url: profile.avatar_url ?? prev.avatar_url,
+                full_name: profile.full_name ?? prev.full_name,
+                username: profile.username ?? prev.username,
+              };
             });
-          
-          if (profileError) {
-            console.warn('Profile creation failed:', profileError);
-          }
-          
-          setUser({
-            id: session.user.id,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            user_type: 'attendee',
-            created_at: session.user.created_at || new Date().toISOString(),
-            full_name: session.user.user_metadata?.full_name || '',
-            username: session.user.email?.split('@')[0] || ''
+
+            setIsAdmin(profile.username === 'admin');
+          })
+          .catch((err) => {
+            console.warn('Background profile fetch failed:', err);
           });
-          setIsAdmin(false);
-        }
       } else {
         setUser(null);
         setIsAdmin(false);

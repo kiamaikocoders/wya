@@ -101,7 +101,7 @@ export const authService = {
       // Check if user has admin role in profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username')
         .eq('id', data.user.id)
         .single();
       
@@ -130,7 +130,7 @@ export const authService = {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, username, avatar_url, bio, created_at')
         .eq('id', user.id)
         .single();
       
@@ -218,7 +218,7 @@ export const authService = {
       // Return updated user
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, username, avatar_url, bio, created_at')
         .eq('id', user.id)
         .single();
       

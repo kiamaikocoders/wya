@@ -7,10 +7,8 @@ export const storyService = {
   /**
    * Get all stories with optional event filtering
    */
-  getAllStories: async (eventId?: number): Promise<Story[]> => {
+  getAllStories: async (eventId?: number, limit = 50): Promise<Story[]> => {
     try {
-      console.log('Fetching stories, eventId:', eventId);
-      
       let query = supabase
         .from('stories')
         .select(`
@@ -29,7 +27,8 @@ export const storyService = {
           is_featured,
           expires_at
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
       if (eventId) {
         query = query.eq('event_id', eventId);
@@ -42,17 +41,12 @@ export const storyService = {
         throw error;
       }
 
-      console.log('Fetched stories from DB:', data?.length || 0);
-
       if (!data || data.length === 0) {
-        console.log('No stories found in database');
         return [];
       }
 
       // Get profiles for these stories
       const userIds = [...new Set(data.map(story => story.user_id).filter(Boolean))];
-      
-      console.log('Fetching profiles for user IDs:', userIds.length);
       
       // Fetch profiles separately
       const { data: profiles, error: profileError } = await supabase
@@ -91,7 +85,6 @@ export const storyService = {
         expires_at: item.expires_at
       }));
 
-      console.log('Returning stories:', stories.length);
       return stories;
     } catch (error: any) {
       console.error('Error fetching stories:', error);

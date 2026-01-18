@@ -42,20 +42,20 @@ const Home: React.FC = () => {
   }, [isAuthenticated, user?.id]);
   
   const { data: events = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: eventService.getAllEvents,
+    queryKey: ['homeFeedEvents'],
+    queryFn: () => eventService.getHomeFeedEvents(60),
   });
 
   // Fetch stories and forum posts for trending content
   const { data: stories = [] } = useQuery({
-    queryKey: ['allStories'],
-    queryFn: () => storyService.getAllStories(),
+    queryKey: ['homeStories'],
+    queryFn: () => storyService.getAllStories(undefined, 60),
     staleTime: 1000 * 60,
   });
 
   const { data: forumPosts = [] } = useQuery({
-    queryKey: ['forumPosts'],
-    queryFn: () => forumService.getAllPosts(),
+    queryKey: ['homeForumPosts'],
+    queryFn: () => forumService.getAllPosts(60),
     staleTime: 1000 * 60,
   });
 
