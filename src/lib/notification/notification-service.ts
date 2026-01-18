@@ -51,7 +51,7 @@ export const notificationService = {
     }
   },
   
-  markAsRead: async (notificationId: number): Promise<boolean> => {
+  markAsRead: async (notificationId: number): Promise<void> => {
     try {
       const { error } = await supabase
         .from('notifications')
@@ -59,14 +59,13 @@ export const notificationService = {
         .eq('id', notificationId);
         
       if (error) throw error;
-      return true;
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      return false;
+      throw error;
     }
   },
   
-  markAllAsRead: async (userId: string): Promise<boolean> => {
+  markAllAsRead: async (userId: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('notifications')
@@ -75,14 +74,13 @@ export const notificationService = {
         .eq('read', false);
         
       if (error) throw error;
-      return true;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      return false;
+      throw error;
     }
   },
   
-  createNotification: async (notification: CreateNotificationData): Promise<boolean> => {
+  createNotification: async (notification: CreateNotificationData): Promise<void> => {
     try {
       // Insert only columns that exist in the DB schema.
       const { user_id, type, title, message, resource_id, resource_type, resource_uuid, link, data } = notification;
@@ -102,10 +100,9 @@ export const notificationService = {
         });
         
       if (error) throw error;
-      return true;
     } catch (error) {
       console.error('Error creating notification:', error);
-      return false;
+      throw error;
     }
   },
   
@@ -133,15 +130,14 @@ export const notificationService = {
   },
   
   // Update notification settings for the current user
-  updateNotificationSettings: async (settings: NotificationSettings): Promise<boolean> => {
+  updateNotificationSettings: async (settings: NotificationSettings): Promise<void> => {
     try {
       // In a real app, you would update this in the database
       // For now, just simulate success
       console.log('Updating notification settings:', settings);
-      return true;
     } catch (error) {
       console.error('Error updating notification settings:', error);
-      return false;
+      throw error;
     }
   }
 };

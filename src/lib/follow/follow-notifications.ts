@@ -43,14 +43,9 @@ export const followNotifications = {
         },
       };
 
-      const success = await notificationService.createNotification(notificationData);
-      if (success) {
-        console.log('Follow notification sent successfully');
-        toast.success(`You are now following ${followedName}`);
-      } else {
-        console.error('Failed to send follow notification');
-        toast.success(`You are now following ${followedName}`);
-      }
+      await notificationService.createNotification(notificationData);
+      console.log('Follow notification sent successfully');
+      toast.success(`You are now following ${followedName}`);
     } catch (notifError) {
       console.error('Error sending follow notification:', notifError);
       // Don't fail the follow action if notification fails

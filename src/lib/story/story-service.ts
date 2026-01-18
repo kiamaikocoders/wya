@@ -371,7 +371,7 @@ export const storyService = {
     } catch (error) {
       console.error(`Error updating story with ID ${storyId}:`, error);
       toast.error('Failed to update story');
-      return null;
+      throw error;
     }
   },
 
@@ -384,8 +384,7 @@ export const storyService = {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error('You must be logged in to delete a story');
-        return false;
+        throw new Error('You must be logged in to delete a story');
       }
 
       // Check if the story belongs to the current user
@@ -396,8 +395,7 @@ export const storyService = {
         .single();
 
       if (!storyCheck || storyCheck.user_id !== user.id) {
-        toast.error('You can only delete your own stories');
-        return false;
+        throw new Error('You can only delete your own stories');
       }
 
       const { error } = await supabase
@@ -412,7 +410,7 @@ export const storyService = {
     } catch (error) {
       console.error(`Error deleting story with ID ${storyId}:`, error);
       toast.error('Failed to delete story');
-      return false;
+      throw error;
     }
   },
 
@@ -476,8 +474,7 @@ export const storyService = {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error('You must be logged in to comment');
-        return null;
+        throw new Error('You must be logged in to comment');
       }
 
       const { data: comment, error: commentError } = await supabase
@@ -531,7 +528,7 @@ export const storyService = {
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
-      return null;
+      throw error;
     }
   },
 
@@ -544,8 +541,7 @@ export const storyService = {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast.error('You must be logged in to like stories');
-        return false;
+        throw new Error('You must be logged in to like stories');
       }
 
       // Check if the user has already liked this story
@@ -624,7 +620,7 @@ export const storyService = {
     } catch (error) {
       console.error(`Error liking/unliking story ID ${storyId}:`, error);
       toast.error('Failed to update like status');
-      return false;
+      throw error;
     }
   },
 

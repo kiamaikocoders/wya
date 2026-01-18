@@ -115,6 +115,11 @@ const UserManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+      toast.success('User role updated');
+    },
+    onError: (error: any) => {
+      console.error('Failed to update user role:', error);
+      toast.error(error?.message || 'Failed to update user role');
     },
   });
 
@@ -124,6 +129,11 @@ const UserManagement = () => {
       adminService.suspendUser(userId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast.success('User suspended');
+    },
+    onError: (error: any) => {
+      console.error('Failed to suspend user:', error);
+      toast.error(error?.message || 'Failed to suspend user');
     },
   });
 
@@ -135,6 +145,11 @@ const UserManagement = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
       setSelectedUsers([]);
+      toast.success('User roles updated');
+    },
+    onError: (error: any) => {
+      console.error('Failed to bulk update roles:', error);
+      toast.error(error?.message || 'Failed to update user roles');
     },
   });
 

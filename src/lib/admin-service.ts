@@ -401,7 +401,7 @@ export const adminService = {
     }
   },
 
-  updateUserRole: async (userId: string, role: 'attendee' | 'organizer' | 'admin'): Promise<boolean> => {
+  updateUserRole: async (userId: string, role: 'attendee' | 'organizer' | 'admin'): Promise<void> => {
     try {
       // For admin role, update username to 'admin'
       // For others, we'd need a roles table in production
@@ -413,26 +413,23 @@ export const adminService = {
         
         if (error) throw error;
       }
-      
-      toast.success(`User role updated to ${role}`);
-      return true;
     } catch (error) {
       console.error('Error updating user role:', error);
-      toast.error('Failed to update user role');
-      return false;
+      throw error;
     }
   },
 
-  suspendUser: async (userId: string, reason?: string): Promise<boolean> => {
+  suspendUser: async (userId: string, reason?: string): Promise<void> => {
     try {
       // TODO: Add status field to profiles table
-      // For now, we'll just log the action
-      toast.success('User suspended');
-      return true;
+      // For now, fail explicitly instead of pretending success.
+      // Proper suspension should be implemented via a status field + RLS or via a server-side admin endpoint.
+      void userId;
+      void reason;
+      throw new Error('Suspend user is not implemented yet');
     } catch (error) {
       console.error('Error suspending user:', error);
-      toast.error('Failed to suspend user');
-      return false;
+      throw error;
     }
   },
 
@@ -835,7 +832,7 @@ export const adminService = {
     }
   },
 
-  bulkUpdateUserRoles: async (userIds: string[], role: 'attendee' | 'organizer' | 'admin'): Promise<boolean> => {
+  bulkUpdateUserRoles: async (userIds: string[], role: 'attendee' | 'organizer' | 'admin'): Promise<void> => {
     try {
       if (role === 'admin') {
         const { error } = await supabase
@@ -846,12 +843,9 @@ export const adminService = {
         if (error) throw error;
       }
       // For other roles, we'd need a roles table in production
-      toast.success(`${userIds.length} user roles updated`);
-      return true;
     } catch (error) {
       console.error('Error bulk updating user roles:', error);
-      toast.error('Failed to update user roles');
-      return false;
+      throw error;
     }
   },
 };
