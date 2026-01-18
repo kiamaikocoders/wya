@@ -275,7 +275,7 @@ export const surveyService = {
       return !!(data && data.length > 0);
     } catch (error) {
       console.error('Error checking survey completion:', error);
-      return false;
+      throw error;
     }
   },
 

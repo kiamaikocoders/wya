@@ -25,7 +25,12 @@ export const profileService = {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Not found
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((error as any).code === 'PGRST116') return null;
+        throw error;
+      }
       
       // Add name property for compatibility and default follower counts
       if (data) {
@@ -39,7 +44,7 @@ export const profileService = {
       return null;
     } catch (error) {
       console.error('Error fetching profile:', error);
-      return null;
+      throw error;
     }
   },
 
@@ -68,7 +73,7 @@ export const profileService = {
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
-      return null;
+      throw error;
     }
   },
 
@@ -93,7 +98,7 @@ export const profileService = {
       return profiles;
     } catch (error) {
       console.error('Error searching profiles:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -118,7 +123,7 @@ export const profileService = {
       return profiles;
     } catch (error) {
       console.error('Error fetching profiles by ids:', error);
-      return [];
+      throw error;
     }
   },
   
@@ -131,7 +136,12 @@ export const profileService = {
         .eq('username', username)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Not found
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((error as any).code === 'PGRST116') return null;
+        throw error;
+      }
       
       // Add name property for compatibility and default follower counts
       if (data) {
@@ -145,7 +155,7 @@ export const profileService = {
       return null;
     } catch (error) {
       console.error('Error fetching profile by username:', error);
-      return null;
+      throw error;
     }
   }
   ,

@@ -315,7 +315,7 @@ export const engagementService = {
       return true;
     } catch (error) {
       console.error('Error liking community post:', error);
-      return false;
+      throw error;
     }
   },
 
@@ -337,7 +337,7 @@ export const engagementService = {
       return true;
     } catch (error) {
       console.error('Error unliking community post:', error);
-      return false;
+      throw error;
     }
   },
 

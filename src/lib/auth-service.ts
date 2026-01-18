@@ -170,7 +170,7 @@ export const authService = {
       return !!session;
     } catch (error) {
       console.error('Error checking authentication:', error);
-      return false;
+      throw error;
     }
   },
   
@@ -189,7 +189,7 @@ export const authService = {
       return profile?.username === 'admin';
     } catch (error) {
       console.error('Error checking admin status:', error);
-      return false;
+      throw error;
     }
   },
   

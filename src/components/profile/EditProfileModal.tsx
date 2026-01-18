@@ -97,14 +97,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
         location: formData.location,
       };
 
-      const success = await userService.updateProfile(updateData);
-      
-      if (success) {
-        queryClient.invalidateQueries({ queryKey: ['userProfile', profile.id] });
-        queryClient.invalidateQueries({ queryKey: ['userPosts', profile.id] });
-        toast.success('Profile updated successfully!');
-        onClose();
-      }
+      await userService.updateProfile(updateData);
+      queryClient.invalidateQueries({ queryKey: ['userProfile', profile.id] });
+      queryClient.invalidateQueries({ queryKey: ['userPosts', profile.id] });
+      toast.success('Profile updated successfully!');
+      onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');

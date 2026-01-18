@@ -128,7 +128,7 @@ export const performanceService = {
       return data;
     } catch (error) {
       console.error('Error checking rate limit:', error);
-      return false;
+      throw error;
     }
   },
 

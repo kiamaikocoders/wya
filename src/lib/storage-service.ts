@@ -51,7 +51,7 @@ export const storageService = {
       return data;
     } catch (error) {
       console.error('Error getting bucket info:', error);
-      return null;
+      throw error;
     }
   },
 
@@ -155,7 +155,7 @@ export const storageService = {
   },
 
   // Delete file
-  deleteFile: async (bucketName: string, filePath: string): Promise<boolean> => {
+  deleteFile: async (bucketName: string, filePath: string): Promise<void> => {
     try {
       const { error } = await supabase.storage
         .from(bucketName)
@@ -164,11 +164,10 @@ export const storageService = {
       if (error) throw error;
 
       toast.success('File deleted successfully');
-      return true;
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete file');
-      return false;
+      throw error;
     }
   },
 
