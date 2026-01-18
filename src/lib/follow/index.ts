@@ -8,7 +8,9 @@ import { supabase } from "@/lib/supabase";
 export const followService = {
   followUser: async (followingId: string): Promise<boolean> => {
     const { data: currentUser } = await supabase.auth.getUser();
-    if (!currentUser?.user) return false;
+    if (!currentUser?.user) {
+      throw new Error('You must be logged in to follow users');
+    }
 
     const success = await followOperations.followUser(followingId);
     

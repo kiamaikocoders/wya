@@ -7,8 +7,7 @@ export const followOperations = {
     try {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser?.user) {
-        toast.error('You must be logged in to follow users');
-        return false;
+        throw new Error('You must be logged in to follow users');
       }
 
       // Ensure followingId is a valid UUID string
@@ -42,7 +41,7 @@ export const followOperations = {
     } catch (error) {
       console.error('Error following user:', error);
       toast.error('Failed to follow user');
-      return false;
+      throw error;
     }
   },
 
@@ -50,8 +49,7 @@ export const followOperations = {
     try {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser?.user) {
-        toast.error('You must be logged in to unfollow users');
-        return false;
+        throw new Error('You must be logged in to unfollow users');
       }
 
       // Ensure followingId is a valid UUID string
@@ -71,7 +69,7 @@ export const followOperations = {
     } catch (error) {
       console.error('Error unfollowing user:', error);
       toast.error('Failed to unfollow user');
-      return false;
+      throw error;
     }
   }
 };

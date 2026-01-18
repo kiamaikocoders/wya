@@ -18,6 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const NotificationsDropdown = () => {
   const { isAuthenticated, user } = useAuth();
@@ -38,14 +39,24 @@ const NotificationsDropdown = () => {
   }, [notifications]);
   
   const handleMarkAsRead = async (id: number) => {
-    await notificationService.markAsRead(id);
-    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    try {
+      await notificationService.markAsRead(id);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      toast.error('Failed to mark notification as read');
+    }
   };
   
   const handleMarkAllAsRead = async () => {
     if (user) {
-      await notificationService.markAllAsRead(user.id);
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      try {
+        await notificationService.markAllAsRead(user.id);
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      } catch (error) {
+        console.error('Failed to mark all notifications as read:', error);
+        toast.error('Failed to mark notifications as read');
+      }
     }
   };
   
