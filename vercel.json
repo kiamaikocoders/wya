@@ -37,6 +37,10 @@
       "destination": "/api/app-version.json"
     },
     {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -48,6 +48,8 @@ const Logo: React.FC<LogoProps> = ({
           <img
             src="/WYA_LOGO_2.png"
             alt="WYA - Where You At"
+            width={612}
+            height={408}
             className={cn(
               sizeClasses[size],
               'w-auto min-w-[150px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
@@ -69,6 +71,7 @@ const Logo: React.FC<LogoProps> = ({
               backgroundColor: 'transparent'
             }}
             loading="eager"
+            decoding="async"
             onError={(e) => {
               console.error('Logo image failed to load:', e);
               setImageError(true);

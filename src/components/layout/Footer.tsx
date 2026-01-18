@@ -31,7 +31,13 @@ const Footer = () => {
               Connect with organizers and other attendees.
             </p>
             <div className="flex space-x-4">
-              <a href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3" target="_blank" rel="noopener noreferrer" className="text-kenya-orange hover:text-kenya-orange/80 transition-colors">
+              <a
+                href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-kenya-orange hover:text-kenya-orange/80 transition-colors"
+              >
                 <Instagram size={20} />
               </a>
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors opacity-50 cursor-not-allowed" aria-label="TikTok (coming soon)">
@@ -122,7 +128,9 @@ const Footer = () => {
                     placeholder="Your email address" 
                     className="bg-kenya-dark/50 border border-kenya-brown text-white placeholder:text-kenya-brown-light rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange w-full"
                   />
-                  <button 
+                  <button
+                    type="button"
+                    aria-label="Subscribe to newsletter"
                     className="bg-kenya-orange hover:bg-kenya-orange/90 text-white rounded-r-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange"
                   >
                     <Mail size={20} />
@@ -142,7 +150,13 @@ const Footer = () => {
               Connect with organizers and other attendees.
             </p>
             <div className="flex space-x-4">
-              <a href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3" target="_blank" rel="noopener noreferrer" className="text-kenya-orange hover:text-kenya-orange/80 transition-colors">
+              <a
+                href="https://www.instagram.com/whereyouat.ke?utm_source=qr&igsh=NzdtNDR6eHUwYmk3"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-kenya-orange hover:text-kenya-orange/80 transition-colors"
+              >
                 <Instagram size={20} />
               </a>
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-kenya-brown-light hover:text-kenya-orange transition-colors opacity-50 cursor-not-allowed" aria-label="TikTok (coming soon)">
