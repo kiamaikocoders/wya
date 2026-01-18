@@ -28,7 +28,13 @@ const LandingHero = ({
         <img
           src="/layout.jpeg"
           alt=""
+          width={800}
+          height={800}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover"
+          aria-hidden="true"
         />
         {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
@@ -46,7 +52,7 @@ const LandingHero = ({
           <h1 className="text-balance text-4xl font-black tracking-tight text-white md:text-6xl">
             {landingHero.heading}
           </h1>
-          <p className="text-pretty text-lg text-white/75 md:text-xl">
+          <p className="text-pretty text-lg text-white/85 md:text-xl">
             {landingHero.subheading}
           </p>
 
@@ -69,13 +75,13 @@ const LandingHero = ({
             <button
               type="button"
               onClick={onTertiaryCta}
-              className="inline-flex items-center justify-center text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline"
+              className="inline-flex items-center justify-center text-sm font-medium text-white/80 underline-offset-4 hover:text-white hover:underline"
             >
               {landingHero.tertiaryCta}
             </button>
           </div>
 
-          <div className="mt-10 flex flex-wrap items-center gap-6 text-white/70">
+          <div className="mt-10 flex flex-wrap items-center gap-6 text-white/80">
             <div className="flex items-center gap-2 text-sm">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
                 <SocialIcon className="h-5 w-5 text-kenya-orange" />
@@ -91,7 +97,7 @@ const LandingHero = ({
                   <span className="text-lg font-semibold text-white">
                     {metric.value}
                   </span>
-                  <span className="text-xs uppercase tracking-wide text-white/60">
+                  <span className="text-xs uppercase tracking-wide text-white/70">
                     {metric.label}
                   </span>
                 </div>
@@ -101,7 +107,7 @@ const LandingHero = ({
         </div>
       </div>
 
-      <div className="absolute bottom-10 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-sm text-white/60 md:flex">
+      <div className="absolute bottom-10 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-sm text-white/70 md:flex">
         <span>Scroll to explore</span>
         <div className="flex flex-col items-center">
           <div className="h-8 w-4 rounded-full border border-white/30 p-1">

@@ -57,8 +57,11 @@ const Navbar = () => {
             <img
               src="/WYA_LOGO_2.png"
               alt="WYA"
+              width={612}
+              height={408}
               className="h-16 sm:h-20 md:h-24 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)] transition-transform hover:scale-105"
               style={{ mixBlendMode: 'normal' }}
+              decoding="async"
             />
           </Link>
         </div>

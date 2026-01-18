@@ -63,7 +63,7 @@ const MarketingNavbar = () => {
           className="flex-row items-center gap-2 min-w-[150px]"
         />
 
-        <nav className="hidden md:flex items-center gap-8 text-sm text-kenya-brown-light">
+        <nav className="hidden md:flex items-center gap-8 text-sm text-white/80">
           {navLinks.map((link) => (
             <a
               key={link.href}
