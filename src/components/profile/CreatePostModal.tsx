@@ -142,7 +142,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-promo border-white/10 text-white">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto bg-gradient-promo border-white/10 text-white safe-area-bottom">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Create Post</DialogTitle>
         </DialogHeader>
