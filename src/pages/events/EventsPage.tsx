@@ -123,8 +123,8 @@ const EventsPage = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-10">
-      <div className="space-y-8">
+    <div className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-10 lg:h-screen lg:overflow-hidden lg:pb-0">
+      <div className="flex h-full flex-col gap-8">
         <EventsHero
           metrics={metrics}
           activeTab={activeTab}
@@ -156,7 +156,7 @@ const EventsPage = () => {
           }
         />
 
-        <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="flex flex-1 min-h-0 flex-col gap-6 lg:flex-row">
           <EventsFiltersPanel
             open={filtersOpen}
             onOpenChange={setFiltersOpen}
@@ -169,7 +169,7 @@ const EventsPage = () => {
             clearFilters={clearFilters}
           />
 
-          <main className="flex-1 space-y-6">
+          <main className="flex-1 min-h-0 space-y-6 lg:overflow-y-auto lg:pr-1 lg:pb-10">
             <EventsResults
               events={events}
               isLoading={

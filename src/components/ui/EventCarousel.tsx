@@ -69,7 +69,7 @@ const EventCarousel: React.FC<EventCarouselProps> = ({
                   image={event.image_url}
                   capacity={100}
                   attendees={Math.floor(Math.random() * 100)}
-                  isFeatured={event.is_featured}
+                  isFeatured={event.featured || event.is_featured}
                   price={event.price}
                   event={event}
                 />
