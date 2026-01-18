@@ -363,18 +363,22 @@ const GhostManagement: React.FC = () => {
 
   const handleCancelAction = async (id: number) => {
     if (confirm('Are you sure you want to cancel this action?')) {
-      const success = await ghostService.cancelAction(id);
-      if (success) {
+      try {
+        await ghostService.cancelAction(id);
         loadData();
+      } catch (error) {
+        console.error('Failed to cancel action:', error);
       }
     }
   };
 
   const handleDeleteAction = async (id: number) => {
     if (confirm('Are you sure you want to delete this action? This cannot be undone.')) {
-      const success = await ghostService.deleteAction(id);
-      if (success) {
+      try {
+        await ghostService.deleteAction(id);
         loadData();
+      } catch (error) {
+        console.error('Failed to delete action:', error);
       }
     }
   };

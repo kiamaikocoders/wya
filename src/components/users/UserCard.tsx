@@ -85,10 +85,10 @@ const UserCard: React.FC<UserCardProps> = ({
     
     setIsFollowLoading(true);
     try {
-      const success = await followService.followUser(id);
-      if (success) {
-        onFollow();
-      }
+      await followService.followUser(id);
+      onFollow();
+    } catch (error) {
+      console.error('Error following user:', error);
     } finally {
       setIsFollowLoading(false);
     }
@@ -102,10 +102,10 @@ const UserCard: React.FC<UserCardProps> = ({
     
     setIsFollowLoading(true);
     try {
-      const success = await followService.unfollowUser(id);
-      if (success) {
-        onUnfollow();
-      }
+      await followService.unfollowUser(id);
+      onUnfollow();
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
     } finally {
       setIsFollowLoading(false);
     }

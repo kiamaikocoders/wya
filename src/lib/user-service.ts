@@ -63,7 +63,7 @@ export const userService = {
     }
   },
   
-  updateProfile: async (profile: UpdateProfilePayload): Promise<boolean> => {
+  updateProfile: async (profile: UpdateProfilePayload): Promise<void> => {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,12 +86,9 @@ export const userService = {
         .eq('id', user.id);
       
       if (error) throw error;
-      // Don't show toast here - let the caller handle it
-      return true;
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Failed to update profile');
-      return false;
+      throw error;
     }
   },
   

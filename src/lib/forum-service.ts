@@ -225,7 +225,7 @@ export const forumService = {
     } catch (error) {
       console.error('Error liking post:', error);
       toast.error('Failed to like post');
-      return false;
+      throw error;
     }
   },
 
@@ -266,7 +266,7 @@ export const forumService = {
     } catch (error) {
       console.error('Error unliking post:', error);
       toast.error('Failed to unlike post');
-      return false;
+      throw error;
     }
   },
 

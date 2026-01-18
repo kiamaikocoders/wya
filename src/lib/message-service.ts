@@ -13,7 +13,7 @@ export interface Message {
 }
 
 export const messageService = {
-  sendMessage: async (receiverId: string, content: string): Promise<Message | null> => {
+  sendMessage: async (receiverId: string, content: string): Promise<Message> => {
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -26,7 +26,7 @@ export const messageService = {
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
-      return null;
+      throw error;
     }
   },
 
@@ -46,7 +46,7 @@ export const messageService = {
     }
   },
 
-  markAsRead: async (messageId: string): Promise<boolean> => {
+  markAsRead: async (messageId: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('messages')
@@ -54,10 +54,9 @@ export const messageService = {
         .eq('id', messageId);
 
       if (error) throw error;
-      return true;
     } catch (error) {
       console.error('Error marking message as read:', error);
-      return false;
+      throw error;
     }
   },
 

@@ -155,7 +155,7 @@ export const languageService = {
       return data;
     } catch (error) {
       console.error('Error getting user language preferences:', error);
-      return null;
+      throw error;
     }
   },
 

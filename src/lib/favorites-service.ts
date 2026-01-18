@@ -64,7 +64,7 @@ export const favoritesService = {
       return !!data;
     } catch (error) {
       console.error('Error checking if event is favorited:', error);
-      return false;
+      throw error;
     }
   },
   

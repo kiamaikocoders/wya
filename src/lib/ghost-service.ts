@@ -85,7 +85,7 @@ export const ghostService = {
     } catch (error) {
       console.error('Error fetching persona groups:', error);
       toast.error('Failed to fetch persona groups');
-      return [];
+      throw error;
     }
   },
 
@@ -104,7 +104,7 @@ export const ghostService = {
       return data;
     } catch (error) {
       console.error('Error fetching persona group:', error);
-      return null;
+      throw error;
     }
   },
 
@@ -130,7 +130,7 @@ export const ghostService = {
     } catch (error) {
       console.error('Error fetching ghost users:', error);
       toast.error('Failed to fetch ghost users');
-      return [];
+      throw error;
     }
   },
 
@@ -158,7 +158,7 @@ export const ghostService = {
       return profiles || [];
     } catch (error) {
       console.error('Error fetching ghost users by persona:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -173,8 +173,7 @@ export const ghostService = {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('You must be logged in');
-        return null;
+        throw new Error('You must be logged in');
       }
 
       const { data, error } = await supabase
@@ -194,7 +193,7 @@ export const ghostService = {
     } catch (error: any) {
       console.error('Error creating ghost action:', error);
       toast.error(error.message || 'Failed to queue ghost action');
-      return null;
+      throw error;
     }
   },
 
@@ -219,7 +218,7 @@ export const ghostService = {
     } catch (error) {
       console.error('Error fetching queued actions:', error);
       toast.error('Failed to fetch queued actions');
-      return [];
+      throw error;
     }
   },
 
@@ -238,7 +237,7 @@ export const ghostService = {
       return data;
     } catch (error) {
       console.error('Error fetching action:', error);
-      return null;
+      throw error;
     }
   },
 
@@ -260,7 +259,7 @@ export const ghostService = {
     } catch (error: any) {
       console.error('Error cancelling action:', error);
       toast.error(error.message || 'Failed to cancel action');
-      return false;
+      throw error;
     }
   },
 
@@ -281,7 +280,7 @@ export const ghostService = {
     } catch (error: any) {
       console.error('Error deleting action:', error);
       toast.error(error.message || 'Failed to delete action');
-      return false;
+      throw error;
     }
   },
 
@@ -304,7 +303,7 @@ export const ghostService = {
       return data || [];
     } catch (error) {
       console.error('Error fetching action log:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -323,7 +322,7 @@ export const ghostService = {
       return data || [];
     } catch (error) {
       console.error('Error fetching recent action logs:', error);
-      return [];
+      throw error;
     }
   },
 
@@ -386,13 +385,7 @@ export const ghostService = {
       return stats;
     } catch (error) {
       console.error('Error fetching statistics:', error);
-      return {
-        total_ghost_users: 0,
-        total_queued_actions: 0,
-        pending_actions: 0,
-        completed_actions: 0,
-        failed_actions: 0
-      };
+      throw error;
     }
   },
 

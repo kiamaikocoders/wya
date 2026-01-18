@@ -645,7 +645,7 @@ export const storyService = {
       return data !== null && data.length > 0;
     } catch (error) {
       console.error(`Error checking like status for story ID ${storyId}:`, error);
-      return false;
+      throw error;
     }
   }
 };
