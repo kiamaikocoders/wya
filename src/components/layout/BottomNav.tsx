@@ -61,7 +61,8 @@ const BottomNav = () => {
   return (
     <nav 
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-[9999] safe-area-bottom transition-transform duration-300',
+        // Keep below dialogs/overlays (Radix dialogs use z-50) so modals aren't obscured on mobile.
+        'fixed bottom-0 left-0 right-0 z-40 safe-area-bottom transition-transform duration-300',
         'border-t border-slate-200 dark:border-slate-800',
         'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl',
         'shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]',
