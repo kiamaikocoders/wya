@@ -58,13 +58,16 @@ export interface CreateCommentDto {
 
 export const forumService = {
   // Get all forum posts
-  getAllPosts: async (): Promise<ForumPost[]> => {
+  getAllPosts: async (limit = 50): Promise<ForumPost[]> => {
     try {
       // Get posts first
       const { data: posts, error: postsError } = await supabase
         .from('forum_posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(
+          'id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category'
+        )
+        .order('created_at', { ascending: false })
+        .limit(limit);
       
       if (postsError) throw postsError;
       
@@ -109,7 +112,7 @@ export const forumService = {
       // Get post first
       const { data: post, error: postError } = await supabase
         .from('forum_posts')
-        .select('*')
+        .select('id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category')
         .eq('id', id)
         .single();
       
@@ -324,39 +327,6 @@ export const forumService = {
       return formattedComments;
     } catch (error) {
       console.error('Error fetching post comments:', error);
-      throw error;
-    }
-  },
-
-  // Create forum post comment
-  createComment: async (postId: number, commentData: CreateCommentDto): Promise<ForumComment> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('You must be logged in to create a comment');
-
-      const { data, error } = await supabase
-        .from('forum_comments')
-        .insert({
-          post_id: postId,
-          content: commentData.content,
-          user_id: user.id
-        })
-        .select('*')
-        .single();
-
-      if (error) throw error;
-
-      // Update comments count
-      await supabase
-        .from('forum_posts')
-        .update({ comments_count: supabase.raw('comments_count + 1') })
-        .eq('id', postId);
-
-      toast.success('Comment added successfully');
-      return data;
-    } catch (error) {
-      console.error('Error creating comment:', error);
-      toast.error('Failed to create comment');
       throw error;
     }
   },

@@ -14,8 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useQuery } from '@tanstack/react-query';
-import { userService } from '@/lib/user-service';
 import {
   Brain,
   LogIn,
@@ -33,12 +31,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
-
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile', user?.id],
-    queryFn: () => userService.getUserProfile(user?.id || ''),
-    enabled: !!user?.id && isAuthenticated,
-  });
 
   const homeHref = isAuthenticated ? '/home' : '/';
   const isOrganizer = isAdmin || user?.user_type === 'organizer';
@@ -117,11 +109,11 @@ const Navbar = () => {
                 <Button variant="ghost" className="h-9 w-9 rounded-full p-0">
                   <Avatar className="h-9 w-9">
                     <AvatarImage
-                      src={profile?.avatar_url || '/placeholder.svg'}
-                      alt={profile?.full_name || user?.name}
+                      src={user?.avatar_url || user?.profile_picture || '/placeholder.svg'}
+                      alt={user?.full_name || user?.name}
                     />
                     <AvatarFallback>
-                      {profile?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
+                      {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -129,7 +121,7 @@ const Navbar = () => {
               <DropdownMenuContent className="w-64 border border-border bg-card/95 text-foreground backdrop-blur">
                 <DropdownMenuLabel className="flex flex-col space-y-1">
                   <span className="text-sm font-semibold text-foreground">
-                    {profile?.full_name || user?.name || 'Explorer'}
+                    {user?.full_name || user?.name || 'Explorer'}
                   </span>
                   <span className="text-xs text-muted-foreground">{user?.email}</span>
                   {isAdmin && (

@@ -83,9 +83,7 @@ const PostDetail: React.FC = () => {
 
     setIsSubmittingComment(true);
     try {
-      await forumService.createComment(post.id, {
-        content: newComment
-      });
+      await forumService.createComment({ content: newComment, post_id: post.id });
       
       setNewComment('');
       // Reload comments

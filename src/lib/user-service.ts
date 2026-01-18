@@ -43,7 +43,7 @@ export const userService = {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, location, created_at')
         .eq('id', user.id)
         .single();
       
@@ -96,7 +96,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, location, created_at, updated_at')
         .eq('id', userId)
         .single();
       
@@ -123,7 +123,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, location, created_at')
         .ilike('full_name', `%${searchTerm}%`)
         .limit(5);
       
@@ -139,7 +139,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, location, created_at, updated_at')
         .eq('username', username)
         .single();
 

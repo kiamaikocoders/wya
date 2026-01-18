@@ -1,9 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { authService } from '@/lib/auth-service';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,49 +10,30 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, isAdmin, loading, refreshAuth } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
+  const didToastRef = useRef(false);
 
   useEffect(() => {
-    const checkAuthState = async () => {
-      let hasValidSession = false;
-      if (!isAuthenticated) {
-        try {
-          hasValidSession = await authService.isAuthenticated();
-        } catch (error) {
-          console.error('Error checking session:', error);
-          hasValidSession = false;
-        }
-      }
-      if (hasValidSession) {
-        try {
-          // Attempt to refresh auth state if token exists but context says not authenticated
-          await refreshAuth();
-        } catch (error) {
-          console.error("Failed to refresh authentication:", error);
-        }
-      }
-      setIsChecking(false);
-    };
-
-    checkAuthState();
-  }, [isAuthenticated, refreshAuth]);
+    didToastRef.current = false;
+  }, [location.pathname]);
 
   useEffect(() => {
     // Show toast message if user is redirected to login
-    if (!loading && !isChecking && !isAuthenticated) {
+    if (!loading && !isAuthenticated && !didToastRef.current) {
       toast.error('Please log in to access this page');
+      didToastRef.current = true;
     }
     
     // Show toast message if admin access is required
-    if (!loading && !isChecking && isAuthenticated && adminOnly && !isAdmin) {
+    if (!loading && isAuthenticated && adminOnly && !isAdmin && !didToastRef.current) {
       toast.error('You need admin privileges to access this page');
+      didToastRef.current = true;
     }
-  }, [loading, isChecking, isAuthenticated, adminOnly, isAdmin]);
+  }, [loading, isAuthenticated, adminOnly, isAdmin, location.pathname]);
 
   // Show loading state
-  if (loading || isChecking) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-promo">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
