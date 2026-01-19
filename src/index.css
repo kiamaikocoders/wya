@@ -163,6 +163,21 @@
       transform: scale(0.98);
     }
   }
+
+  /* Modern image formats for marketing section background (with PNG fallback) */
+  .wya-ai-bg {
+    background-image: url("/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7.png");
+  }
+
+  @supports (background-image: image-set(url("/x.webp") type("image/webp"))) {
+    .wya-ai-bg {
+      background-image: image-set(
+        url("/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7-800.avif") type("image/avif"),
+        url("/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7-800.webp") type("image/webp"),
+        url("/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7.png") type("image/png")
+      );
+    }
+  }
 }
 
 #root {

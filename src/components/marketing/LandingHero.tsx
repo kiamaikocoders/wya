@@ -25,8 +25,11 @@ const LandingHero = ({
     >
       <div className="absolute inset-0 -z-10">
         {/* Background image */}
-        <img
-          src="/layout.jpeg"
+        <picture>
+          <source srcSet="/layout-800.avif" type="image/avif" />
+          <source srcSet="/layout-800.webp" type="image/webp" />
+          <img
+            src="/layout-800.webp"
           alt=""
           width={800}
           height={800}
@@ -35,7 +38,8 @@ const LandingHero = ({
           fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover"
           aria-hidden="true"
-        />
+          />
+        </picture>
         {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/60" />
         {/* Decorative gradients */}

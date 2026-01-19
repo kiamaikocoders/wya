@@ -54,15 +54,28 @@ const Navbar = () => {
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link to={homeHref} className="flex items-center gap-2 text-white">
-            <img
-              src="/WYA_LOGO_2.png"
-              alt="WYA"
-              width={612}
-              height={408}
-              className="h-16 sm:h-20 md:h-24 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)] transition-transform hover:scale-105"
-              style={{ mixBlendMode: 'normal' }}
-              decoding="async"
-            />
+            <picture>
+              <source
+                type="image/avif"
+                srcSet="/WYA_LOGO_2-180.avif 180w, /WYA_LOGO_2-300.avif 300w, /WYA_LOGO_2-612.avif 612w"
+                sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+              />
+              <source
+                type="image/webp"
+                srcSet="/WYA_LOGO_2-180.webp 180w, /WYA_LOGO_2-300.webp 300w, /WYA_LOGO_2-612.webp 612w"
+                sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+              />
+              <img
+                src="/WYA_LOGO_2-300.webp"
+                alt="WYA"
+                width={612}
+                height={408}
+                className="h-16 sm:h-20 md:h-24 w-auto drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)] transition-transform hover:scale-105"
+                style={{ mixBlendMode: 'normal' }}
+                decoding="async"
+                loading="eager"
+              />
+            </picture>
           </Link>
         </div>
 
