@@ -12,6 +12,7 @@ import { ticketService } from '@/lib/ticket-service';
 import { eventService } from '@/lib/event-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PostsGrid from '@/components/profile/PostsGrid';
+import PostPreviewModal, { ProfilePostPreview } from '@/components/profile/PostPreviewModal';
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -20,6 +21,9 @@ const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'posts' | 'events'>('posts');
   const [friendsModalOpen, setFriendsModalOpen] = useState(false);
   const [friendsModalType, setFriendsModalType] = useState<'followers' | 'following' | 'mutuals'>('mutuals');
+  const [isPostPreviewOpen, setIsPostPreviewOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<ProfilePostPreview | null>(null);
+  const [selectedPostIndex, setSelectedPostIndex] = useState(0);
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['userProfile', userId],
@@ -115,6 +119,17 @@ const UserProfile: React.FC = () => {
     const followerSet = new Set(followerIds);
     return followingIds.filter((id) => followerSet.has(id)).length;
   }, [followerIds, followingIds]);
+
+  // Create event title map for posts
+  const eventTitleMap = useMemo(() => {
+    const map = new Map<number, string>();
+    allEvents.forEach(event => {
+      if (event.id) {
+        map.set(event.id, event.title);
+      }
+    });
+    return map;
+  }, [allEvents]);
 
   const followMutation = useMutation({
     mutationFn: async () => {
@@ -212,6 +227,21 @@ const UserProfile: React.FC = () => {
                   event_id: post.event_id || undefined,
                 }))} 
                 activeTab="posts"
+                onPostClick={(post) => {
+                  // Find the index of the clicked post
+                  const postIndex = userPosts.findIndex(p => p.id === post.id);
+                  setSelectedPost({
+                    id: post.id,
+                    user_id: profileId,
+                    media_url: post.media_url,
+                    media_type: post.media_type,
+                    content: post.content,
+                    created_at: post.created_at,
+                    event_id: post.event_id,
+                  });
+                  setSelectedPostIndex(postIndex >= 0 ? postIndex : 0);
+                  setIsPostPreviewOpen(true);
+                }}
               />
             ) : (
               <div className="text-center py-12 text-muted-foreground">
@@ -255,6 +285,39 @@ const UserProfile: React.FC = () => {
             type={friendsModalType}
           />
         )}
+
+        {/* Post Preview Modal */}
+        <PostPreviewModal
+          open={isPostPreviewOpen}
+          onOpenChange={setIsPostPreviewOpen}
+          post={selectedPost}
+          posts={userPosts.map(post => ({
+            id: post.id,
+            user_id: profileId,
+            media_url: post.media_url,
+            media_type: post.media_type,
+            content: post.content,
+            created_at: post.created_at,
+            event_id: post.event_id,
+          }))}
+          currentIndex={selectedPostIndex}
+          eventTitleMap={eventTitleMap}
+          onPostChange={(index) => {
+            setSelectedPostIndex(index);
+            const post = userPosts[index];
+            if (post) {
+              setSelectedPost({
+                id: post.id,
+                user_id: profileId,
+                media_url: post.media_url,
+                media_type: post.media_type,
+                content: post.content,
+                created_at: post.created_at,
+                event_id: post.event_id,
+              });
+            }
+          }}
+        />
       </div>
     </div>
   );

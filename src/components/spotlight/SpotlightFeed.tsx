@@ -13,6 +13,7 @@ interface SpotlightFeedProps {
   className?: string;
   onEventClick?: (eventId: number) => void;
   onContentClick?: (contentId: string | number, type: 'story' | 'forum') => void;
+  targetContentId?: number;
 }
 
 const getEngagementScore = (item: {
@@ -30,7 +31,7 @@ const getEngagementScore = (item: {
   return likes * 2 + comments * 3 + views * 0.5 + recencyBoost;
 };
 
-const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, onContentClick }) => {
+const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, onContentClick, targetContentId }) => {
   const queryClient = useQueryClient();
 
   const { data: stories = [], isLoading: isLoadingStories } = useQuery({
@@ -70,6 +71,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
   // Track active section for scroll snapping
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const sectionsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const hasScrolledToTarget = useRef(false);
 
   // Combine and transform content
   const allContent = useMemo(() => {
@@ -251,6 +253,42 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
     return groups;
   }, [allContent, events, isLoadingEvents]);
+
+  // Find target content and scroll to it
+  useEffect(() => {
+    if (!targetContentId || hasScrolledToTarget.current || eventGroups.length === 0 || isLoadingStories || isLoadingForum) return;
+
+    // Find which event group contains the target content
+    let targetGroupIndex = -1;
+    let targetContentIndex = -1;
+
+    for (let i = 0; i < eventGroups.length; i++) {
+      const group = eventGroups[i];
+      const contentIndex = group.content.findIndex(c => 
+        c.id === targetContentId || String(c.id) === String(targetContentId)
+      );
+      if (contentIndex !== -1) {
+        targetGroupIndex = i;
+        targetContentIndex = contentIndex;
+        break;
+      }
+    }
+
+    if (targetGroupIndex !== -1 && sectionsRef.current[targetGroupIndex]) {
+      // Scroll to the section containing the target content
+      // Use a longer delay to ensure all content is fully rendered
+      setTimeout(() => {
+        const section = sectionsRef.current[targetGroupIndex];
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          hasScrolledToTarget.current = true;
+        }
+      }, 500); // Delay to ensure content is rendered
+    } else if (targetGroupIndex === -1) {
+      // Content not found, mark as scrolled to avoid infinite loops
+      hasScrolledToTarget.current = true;
+    }
+  }, [targetContentId, eventGroups, isLoadingStories, isLoadingForum]);
 
   // Intersection Observer for active section detection
   useEffect(() => {
@@ -458,31 +496,42 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
       {/* Header removed - using transparent header in SpotlightPage instead */}
       {/* Event Sections with Scroll Snapping - TikTok style */}
       <div className="space-y-0">
-        {eventGroups.map((eventGroup, index) => (
-          <div
-            key={eventGroup.event.id}
-            ref={(el) => {
-              sectionsRef.current[index] = el;
-            }}
-            className="snap-start snap-always"
-          >
-            <EventSpotlightSection
-              eventGroup={eventGroup}
-              isActive={activeSectionIndex === index}
-              onContentChange={(contentIndex) => {
-                console.log(`Event ${eventGroup.event.id}, Content ${contentIndex}`);
+        {eventGroups.map((eventGroup, index) => {
+          // Find if this group contains the target content
+          const targetContentIndex = targetContentId 
+            ? eventGroup.content.findIndex(c => 
+                c.id === targetContentId || String(c.id) === String(targetContentId)
+              )
+            : -1;
+          const initialIndex = targetContentIndex !== -1 ? targetContentIndex : 0;
+
+          return (
+            <div
+              key={eventGroup.event.id}
+              ref={(el) => {
+                sectionsRef.current[index] = el;
               }}
-              onExpand={(contentId) => {
-                const content = eventGroup.content.find(c => c.id === contentId);
-                if (content) {
-                  onContentClick?.(contentId, content.type);
-                }
-              }}
-              onLike={handleLike}
-              onShare={handleShare}
-            />
-          </div>
-        ))}
+              className="snap-start snap-always"
+            >
+              <EventSpotlightSection
+                eventGroup={eventGroup}
+                isActive={activeSectionIndex === index}
+                initialContentIndex={targetContentIndex !== -1 ? initialIndex : undefined}
+                onContentChange={(contentIndex) => {
+                  console.log(`Event ${eventGroup.event.id}, Content ${contentIndex}`);
+                }}
+                onExpand={(contentId) => {
+                  const content = eventGroup.content.find(c => c.id === contentId);
+                  if (content) {
+                    onContentClick?.(contentId, content.type);
+                  }
+                }}
+                onLike={handleLike}
+                onShare={handleShare}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

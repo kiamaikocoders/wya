@@ -1,17 +1,19 @@
 import React, { useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import SpotlightFeed from '@/components/spotlight/SpotlightFeed';
 import SpotlightHeader from '@/components/spotlight/SpotlightHeader';
 import SpotlightSwipeHint from '@/components/spotlight/SpotlightSwipeHint';
 
 const SpotlightPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { id } = useParams<{ id?: string }>();
 
   // Ensure page scrolls to top on mount (normal scroll direction)
   useEffect(() => {
-    if (containerRef.current) {
+    if (containerRef.current && !id) {
       containerRef.current.scrollTop = 0;
     }
-  }, []);
+  }, [id]);
 
   return (
     <div 
@@ -30,7 +32,7 @@ const SpotlightPage = () => {
       <SpotlightSwipeHint />
       
       {/* Content feed - full viewport height sections */}
-      <SpotlightFeed />
+      <SpotlightFeed targetContentId={id ? Number(id) : undefined} />
     </div>
   );
 };
