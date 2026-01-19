@@ -99,9 +99,7 @@ const FriendActivitiesCarousel: React.FC = () => {
   }
 
   return (
-    <div className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-4 px-2" style={{ fontFamily: '"Be Vietnam Pro", sans-serif' }}>Friend Activities</h2>
-      <div className="relative">
+    <div className="relative">
         <div
           ref={scrollRef}
           className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-2"
@@ -201,7 +199,6 @@ const FriendActivitiesCarousel: React.FC = () => {
             </Button>
           </>
         )}
-      </div>
     </div>
   );
 };

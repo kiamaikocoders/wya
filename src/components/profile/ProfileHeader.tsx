@@ -65,169 +65,121 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   const displayHandle = handleBase ? `@${handleBase}` : undefined;
 
   return (
-    <div className="relative mb-8">
-      {/* Ambient Glow - Behind Avatar */}
-      <div className="absolute left-1/2 top-16 h-64 w-64 -translate-x-1/2 rounded-full bg-gradient-accent/15 blur-3xl pointer-events-none md:left-8 md:translate-x-0" />
-
-      {/* Profile Card Container */}
-      <div className="relative rounded-2xl border border-white/8 bg-[#1A1A1A] shadow-[0_4px_24px_rgba(0,0,0,0.5)] overflow-hidden">
-        {/* Banner Area */}
-        <div className="relative h-32 bg-gradient-to-br from-kenya-orange/10 via-kenya-brown/20 to-transparent border-b border-white/5">
-          {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '24px 24px',
-          }} />
-        </div>
-
-        {/* Content Area */}
-        <div className="relative px-6 pb-6 pt-20 md:px-8 md:pt-24">
-          {/* Avatar - Overlapping Banner */}
-          <div className="absolute left-6 top-0 md:left-8" style={{ transform: 'translateY(-50%)' }}>
-            <div className="relative">
-              {/* Avatar Glow Effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-accent/20 blur-xl" />
-              <Avatar className="relative h-32 w-32 border-4 border-[#1A1A1A] shadow-[0_8px_32px_rgba(0,0,0,0.6)] md:h-36 md:w-36">
+    <>
+      {/* Profile Section */}
+      <section className="px-6 flex items-center gap-5">
+        {/* Avatar on Left */}
+        <div className="relative flex-shrink-0">
+          <Avatar className="h-20 w-20 rounded-full bg-gradient-to-tr from-kenya-orange to-orange-300 border-4 border-white dark:border-slate-900 shadow-xl">
             <AvatarImage src={profile.avatar_url} />
-                <AvatarFallback className="bg-gradient-to-br from-kenya-orange to-kenya-brown text-3xl text-white">
+            <AvatarFallback className="bg-gradient-to-tr from-kenya-orange to-orange-300 text-3xl text-white font-bold">
               {displayName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
+          {/* Online Status Indicator */}
+          {isCurrentUser && (
+            <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
+          )}
         </div>
-          </div>
 
-          {/* Profile Info */}
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
-            {/* Spacer for Avatar on Mobile */}
-            <div className="h-20 md:hidden" />
+        {/* Content on Right */}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-white">{displayName}</h1>
+          {!!displayHandle && (
+            <p className="text-slate-500 dark:text-slate-400 text-sm">{displayHandle}</p>
+          )}
+          {profile.location && (
+            <div className="flex items-center mt-1 text-xs text-slate-400">
+              <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {profile.location}
+            </div>
+          )}
+        </div>
+      </section>
 
-            {/* Main Content */}
-            <div className="flex-1 space-y-6">
-          {/* Name and Action Buttons */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
-                  <h1 className="text-4xl font-black text-white tracking-tight md:text-5xl" style={{ fontFamily: '"Be Vietnam Pro", sans-serif' }}>
-                {displayName}
-              </h1>
-                  {!!displayHandle && (
-                    <p className="text-sm text-white/60 font-medium" style={{ fontFamily: '"Noto Sans", sans-serif' }}>
-                      {displayHandle}
-                    </p>
-              )}
-          </div>
+      {/* Bio Section */}
+      {profile.bio && (
+        <section className="px-6 mt-4">
+          <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{profile.bio}</p>
+        </section>
+      )}
 
-            <div className="flex items-center gap-2">
-              {isCurrentUser ? (
-                  <Button
-                    variant="outline"
-                    onClick={onEdit}
-                      className="border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Button>
+      {/* Action Buttons */}
+      <section className="px-6 mt-6 flex gap-3">
+        {isCurrentUser ? (
+          <Button
+            variant="outline"
+            onClick={onEdit}
+            className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold py-3 rounded-full border border-transparent dark:border-slate-700"
+          >
+            <Settings className="mr-2 h-5 w-5" />
+            Edit Profile
+          </Button>
+        ) : (
+          <>
+            <Button
+              onClick={isFollowing ? onUnfollow : onFollow}
+              className="flex-1 bg-gradient-to-r from-kenya-orange to-amber-500 text-white font-semibold py-3 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+            >
+              {isFollowing ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  Following
+                </>
               ) : (
                 <>
-                  <Button
-                    onClick={isFollowing ? onUnfollow : onFollow}
-                    className={cn(
-                          'px-6 transition-all',
-                      isFollowing
-                            ? 'border border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white/30'
-                            : 'bg-gradient-to-r bg-gradient-accent text-black shadow-[0_0_20px_rgba(255,128,0,0.3)] hover:shadow-[0_0_30px_rgba(255,128,0,0.5)]'
-                    )}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Following
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={onMessage}
-                        className="border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all"
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Message
-                  </Button>
+                  <UserPlus className="h-5 w-5" />
+                  Follow
                 </>
               )}
-            </div>
-          </div>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onMessage}
+              className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold py-3 rounded-full flex items-center justify-center gap-2 border border-transparent dark:border-slate-700"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Message
+            </Button>
+          </>
+        )}
+      </section>
 
-              {/* Stats as Badges */}
-              <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={onPostsClick}
-                  aria-label="View posts"
-                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-gradient-accent/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-gradient-accent/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
-                >
-                  <div className="flex items-center gap-2">
-                    <Grid className="h-4 w-4 text-gradient-orange-accent/80" />
-                    <div>
-                      <p className="text-2xl font-bold text-white leading-none">{stats.posts}</p>
-                      <p className="text-xs text-white/60 font-medium mt-0.5">posts</p>
-            </div>
-            </div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={onFriendsClick}
-                  aria-label="View friends"
-                  className="group cursor-pointer rounded-xl border border-[#1C6F6F]/15 bg-[#1C6F6F]/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-[#1C6F6F]/25 hover:bg-[#1C6F6F]/12 hover:shadow-[0_0_20px_rgba(28,111,111,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
-                >
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[#1C6F6F]/80" />
-                    <div>
-                      <p className="text-2xl font-bold text-white leading-none">{stats.friends}</p>
-                      <p className="text-xs text-white/60 font-medium mt-0.5">friends</p>
-          </div>
-                  </div>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={onEventsClick}
-                  aria-label="View events"
-                  className="group cursor-pointer rounded-xl border border-kenya-orange/15 bg-gradient-accent/8 px-5 py-3 text-left transition-all hover:scale-105 hover:border-kenya-orange/25 hover:bg-gradient-accent/12 hover:shadow-[0_0_20px_rgba(255,128,0,0.15)] focus:outline-none focus-visible:ring-2 focus-visible:ring-kenya-orange/60"
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gradient-orange-accent/80" />
-                    <div>
-                      <p className="text-2xl font-bold text-white leading-none">{stats.eventsAttended}</p>
-                      <p className="text-xs text-white/60 font-medium mt-0.5">events</p>
-                    </div>
-                  </div>
-                </button>
-          </div>
-
-          {/* Bio and Location */}
-          <div className="space-y-2">
-            {profile.bio && (
-                  <p className="text-base text-white/80 leading-relaxed" style={{ fontFamily: '"Noto Sans", sans-serif' }}>
-                    {profile.bio}
-                  </p>
-            )}
-            {profile.location && (
-                  <p className="text-sm text-white/50 font-medium" style={{ fontFamily: '"Noto Sans", sans-serif' }}>
-                    {profile.location}
-                  </p>
-            )}
-              </div>
-            </div>
-          </div>
+      {/* Stats Section - Single Row with Dividers */}
+      <section className="px-6 mt-8">
+        <div className="flex justify-between items-center py-4 border-y border-slate-100 dark:border-slate-800/50">
+          <button
+            type="button"
+            onClick={onPostsClick}
+            className="text-center flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <span className="block text-xl font-bold text-white">{stats.posts}</span>
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-medium">Posts</span>
+          </button>
+          <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
+          <button
+            type="button"
+            onClick={onFriendsClick}
+            className="text-center flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <span className="block text-xl font-bold text-white">{stats.friends}</span>
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-medium">Friends</span>
+          </button>
+          <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
+          <button
+            type="button"
+            onClick={onEventsClick}
+            className="text-center flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <span className="block text-xl font-bold text-white">{stats.eventsAttended}</span>
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-medium">Events</span>
+          </button>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 };
 

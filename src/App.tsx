@@ -317,6 +317,7 @@ const App = () => {
 
                     {/* Spotlight */}
                     <Route path="/spotlight" element={<SpotlightPage />} />
+                    <Route path="/spotlight/:id" element={<SpotlightPage />} />
 
                     <Route path="*" element={<NotFound />} />
                   </Route>

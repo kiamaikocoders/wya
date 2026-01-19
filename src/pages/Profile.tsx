@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
 import { storyService } from '@/lib/story/story-service';
@@ -9,13 +9,15 @@ import { ticketService } from '@/lib/ticket-service';
 import { eventService } from '@/lib/event-service';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Grid, Video, UserCheck, Calendar } from 'lucide-react';
+import { Plus, Grid, Video, UserCheck, Calendar, ChevronLeft } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostsGrid from '@/components/profile/PostsGrid';
 import CreatePostModal from '@/components/profile/CreatePostModal';
 import EditProfileModal from '@/components/profile/EditProfileModal';
 import FriendActivitiesCarousel from '@/components/profile/FriendActivitiesCarousel';
 import EventsTabContent from '@/components/profile/EventsTabContent';
+import RecentUpdatesSection from '@/components/profile/RecentUpdatesSection';
+import InterestedEventsSection from '@/components/profile/InterestedEventsSection';
 import FollowersFollowingModal from '@/components/profile/FollowersFollowingModal';
 import PostPreviewModal, { ProfilePostPreview } from '@/components/profile/PostPreviewModal';
 import { toast } from 'sonner';
@@ -25,6 +27,7 @@ const Profile: React.FC = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
+  const navigate = useNavigate();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
   const [activeTab, setActiveTab] = useState<'posts' | 'spotlight' | 'events'>('posts');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
@@ -32,6 +35,7 @@ const Profile: React.FC = () => {
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
   const [isPostPreviewOpen, setIsPostPreviewOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<ProfilePostPreview | null>(null);
+  const [selectedPostIndex, setSelectedPostIndex] = useState(0);
   
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -120,6 +124,17 @@ const Profile: React.FC = () => {
     return allEvents.find((e) => e.id === selectedPost.event_id)?.title;
   }, [allEvents, selectedPost?.event_id]);
 
+  // Create event title map for posts
+  const eventTitleMap = useMemo(() => {
+    const map = new Map<number, string>();
+    allEvents.forEach(event => {
+      if (event.id) {
+        map.set(event.id, event.title);
+      }
+    });
+    return map;
+  }, [allEvents]);
+
   const followMutation = useMutation({
     mutationFn: followService.followUser,
     onSuccess: () => {
@@ -183,8 +198,7 @@ const Profile: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        {/* Profile Header */}
+      <main className="pb-24">
         <ProfileHeader
           profile={{
             id: profile.id,
@@ -202,97 +216,103 @@ const Profile: React.FC = () => {
           onFriendsClick={() => setIsFriendsOpen(true)}
         />
                   
-        {/* Friend Activities Carousel */}
-        <FriendActivitiesCarousel />
+        {/* Recent Updates Section */}
+        <RecentUpdatesSection />
                   
-        {/* Create Post FAB (clear intent, non-ambiguous placement) */}
-                      <Button
-            onClick={() => setIsCreatePostOpen(true)}
-          aria-label="Create post"
-          className="fixed bottom-32 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 p-0 text-white shadow-md shadow-orange-500/20 transition-transform hover:scale-105 md:bottom-10 md:right-10"
-                      >
-          <Plus className="h-6 w-6" />
-                      </Button>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <div className="rounded-xl border border-border bg-card p-2 mb-6 shadow-sm">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent border-none rounded-lg gap-1">
-            <TabsTrigger
-              value="posts"
-                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
+        {/* Tabs - Always visible */}
+        <div className="px-4 mt-8">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'spotlight' | 'events')} className="mt-6">
+            <div className="rounded-xl border border-white/10 bg-[#1A1A1A] p-2 mb-6">
+              <TabsList className="grid w-full grid-cols-3 bg-transparent border-none rounded-lg gap-1">
+                <TabsTrigger
+                  value="posts"
+                  className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 data-[state=active]:border data-[state=active]:border-orange-500/30 text-white/60 rounded-lg transition-all"
                 >
-              <Grid className="mr-2 h-4 w-4" />
-              Posts
-            </TabsTrigger>
-            <TabsTrigger
-              value="spotlight"
-                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
-            >
-              <Video className="mr-2 h-4 w-4" />
-              Spotlight
-            </TabsTrigger>
-            <TabsTrigger
-                value="events"
-                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border data-[state=active]:border-primary/30 text-muted-foreground rounded-lg transition-all"
-            >
-                <Calendar className="mr-2 h-4 w-4" />
-                Events
+                  <Grid className="mr-2 h-4 w-4" />
+                  Posts
+                </TabsTrigger>
+                <TabsTrigger
+                  value="spotlight"
+                  className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 data-[state=active]:border data-[state=active]:border-orange-500/30 text-white/60 rounded-lg transition-all"
+                >
+                  <Video className="mr-2 h-4 w-4" />
+                  Spotlight
+                </TabsTrigger>
+                <TabsTrigger
+                  value="events"
+                  className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 data-[state=active]:border data-[state=active]:border-orange-500/30 text-white/60 rounded-lg transition-all"
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Events
                 </TabsTrigger>
               </TabsList>
-          </div>
+            </div>
               
-          <TabsContent value="posts" className="mt-6">
-            <PostsGrid
-              posts={userPosts.map(p => ({
-                id: p.id,
-                user_id: p.user_id,
-                media_url: p.media_url,
-                media_type: p.media_type,
-                content: p.content,
-                event_id: p.event_id,
-                created_at: p.created_at,
-              }))}
-              activeTab="posts"
-              onPostClick={(post) => {
-                setSelectedPost(post);
-                setIsPostPreviewOpen(true);
-              }}
-              emptyCtaLabel="Create your first post"
-              onEmptyCtaClick={() => setIsCreatePostOpen(true)}
-            />
-              </TabsContent>
+            <TabsContent value="posts" className="mt-6">
+              <PostsGrid
+                posts={userPosts.map(p => ({
+                  id: p.id,
+                  user_id: p.user_id,
+                  media_url: p.media_url,
+                  media_type: p.media_type,
+                  content: p.content,
+                  event_id: p.event_id,
+                  created_at: p.created_at,
+                }))}
+                activeTab="posts"
+                onPostClick={(post) => {
+                  const postIndex = userPosts.findIndex(p => p.id === post.id);
+                  setSelectedPost(post);
+                  setSelectedPostIndex(postIndex >= 0 ? postIndex : 0);
+                  setIsPostPreviewOpen(true);
+                }}
+                emptyCtaLabel="Create your first post"
+                onEmptyCtaClick={() => setIsCreatePostOpen(true)}
+              />
+            </TabsContent>
               
-          <TabsContent value="spotlight" className="mt-6">
-            <PostsGrid
-              posts={userPosts.map(p => ({
-                id: p.id,
-                user_id: p.user_id,
-                media_url: p.media_url,
-                media_type: p.media_type,
-                content: p.content,
-                event_id: p.event_id,
-                created_at: p.created_at,
-              }))}
-              activeTab="spotlight"
-              onPostClick={(post) => {
-                setSelectedPost(post);
-                setIsPostPreviewOpen(true);
-              }}
-              emptyCtaLabel="Create a spotlight post"
-              onEmptyCtaClick={() => setIsCreatePostOpen(true)}
-            />
-              </TabsContent>
+            <TabsContent value="spotlight" className="mt-6">
+              <PostsGrid
+                posts={userPosts.map(p => ({
+                  id: p.id,
+                  user_id: p.user_id,
+                  media_url: p.media_url,
+                  media_type: p.media_type,
+                  content: p.content,
+                  event_id: p.event_id,
+                  created_at: p.created_at,
+                }))}
+                activeTab="spotlight"
+                onPostClick={(post) => {
+                  const postIndex = userPosts.findIndex(p => p.id === post.id);
+                  setSelectedPost(post);
+                  setSelectedPostIndex(postIndex >= 0 ? postIndex : 0);
+                  setIsPostPreviewOpen(true);
+                }}
+                emptyCtaLabel="Create a spotlight post"
+                onEmptyCtaClick={() => setIsCreatePostOpen(true)}
+              />
+            </TabsContent>
               
-          <TabsContent value="events" className="mt-6">
-            <EventsTabContent
-              upcomingEvents={upcomingEvents}
-              attendedEvents={attendedEvents}
-              allEvents={allEvents}
-            />
-              </TabsContent>
-            </Tabs>
-      </div>
+            <TabsContent value="events" className="mt-6">
+              <EventsTabContent
+                upcomingEvents={upcomingEvents}
+                attendedEvents={attendedEvents}
+                allEvents={allEvents}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      {/* Create Post FAB */}
+      <Button
+        onClick={() => setIsCreatePostOpen(true)}
+        aria-label="Create post"
+        className="fixed bottom-32 right-6 z-40 h-14 w-14 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 p-0 text-white shadow-md shadow-orange-500/20 transition-transform hover:scale-105 md:bottom-10 md:right-10"
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
 
       {/* Create Post Modal */}
       <CreatePostModal
@@ -316,11 +336,39 @@ const Profile: React.FC = () => {
         open={isPostPreviewOpen}
         onOpenChange={(open) => {
           setIsPostPreviewOpen(open);
-          if (!open) setSelectedPost(null);
+          if (!open) {
+            setSelectedPost(null);
+            setSelectedPostIndex(0);
+          }
         }}
         post={selectedPost}
-        eventTitle={selectedPostEventTitle}
+        posts={userPosts.map(p => ({
+          id: p.id,
+          user_id: p.user_id,
+          media_url: p.media_url,
+          media_type: p.media_type,
+          content: p.content,
+          created_at: p.created_at,
+          event_id: p.event_id,
+        }))}
+        currentIndex={selectedPostIndex}
+        eventTitleMap={eventTitleMap}
         returnTo={returnTo}
+        onPostChange={(index) => {
+          setSelectedPostIndex(index);
+          const post = userPosts[index];
+          if (post) {
+            setSelectedPost({
+              id: post.id,
+              user_id: post.user_id,
+              media_url: post.media_url,
+              media_type: post.media_type,
+              content: post.content,
+              created_at: post.created_at,
+              event_id: post.event_id,
+            });
+          }
+        }}
         onChanged={() => queryClient.invalidateQueries({ queryKey: ['userPosts', user?.id] })}
       />
       

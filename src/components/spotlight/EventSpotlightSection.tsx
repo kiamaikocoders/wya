@@ -19,6 +19,7 @@ export interface EventSpotlightGroup {
 interface EventSpotlightSectionProps {
   eventGroup: EventSpotlightGroup;
   isActive: boolean;
+  initialContentIndex?: number;
   onContentChange?: (contentIndex: number) => void;
   onExpand?: (contentId: string | number) => void;
   onLike?: (id: string | number) => void;
@@ -28,6 +29,7 @@ interface EventSpotlightSectionProps {
 const EventSpotlightSection: React.FC<EventSpotlightSectionProps> = ({
   eventGroup,
   isActive,
+  initialContentIndex,
   onContentChange,
   onExpand,
   onLike,
@@ -79,6 +81,7 @@ const EventSpotlightSection: React.FC<EventSpotlightSectionProps> = ({
               location: eventGroup.event.location,
               totalContent: eventGroup.totalContent,
             }}
+            initialIndex={initialContentIndex}
             onItemChange={onContentChange}
             onItemClick={handleContentClick}
             onLike={onLike}
