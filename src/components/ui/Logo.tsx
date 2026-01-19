@@ -44,42 +44,51 @@ const Logo: React.FC<LogoProps> = ({
     >
       <div className="relative flex items-center min-w-[150px]">
         {!imageError ? (
-          /* Logo Image - Primary */
-          <img
-            src="/WYA_LOGO_2.png"
-            alt="WYA - Where You At"
-            width={612}
-            height={408}
-            className={cn(
-              sizeClasses[size],
-              'w-auto min-w-[150px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
-              'transition-transform hover:scale-105',
-              'object-contain',
-              'max-w-none',
-              'block',
-              'z-10',
-              'relative',
-              'bg-transparent'
-            )}
-            style={{ 
-              height: size === 'sm' ? '48px' : size === 'md' ? '72px' : '96px',
-              width: 'auto',
-              display: 'block',
-              visibility: 'visible',
-              opacity: 1,
-              maxWidth: 'none',
-              backgroundColor: 'transparent'
-            }}
-            loading="eager"
-            decoding="async"
-            onError={(e) => {
-              console.error('Logo image failed to load:', e);
-              setImageError(true);
-            }}
-            onLoad={() => {
-              console.log('Logo image loaded successfully');
-            }}
-          />
+          /* Logo Image - Primary (responsive WebP/AVIF) */
+          <picture>
+            <source
+              type="image/avif"
+              srcSet="/WYA_LOGO_2-180.avif 180w, /WYA_LOGO_2-300.avif 300w, /WYA_LOGO_2-612.avif 612w"
+              sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+            />
+            <source
+              type="image/webp"
+              srcSet="/WYA_LOGO_2-180.webp 180w, /WYA_LOGO_2-300.webp 300w, /WYA_LOGO_2-612.webp 612w"
+              sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+            />
+            <img
+              src="/WYA_LOGO_2-300.webp"
+              alt="WYA - Where You At"
+              width={612}
+              height={408}
+              className={cn(
+                sizeClasses[size],
+                'w-auto min-w-[150px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
+                'transition-transform hover:scale-105',
+                'object-contain',
+                'max-w-none',
+                'block',
+                'z-10',
+                'relative',
+                'bg-transparent'
+              )}
+              style={{
+                height: size === 'sm' ? '48px' : size === 'md' ? '72px' : '96px',
+                width: 'auto',
+                display: 'block',
+                visibility: 'visible',
+                opacity: 1,
+                maxWidth: 'none',
+                backgroundColor: 'transparent'
+              }}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                console.error('Logo image failed to load:', e);
+                setImageError(true);
+              }}
+            />
+          </picture>
         ) : (
           /* Text Logo Fallback */
           <div 

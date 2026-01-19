@@ -74,7 +74,7 @@ const LandingPersonalization = ({ onTryAi }: LandingPersonalizationProps) => {
         </div>
 
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-6 shadow-[0_30px_80px_-40px_rgba(255,128,0,0.35)]">
-          <div className="absolute inset-0 -z-10 bg-[url('/lovable-uploads/6cca2893-2362-428d-b824-69d6baff41c7.png')] bg-cover bg-center opacity-60" />
+          <div className="absolute inset-0 -z-10 wya-ai-bg bg-cover bg-center opacity-60" />
           <div className="space-y-4">
             <div className="rounded-2xl bg-black/40 p-4 text-sm text-white/80 backdrop-blur-lg">
               <p className="text-xs uppercase tracking-wide text-gradient-orange-accent">
