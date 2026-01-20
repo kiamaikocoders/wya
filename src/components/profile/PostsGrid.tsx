@@ -14,7 +14,7 @@ interface Post {
 
 interface PostsGridProps {
   posts: Post[];
-  activeTab: 'posts' | 'spotlight' | 'tagged';
+  activeTab: 'posts' | 'discover' | 'tagged';
   onPostClick?: (post: Post) => void;
   className?: string;
   emptyCtaLabel?: string;
@@ -30,8 +30,8 @@ const PostsGrid: React.FC<PostsGridProps> = ({
   onEmptyCtaClick,
 }) => {
   const filteredPosts = React.useMemo(() => {
-    if (activeTab === 'spotlight') {
-      // Spotlight = posts tagged to an event (i.e. "I was at this event")
+    if (activeTab === 'discover') {
+      // Discover = posts tagged to an event (i.e. "I was at this event")
       return posts.filter(p => !!p.event_id);
     }
     if (activeTab === 'tagged') {
@@ -45,17 +45,17 @@ const PostsGrid: React.FC<PostsGridProps> = ({
     return (
       <div className={cn('flex flex-col items-center justify-center py-16 text-center', className)}>
         <div className="mb-4 rounded-full bg-white/5 p-6">
-          {activeTab === 'spotlight' ? (
+          {activeTab === 'discover' ? (
             <Video className="h-12 w-12 text-white/40" />
           ) : (
             <Grid className="h-12 w-12 text-white/40" />
           )}
         </div>
         <p className="text-lg font-semibold text-white">
-          {activeTab === 'spotlight' ? 'No spotlight posts yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
+          {activeTab === 'discover' ? 'No discover posts yet' : activeTab === 'tagged' ? 'No tagged posts' : 'No posts yet'}
         </p>
         <p className="mt-2 text-sm text-white/70">
-          {activeTab === 'spotlight' 
+          {activeTab === 'discover' 
             ? 'Share a post and tag an event to show up here'
             : activeTab === 'tagged'
             ? "You haven't been tagged in any posts"
@@ -132,7 +132,7 @@ const PostsGrid: React.FC<PostsGridProps> = ({
             className="rounded-full bg-gradient-to-r bg-gradient-accent px-6 py-3 font-semibold text-black shadow-[0_0_22px_rgba(255,128,0,0.35)] hover:shadow-[0_0_32px_rgba(255,128,0,0.5)]"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {activeTab === 'spotlight' ? 'Create a spotlight post' : 'Create another post'}
+            {activeTab === 'discover' ? 'Create a discover post' : 'Create another post'}
           </Button>
         </div>
       )}

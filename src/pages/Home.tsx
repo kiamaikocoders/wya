@@ -70,7 +70,7 @@ const Home: React.FC = () => {
     return likes * 2 + comments * 3 + views * 0.5 + recencyBoost;
   };
 
-  // Get trending events from Spotlight content, fallback to featured/upcoming events
+  // Get trending events from Discover content, fallback to featured/upcoming events
   const trendingEvents = useMemo(() => {
     const allContent = [
       ...stories.map(s => ({ ...s, type: 'story' as const })),
@@ -290,7 +290,7 @@ const Home: React.FC = () => {
                   <Button 
                     variant="outline"
                     className="w-full touch-target"
-                    onClick={() => navigate('/spotlight')}
+                    onClick={() => navigate('/discover')}
                   >
                     View complete feed
                   </Button>
@@ -477,7 +477,7 @@ const Home: React.FC = () => {
                     <Button 
                       variant="outline"
                       className="w-full"
-                      onClick={() => navigate('/spotlight')}
+                      onClick={() => navigate('/discover')}
                     >
                       View complete feed
                     </Button>

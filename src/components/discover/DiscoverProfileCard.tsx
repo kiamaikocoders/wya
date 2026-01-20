@@ -5,14 +5,14 @@ import { MapPin, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Profile } from '@/lib/profile-service';
 
-interface SpotlightProfileCardProps {
+interface DiscoverProfileCardProps {
   profile: Profile;
   headline?: string;
   highlight?: string;
   className?: string;
 }
 
-const SpotlightProfileCard: React.FC<SpotlightProfileCardProps> = ({ profile, headline, highlight, className }) => {
+const DiscoverProfileCard: React.FC<DiscoverProfileCardProps> = ({ profile, headline, highlight, className }) => {
   return (
     <Card
       className={cn(
@@ -51,5 +51,5 @@ const SpotlightProfileCard: React.FC<SpotlightProfileCardProps> = ({ profile, he
   );
 };
 
-export default SpotlightProfileCard;
+export default DiscoverProfileCard;
 

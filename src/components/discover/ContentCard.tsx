@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export interface SpotlightContent {
+export interface DiscoverContent {
   id: string | number;
   type: 'story' | 'forum';
   title?: string;
@@ -34,7 +34,7 @@ export interface EventMetadata {
 }
 
 interface ContentCardProps {
-  content: SpotlightContent;
+  content: DiscoverContent;
   isHero: boolean;
   position: 'left' | 'center' | 'right';
   onClick?: () => void;

@@ -13,7 +13,7 @@ interface NavItem {
 const BottomNav = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
-  const isSpotlightPage = location.pathname === '/spotlight';
+  const isDiscoverPage = location.pathname === '/discover';
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   
@@ -21,7 +21,7 @@ const BottomNav = () => {
 
   const navItems: NavItem[] = [
     { name: 'Overview', icon: Home, path: homePath },
-    { name: 'Spotlight', icon: Sparkles, path: '/spotlight' },
+    { name: 'Discover', icon: Sparkles, path: '/discover' },
     { name: 'Events', icon: Calendar, path: '/events' },
     { name: 'Request', icon: Rocket, path: '/request-event' },
     { name: 'Profile', icon: User, path: '/profile' },
@@ -34,9 +34,9 @@ const BottomNav = () => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
-  // Hide/show nav on scroll for Spotlight page (TikTok style)
+  // Hide/show nav on scroll for Discover page (TikTok style)
   useEffect(() => {
-    if (!isSpotlightPage) {
+    if (!isDiscoverPage) {
       setIsVisible(true);
       return;
     }
@@ -56,7 +56,7 @@ const BottomNav = () => {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isSpotlightPage, lastScrollY]);
+  }, [isDiscoverPage, lastScrollY]);
   
   return (
     <nav 
@@ -66,7 +66,7 @@ const BottomNav = () => {
         'border-t border-slate-200 dark:border-slate-800',
         'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl',
         'shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]',
-        !isVisible && isSpotlightPage && 'translate-y-full' // Hide when scrolling down
+        !isVisible && isDiscoverPage && 'translate-y-full' // Hide when scrolling down
       )}
     >
       <div className="container mx-auto">

@@ -115,7 +115,7 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-white/70">
-          <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Loading Spotlight</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Loading Discover</p>
           <h2 className="mt-3 text-2xl font-semibold">Gathering the latest vibes...</h2>
         </div>
       </div>
@@ -125,7 +125,7 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
   if (feedContent.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center text-center text-white/70">
-        <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Spotlight</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Discover</p>
         <h2 className="mt-4 text-3xl font-semibold text-white">Fresh content is on the way.</h2>
         <p className="mt-2 max-w-md text-sm text-white/60">
           Check back soon for recaps, throwbacks, and the next wave of community highlights.
@@ -138,7 +138,7 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
     <div className={className}>
       <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
-          <p className="text-sm uppercase tracking-[0.35em] text-gradient-orange-accent">WYA Spotlight</p>
+          <p className="text-sm uppercase tracking-[0.35em] text-gradient-orange-accent">WYA Discover</p>
           <h1 className="mt-2 text-3xl font-semibold text-white md:text-4xl">
             Discover what's trending
           </h1>

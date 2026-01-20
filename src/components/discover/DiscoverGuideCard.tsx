@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface SpotlightGuideItem {
+export interface DiscoverGuideItem {
   id: string;
   title: string;
   category: string;
@@ -12,7 +12,7 @@ export interface SpotlightGuideItem {
   link?: string;
 }
 
-const SpotlightGuideCard: React.FC<{ item: SpotlightGuideItem; className?: string }> = ({ item, className }) => {
+const DiscoverGuideCard: React.FC<{ item: DiscoverGuideItem; className?: string }> = ({ item, className }) => {
   return (
     <Card
       className={cn(
@@ -38,5 +38,5 @@ const SpotlightGuideCard: React.FC<{ item: SpotlightGuideItem; className?: strin
   );
 };
 
-export default SpotlightGuideCard;
+export default DiscoverGuideCard;
 

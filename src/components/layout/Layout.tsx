@@ -42,12 +42,12 @@ const Layout = () => {
   const isAdminPage = location.pathname.startsWith("/admin");
   const isAuthPage = ["/login", "/signup", "/admin-login"].includes(location.pathname);
   const isLanding = location.pathname === "/";
-  const isSpotlightPage = location.pathname === "/spotlight";
+  const isDiscoverPage = location.pathname === "/discover";
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       {!isAuthPage && <Navbar />}
-      <main className={cn("flex-1", !isSpotlightPage && "pb-20 md:pb-24")}>
+      <main className={cn("flex-1", !isDiscoverPage && "pb-20 md:pb-24")}>
         <Outlet />
       </main>
       {!isAuthPage && <BottomNav />}

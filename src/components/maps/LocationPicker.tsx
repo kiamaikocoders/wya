@@ -86,9 +86,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
     setIsSearching(true);
     try {
-      // First try searching with Kenya priority
-      let response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&country=ke&limit=10`
+      // Include types: address (street addresses), poi (points of interest/landmarks), 
+      // place (cities/towns), locality (neighborhoods/areas like Woodley, Karen), and neighborhood
+      // Note: 'establishment' is not a valid type in Geocoding API
+      const types = 'address,poi,place,locality,neighborhood';
+      
+      // Nairobi coordinates for proximity bias (center of Kenya)
+      const proximity = '36.8219,-1.2921'; // Nairobi coordinates
+      
+      // Search with Kenya restriction and proximity bias for better results
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=15`
       );
 
       if (!response.ok) {
@@ -100,34 +108,47 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       let data = await response.json();
       let features = data.features || [];
       
-      // If no Kenyan results found, try without country restriction
-      if (features.length === 0) {
-        console.log('No Kenyan results, trying global search...');
-        response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&limit=10`
+      // Filter to ONLY Kenyan results (double-check)
+      features = features.filter((feature: any) => {
+        const isKenya = feature.context?.some((ctx: any) => 
+          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
         );
-        
-        if (response.ok) {
-          data = await response.json();
-          features = data.features || [];
-        }
-      }
+        return isKenya;
+      });
       
       console.log('Search results:', features.length, 'results');
       
       if (features.length === 0) {
-        toast.error('No locations found. Try a different search term.');
+        toast.error('No locations found in Kenya. Try a different search term.');
         setSearchResults([]);
         return;
       }
       
-      // Prioritize Kenyan results - sort so Kenyan results come first
+      // Sort by type priority: address > poi > locality > neighborhood > place, then by relevance score
       const sortedFeatures = features.sort((a: any, b: any) => {
-        const aIsKenya = a.context?.some((ctx: any) => ctx.id?.startsWith('country') && ctx.short_code === 'ke');
-        const bIsKenya = b.context?.some((ctx: any) => ctx.id?.startsWith('country') && ctx.short_code === 'ke');
-        if (aIsKenya && !bIsKenya) return -1;
-        if (!aIsKenya && bIsKenya) return 1;
-        return 0;
+        // First sort by type priority: address > poi > locality > neighborhood > place
+        const typePriority: Record<string, number> = {
+          'address': 1,
+          'poi': 2,
+          'locality': 3,
+          'neighborhood': 4,
+          'place': 5,
+        };
+        
+        const aTypes = a.place_type || [];
+        const bTypes = b.place_type || [];
+        
+        const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
+        const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        
+        // If same type, sort by relevance score (higher is better)
+        const aScore = a.properties?.relevance || 0;
+        const bScore = b.properties?.relevance || 0;
+        return bScore - aScore;
       });
       
       setSearchResults(sortedFeatures);

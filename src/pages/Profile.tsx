@@ -29,7 +29,7 @@ const Profile: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
-  const [activeTab, setActiveTab] = useState<'posts' | 'spotlight' | 'events'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'discover' | 'events'>('posts');
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
@@ -221,7 +221,7 @@ const Profile: React.FC = () => {
                   
         {/* Tabs - Always visible */}
         <div className="px-4 mt-8">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'spotlight' | 'events')} className="mt-6">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'discover' | 'events')} className="mt-6">
             <div className="rounded-xl border border-white/10 bg-[#1A1A1A] p-2 mb-6">
               <TabsList className="grid w-full grid-cols-3 bg-transparent border-none rounded-lg gap-1">
                 <TabsTrigger
@@ -232,11 +232,11 @@ const Profile: React.FC = () => {
                   Posts
                 </TabsTrigger>
                 <TabsTrigger
-                  value="spotlight"
+                  value="discover"
                   className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 data-[state=active]:border data-[state=active]:border-orange-500/30 text-white/60 rounded-lg transition-all"
                 >
                   <Video className="mr-2 h-4 w-4" />
-                  Spotlight
+                  Discover
                 </TabsTrigger>
                 <TabsTrigger
                   value="events"
@@ -271,7 +271,7 @@ const Profile: React.FC = () => {
               />
             </TabsContent>
               
-            <TabsContent value="spotlight" className="mt-6">
+            <TabsContent value="discover" className="mt-6">
               <PostsGrid
                 posts={userPosts.map(p => ({
                   id: p.id,
@@ -282,14 +282,14 @@ const Profile: React.FC = () => {
                   event_id: p.event_id,
                   created_at: p.created_at,
                 }))}
-                activeTab="spotlight"
+                activeTab="discover"
                 onPostClick={(post) => {
                   const postIndex = userPosts.findIndex(p => p.id === post.id);
                   setSelectedPost(post);
                   setSelectedPostIndex(postIndex >= 0 ? postIndex : 0);
                   setIsPostPreviewOpen(true);
                 }}
-                emptyCtaLabel="Create a spotlight post"
+                emptyCtaLabel="Create a discover post"
                 onEmptyCtaClick={() => setIsCreatePostOpen(true)}
               />
             </TabsContent>

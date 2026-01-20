@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import ContentCard, { SpotlightContent, EventMetadata } from './ContentCard';
+import ContentCard, { DiscoverContent, EventMetadata } from './ContentCard';
 import { cn } from '@/lib/utils';
 
 interface EventContentCarouselProps {
-  content: SpotlightContent[];
+  content: DiscoverContent[];
   eventTitle?: string;
   eventMetadata?: EventMetadata;
   initialIndex?: number;
   onItemChange?: (index: number) => void;
-  onItemClick?: (item: SpotlightContent) => void;
+  onItemClick?: (item: DiscoverContent) => void;
   onLike?: (id: string | number) => void;
   onShare?: (id: string | number) => void;
   onEventClick?: (eventId: number) => void;

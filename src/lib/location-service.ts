@@ -22,7 +22,42 @@ class LocationService {
   private locationWatchId: number | null = null;
 
   /**
+   * Check location permission status without triggering a dialog
+   */
+  async checkPermissionStatus(): Promise<LocationPermissionStatus> {
+    if (!navigator.geolocation) {
+      return { granted: false, denied: true, prompt: false };
+    }
+
+    // Use Permissions API if available (doesn't trigger dialog)
+    if ('permissions' in navigator) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        const state = permissionStatus.state;
+        
+        if (state === 'granted') {
+          return { granted: true, denied: false, prompt: false };
+        } else if (state === 'denied') {
+          return { granted: false, denied: true, prompt: false };
+        } else {
+          // 'prompt' state - permission not determined yet
+          return { granted: false, denied: false, prompt: true };
+        }
+      } catch (error) {
+        // Permissions API not supported or geolocation not available
+        console.warn('Permissions API not available, falling back to direct check:', error);
+        // Fall through to direct check
+      }
+    }
+
+    // Fallback: If Permissions API not available, we can't check without triggering
+    // Return prompt state so caller can decide whether to request
+    return { granted: false, denied: false, prompt: true };
+  }
+
+  /**
    * Request location permission and explain why
+   * Only triggers browser dialog if permission is not already granted
    */
   async requestLocationPermission(): Promise<LocationPermissionStatus> {
     if (!navigator.geolocation) {
@@ -30,6 +65,15 @@ class LocationService {
       return { granted: false, denied: true, prompt: false };
     }
 
+    // First check if permission is already granted
+    const currentStatus = await this.checkPermissionStatus();
+    if (currentStatus.granted) {
+      // Permission already granted, return silently
+      return currentStatus;
+    }
+
+    // Only request if permission is not determined (prompt state) or denied
+    // If denied, we still try to request (user might have changed browser settings)
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         () => {
@@ -49,10 +93,30 @@ class LocationService {
 
   /**
    * Get user's current location
+   * Checks permission first and only proceeds silently if granted
    */
-  async getCurrentLocation(forceFresh = false): Promise<UserLocation | null> {
+  async getCurrentLocation(forceFresh = false, silent = false): Promise<UserLocation | null> {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
+      if (!silent) {
+        toast.error('Geolocation is not supported by your browser');
+      }
+      return null;
+    }
+
+    // Check permission status first
+    const permissionStatus = await this.checkPermissionStatus();
+    
+    // If permission is denied, return null without triggering dialog
+    if (permissionStatus.denied) {
+      if (!silent) {
+        toast.error('Location permission denied. Please enable location access in your browser settings to use this feature.');
+      }
+      return null;
+    }
+
+    // If permission is not determined and we're in silent mode, return null
+    // This prevents triggering the dialog when user hasn't explicitly requested location
+    if (permissionStatus.prompt && silent) {
       return null;
     }
 
@@ -121,19 +185,24 @@ class LocationService {
         },
         (error) => {
           console.error('Error getting location:', error);
-          let errorMessage = 'Failed to get your location. ';
           
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMessage = 'Location permission denied. Please enable location access in your browser settings to use this feature.';
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMessage = 'Location information is unavailable. Please try again or search for your location manually.';
-          } else if (error.code === error.TIMEOUT) {
-            errorMessage = 'Location request timed out. Please try again.';
-          } else {
-            errorMessage += 'Please try again or search for your location manually.';
+          // Only show error messages if not in silent mode
+          if (!silent) {
+            let errorMessage = 'Failed to get your location. ';
+            
+            if (error.code === error.PERMISSION_DENIED) {
+              errorMessage = 'Location permission denied. Please enable location access in your browser settings to use this feature.';
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+              errorMessage = 'Location information is unavailable. Please try again or search for your location manually.';
+            } else if (error.code === error.TIMEOUT) {
+              errorMessage = 'Location request timed out. Please try again.';
+            } else {
+              errorMessage += 'Please try again or search for your location manually.';
+            }
+            
+            toast.error(errorMessage);
           }
           
-          toast.error(errorMessage);
           resolve(null);
         },
         { 

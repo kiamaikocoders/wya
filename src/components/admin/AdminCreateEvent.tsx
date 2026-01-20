@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, X, Check, ChevronRight, ChevronLeft, Search } from 'lucide-react';
+import { Loader2, Upload, X, Check, ChevronRight, ChevronLeft, Search, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,8 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-
-const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
+import { locationService } from '@/lib/location-service';
 
 interface Category {
   id: number;
@@ -51,6 +50,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     date: '',
     time: '',
     location: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     image_url: '',
     price: 0,
     capacity: 0,
@@ -62,8 +63,182 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     status: 'approved' as 'pending' | 'approved' | 'rejected',
   });
   
+  // Location search state
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [locationSearchResults, setLocationSearchResults] = useState<any[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showLocationResults, setShowLocationResults] = useState(false);
+  const locationSearchRef = useRef<HTMLDivElement>(null);
+  
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
+  
+  // Close location results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationSearchRef.current && !locationSearchRef.current.contains(event.target as Node)) {
+        setShowLocationResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
+  // Search locations using Mapbox with POI, Address, and Place types - Kenya only
+  const searchLocations = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setLocationSearchResults([]);
+      return;
+    }
+    
+    setIsSearchingLocation(true);
+    try {
+      const MAPBOX_TOKEN = locationService.getMapboxToken();
+      // Include types: address (street addresses), poi (points of interest/landmarks), 
+      // place (cities/towns), locality (neighborhoods/areas like Woodley, Karen), and neighborhood
+      // Note: 'establishment' is not a valid type in Geocoding API
+      const types = 'address,poi,place,locality,neighborhood';
+      
+      // Nairobi coordinates for proximity bias (center of Kenya)
+      const proximity = '36.8219,-1.2921'; // Nairobi coordinates
+      
+      // Try multiple search variations to improve results
+      const searchQueries = [
+        query, // Original query
+        query.replace(/\b(road|rd|street|st|avenue|ave|drive|dr|way|boulevard|blvd)\b/gi, '').trim(), // Without road suffix
+      ].filter(q => q.trim() && q !== query); // Remove duplicates and empty
+      
+      const allFeatures: any[] = [];
+      const seenIds = new Set<string>();
+      
+      // Search with original query first
+      let response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=15`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const features = data.features || [];
+        
+        // Add unique features
+        features.forEach((feature: any) => {
+          if (!seenIds.has(feature.id)) {
+            seenIds.add(feature.id);
+            allFeatures.push(feature);
+          }
+        });
+      }
+      
+      // Try alternative queries if we have few results
+      if (allFeatures.length < 5 && searchQueries.length > 0) {
+        for (const altQuery of searchQueries.slice(0, 2)) { // Limit to 2 additional queries
+          const altResponse = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(altQuery)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=10`
+          );
+          
+          if (altResponse.ok) {
+            const altData = await altResponse.json();
+            const altFeatures = altData.features || [];
+            
+            altFeatures.forEach((feature: any) => {
+              if (!seenIds.has(feature.id)) {
+                seenIds.add(feature.id);
+                allFeatures.push(feature);
+              }
+            });
+          }
+        }
+      }
+      
+      // Filter to ONLY Kenyan results (double-check)
+      let features = allFeatures.filter((feature: any) => {
+        const isKenya = feature.context?.some((ctx: any) => 
+          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
+        );
+        return isKenya;
+      });
+      
+      if (features.length === 0) {
+        toast.error('No locations found in Kenya. Try a different search term.');
+        setLocationSearchResults([]);
+        setShowLocationResults(false);
+        return;
+      }
+      
+      // Sort by type priority: address > poi > locality > neighborhood > place, then by relevance score
+      const sortedFeatures = features.sort((a: any, b: any) => {
+        // First sort by type priority: address > poi > locality > neighborhood > place
+        const typePriority: Record<string, number> = {
+          'address': 1,
+          'poi': 2,
+          'locality': 3,
+          'neighborhood': 4,
+          'place': 5,
+        };
+        
+        const aTypes = a.place_type || [];
+        const bTypes = b.place_type || [];
+        
+        const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
+        const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
+        
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+        
+        // If same type, sort by relevance score (higher is better)
+        const aScore = a.properties?.relevance || 0;
+        const bScore = b.properties?.relevance || 0;
+        return bScore - aScore;
+      });
+      
+      setLocationSearchResults(sortedFeatures);
+      setShowLocationResults(true);
+    } catch (error) {
+      console.error('Location search error:', error);
+      toast.error('Failed to search locations. Please try again.');
+      setLocationSearchResults([]);
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  }, []);
+  
+  // Sync locationSearchQuery with formData.location when it's set externally (but not if user is typing)
+  useEffect(() => {
+    if (formData.location && locationSearchQuery !== formData.location && !showLocationResults) {
+      setLocationSearchQuery(formData.location);
+    }
+  }, [formData.location]);
+  
+  // Handle location search input change with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (locationSearchQuery.trim()) {
+        searchLocations(locationSearchQuery);
+      } else {
+        setLocationSearchResults([]);
+        setShowLocationResults(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [locationSearchQuery, searchLocations]);
+  
+  // Handle location selection
+  const handleLocationSelect = useCallback((feature: any) => {
+    const [lng, lat] = feature.center;
+    const address = feature.place_name || feature.text || '';
+    
+    setFormData(prev => ({
+      ...prev,
+      location: address,
+      latitude: lat,
+      longitude: lng,
+    }));
+    setLocationSearchQuery(address);
+    setShowLocationResults(false);
+    toast.success(`Location set: ${address}`);
+  }, []);
 
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
@@ -116,6 +291,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         : [...prev.category_ids, categoryId];
       
       // Also update category_id to first selected (for backward compatibility)
+      // Keep the primary category as the first one in the array
       const category_id = categoryIds.length > 0 ? categoryIds[0] : null;
       const selectedCategory = categoriesData.find(c => c.id === category_id);
       
@@ -123,6 +299,26 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         ...prev,
         category_ids: categoryIds,
         category_id,
+        category: selectedCategory?.name || prev.category,
+      };
+    });
+  };
+  
+  // Set primary category (move to first position)
+  const setPrimaryCategory = (categoryId: number) => {
+    setFormData(prev => {
+      if (!prev.category_ids.includes(categoryId)) return prev;
+      
+      // Move selected category to first position
+      const otherIds = prev.category_ids.filter(id => id !== categoryId);
+      const categoryIds = [categoryId, ...otherIds];
+      
+      const selectedCategory = categoriesData.find(c => c.id === categoryId);
+      
+      return {
+        ...prev,
+        category_ids: categoryIds,
+        category_id: categoryId,
         category: selectedCategory?.name || prev.category,
       };
     });
@@ -283,8 +479,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please select at least one category');
           return false;
         }
-        if (!formData.location) {
-          toast.error('Please select a location');
+        if (!formData.location || formData.latitude === null || formData.longitude === null) {
+          toast.error('Please select a location with coordinates');
           return false;
         }
         if (!formData.date) {
@@ -438,6 +634,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       category_id: categoryId, // Set category_id to first selected category
       date: new Date(formData.date).toISOString(),
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
+      latitude: formData.latitude,
+      longitude: formData.longitude,
     };
     
     createEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
@@ -464,22 +662,47 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               <div className="space-y-2">
                 <Label htmlFor="category">Categories *</Label>
                 {selectedCategoryNames.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {selectedCategoryNames.map((name, idx) => {
-                      const categoryId = formData.category_ids[idx];
-                      return (
-                        <Badge key={categoryId} variant="secondary" className="flex items-center gap-1">
-                          {name}
-                          <button
-                            type="button"
-                            onClick={() => toggleCategory(categoryId)}
-                            className="ml-1 hover:text-destructive"
+                  <div className="space-y-2 mb-2">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCategoryNames.map((name, idx) => {
+                        const categoryId = formData.category_ids[idx];
+                        const isPrimary = idx === 0;
+                        return (
+                          <Badge 
+                            key={categoryId} 
+                            variant={isPrimary ? "default" : "secondary"} 
+                            className="flex items-center gap-1"
                           >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      );
-                    })}
+                            {isPrimary && <span className="text-xs">⭐</span>}
+                            {name}
+                            {isPrimary && <span className="text-xs opacity-70">(Primary)</span>}
+                            <button
+                              type="button"
+                              onClick={() => toggleCategory(categoryId)}
+                              className="ml-1 hover:text-destructive"
+                              title="Remove category"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                            {!isPrimary && (
+                              <button
+                                type="button"
+                                onClick={() => setPrimaryCategory(categoryId)}
+                                className="ml-1 hover:text-primary"
+                                title="Set as primary category"
+                              >
+                                <span className="text-xs">⭐</span>
+                              </button>
+                            )}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                    {selectedCategoryNames.length > 1 && (
+                      <p className="text-xs text-muted-foreground">
+                        First category is primary. Click ⭐ on another category to make it primary.
+                      </p>
+                    )}
                   </div>
                 ) : null}
                 <Accordion type="multiple" className="w-full border rounded-lg">
@@ -531,21 +754,112 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
-                <Select 
-                  value={formData.location} 
-                  onValueChange={(value) => handleSelectChange('location', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map(location => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative" ref={locationSearchRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="location"
+                      type="text"
+                      value={locationSearchQuery}
+                      onChange={(e) => setLocationSearchQuery(e.target.value)}
+                      onFocus={() => {
+                        if (locationSearchResults.length > 0) {
+                          setShowLocationResults(true);
+                        }
+                      }}
+                      placeholder="Search for a location (e.g., Nairobi, Mombasa, specific address)"
+                      className="pl-10"
+                    />
+                    {isSearchingLocation && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  
+                  {/* Location search results dropdown */}
+                  {showLocationResults && locationSearchResults.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {locationSearchResults.map((result, index) => {
+                        const [lng, lat] = result.center;
+                        const isKenya = result.context?.some((ctx: any) => 
+                          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
+                        );
+                        // Get result type (address, poi, or place)
+                        const resultTypes = result.place_type || [];
+                        const primaryType = resultTypes[0] || 'place';
+                        const typeLabels: Record<string, string> = {
+                          'address': 'Address',
+                          'poi': 'Landmark',
+                          'locality': 'Area',
+                          'neighborhood': 'Neighborhood',
+                          'place': 'Place',
+                        };
+                        const typeLabel = typeLabels[primaryType] || 'Location';
+                        
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleLocationSelect(result)}
+                            className="w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b last:border-b-0"
+                          >
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium truncate">{result.place_name || result.text}</p>
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    {typeLabel}
+                                  </Badge>
+                                </div>
+                                {result.context && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {result.context
+                                      .filter((ctx: any) => ctx.id?.startsWith('place') || ctx.id?.startsWith('region'))
+                                      .map((ctx: any) => ctx.text)
+                                      .join(', ')}
+                                  </p>
+                                )}
+                              </div>
+                              {isKenya && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  KE
+                                </Badge>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {/* Selected location display */}
+                  {formData.location && formData.latitude !== null && formData.longitude !== null && (
+                    <div className="mt-2 p-2 bg-accent/50 rounded-md flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{formData.location}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, location: '', latitude: null, longitude: null }));
+                          setLocationSearchQuery('');
+                        }}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Search for any location worldwide. The location will be pinned on the map.
+                </p>
               </div>
             </div>
             
@@ -890,12 +1204,42 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   <p className="font-medium">{formData.title || 'Not set'}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Category</Label>
-                  <p className="font-medium">{selectedCategoryName || 'Not set'}</p>
+                  <Label className="text-muted-foreground">Categories</Label>
+                  {selectedCategoryNames.length > 0 ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="flex items-center gap-1">
+                          <span className="text-xs">⭐</span>
+                          {selectedCategoryNames[0]}
+                          <span className="text-xs opacity-70">(Primary)</span>
+                        </Badge>
+                      </div>
+                      {selectedCategoryNames.length > 1 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <span className="text-xs text-muted-foreground mr-1">Also:</span>
+                          {selectedCategoryNames.slice(1).map((name, idx) => {
+                            const categoryId = formData.category_ids[idx + 1];
+                            return (
+                              <Badge key={categoryId} variant="secondary" className="text-xs">
+                                {name}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="font-medium">Not set</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Location</Label>
                   <p className="font-medium">{formData.location || 'Not set'}</p>
+                  {formData.latitude !== null && formData.longitude !== null && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Date</Label>

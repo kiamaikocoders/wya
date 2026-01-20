@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { formatDistance } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-export interface SpotlightHeroItem {
+export interface DiscoverHeroItem {
   id: string | number;
   tag: string;
   title: string;
@@ -14,20 +14,20 @@ export interface SpotlightHeroItem {
   globalIndex: number;
 }
 
-interface SpotlightHeroProps {
-  items: SpotlightHeroItem[];
+interface DiscoverHeroProps {
+  items: DiscoverHeroItem[];
   onSelect?: (globalIndex: number) => void;
   className?: string;
 }
 
-const SpotlightHero: React.FC<SpotlightHeroProps> = ({ items, onSelect, className }) => {
+const DiscoverHero: React.FC<DiscoverHeroProps> = ({ items, onSelect, className }) => {
   if (!items || items.length === 0) {
     return null;
   }
 
   const [primary, ...secondary] = items;
 
-  const renderCard = (item: SpotlightHeroItem, isPrimary = false) => {
+  const renderCard = (item: DiscoverHeroItem, isPrimary = false) => {
     const handleClick = () => {
       if (onSelect) {
         onSelect(item.globalIndex);
@@ -98,5 +98,5 @@ const SpotlightHero: React.FC<SpotlightHeroProps> = ({ items, onSelect, classNam
   );
 };
 
-export default SpotlightHero;
+export default DiscoverHero;
 

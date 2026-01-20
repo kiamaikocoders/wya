@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventContentCarousel from './EventContentCarousel';
-import { SpotlightContent } from './ContentCard';
+import { DiscoverContent } from './ContentCard';
 import { cn } from '@/lib/utils';
 
-export interface EventSpotlightGroup {
+export interface EventDiscoverGroup {
   event: {
     id: number;
     title: string;
@@ -12,12 +12,12 @@ export interface EventSpotlightGroup {
     location: string;
     image_url?: string;
   };
-  content: SpotlightContent[];
+  content: DiscoverContent[];
   totalContent: number;
 }
 
-interface EventSpotlightSectionProps {
-  eventGroup: EventSpotlightGroup;
+interface EventDiscoverSectionProps {
+  eventGroup: EventDiscoverGroup;
   isActive: boolean;
   initialContentIndex?: number;
   onContentChange?: (contentIndex: number) => void;
@@ -26,7 +26,7 @@ interface EventSpotlightSectionProps {
   onShare?: (id: string | number) => void;
 }
 
-const EventSpotlightSection: React.FC<EventSpotlightSectionProps> = ({
+const EventDiscoverSection: React.FC<EventDiscoverSectionProps> = ({
   eventGroup,
   isActive,
   initialContentIndex,
@@ -39,14 +39,14 @@ const EventSpotlightSection: React.FC<EventSpotlightSectionProps> = ({
   const sectionRef = useRef<HTMLDivElement>(null);
 
   const handleEventClick = () => {
-    // Don't navigate for virtual events (Community Spotlight)
+    // Don't navigate for virtual events (Community Discover)
     if (eventGroup.event.id === 0) {
       return;
     }
     navigate(`/events/${eventGroup.event.id}`);
   };
 
-  const handleContentClick = (content: SpotlightContent) => {
+  const handleContentClick = (content: DiscoverContent) => {
     if (content.type === 'story') {
       // Navigate to story detail or expand modal
       onExpand?.(content.id);
@@ -103,5 +103,5 @@ const EventSpotlightSection: React.FC<EventSpotlightSectionProps> = ({
   );
 };
 
-export default EventSpotlightSection;
+export default EventDiscoverSection;
 
