@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface SpotlightSectionProps {
+interface DiscoverSectionProps {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
@@ -10,7 +10,7 @@ interface SpotlightSectionProps {
   id?: string;
 }
 
-const SpotlightSection: React.FC<SpotlightSectionProps> = ({
+const DiscoverSection: React.FC<DiscoverSectionProps> = ({
   title,
   subtitle,
   action,
@@ -32,5 +32,5 @@ const SpotlightSection: React.FC<SpotlightSectionProps> = ({
   );
 };
 
-export default SpotlightSection;
+export default DiscoverSection;
 

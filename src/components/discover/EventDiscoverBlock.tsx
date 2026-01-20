@@ -2,7 +2,7 @@ import React from 'react';
 import { Story } from '@/lib/story/types';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 
-interface EventSpotlightBlockProps {
+interface EventDiscoverBlockProps {
   event: { // Assuming we have event data linked to stories
     id: number;
     title: string;
@@ -11,7 +11,7 @@ interface EventSpotlightBlockProps {
   stories: Story[]; // Stories filtered for this specific event
 }
 
-const EventSpotlightBlock: React.FC<EventSpotlightBlockProps> = ({ event, stories }) => {
+const EventDiscoverBlock: React.FC<EventDiscoverBlockProps> = ({ event, stories }) => {
   if (!stories || stories.length === 0) {
     return null; // Don't render if there are no stories for this event
   }
@@ -25,4 +25,4 @@ const EventSpotlightBlock: React.FC<EventSpotlightBlockProps> = ({ event, storie
   );
 };
 
-export default EventSpotlightBlock; 
+export default EventDiscoverBlock; 

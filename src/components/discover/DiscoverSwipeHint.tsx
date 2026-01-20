@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 
-const STORAGE_KEY = 'wya.spotlight.swipeHintDismissed.v1';
+const STORAGE_KEY = 'wya.discover.swipeHintDismissed.v1';
 
 function safeGetDismissed(): boolean {
   try {
@@ -46,7 +46,7 @@ function useIsCoarsePointer() {
   return isCoarse;
 }
 
-const SpotlightSwipeHint: React.FC = () => {
+const DiscoverSwipeHint: React.FC = () => {
   const isCoarsePointer = useIsCoarsePointer();
   const [visible, setVisible] = useState(false);
 
@@ -133,5 +133,5 @@ const SpotlightSwipeHint: React.FC = () => {
   );
 };
 
-export default SpotlightSwipeHint;
+export default DiscoverSwipeHint;
 

@@ -5,7 +5,7 @@ import { Heart, MessageCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance } from 'date-fns';
 
-export interface SpotlightMediaItem {
+export interface DiscoverMediaItem {
   id: string | number;
   title?: string;
   content: string;
@@ -21,7 +21,7 @@ export interface SpotlightMediaItem {
   onClick?: () => void;
 }
 
-const SpotlightMediaCard: React.FC<{ item: SpotlightMediaItem; className?: string }> = ({ item, className }) => {
+const DiscoverMediaCard: React.FC<{ item: DiscoverMediaItem; className?: string }> = ({ item, className }) => {
   return (
     <Card
       className={cn(
@@ -93,5 +93,5 @@ const SpotlightMediaCard: React.FC<{ item: SpotlightMediaItem; className?: strin
   );
 };
 
-export default SpotlightMediaCard;
+export default DiscoverMediaCard;
 

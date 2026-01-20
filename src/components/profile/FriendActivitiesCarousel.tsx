@@ -117,7 +117,7 @@ const FriendActivitiesCarousel: React.FC = () => {
               key={activity.id}
               className="min-w-[280px] max-w-[280px] bg-[#1A1A1A] border border-white/8 overflow-hidden flex-shrink-0 rounded-xl shadow-lg hover:border-white/15 transition-all hover:shadow-xl"
             >
-              <Link to={`/spotlight/${activity.id}`} className="block">
+              <Link to={`/discover/${activity.id}`} className="block">
                 <div className="relative aspect-[4/5] overflow-hidden">
                   {activity.media_url ? (
                     activity.media_type === 'video' ? (

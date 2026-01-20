@@ -17,7 +17,7 @@ type EventsHeroProps = {
 };
 
 const tabs: { value: EventsTab; label: string; description: string }[] = [
-  { value: 'discover', label: 'Discover', description: 'Curated spotlight across Kenya' },
+  { value: 'discover', label: 'Discover', description: 'Curated discover across Kenya' },
   { value: 'for-you', label: 'For You', description: 'Based on your interests & cities' },
   { value: 'attending', label: 'Saved', description: 'Events you marked to revisit' },
   { value: 'past', label: 'Past', description: 'Catch up on what you missed' },

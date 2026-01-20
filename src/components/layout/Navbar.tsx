@@ -34,7 +34,7 @@ const Navbar = () => {
 
   const homeHref = isAuthenticated ? '/home' : '/';
   const isOrganizer = isAdmin || user?.user_type === 'organizer';
-  const isSpotlightPage = location.pathname === '/spotlight';
+  const isDiscoverPage = location.pathname === '/discover';
 
   const handlePrimaryCta = () => {
     navigate('/ai-assistance');
@@ -88,7 +88,7 @@ const Navbar = () => {
             </div>
           )}
 
-          {!isSpotlightPage && (
+          {!isDiscoverPage && (
             <>
               <Button
                 onClick={handlePrimaryCta}

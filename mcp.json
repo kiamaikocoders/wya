@@ -14,6 +14,13 @@
         "SUPABASE_ACCESS_TOKEN": "sbp_4c9798f6820f36bfe2fc222b0be7671262a56ad7",
         "SUPABASE_PROJECT_REF": "nnlxxbuekqlaqamczwyi"
       }
+    },
+    "reactbits": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "reactbits-dev-mcp-server"
+      ]
     }
   }
 }

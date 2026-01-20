@@ -433,7 +433,7 @@ button[role="button"] {
     gap: 0.75rem;
   }
 
-  /* Scroll snapping for spotlight */
+  /* Scroll snapping for discover */
   .snap-start {
     scroll-snap-align: start;
   }

@@ -5,11 +5,11 @@ import { forumService } from '@/lib/forum-service';
 import { eventService } from '@/lib/event-service';
 import { notificationService } from '@/lib/notification';
 import { supabase } from '@/lib/supabase';
-import EventSpotlightSection, { EventSpotlightGroup } from './EventSpotlightSection';
-import { SpotlightContent } from './ContentCard';
+import EventDiscoverSection, { EventDiscoverGroup } from './EventDiscoverSection';
+import { DiscoverContent } from './ContentCard';
 import { differenceInHours } from 'date-fns';
 
-interface SpotlightFeedProps {
+interface DiscoverFeedProps {
   className?: string;
   onEventClick?: (eventId: number) => void;
   onContentClick?: (contentId: string | number, type: 'story' | 'forum') => void;
@@ -31,7 +31,7 @@ const getEngagementScore = (item: {
   return likes * 2 + comments * 3 + views * 0.5 + recencyBoost;
 };
 
-const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, onContentClick, targetContentId }) => {
+const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, onContentClick, targetContentId }) => {
   const queryClient = useQueryClient();
 
   const { data: stories = [], isLoading: isLoadingStories } = useQuery({
@@ -47,7 +47,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
   });
 
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
-    queryKey: ['allEvents', 'spotlight-including-past'],
+    queryKey: ['allEvents', 'discover-including-past'],
     queryFn: async () => {
       const result = await eventService.queryEvents({
         search: '',
@@ -62,7 +62,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
         sort: 'latest',
         includePast: true, // Include past events for event title lookup
       });
-      console.log('Fetched events for spotlight:', result.events.length, 'events');
+      console.log('Fetched events for discover:', result.events.length, 'events');
       return result.events;
     },
     staleTime: 0, // Always refetch to ensure we have latest data
@@ -86,7 +86,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
       }
     });
 
-    const content: SpotlightContent[] = [
+    const content: DiscoverContent[] = [
       ...stories.map(story => {
         const eventInfo = story.event_id ? eventMap.get(story.event_id) : undefined;
         return {
@@ -159,7 +159,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
     });
 
     // Group content by event_id
-    const grouped = new Map<number | 'ungrouped', SpotlightContent[]>();
+    const grouped = new Map<number | 'ungrouped', DiscoverContent[]>();
 
     allContent.forEach(item => {
       // Always include content, whether it has event_id or not
@@ -178,8 +178,8 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
       }
     });
 
-    // Convert to EventSpotlightGroup array and sort
-    const groups: EventSpotlightGroup[] = Array.from(grouped.entries())
+    // Convert to EventDiscoverGroup array and sort
+    const groups: EventDiscoverGroup[] = Array.from(grouped.entries())
       .map(([eventIdOrUngrouped, content]) => {
         // Handle ungrouped content (no event_id)
         if (eventIdOrUngrouped === 'ungrouped') {
@@ -197,7 +197,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
           return {
             event: {
               id: 0, // Virtual ID for ungrouped
-              title: 'Community Spotlight',
+              title: 'Community Discover',
               date: new Date().toISOString(),
               location: 'Various Locations',
             },
@@ -243,7 +243,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
           totalContent: content.length,
         };
       })
-      .filter((group): group is EventSpotlightGroup => group !== null && group.content.length > 0)
+      .filter((group): group is EventDiscoverGroup => group !== null && group.content.length > 0)
       .sort((a, b) => {
         // Sort events by most recent content first
         const aLatest = new Date(a.content[0]?.created_at || 0).getTime();
@@ -443,7 +443,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
   // Debug logging (remove in production)
   useEffect(() => {
-    console.log('Spotlight Feed Debug:', {
+    console.log('Discover Feed Debug:', {
       storiesCount: stories.length,
       forumPostsCount: forumPosts.length,
       eventsCount: events.length,
@@ -461,7 +461,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-white/70">
-          <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Loading Spotlight</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Loading Discover</p>
           <h2 className="mt-3 text-2xl font-semibold">Gathering the latest vibes...</h2>
         </div>
       </div>
@@ -471,7 +471,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
   if (eventGroups.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center text-center text-white/70">
-        <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Spotlight</p>
+        <p className="text-sm uppercase tracking-[0.3em] text-gradient-orange-accent">Discover</p>
         <h2 className="mt-4 text-3xl font-semibold text-white">
           {allContent.length === 0 
             ? 'No content available yet.' 
@@ -493,7 +493,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
 
   return (
     <div className={className}>
-      {/* Header removed - using transparent header in SpotlightPage instead */}
+      {/* Header removed - using transparent header in DiscoverPage instead */}
       {/* Event Sections with Scroll Snapping - TikTok style */}
       <div className="space-y-0">
         {eventGroups.map((eventGroup, index) => {
@@ -513,7 +513,7 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
               }}
               className="snap-start snap-always"
             >
-              <EventSpotlightSection
+              <EventDiscoverSection
                 eventGroup={eventGroup}
                 isActive={activeSectionIndex === index}
                 initialContentIndex={targetContentIndex !== -1 ? initialIndex : undefined}
@@ -537,5 +537,5 @@ const SpotlightFeed: React.FC<SpotlightFeedProps> = ({ className, onEventClick, 
   );
 };
 
-export default SpotlightFeed;
+export default DiscoverFeed;
 

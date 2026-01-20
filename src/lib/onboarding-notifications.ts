@@ -79,12 +79,30 @@ class OnboardingNotifications {
 
   /**
    * Send location permission request notification
+   * Only requests if permission is not already granted
    */
   async requestLocationPermission(userId: string): Promise<void> {
+    // Check permission status first
+    const currentStatus = await locationService.checkPermissionStatus();
+    
+    // If already granted, proceed silently
+    if (currentStatus.granted) {
+      const location = await locationService.getCurrentLocation(false, true); // Silent mode
+      if (location) {
+        // Update user profile with location silently
+        await supabase
+          .from('profiles')
+          .update({ location: location.address || location.city || 'Unknown' })
+          .eq('id', userId);
+      }
+      return; // Exit early, no need to show prompts
+    }
+
+    // Only request permission if not already granted
     const permission = await locationService.requestLocationPermission();
 
     if (permission.granted) {
-      const location = await locationService.getCurrentLocation();
+      const location = await locationService.getCurrentLocation(false, true); // Silent mode
       if (location) {
         // Update user profile with location
         await supabase
@@ -120,7 +138,7 @@ class OnboardingNotifications {
         action: {
           label: 'Enable',
           onClick: async () => {
-            const loc = await locationService.getCurrentLocation();
+            const loc = await locationService.getCurrentLocation(false, false); // Not silent, user explicitly clicked
             if (loc) {
               await supabase
                 .from('profiles')
@@ -191,11 +209,22 @@ class OnboardingNotifications {
    * Send nearby events notification
    */
   async sendNearbyEventsNotification(userId: string): Promise<void> {
-    const userLocation = locationService.getCachedLocation();
+    // Check permission first
+    const permissionStatus = await locationService.checkPermissionStatus();
+    
+    // If permission is not granted, don't request automatically
+    if (!permissionStatus.granted) {
+      return; // Exit silently - don't show prompts
+    }
+
+    // Permission is granted - get location silently
+    let userLocation = locationService.getCachedLocation();
     if (!userLocation) {
-      // Request location first
-      await this.requestLocationPermission(userId);
-      return;
+      // Try to get fresh location silently
+      userLocation = await locationService.getCurrentLocation(false, true); // Silent mode
+      if (!userLocation) {
+        return; // Can't proceed without location
+      }
     }
 
     // Get events within 50km

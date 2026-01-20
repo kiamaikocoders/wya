@@ -40,7 +40,7 @@ const RecentUpdatesSection: React.FC = () => {
   });
 
   const handlePostClick = (postId: string | number) => {
-    navigate(`/spotlight/${postId}`);
+    navigate(`/discover/${postId}`);
   };
 
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -73,7 +73,7 @@ const RecentUpdatesSection: React.FC = () => {
       <div className="px-6 mb-4 flex justify-between items-center">
         <h2 className="text-lg font-bold text-white">Friend Activities</h2>
         <Link 
-          to="/spotlight" 
+          to="/discover" 
           className="text-sm font-medium text-orange-500 hover:text-orange-400 transition-colors"
         >
           See all

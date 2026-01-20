@@ -227,7 +227,7 @@ const EventsFiltersPanel = ({
         </div>
         <div>
           <p className="text-sm font-semibold text-white">Featured only</p>
-          <p className="text-xs text-white/60">Highlight spotlighted experiences</p>
+          <p className="text-xs text-white/60">Highlight discovered experiences</p>
         </div>
       </div>
       <Switch checked={filters.featuredOnly} onCheckedChange={checked => updateFilter('featuredOnly', checked)} />

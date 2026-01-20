@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import SpotlightFeed from '@/components/spotlight/SpotlightFeed';
-import SpotlightHeader from '@/components/spotlight/SpotlightHeader';
-import SpotlightSwipeHint from '@/components/spotlight/SpotlightSwipeHint';
+import DiscoverFeed from '@/components/discover/DiscoverFeed';
+import DiscoverHeader from '@/components/discover/DiscoverHeader';
+import DiscoverSwipeHint from '@/components/discover/DiscoverSwipeHint';
 
-const SpotlightPage = () => {
+const DiscoverPage = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { id } = useParams<{ id?: string }>();
 
@@ -26,15 +26,15 @@ const SpotlightPage = () => {
       }}
     >
       {/* Transparent header overlay */}
-      <SpotlightHeader />
+      <DiscoverHeader />
 
       {/* One-time coachmark: horizontal swipe hint */}
-      <SpotlightSwipeHint />
+      <DiscoverSwipeHint />
       
       {/* Content feed - full viewport height sections */}
-      <SpotlightFeed targetContentId={id ? Number(id) : undefined} />
+      <DiscoverFeed targetContentId={id ? Number(id) : undefined} />
     </div>
   );
 };
 
-export default SpotlightPage;
+export default DiscoverPage;

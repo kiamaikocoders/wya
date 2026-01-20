@@ -66,7 +66,7 @@ const CreateEvent = lazy(() => import("./pages/CreateEvent"));
 const UsersDirectory = lazy(() => import("./pages/UsersDirectory"));
 const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
 const SponsorZone = lazy(() => import("./pages/SponsorZone"));
-const SpotlightPage = lazy(() => import("./pages/SpotlightPage"));
+const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const Settings = lazy(() => import("./pages/Settings"));
 
 const queryClient = new QueryClient({
@@ -315,9 +315,9 @@ const App = () => {
 
                     <Route path="/users" element={<UsersDirectory />} />
 
-                    {/* Spotlight */}
-                    <Route path="/spotlight" element={<SpotlightPage />} />
-                    <Route path="/spotlight/:id" element={<SpotlightPage />} />
+                    {/* Discover */}
+                    <Route path="/discover" element={<DiscoverPage />} />
+                    <Route path="/discover/:id" element={<DiscoverPage />} />
 
                     <Route path="*" element={<NotFound />} />
                   </Route>

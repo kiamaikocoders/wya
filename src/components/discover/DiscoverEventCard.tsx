@@ -5,7 +5,7 @@ import { CalendarDays, MapPin, ArrowUpRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-export interface SpotlightEventItem {
+export interface DiscoverEventItem {
   id: number;
   title: string;
   date: string;
@@ -16,7 +16,7 @@ export interface SpotlightEventItem {
   tag?: string;
 }
 
-const SpotlightEventCard: React.FC<{ item: SpotlightEventItem; className?: string }> = ({ item, className }) => {
+const DiscoverEventCard: React.FC<{ item: DiscoverEventItem; className?: string }> = ({ item, className }) => {
   const eventDate = item.date ? new Date(item.date) : null;
   const formattedDate = eventDate ? format(eventDate, 'MMM d, yyyy') : 'TBA';
 
@@ -72,5 +72,5 @@ const SpotlightEventCard: React.FC<{ item: SpotlightEventItem; className?: strin
   );
 };
 
-export default SpotlightEventCard;
+export default DiscoverEventCard;
 
