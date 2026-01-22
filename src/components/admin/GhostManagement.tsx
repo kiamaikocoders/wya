@@ -57,7 +57,7 @@ const GhostManagement: React.FC = () => {
   const [actionType, setActionType] = useState<GhostActionQueue['action_type']>('like_story');
   const [targetType, setTargetType] = useState<GhostActionQueue['target_type']>('story');
   const [targetId, setTargetId] = useState<string>('');
-  const [selectedPersonaForAction, setSelectedPersonaForAction] = useState<number | 'all'>('all');
+  const [selectedPersonaForAction, setSelectedPersonaForAction] = useState<number | 'all' | 'random'>('all');
   
   // Form fields for content creation (replaces JSON)
   const [contentTitle, setContentTitle] = useState<string>('');
@@ -993,14 +993,23 @@ const GhostManagement: React.FC = () => {
               <div className="space-y-2">
                 <Label>Persona Group</Label>
                 <Select
-                  value={selectedPersonaForAction === 'all' ? 'all' : selectedPersonaForAction.toString()}
-                  onValueChange={(value) => setSelectedPersonaForAction(value === 'all' ? 'all' : parseInt(value))}
+                  value={selectedPersonaForAction === 'all' ? 'all' : selectedPersonaForAction === 'random' ? 'random' : selectedPersonaForAction.toString()}
+                  onValueChange={(value) => {
+                    if (value === 'all') {
+                      setSelectedPersonaForAction('all');
+                    } else if (value === 'random') {
+                      setSelectedPersonaForAction('random');
+                    } else {
+                      setSelectedPersonaForAction(parseInt(value));
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Ghost Users</SelectItem>
+                    <SelectItem value="random">One Random User</SelectItem>
                     {personaGroups.map((group) => (
                       <SelectItem key={group.id} value={group.id.toString()}>
                         {group.name} ({group.description})
