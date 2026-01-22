@@ -95,8 +95,10 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
         className={cn(
           'flex w-full overflow-x-auto scrollbar-hide',
           'snap-x snap-mandatory',
-          'px-0'
+          'px-0',
+          'touch-pan-x' // Enable horizontal touch scrolling
         )}
+        style={{ touchAction: 'pan-x pan-y' }} // Allow horizontal and vertical panning
       >
         {content.map((item, index) => (
           <div

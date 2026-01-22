@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Sparkles, Calendar, Rocket, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { useDiscoverUI } from '@/contexts/DiscoverUIContext';
 
 interface NavItem {
   name: string;
@@ -14,8 +15,10 @@ const BottomNav = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const isDiscoverPage = location.pathname === '/discover';
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  
+  // Use DiscoverUIContext for Discover page, otherwise always visible
+  const discoverUI = useDiscoverUI();
+  const uiVisible = isDiscoverPage ? discoverUI.uiVisible : true;
   
   const homePath = isAuthenticated ? '/home' : '/';
 
@@ -33,40 +36,17 @@ const BottomNav = () => {
     }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
-
-  // Hide/show nav on scroll for Discover page (TikTok style)
-  useEffect(() => {
-    if (!isDiscoverPage) {
-      setIsVisible(true);
-      return;
-    }
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Show nav when scrolling up or at top, hide when scrolling down
-      if (currentScrollY < lastScrollY || currentScrollY < 10) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isDiscoverPage, lastScrollY]);
   
   return (
     <nav 
       className={cn(
         // Keep below dialogs/overlays (Radix dialogs use z-50) so modals aren't obscured on mobile.
-        'fixed bottom-0 left-0 right-0 z-40 safe-area-bottom transition-transform duration-300',
+        'fixed bottom-0 left-0 right-0 z-40 safe-area-bottom transition-all duration-300',
         'border-t border-slate-200 dark:border-slate-800',
         'bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl',
         'shadow-[0_-2px_10px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]',
-        !isVisible && isDiscoverPage && 'translate-y-full' // Hide when scrolling down
+        // On Discover page, show/hide based on UI visibility (single tap)
+        isDiscoverPage && !uiVisible && 'translate-y-full opacity-0' // Hide when UI is hidden
       )}
     >
       <div className="container mx-auto">

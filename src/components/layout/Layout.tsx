@@ -6,6 +6,7 @@ import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 import FooterMinimal from "./FooterMinimal";
 import { cn } from "@/lib/utils";
+import { DiscoverUIProvider } from "@/contexts/DiscoverUIContext";
 
 const Layout = () => {
   const location = useLocation();
@@ -45,37 +46,39 @@ const Layout = () => {
   const isDiscoverPage = location.pathname === "/discover";
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
-      {!isAuthPage && !isDiscoverPage && <Navbar />}
-      <main className={cn("flex-1", !isDiscoverPage && "pb-20 md:pb-24")}>
-        <Outlet />
-      </main>
-      {!isAuthPage && !isDiscoverPage && <BottomNav />}
-      {!isAuthPage && !isDiscoverPage && (isLanding ? <Footer /> : <FooterMinimal />)}
-      
-      {scrollToTop && (
-        <button
-          onClick={scrollTop}
-          className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"
-          aria-label="Scroll to top"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+    <DiscoverUIProvider>
+      <div className="relative flex min-h-screen flex-col bg-background">
+        {!isAuthPage && !isDiscoverPage && <Navbar />}
+        <main className={cn("flex-1", !isDiscoverPage && "pb-20 md:pb-24")}>
+          <Outlet />
+        </main>
+        {!isAuthPage && <BottomNav />}
+        {!isAuthPage && !isDiscoverPage && (isLanding ? <Footer /> : <FooterMinimal />)}
+        
+        {scrollToTop && (
+          <button
+            onClick={scrollTop}
+            className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"
+            aria-label="Scroll to top"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-        </button>
-      )}
-    </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </DiscoverUIProvider>
   );
 };
 
