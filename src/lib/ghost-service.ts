@@ -402,17 +402,30 @@ export const ghostService = {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge Function error:', error);
+        // Try to extract error message from the response
+        const errorMessage = error.message || (error as any)?.error?.message || 'Failed to process actions';
+        throw new Error(errorMessage);
+      }
 
-      const result = data as { processed?: number; message?: string };
-      toast.success(`Processed ${result.processed || 0} actions`);
+      // Check if data contains an error (Edge Function might return error in data)
+      if (data && typeof data === 'object' && 'error' in data) {
+        const errorMessage = (data as any).error || 'Failed to process actions';
+        throw new Error(errorMessage);
+      }
+
+      const result = data as { processed?: number; message?: string; failed?: number };
+      const message = result.message || `Processed ${result.processed || 0} actions${result.failed ? `, ${result.failed} failed` : ''}`;
+      toast.success(message);
       return {
         processed: result.processed || 0,
-        message: result.message || 'Actions processed successfully'
+        message: message
       };
     } catch (error: any) {
       console.error('Error processing actions:', error);
-      toast.error(error.message || 'Failed to process actions');
+      const errorMessage = error.message || 'Failed to process actions. Check Supabase logs for details.';
+      toast.error(errorMessage);
       throw error;
     }
   },

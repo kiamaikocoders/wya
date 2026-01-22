@@ -376,12 +376,17 @@ export const eventService = {
         .from('events')
         .update(updates)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
+      
+      // Check if any rows were updated
+      if (!data || data.length === 0) {
+        throw new Error('No rows were updated. You may not have permission to update this event, or the event may not exist.');
+      }
+      
       toast.success('Event updated successfully');
-      return data;
+      return data[0]; // Return the first (and should be only) updated row
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update event';
       toast.error(errorMessage);
