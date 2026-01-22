@@ -46,12 +46,12 @@ const Layout = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
-      {!isAuthPage && <Navbar />}
+      {!isAuthPage && !isDiscoverPage && <Navbar />}
       <main className={cn("flex-1", !isDiscoverPage && "pb-20 md:pb-24")}>
         <Outlet />
       </main>
-      {!isAuthPage && <BottomNav />}
-      {!isAuthPage && (isLanding ? <Footer /> : <FooterMinimal />)}
+      {!isAuthPage && !isDiscoverPage && <BottomNav />}
+      {!isAuthPage && !isDiscoverPage && (isLanding ? <Footer /> : <FooterMinimal />)}
       
       {scrollToTop && (
         <button
