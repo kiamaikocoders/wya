@@ -299,12 +299,17 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
           updated_at: new Date().toISOString(),
         })
         .eq('id', event.id)
-        .select()
-        .single();
+        .select();
 
       if (error) throw error;
+      
+      // Check if any rows were updated
+      if (!data || data.length === 0) {
+        throw new Error('No rows were updated. You may not have permission to update this event, or the event may not exist.');
+      }
+      
       await syncEventCategories(event.id, categoryIds);
-      return data;
+      return data[0]; // Return the first (and should be only) updated row
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });

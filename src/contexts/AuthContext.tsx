@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       if (session) {
-        // Session exists: set minimal user immediately (no network), then fetch profile in background.
+        // Session exists: set minimal user immediately (no network), then fetch profile.
         setUser((prev) => ({
           id: session.user.id,
           name: prev?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
@@ -84,45 +84,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           preferences: prev?.preferences,
         }));
 
-        // Unblock UI immediately — profile enrichment happens in the background.
-        setLoading(false);
+        // Fetch profile data to determine admin status before unblocking UI
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, full_name, username, avatar_url, bio, created_at')
+            .eq('id', session.user.id)
+            .single();
 
-        // Fetch profile data in background (avoid select('*'))
-        supabase
-          .from('profiles')
-          .select('id, full_name, username, avatar_url, bio, created_at')
-          .eq('id', session.user.id)
-          .single()
-          .then(async ({ data: profile, error: profileError }) => {
-            // PGRST116 = no rows; treat as "profile missing"
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.warn('Profile fetch error:', profileError);
-              return;
+          // PGRST116 = no rows; treat as "profile missing"
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.warn('Profile fetch error:', profileError);
+            // Continue with minimal user data
+          } else if (!profile) {
+            // Best-effort profile creation
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                full_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+                username: session.user.email?.split('@')[0] || 'user',
+              });
+
+            if (createError) {
+              console.warn('Profile creation failed:', createError);
+            } else {
+              // Profile created, set admin status to false (new user)
+              setIsAdmin(false);
             }
-
-            if (!profile) {
-              // Best-effort profile creation (do not block UI)
-              const { error: createError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  full_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-                  username: session.user.email?.split('@')[0] || 'user',
-                });
-
-              if (createError) {
-                console.warn('Profile creation failed:', createError);
-                return;
-              }
-
-              return;
-            }
+          } else {
+            // Profile exists, update user and admin status
+            const userType: User['user_type'] =
+              profile.username === 'admin' ? 'admin' : 'attendee';
 
             setUser((prev) => {
               if (!prev) return prev;
-              const userType: User['user_type'] =
-                profile.username === 'admin' ? 'admin' : prev.user_type || 'attendee';
-
               return {
                 ...prev,
                 name: profile.full_name || prev.name,
@@ -137,10 +133,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             });
 
             setIsAdmin(profile.username === 'admin');
-          })
-          .catch((err) => {
-            console.warn('Background profile fetch failed:', err);
-          });
+          }
+        } catch (err) {
+          console.warn('Profile fetch failed:', err);
+          // Continue with minimal user data, assume not admin
+          setIsAdmin(false);
+        }
       } else {
         setUser(null);
         setIsAdmin(false);

@@ -35,7 +35,7 @@ const LandingHero = ({
           height={800}
           loading="eager"
           decoding="async"
-          fetchPriority="high"
+          fetchpriority="high"
           className="absolute inset-0 h-full w-full object-cover"
           aria-hidden="true"
           />

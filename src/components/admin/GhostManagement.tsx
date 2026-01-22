@@ -309,6 +309,31 @@ const GhostManagement: React.FC = () => {
       let metadata: any = {};
       let finalTargetId: number | string | undefined = undefined;
       let finalTargetType: GhostActionQueue['target_type'] = targetType;
+      let finalPersonaGroupId: number | undefined = undefined;
+      let finalGhostUserIds: string[] | undefined = undefined;
+      
+      // Handle "One Random User" selection
+      if (selectedPersonaForAction === 'random') {
+        // Fetch all ghost users and pick one random user
+        const allGhostUsers = await ghostService.getGhostUsers();
+        if (allGhostUsers.length === 0) {
+          toast.error('No ghost users available');
+          return;
+        }
+        // Pick a random user
+        const randomUser = allGhostUsers[Math.floor(Math.random() * allGhostUsers.length)];
+        finalGhostUserIds = [randomUser.id];
+        finalPersonaGroupId = undefined;
+        toast.info(`Selected random user: ${randomUser.username || randomUser.id}`);
+      } else if (selectedPersonaForAction === 'all') {
+        // Use all users - don't set persona_group_id or ghost_user_ids
+        finalPersonaGroupId = undefined;
+        finalGhostUserIds = undefined;
+      } else {
+        // Use specific persona group (it's a number)
+        finalPersonaGroupId = selectedPersonaForAction as number;
+        finalGhostUserIds = undefined;
+      }
       
       if (actionType === 'create_story') {
         metadata = {
@@ -337,7 +362,8 @@ const GhostManagement: React.FC = () => {
         action_type: actionType,
         target_type: finalTargetType,
         target_id: finalTargetId,
-        persona_group_id: selectedPersonaForAction === 'all' ? undefined : selectedPersonaForAction as number,
+        persona_group_id: finalPersonaGroupId,
+        ghost_user_ids: finalGhostUserIds,
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined
       };
 
@@ -358,6 +384,7 @@ const GhostManagement: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Error creating action:', error);
+      toast.error(error.message || 'Failed to create action');
     }
   };
 
