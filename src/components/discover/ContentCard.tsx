@@ -66,6 +66,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const [isEventExpanded, setIsEventExpanded] = useState(false);
   const [isMuted, setIsMuted] = useState(true); // TikTok-style: muted by default
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastTapRef = useRef<number>(0);
+  const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync muted state with video element
   useEffect(() => {
@@ -73,6 +76,56 @@ const ContentCard: React.FC<ContentCardProps> = ({
       videoRef.current.muted = isMuted;
     }
   }, [isMuted, isVideo]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+    };
+  }, []);
+
+  // Double-tap to like handler
+  const handleDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // milliseconds
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected
+      e.preventDefault();
+      e.stopPropagation();
+      if (tapTimeoutRef.current) {
+        clearTimeout(tapTimeoutRef.current);
+        tapTimeoutRef.current = null;
+      }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+        clickTimeoutRef.current = null;
+      }
+      onLike?.(content.id);
+      lastTapRef.current = 0; // Reset to prevent triple-tap
+    } else {
+      // First tap - wait for potential second tap
+      lastTapRef.current = now;
+      tapTimeoutRef.current = setTimeout(() => {
+        lastTapRef.current = 0;
+      }, DOUBLE_TAP_DELAY);
+    }
+  };
+
+  // Handle single click with delay to allow double-tap detection
+  const handleClick = (e: React.MouseEvent) => {
+    // Delay the onClick to allow double-tap detection
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    clickTimeoutRef.current = setTimeout(() => {
+      if (Date.now() - lastTapRef.current > 300) {
+        // Not a double tap, proceed with single click
+        onClick?.();
+      }
+    }, 300);
+  };
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,7 +157,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
         'cursor-pointer',
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleTap}
+      onTouchEnd={handleDoubleTap}
     >
       {/* Media - Full bleed */}
       {content.media_url ? (

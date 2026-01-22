@@ -18,6 +18,7 @@ const DiscoverPage = () => {
   return (
     <div 
       ref={containerRef}
+      data-discover-container
       className="relative bg-background overflow-y-auto"
       style={{
         scrollSnapType: 'y mandatory',
