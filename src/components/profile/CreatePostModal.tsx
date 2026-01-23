@@ -55,8 +55,25 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }).then(result => result.events),
   });
 
-  // Filter events based on search query
+  // Helper function to check if event is within the last month
+  const isEventWithinLastMonth = (eventDate: string): boolean => {
+    const eventDateObj = new Date(eventDate);
+    const now = new Date();
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    // Event must be within the last month (not older than 1 month)
+    return eventDateObj >= oneMonthAgo;
+  };
+
+  // Filter events: only show events within the last month and match search query
   const filteredEvents = events.filter(event => {
+    // First check if event is within the last month
+    if (!isEventWithinLastMonth(event.date)) {
+      return false;
+    }
+    
+    // Then check search query
     if (!eventSearchQuery.trim()) return true;
     const query = eventSearchQuery.toLowerCase();
     return event.title.toLowerCase().includes(query) || 
@@ -99,6 +116,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     if (!caption.trim() && !selectedFile) {
       toast.error('Please add a caption or media');
       return;
+    }
+
+    // Validate that selected event is within the last month
+    if (selectedEventId) {
+      const selectedEvent = events.find(e => e.id === selectedEventId);
+      if (selectedEvent && !isEventWithinLastMonth(selectedEvent.date)) {
+        toast.error('This event is too old to tag. Only events from the last month can be tagged.');
+        setSelectedEventId(null);
+        return;
+      }
     }
 
     try {
@@ -261,8 +288,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                       );
                     })}
                   </select>
-                  {eventSearchQuery && filteredEvents.length === 0 && (
-                    <p className="text-sm text-white/50">No events found</p>
+                  {filteredEvents.length === 0 && (
+                    <p className="text-sm text-white/50">
+                      {eventSearchQuery 
+                        ? 'No events found matching your search' 
+                        : 'No events available. Only events from the last month can be tagged.'}
+                    </p>
                   )}
                 </div>
               )}

@@ -3,6 +3,14 @@ import { toast } from 'sonner';
 
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoidW5tYXNraW5nIiwiYSI6ImNtaHo5dmY5cDBpcncybHM1aTI4cjZ3b3IifQ.yNt2bslI1wAyoeoKREtVyw';
 
+/**
+ * Generate a session token for Mapbox Search Box API
+ * Session tokens should be unique per search session
+ */
+export function generateSessionToken(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
 export interface UserLocation {
   latitude: number;
   longitude: number;
@@ -336,6 +344,70 @@ class LocationService {
    */
   getMapboxToken(): string {
     return MAPBOX_ACCESS_TOKEN;
+  }
+
+  /**
+   * Search locations using Mapbox Search Box API (suggest endpoint)
+   * Returns suggestions that need to be retrieved for full details
+   */
+  async searchLocationsSuggest(query: string, sessionToken: string, options?: {
+    country?: string;
+    proximity?: string;
+    limit?: number;
+  }): Promise<any[]> {
+    try {
+      // Search Box API has a maximum limit of 10
+      const { country = 'ke', proximity = '36.8219,-1.2921', limit = 10 } = options || {};
+      const clampedLimit = Math.min(Math.max(limit, 1), 10); // Ensure limit is between 1 and 10
+      
+      const url = new URL('https://api.mapbox.com/search/searchbox/v1/suggest');
+      url.searchParams.set('q', query);
+      url.searchParams.set('access_token', MAPBOX_ACCESS_TOKEN);
+      url.searchParams.set('session_token', sessionToken);
+      url.searchParams.set('country', country);
+      url.searchParams.set('proximity', proximity);
+      url.searchParams.set('limit', clampedLimit.toString());
+      url.searchParams.set('types', 'address,poi,place,locality,neighborhood');
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Search Box suggest failed:', response.status, errorText);
+        throw new Error(`Search Box suggest failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.suggestions || [];
+    } catch (error) {
+      console.error('Error in searchLocationsSuggest:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieve full details for a suggestion using Mapbox Search Box API (retrieve endpoint)
+   */
+  async retrieveLocationDetails(suggestionId: string, sessionToken: string): Promise<any> {
+    try {
+      const url = new URL(`https://api.mapbox.com/search/searchbox/v1/retrieve/${suggestionId}`);
+      url.searchParams.set('access_token', MAPBOX_ACCESS_TOKEN);
+      url.searchParams.set('session_token', sessionToken);
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Search Box retrieve failed:', response.status, errorText);
+        throw new Error(`Search Box retrieve failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.features?.[0] || null;
+    } catch (error) {
+      console.error('Error in retrieveLocationDetails:', error);
+      throw error;
+    }
   }
 }
 

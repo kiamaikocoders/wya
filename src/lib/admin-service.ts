@@ -69,6 +69,23 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface AdminStory {
+  id: number;
+  user_id: string;
+  user_name?: string;
+  user_image?: string;
+  event_id?: number;
+  event_title?: string;
+  content: string;
+  caption: string;
+  media_url?: string;
+  media_type: 'image' | 'video';
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  updated_at?: string;
+}
+
 export const adminService = {
   // ==========================================
   // USER MANAGEMENT
@@ -846,6 +863,258 @@ export const adminService = {
     } catch (error) {
       console.error('Error bulk updating user roles:', error);
       throw error;
+    }
+  },
+
+  // ==========================================
+  // GHOST STORY MANAGEMENT
+  // ==========================================
+
+  /**
+   * Get all stories created by ghost users
+   */
+  getGhostStories: async (): Promise<AdminStory[]> => {
+    try {
+      // Get all ghost user IDs
+      const { data: ghostUsers, error: ghostError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('is_ghost', true);
+
+      if (ghostError) throw ghostError;
+
+      if (!ghostUsers || ghostUsers.length === 0) {
+        console.log('No ghost users found');
+        return [];
+      }
+
+      const ghostUserIds = ghostUsers.map(u => u.id);
+      console.log(`Found ${ghostUserIds.length} ghost users, fetching their stories...`);
+
+      // Get stories by ghost users
+      const { data: stories, error: storiesError } = await supabase
+        .from('stories')
+        .select(`
+          id,
+          user_id,
+          event_id,
+          content,
+          caption,
+          media_url,
+          media_type,
+          likes_count,
+          comments_count,
+          created_at
+        `)
+        .in('user_id', ghostUserIds)
+        .order('created_at', { ascending: false });
+
+      if (storiesError) {
+        console.error('Error fetching stories:', storiesError);
+        throw storiesError;
+      }
+
+      if (!stories || stories.length === 0) {
+        console.log(`No stories found for ${ghostUserIds.length} ghost users`);
+        return [];
+      }
+
+      console.log(`Found ${stories.length} stories from ghost users`);
+
+      // Get user profiles
+      const userIds = [...new Set(stories.map(s => s.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      const profileMap = (profiles || []).reduce((map: any, profile: any) => {
+        map[profile.id] = profile;
+        return map;
+      }, {} as Record<string, any>);
+
+      // Get event titles if event_id exists
+      const eventIds = [...new Set(stories.map(s => s.event_id).filter(Boolean))];
+      let eventMap: Record<number, string> = {};
+      if (eventIds.length > 0) {
+        const { data: events } = await supabase
+          .from('events')
+          .select('id, title')
+          .in('id', eventIds);
+        
+        if (events) {
+          eventMap = events.reduce((map: any, event: any) => {
+            map[event.id] = event.title;
+            return map;
+          }, {} as Record<number, string>);
+        }
+      }
+
+      // Transform to AdminStory format
+      return stories.map(story => {
+        const profile = profileMap[story.user_id];
+        return {
+          id: story.id,
+          user_id: story.user_id,
+          user_name: profile?.username || profile?.full_name || 'Ghost User',
+          user_image: profile?.avatar_url || null,
+          event_id: story.event_id || undefined,
+          event_title: story.event_id ? eventMap[story.event_id] : undefined,
+          content: story.content,
+          caption: story.caption,
+          media_url: story.media_url || undefined,
+          media_type: story.media_type as 'image' | 'video',
+          likes_count: story.likes_count || 0,
+          comments_count: story.comments_count || 0,
+          created_at: story.created_at,
+          updated_at: undefined, // Stories table doesn't have updated_at column
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching ghost stories:', error);
+      toast.error('Failed to fetch ghost stories');
+      throw error;
+    }
+  },
+
+  /**
+   * Update a ghost story (admin can update any ghost story)
+   */
+  updateGhostStory: async (storyId: number, updates: {
+    content?: string;
+    caption?: string;
+    media_url?: string;
+    media_type?: 'image' | 'video';
+  }): Promise<AdminStory> => {
+    try {
+      // Verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to update stories');
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || profile.username !== 'admin') {
+        throw new Error('Only admins can update ghost stories');
+      }
+
+      const updateData: any = {
+        // Note: stories table doesn't have updated_at column
+      };
+
+      if (updates.content !== undefined) updateData.content = updates.content;
+      if (updates.caption !== undefined) updateData.caption = updates.caption;
+      if (updates.media_url !== undefined) updateData.media_url = updates.media_url;
+      if (updates.media_type !== undefined) updateData.media_type = updates.media_type;
+
+      const { data, error } = await supabase
+        .from('stories')
+        .update(updateData)
+        .eq('id', storyId)
+        .select();
+
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Story not found or you do not have permission to update it');
+      }
+
+      const updatedStory = data[0];
+
+      // Fetch story owner's profile and event for response
+      const { data: storyOwnerProfile } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .eq('id', updatedStory.user_id)
+        .single();
+
+      let eventTitle: string | undefined;
+      if (updatedStory.event_id) {
+        const { data: event } = await supabase
+          .from('events')
+          .select('title')
+          .eq('id', updatedStory.event_id)
+          .single();
+        eventTitle = event?.title;
+      }
+
+      toast.success('Story updated successfully');
+      
+      return {
+        id: updatedStory.id,
+        user_id: updatedStory.user_id,
+        user_name: storyOwnerProfile?.username || storyOwnerProfile?.full_name || 'Ghost User',
+        user_image: storyOwnerProfile?.avatar_url || null,
+        event_id: updatedStory.event_id || undefined,
+        event_title: eventTitle,
+        content: updatedStory.content,
+        caption: updatedStory.caption,
+        media_url: updatedStory.media_url || undefined,
+        media_type: updatedStory.media_type as 'image' | 'video',
+        likes_count: updatedStory.likes_count || 0,
+        comments_count: updatedStory.comments_count || 0,
+        created_at: updatedStory.created_at,
+        updated_at: undefined, // Stories table doesn't have updated_at column
+      };
+    } catch (error) {
+      console.error('Error updating ghost story:', error);
+      toast.error('Failed to update story');
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a ghost story (admin can delete any ghost story)
+   */
+  deleteGhostStory: async (storyId: number): Promise<boolean> => {
+    try {
+      // Verify admin status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('You must be logged in to delete stories');
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || profile.username !== 'admin') {
+        throw new Error('Only admins can delete ghost stories');
+      }
+
+      // Delete the story
+      const { data, error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', storyId)
+        .select();
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+
+      // Check if any rows were deleted
+      if (!data || data.length === 0) {
+        throw new Error('Story not found or you do not have permission to delete it');
+      }
+
+      console.log(`Successfully deleted story ${storyId}`);
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting ghost story:', error);
+      const errorMessage = error?.message || 'Failed to delete story';
+      throw new Error(errorMessage);
     }
   },
 };

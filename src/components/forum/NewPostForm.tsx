@@ -35,11 +35,25 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
     "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?q=80&w=2070"
   ];
   
+  // Helper function to check if event is within the last month
+  const isEventWithinLastMonth = (eventDate: string): boolean => {
+    const eventDateObj = new Date(eventDate);
+    const now = new Date();
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    
+    // Event must be within the last month (not older than 1 month)
+    return eventDateObj >= oneMonthAgo;
+  };
+
   // Fetch events for the dropdown
-  const { data: events, isLoading: eventsLoading } = useQuery({
+  const { data: allEvents, isLoading: eventsLoading } = useQuery({
     queryKey: ["events"],
     queryFn: eventService.getAllEvents,
   });
+
+  // Filter events to only show those within the last month
+  const events = allEvents?.filter(event => isEventWithinLastMonth(event.date)) || [];
   
   // Set the event ID when the component loads or when eventId prop changes
   useEffect(() => {
@@ -86,6 +100,14 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
     
     if (!selectedEventId) {
       toast.error("Please select an event for your post");
+      return;
+    }
+
+    // Validate that selected event is within the last month
+    const selectedEvent = events.find(e => e.id === selectedEventId);
+    if (selectedEvent && !isEventWithinLastMonth(selectedEvent.date)) {
+      toast.error("This event is too old to tag. Only events from the last month can be tagged.");
+      setSelectedEventId(null);
       return;
     }
     
@@ -211,13 +233,15 @@ const NewPostForm: React.FC<NewPostFormProps> = ({ onSuccess, onCancel, eventId 
                     <SelectValue placeholder="Select an event" />
                   </SelectTrigger>
                   <SelectContent>
-                    {events?.map(event => (
-                      <SelectItem key={event.id} value={event.id.toString()}>
-                        {event.title}
-                      </SelectItem>
-                    )) || (
+                    {events.length > 0 ? (
+                      events.map(event => (
+                        <SelectItem key={event.id} value={event.id.toString()}>
+                          {event.title}
+                        </SelectItem>
+                      ))
+                    ) : (
                       <SelectItem value="" disabled>
-                        No events available
+                        No events available (only events from the last month can be tagged)
                       </SelectItem>
                     )}
                   </SelectContent>
