@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,11 +40,15 @@ import {
 import { ghostService, type GhostActionQueue, type GhostPersonaGroup, type GhostUser } from '@/lib/ghost-service';
 import { eventService } from '@/lib/event-service';
 import { storyService } from '@/lib/story/story-service';
+import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 const GhostManagement: React.FC = () => {
+  const queryClient = useQueryClient();
   const [ghostUsers, setGhostUsers] = useState<GhostUser[]>([]);
   const [personaGroups, setPersonaGroups] = useState<GhostPersonaGroup[]>([]);
   const [queuedActions, setQueuedActions] = useState<GhostActionQueue[]>([]);
@@ -52,6 +56,18 @@ const GhostManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPersonaGroup, setSelectedPersonaGroup] = useState<number | 'all'>('all');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Ghost content management state
+  const [ghostStories, setGhostStories] = useState<AdminStory[]>([]);
+  const [loadingStories, setLoadingStories] = useState(false);
+  const [editingStory, setEditingStory] = useState<AdminStory | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editCaption, setEditCaption] = useState('');
+  const [editMediaUrl, setEditMediaUrl] = useState('');
+  const [editMediaType, setEditMediaType] = useState<'image' | 'video'>('image');
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingStoryId, setDeletingStoryId] = useState<number | null>(null);
+  const [storyToDelete, setStoryToDelete] = useState<AdminStory | null>(null);
   
   // Action creation form state
   const [actionType, setActionType] = useState<GhostActionQueue['action_type']>('like_story');
@@ -517,10 +533,34 @@ const GhostManagement: React.FC = () => {
         </div>
       )}
 
-      <Tabs defaultValue="queue" className="space-y-4">
+      <Tabs 
+        defaultValue="queue" 
+        className="space-y-4"
+        onValueChange={(value) => {
+          // Auto-load ghost stories when content tab is opened
+          if (value === 'content' && ghostStories.length === 0 && !loadingStories) {
+            setLoadingStories(true);
+            adminService.getGhostStories()
+              .then(stories => {
+                setGhostStories(stories);
+                if (stories.length > 0) {
+                  toast.success(`Loaded ${stories.length} ghost stories`);
+                }
+              })
+              .catch(error => {
+                console.error('Error loading ghost stories:', error);
+                toast.error('Failed to load ghost stories. Please try again.');
+              })
+              .finally(() => {
+                setLoadingStories(false);
+              });
+          }
+        }}
+      >
         <TabsList>
           <TabsTrigger value="queue">Action Queue</TabsTrigger>
           <TabsTrigger value="users">Ghost Users</TabsTrigger>
+          <TabsTrigger value="content">Ghost Content</TabsTrigger>
           <TabsTrigger value="create">Create Action</TabsTrigger>
         </TabsList>
 
@@ -717,6 +757,154 @@ const GhostManagement: React.FC = () => {
                   ))
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Ghost Content Tab */}
+        <TabsContent value="content" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Ghost Content Management</CardTitle>
+                  <CardDescription>
+                    View, edit, and delete stories created by ghost accounts
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    setLoadingStories(true);
+                    try {
+                      const stories = await adminService.getGhostStories();
+                      setGhostStories(stories);
+                      if (stories.length > 0) {
+                        toast.success(`Loaded ${stories.length} ghost stories`);
+                      } else {
+                        toast.info('No ghost stories found');
+                      }
+                    } catch (error: any) {
+                      console.error('Error loading ghost stories:', error);
+                      const errorMessage = error?.message || 'Failed to load ghost stories';
+                      toast.error(errorMessage);
+                    } finally {
+                      setLoadingStories(false);
+                    }
+                  }}
+                  disabled={loadingStories}
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", loadingStories && "animate-spin")} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingStories ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : ghostStories.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="mb-2">No ghost stories found.</p>
+                  <p className="text-sm">Click Refresh to load stories, or check if ghost accounts have created any stories.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {ghostStories.map((story) => (
+                    <Card key={story.id} className="relative">
+                      <CardContent className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-4">
+                          {/* Media Preview */}
+                          {story.media_url && (
+                            <div className="flex-shrink-0">
+                              {story.media_type === 'video' ? (
+                                <video
+                                  src={story.media_url}
+                                  className="w-24 h-24 object-cover rounded-lg"
+                                  controls={false}
+                                />
+                              ) : (
+                                <img
+                                  src={story.media_url}
+                                  alt={story.caption}
+                                  className="w-24 h-24 object-cover rounded-lg"
+                                />
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Story Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={story.user_image || undefined} />
+                                    <AvatarFallback>{story.user_name?.charAt(0) || 'G'}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="font-semibold text-sm">{story.user_name}</span>
+                                  {story.event_title && (
+                                    <>
+                                      <span className="text-muted-foreground">•</span>
+                                      <span className="text-sm text-muted-foreground">{story.event_title}</span>
+                                    </>
+                                  )}
+                                </div>
+                                <p className="text-sm font-medium mb-1 line-clamp-2">{story.caption}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{story.content}</p>
+                                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                  <span>❤️ {story.likes_count}</span>
+                                  <span>💬 {story.comments_count}</span>
+                                  <span>{format(new Date(story.created_at), 'MMM d, yyyy')}</span>
+                                </div>
+                              </div>
+                              
+                              {/* Action Buttons */}
+                              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setEditingStory(story);
+                                    setEditContent(story.content);
+                                    setEditCaption(story.caption);
+                                    setEditMediaUrl(story.media_url || '');
+                                    setEditMediaType(story.media_type);
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  type="button"
+                                  disabled={deletingStoryId === story.id}
+                                  className="cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setStoryToDelete(story);
+                                  }}
+                                >
+                                  {deletingStoryId === story.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1054,6 +1242,218 @@ const GhostManagement: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Story Dialog */}
+      <Dialog open={!!editingStory} onOpenChange={(open) => !open && setEditingStory(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Ghost Story</DialogTitle>
+            <DialogDescription>
+              Edit the content, caption, and media for this ghost-created story
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-caption">Caption</Label>
+              <Input
+                id="edit-caption"
+                value={editCaption}
+                onChange={(e) => setEditCaption(e.target.value)}
+                placeholder="Story caption..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-content">Content</Label>
+              <Textarea
+                id="edit-content"
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Story content..."
+                rows={4}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-media-url">Media URL</Label>
+              <Input
+                id="edit-media-url"
+                value={editMediaUrl}
+                onChange={(e) => setEditMediaUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+              />
+              {editMediaUrl && (
+                <div className="mt-2">
+                  {editMediaType === 'video' ? (
+                    <video src={editMediaUrl} className="max-w-full max-h-48 rounded-lg" controls />
+                  ) : (
+                    <img src={editMediaUrl} alt="Preview" className="max-w-full max-h-48 rounded-lg object-cover" />
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-media-type">Media Type</Label>
+              <Select
+                value={editMediaType}
+                onValueChange={(value) => setEditMediaType(value as 'image' | 'video')}
+              >
+                <SelectTrigger id="edit-media-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="image">Image</SelectItem>
+                  <SelectItem value="video">Video</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingStory(null)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!editingStory) return;
+                
+                setIsSaving(true);
+                try {
+                  await adminService.updateGhostStory(editingStory.id, {
+                    content: editContent,
+                    caption: editCaption,
+                    media_url: editMediaUrl || undefined,
+                    media_type: editMediaType,
+                  });
+                  
+                  // Update local state
+                  setGhostStories(ghostStories.map(s => 
+                    s.id === editingStory.id 
+                      ? { ...s, content: editContent, caption: editCaption, media_url: editMediaUrl || undefined, media_type: editMediaType }
+                      : s
+                  ));
+                  
+                  // Invalidate React Query cache to refresh Discover page
+                  queryClient.invalidateQueries({ queryKey: ['allStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['stories'] });
+                  
+                  setEditingStory(null);
+                  toast.success('Story updated successfully');
+                } catch (error) {
+                  console.error('Error updating story:', error);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!storyToDelete} onOpenChange={(open) => !open && setStoryToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Story</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this story? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {storyToDelete && (
+            <div className="py-4">
+              <div className="flex items-center gap-3 mb-2">
+                {storyToDelete.media_url && (
+                  <div className="flex-shrink-0">
+                    {storyToDelete.media_type === 'video' ? (
+                      <video
+                        src={storyToDelete.media_url}
+                        className="w-16 h-16 object-cover rounded"
+                        controls={false}
+                      />
+                    ) : (
+                      <img
+                        src={storyToDelete.media_url}
+                        alt={storyToDelete.caption}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    )}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm line-clamp-2">{storyToDelete.caption || 'Untitled story'}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    by {storyToDelete.user_name}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStoryToDelete(null)}
+              disabled={deletingStoryId !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!storyToDelete) return;
+                
+                const storyId = storyToDelete.id;
+                setDeletingStoryId(storyId);
+                
+                try {
+                  await adminService.deleteGhostStory(storyId);
+                  
+                  // Remove from local state
+                  setGhostStories(prev => prev.filter(s => s.id !== storyId));
+                  
+                  // Invalidate React Query cache to refresh Discover page
+                  queryClient.invalidateQueries({ queryKey: ['allStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['stories'] });
+                  
+                  toast.success('Story deleted successfully');
+                  setStoryToDelete(null);
+                } catch (error: any) {
+                  console.error('Error deleting story:', error);
+                  const errorMessage = error?.message || 'Failed to delete story';
+                  toast.error(errorMessage);
+                } finally {
+                  setDeletingStoryId(null);
+                }
+              }}
+              disabled={deletingStoryId !== null}
+            >
+              {deletingStoryId === storyToDelete?.id ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Story'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

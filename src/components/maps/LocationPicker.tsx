@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Search, Navigation, Check } from 'lucide-react';
-import { locationService } from '@/lib/location-service';
+import { locationService, generateSessionToken } from '@/lib/location-service';
 import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -71,8 +71,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialLocation?.address || '');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [sessionToken, setSessionToken] = useState<string>(generateSessionToken());
 
-  // Geocode search query
+  // Search using Mapbox Search Box API
   const handleSearch = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent) => {
     if (e) {
       e.preventDefault();
@@ -86,57 +87,60 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
     setIsSearching(true);
     try {
-      // Include types: address (street addresses), poi (points of interest/landmarks), 
-      // place (cities/towns), locality (neighborhoods/areas like Woodley, Karen), and neighborhood
-      // Note: 'establishment' is not a valid type in Geocoding API
-      const types = 'address,poi,place,locality,neighborhood';
-      
-      // Nairobi coordinates for proximity bias (center of Kenya)
-      const proximity = '36.8219,-1.2921'; // Nairobi coordinates
-      
-      // Search with Kenya restriction and proximity bias for better results
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=15`
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Geocoding failed:', response.status, errorText);
-        throw new Error(`Geocoding failed: ${response.status}`);
+      // Generate new session token for each new search
+      const currentSessionToken = sessionToken || generateSessionToken();
+      if (!sessionToken) {
+        setSessionToken(currentSessionToken);
       }
-
-      let data = await response.json();
-      let features = data.features || [];
       
-      // Filter to ONLY Kenyan results (double-check)
-      features = features.filter((feature: any) => {
-        const isKenya = feature.context?.some((ctx: any) => 
-          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
-        );
-        return isKenya;
+      // Use Search Box API suggest endpoint
+      // Note: Search Box API has a maximum limit of 10
+      const suggestions = await locationService.searchLocationsSuggest(searchQuery, currentSessionToken, {
+        country: 'ke',
+        proximity: '36.8219,-1.2921', // Nairobi coordinates
+        limit: 10
       });
       
-      console.log('Search results:', features.length, 'results');
+      // Filter to ONLY Kenyan results
+      const kenyanSuggestions = suggestions.filter((suggestion: any) => {
+        // Check if suggestion has country code
+        // Search Box API returns country_code directly on the suggestion object
+        const countryCode = suggestion.country_code || suggestion.country;
+        
+        // Also check context if it's an array
+        let contextCountryCode = null;
+        if (Array.isArray(suggestion.context)) {
+          const countryContext = suggestion.context.find((ctx: any) => 
+            ctx.country_code || ctx.type === 'country'
+          );
+          contextCountryCode = countryContext?.country_code || countryContext?.country;
+        } else if (suggestion.context && typeof suggestion.context === 'object') {
+          // Context might be an object with country information
+          contextCountryCode = suggestion.context.country_code || suggestion.context.country;
+        }
+        
+        const finalCountryCode = countryCode || contextCountryCode;
+        return finalCountryCode === 'KE' || finalCountryCode === 'ke';
+      });
       
-      if (features.length === 0) {
+      if (kenyanSuggestions.length === 0) {
         toast.error('No locations found in Kenya. Try a different search term.');
         setSearchResults([]);
         return;
       }
       
-      // Sort by type priority: address > poi > locality > neighborhood > place, then by relevance score
-      const sortedFeatures = features.sort((a: any, b: any) => {
-        // First sort by type priority: address > poi > locality > neighborhood > place
-        const typePriority: Record<string, number> = {
-          'address': 1,
-          'poi': 2,
-          'locality': 3,
-          'neighborhood': 4,
-          'place': 5,
-        };
-        
-        const aTypes = a.place_type || [];
-        const bTypes = b.place_type || [];
+      // Sort by type priority and distance
+      const typePriority: Record<string, number> = {
+        'address': 1,
+        'poi': 2,
+        'locality': 3,
+        'neighborhood': 4,
+        'place': 5,
+      };
+      
+      const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
+        const aTypes = a.feature_type || [];
+        const bTypes = b.feature_type || [];
         
         const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
         const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
@@ -145,36 +149,46 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           return aPriority - bPriority;
         }
         
-        // If same type, sort by relevance score (higher is better)
-        const aScore = a.properties?.relevance || 0;
-        const bScore = b.properties?.relevance || 0;
-        return bScore - aScore;
+        // Sort by distance if available (lower is better)
+        const aDistance = a.distance || Infinity;
+        const bDistance = b.distance || Infinity;
+        return aDistance - bDistance;
       });
       
-      setSearchResults(sortedFeatures);
+      setSearchResults(sortedSuggestions);
 
-      // Auto-select first result and center map
-      if (sortedFeatures.length > 0) {
-        const firstResult = sortedFeatures[0];
-        const [lng, lat] = firstResult.center;
-        setViewState({
-          longitude: lng,
-          latitude: lat,
-          zoom: 14,
-        });
-        // Auto-select first result
-        setSelectedLocation({
-          latitude: lat,
-          longitude: lng,
-          address: firstResult.place_name,
-        });
-        const kenyanCount = sortedFeatures.filter((f: any) => 
-          f.context?.some((ctx: any) => ctx.id?.startsWith('country') && ctx.short_code === 'ke')
-        ).length;
-        if (kenyanCount > 0) {
-          toast.success(`Found ${sortedFeatures.length} location(s)${kenyanCount < sortedFeatures.length ? ` (${kenyanCount} in Kenya)` : ' in Kenya'}`);
-        } else {
-          toast.success(`Found ${sortedFeatures.length} location(s)`);
+      // Auto-select first result and retrieve full details
+      if (sortedSuggestions.length > 0) {
+        const firstSuggestion = sortedSuggestions[0];
+        
+        // Retrieve full details for auto-selection
+        const feature = await locationService.retrieveLocationDetails(
+          firstSuggestion.mapbox_id,
+          currentSessionToken
+        );
+        
+        if (feature) {
+          const [lng, lat] = feature.geometry?.coordinates || [];
+          if (lat && lng) {
+            setViewState({
+              longitude: lng,
+              latitude: lat,
+              zoom: 14,
+            });
+            
+            const address = feature.properties?.full_address || 
+                           feature.properties?.name || 
+                           firstSuggestion.name || 
+                           '';
+            
+            setSelectedLocation({
+              latitude: lat,
+              longitude: lng,
+              address: address,
+            });
+            
+            toast.success(`Found ${sortedSuggestions.length} location(s) in Kenya`);
+          }
         }
       }
     } catch (error) {
@@ -184,7 +198,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, sessionToken]);
 
   // Handle map click
   const handleMapClick = useCallback(async (event: any) => {
@@ -334,33 +348,68 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           {/* Search Results */}
           {searchResults.length > 0 && (
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {searchResults.map((result, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const [lng, lat] = result.center;
-                    setViewState({
-                      longitude: lng,
-                      latitude: lat,
-                      zoom: 14,
-                    });
-                    setSelectedLocation({
-                      latitude: lat,
-                      longitude: lng,
-                      address: result.place_name,
-                    });
-                    setSearchQuery(result.place_name);
-                    setSearchResults([]);
-                    toast.success(`Selected: ${result.place_name}`);
-                  }}
-                  className="w-full text-left p-2 rounded bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/80 text-white text-sm transition-colors"
-                >
-                  {result.place_name}
-                </button>
-              ))}
+              {searchResults.map((suggestion, index) => {
+                const displayName = suggestion.name || suggestion.full_address || 'Unknown location';
+                
+                return (
+                  <button
+                    key={suggestion.mapbox_id || index}
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      try {
+                        const currentSessionToken = sessionToken || generateSessionToken();
+                        if (!sessionToken) {
+                          setSessionToken(currentSessionToken);
+                        }
+                        
+                        // Retrieve full details for the selected suggestion
+                        const feature = await locationService.retrieveLocationDetails(
+                          suggestion.mapbox_id,
+                          currentSessionToken
+                        );
+                        
+                        if (feature) {
+                          const [lng, lat] = feature.geometry?.coordinates || [];
+                          if (lat && lng) {
+                            setViewState({
+                              longitude: lng,
+                              latitude: lat,
+                              zoom: 14,
+                            });
+                            
+                            const address = feature.properties?.full_address || 
+                                           feature.properties?.name || 
+                                           suggestion.name || 
+                                           '';
+                            
+                            setSelectedLocation({
+                              latitude: lat,
+                              longitude: lng,
+                              address: address,
+                            });
+                            setSearchQuery(address);
+                            setSearchResults([]);
+                            toast.success(`Selected: ${address}`);
+                          } else {
+                            toast.error('Invalid location coordinates');
+                          }
+                        } else {
+                          toast.error('Failed to retrieve location details');
+                        }
+                      } catch (error) {
+                        console.error('Error retrieving location:', error);
+                        toast.error('Failed to retrieve location details');
+                      }
+                    }}
+                    className="w-full text-left p-2 rounded bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/80 text-white text-sm transition-colors"
+                  >
+                    {displayName}
+                  </button>
+                );
+              })}
             </div>
           )}
 

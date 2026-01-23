@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { locationService } from '@/lib/location-service';
+import { locationService, generateSessionToken } from '@/lib/location-service';
 
 interface Category {
   id: number;
@@ -69,6 +69,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [showLocationResults, setShowLocationResults] = useState(false);
   const locationSearchRef = useRef<HTMLDivElement>(null);
+  const [sessionToken, setSessionToken] = useState<string>(generateSessionToken());
   
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
@@ -84,7 +85,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Search locations using Mapbox with POI, Address, and Place types - Kenya only
+  // Search locations using Mapbox Search Box API - Kenya only
   const searchLocations = useCallback(async (query: string) => {
     if (!query.trim()) {
       setLocationSearchResults([]);
@@ -93,91 +94,68 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     
     setIsSearchingLocation(true);
     try {
-      const MAPBOX_TOKEN = locationService.getMapboxToken();
-      // Include types: address (street addresses), poi (points of interest/landmarks), 
-      // place (cities/towns), locality (neighborhoods/areas like Woodley, Karen), and neighborhood
-      // Note: 'establishment' is not a valid type in Geocoding API
-      const types = 'address,poi,place,locality,neighborhood';
-      
-      // Nairobi coordinates for proximity bias (center of Kenya)
-      const proximity = '36.8219,-1.2921'; // Nairobi coordinates
-      
-      // Try multiple search variations to improve results
-      const searchQueries = [
-        query, // Original query
-        query.replace(/\b(road|rd|street|st|avenue|ave|drive|dr|way|boulevard|blvd)\b/gi, '').trim(), // Without road suffix
-      ].filter(q => q.trim() && q !== query); // Remove duplicates and empty
-      
-      const allFeatures: any[] = [];
-      const seenIds = new Set<string>();
-      
-      // Search with original query first
-      let response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=15`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        const features = data.features || [];
-        
-        // Add unique features
-        features.forEach((feature: any) => {
-          if (!seenIds.has(feature.id)) {
-            seenIds.add(feature.id);
-            allFeatures.push(feature);
-          }
-        });
+      // Generate new session token for each new search
+      const currentSessionToken = sessionToken || generateSessionToken();
+      if (!sessionToken) {
+        setSessionToken(currentSessionToken);
       }
       
-      // Try alternative queries if we have few results
-      if (allFeatures.length < 5 && searchQueries.length > 0) {
-        for (const altQuery of searchQueries.slice(0, 2)) { // Limit to 2 additional queries
-          const altResponse = await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(altQuery)}.json?access_token=${MAPBOX_TOKEN}&country=ke&types=${types}&proximity=${proximity}&limit=10`
-          );
-          
-          if (altResponse.ok) {
-            const altData = await altResponse.json();
-            const altFeatures = altData.features || [];
-            
-            altFeatures.forEach((feature: any) => {
-              if (!seenIds.has(feature.id)) {
-                seenIds.add(feature.id);
-                allFeatures.push(feature);
-              }
-            });
-          }
-        }
-      }
-      
-      // Filter to ONLY Kenyan results (double-check)
-      let features = allFeatures.filter((feature: any) => {
-        const isKenya = feature.context?.some((ctx: any) => 
-          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
-        );
-        return isKenya;
+      // Use Search Box API suggest endpoint
+      // Note: Search Box API has a maximum limit of 10
+      const suggestions = await locationService.searchLocationsSuggest(query, currentSessionToken, {
+        country: 'ke',
+        proximity: '36.8219,-1.2921', // Nairobi coordinates
+        limit: 10
       });
       
-      if (features.length === 0) {
+      if (suggestions.length === 0) {
         toast.error('No locations found in Kenya. Try a different search term.');
         setLocationSearchResults([]);
         setShowLocationResults(false);
         return;
       }
       
-      // Sort by type priority: address > poi > locality > neighborhood > place, then by relevance score
-      const sortedFeatures = features.sort((a: any, b: any) => {
-        // First sort by type priority: address > poi > locality > neighborhood > place
-        const typePriority: Record<string, number> = {
-          'address': 1,
-          'poi': 2,
-          'locality': 3,
-          'neighborhood': 4,
-          'place': 5,
-        };
+      // Filter to ONLY Kenyan results
+      const kenyanSuggestions = suggestions.filter((suggestion: any) => {
+        // Check if suggestion has country code
+        // Search Box API returns country_code directly on the suggestion object
+        const countryCode = suggestion.country_code || suggestion.country;
         
-        const aTypes = a.place_type || [];
-        const bTypes = b.place_type || [];
+        // Also check context if it's an array
+        let contextCountryCode = null;
+        if (Array.isArray(suggestion.context)) {
+          const countryContext = suggestion.context.find((ctx: any) => 
+            ctx.country_code || ctx.type === 'country'
+          );
+          contextCountryCode = countryContext?.country_code || countryContext?.country;
+        } else if (suggestion.context && typeof suggestion.context === 'object') {
+          // Context might be an object with country information
+          contextCountryCode = suggestion.context.country_code || suggestion.context.country;
+        }
+        
+        const finalCountryCode = countryCode || contextCountryCode;
+        return finalCountryCode === 'KE' || finalCountryCode === 'ke';
+      });
+      
+      if (kenyanSuggestions.length === 0) {
+        toast.error('No locations found in Kenya. Try a different search term.');
+        setLocationSearchResults([]);
+        setShowLocationResults(false);
+        return;
+      }
+      
+      // Sort by type priority and relevance
+      const typePriority: Record<string, number> = {
+        'address': 1,
+        'poi': 2,
+        'locality': 3,
+        'neighborhood': 4,
+        'place': 5,
+      };
+      
+      const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
+        const aTypes = a.feature_type || [];
+        const bTypes = b.feature_type || [];
         
         const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
         const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
@@ -186,13 +164,13 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           return aPriority - bPriority;
         }
         
-        // If same type, sort by relevance score (higher is better)
-        const aScore = a.properties?.relevance || 0;
-        const bScore = b.properties?.relevance || 0;
-        return bScore - aScore;
+        // Sort by distance score if available (lower is better)
+        const aDistance = a.distance || Infinity;
+        const bDistance = b.distance || Infinity;
+        return aDistance - bDistance;
       });
       
-      setLocationSearchResults(sortedFeatures);
+      setLocationSearchResults(sortedSuggestions);
       setShowLocationResults(true);
     } catch (error) {
       console.error('Location search error:', error);
@@ -214,7 +192,10 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (locationSearchQuery.trim()) {
-        searchLocations(locationSearchQuery);
+        // Generate new session token for each search session and pass it directly
+        const newSessionToken = generateSessionToken();
+        setSessionToken(newSessionToken);
+        searchLocations(locationSearchQuery, newSessionToken);
       } else {
         setLocationSearchResults([]);
         setShowLocationResults(false);
@@ -224,21 +205,51 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     return () => clearTimeout(timeoutId);
   }, [locationSearchQuery, searchLocations]);
   
-  // Handle location selection
-  const handleLocationSelect = useCallback((feature: any) => {
-    const [lng, lat] = feature.center;
-    const address = feature.place_name || feature.text || '';
-    
-    setFormData(prev => ({
-      ...prev,
-      location: address,
-      latitude: lat,
-      longitude: lng,
-    }));
-    setLocationSearchQuery(address);
-    setShowLocationResults(false);
-    toast.success(`Location set: ${address}`);
-  }, []);
+  // Handle location selection - retrieve full details from Search Box API
+  const handleLocationSelect = useCallback(async (suggestion: any) => {
+    try {
+      const currentSessionToken = sessionToken || generateSessionToken();
+      if (!sessionToken) {
+        setSessionToken(currentSessionToken);
+      }
+      
+      // Retrieve full details for the selected suggestion
+      const feature = await locationService.retrieveLocationDetails(
+        suggestion.mapbox_id,
+        currentSessionToken
+      );
+      
+      if (!feature) {
+        toast.error('Failed to retrieve location details. Please try again.');
+        return;
+      }
+      
+      // Extract coordinates and address from retrieved feature
+      const [lng, lat] = feature.geometry?.coordinates || [];
+      const address = feature.properties?.full_address || 
+                     feature.properties?.name || 
+                     suggestion.name || 
+                     '';
+      
+      if (!lat || !lng) {
+        toast.error('Invalid location coordinates. Please try another location.');
+        return;
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        location: address,
+        latitude: lat,
+        longitude: lng,
+      }));
+      setLocationSearchQuery(address);
+      setShowLocationResults(false);
+      toast.success(`Location set: ${address}`);
+    } catch (error) {
+      console.error('Error retrieving location details:', error);
+      toast.error('Failed to retrieve location details. Please try again.');
+    }
+  }, [sessionToken]);
 
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
@@ -664,26 +675,26 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 {selectedCategoryNames.length > 0 ? (
                   <div className="space-y-2 mb-2">
                     <div className="flex flex-wrap gap-2">
-                      {selectedCategoryNames.map((name, idx) => {
-                        const categoryId = formData.category_ids[idx];
+                    {selectedCategoryNames.map((name, idx) => {
+                      const categoryId = formData.category_ids[idx];
                         const isPrimary = idx === 0;
-                        return (
+                      return (
                           <Badge 
                             key={categoryId} 
                             variant={isPrimary ? "default" : "secondary"} 
                             className="flex items-center gap-1"
                           >
                             {isPrimary && <span className="text-xs">⭐</span>}
-                            {name}
+                          {name}
                             {isPrimary && <span className="text-xs opacity-70">(Primary)</span>}
-                            <button
-                              type="button"
-                              onClick={() => toggleCategory(categoryId)}
-                              className="ml-1 hover:text-destructive"
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(categoryId)}
+                            className="ml-1 hover:text-destructive"
                               title="Remove category"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                             {!isPrimary && (
                               <button
                                 type="button"
@@ -694,9 +705,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                                 <span className="text-xs">⭐</span>
                               </button>
                             )}
-                          </Badge>
-                        );
-                      })}
+                        </Badge>
+                      );
+                    })}
                     </div>
                     {selectedCategoryNames.length > 1 && (
                       <p className="text-xs text-muted-foreground">
@@ -810,7 +821,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                                   <Badge variant="secondary" className="text-xs flex-shrink-0">
                                     {typeLabel}
                                   </Badge>
-                                </div>
+              </div>
                                 {result.context && (
                                   <p className="text-xs text-muted-foreground mt-0.5">
                                     {result.context
