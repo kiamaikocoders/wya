@@ -189,11 +189,20 @@ serve(async (req) => {
           }
         }
 
-        // Mark action as completed
-        await supabase.rpc("update_ghost_action_status", {
-          p_queue_id: action.id,
-          p_status: "completed",
-        });
+        // Mark action as completed only if at least one action succeeded
+        // If all actions failed, mark as failed instead
+        if (successCount > 0) {
+          await supabase.rpc("update_ghost_action_status", {
+            p_queue_id: action.id,
+            p_status: "completed",
+          });
+        } else {
+          await supabase.rpc("update_ghost_action_status", {
+            p_queue_id: action.id,
+            p_status: "failed",
+            p_error_message: `All ${errorCount} attempts failed`,
+          });
+        }
 
         processed++;
       } catch (error: any) {
