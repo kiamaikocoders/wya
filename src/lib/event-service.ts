@@ -27,6 +27,7 @@ export interface Event {
   latitude?: number;
   longitude?: number;
   performing_artists?: string[]; // Array of performing artist names
+  ticket_link?: string | null; // External URL for ticket purchase (admin create event)
 }
 
 export interface CreateEventPayload {
@@ -305,7 +306,7 @@ export const eventService = {
       const { data, error } = await supabase
         .from('events')
         .select(
-          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists'
+          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
         )
         .eq('id', id)
         .single();
