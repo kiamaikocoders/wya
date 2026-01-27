@@ -303,18 +303,17 @@ const EventDetails: React.FC = () => {
                 
                 <Separator />
                 
-                {isAuthenticated ? (
-                  <Button 
+                {event.ticket_link ? (
+                  <Button
                     className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
-                    onClick={() => {
-                      if (event.ticket_link) {
-                        window.open(event.ticket_link, '_blank', 'noopener,noreferrer');
-                      } else {
-                        // Fallback to ticket purchase modal if no external link
-                        // You can add your ticket purchase modal logic here
-                        toast.info('Ticket purchase coming soon');
-                      }
-                    }}
+                    onClick={() => window.open(event.ticket_link!, '_blank', 'noopener,noreferrer')}
+                  >
+                    Get Tickets
+                  </Button>
+                ) : isAuthenticated ? (
+                  <Button
+                    className="w-full bg-gradient-accent hover:bg-gradient-accent/90"
+                    onClick={() => toast.info('Ticket purchase coming soon')}
                   >
                     Get Tickets
                   </Button>
