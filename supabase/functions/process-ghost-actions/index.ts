@@ -127,8 +127,13 @@ serve(async (req) => {
         const minDelay = personaGroup?.min_delay_seconds || 2;
         const maxDelay = personaGroup?.max_delay_seconds || 60;
 
-        // Filter users based on engagement rate
-        const numParticipants = Math.floor(ghostUserIds.length * engagementRate);
+        // Filter users based on engagement rate; ensure at least 1 participant when we have users
+        // (otherwise Math.floor(1 * 0.85) = 0 → "All 0 attempts failed")
+        const rawCount = Math.floor(ghostUserIds.length * engagementRate);
+        const numParticipants = Math.min(
+          ghostUserIds.length,
+          Math.max(1, rawCount)
+        );
         const shuffled = [...ghostUserIds].sort(() => Math.random() - 0.5);
         const participants = shuffled.slice(0, numParticipants);
 
