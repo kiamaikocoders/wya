@@ -162,9 +162,29 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }, 300);
   };
 
-  const toggleMute = (e: React.MouseEvent) => {
+  const toggleMute = (e?: React.MouseEvent | React.TouchEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (videoRef.current && isVideo) {
+      videoRef.current.muted = nextMuted;
+      if (!nextMuted) {
+        // Unmuting: browsers require play() in same user gesture for audio to work
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  };
+
+  const handleMuteTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    setIsMuted(!isMuted);
+  };
+
+  const handleMuteTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleMute(e);
   };
 
   const displayName = (() => {
@@ -340,13 +360,17 @@ const ContentCard: React.FC<ContentCardProps> = ({
               </AvatarFallback>
             </Avatar>
 
-            {/* Mute/Unmute button (only for videos) - smaller */}
+            {/* Mute/Unmute button (only for videos) - smaller; touch handlers prevent scroll-to-next */}
             {isVideo && (
-              <div className="flex flex-col items-center gap-0.5">
+              <div
+                className="flex flex-col items-center gap-0.5 touch-none"
+                onTouchStart={handleMuteTouchStart}
+                onTouchEnd={handleMuteTouchEnd}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={toggleMute}
+                  onClick={(e) => toggleMute(e)}
                   className={cn(
                     'h-10 w-10 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60',
                     'border border-white/20 shadow-lg transition-all'

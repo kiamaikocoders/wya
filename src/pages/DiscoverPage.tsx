@@ -10,37 +10,22 @@ const DiscoverPage = () => {
   const { id } = useParams<{ id?: string }>();
   const { setUiVisible } = useDiscoverUI();
 
-  // Ensure page scrolls to top on mount and after content loads
+  // Scroll to top only on mount or when navigating to a specific content id (e.g. /discover/123)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    
-    // Set scroll to top immediately
+
     const scrollToTop = () => {
-      if (container) {
-        container.scrollTop = 0;
-      }
+      if (container) container.scrollTop = 0;
     };
-    
+
     scrollToTop();
-    
-    // Also set after delays to ensure content has rendered
-    const timeout1 = setTimeout(scrollToTop, 100);
-    const timeout2 = setTimeout(scrollToTop, 500);
-    const timeout3 = setTimeout(scrollToTop, 1000);
-    
-    // Also listen for content changes
-    const observer = new MutationObserver(() => {
-      scrollToTop();
-    });
-    
-    observer.observe(container, { childList: true, subtree: true });
-    
+    const t1 = setTimeout(scrollToTop, 100);
+    const t2 = setTimeout(scrollToTop, 500);
+
     return () => {
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      clearTimeout(timeout3);
-      observer.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [id]);
 
