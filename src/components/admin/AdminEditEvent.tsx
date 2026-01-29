@@ -349,11 +349,6 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       toast.error('Please set an event date');
       return;
     }
-    
-    if (!formData.location) {
-      toast.error('Please select a location');
-      return;
-    }
 
     setIsSubmitting(true);
     
@@ -478,7 +473,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="location">Location</Label>
                 <Select 
                   value={formData.location} 
                   onValueChange={(value) => handleSelectChange('location', value)}

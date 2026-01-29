@@ -490,10 +490,6 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please select at least one category');
           return false;
         }
-        if (!formData.location || formData.latitude === null || formData.longitude === null) {
-          toast.error('Please select a location with coordinates');
-          return false;
-        }
         if (!formData.date) {
           toast.error('Please set an event date');
           return false;
@@ -764,7 +760,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="location">Location</Label>
                 <div className="relative" ref={locationSearchRef}>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -869,7 +865,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Search for any location worldwide. The location will be pinned on the map.
+                  Optional. Search for any location worldwide. The location will be pinned on the map if provided.
                 </p>
               </div>
             </div>

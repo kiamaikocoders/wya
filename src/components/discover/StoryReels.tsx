@@ -57,13 +57,18 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
     }
   };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    videoRefs.current.forEach(video => {
-      if (video) {
-        video.muted = !isMuted;
+  const toggleMute = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    const video = videoRefs.current[currentIndex];
+    if (video) {
+      video.muted = nextMuted;
+      if (!nextMuted) {
+        // Unmuting: browsers require play() in same user gesture for audio to work
+        video.play().catch(() => {});
       }
-    });
+    }
   };
 
   const handleVideoEnd = () => {
@@ -94,6 +99,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
                     className="w-full h-full object-cover"
                     muted={isMuted}
                     loop={false}
+                    playsInline
                     onEnded={handleVideoEnd}
                     onClick={togglePlayPause}
                   />
@@ -113,10 +119,16 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
               )}
             </div>
 
-            {/* Overlay Content */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
-              {/* User Info */}
-              <div className="absolute top-8 left-4 right-4 flex items-center justify-between">
+            {/* Nav layer: left/right tap = prev/next. Behind overlay so overlay controls get first hit. */}
+            <div className="absolute inset-0 flex z-0">
+              <div className="w-1/2 h-full cursor-pointer" onClick={prevStory} aria-label="Previous story" />
+              <div className="w-1/2 h-full cursor-pointer" onClick={nextStory} aria-label="Next story" />
+            </div>
+
+            {/* Overlay on top (z-10). pointer-events-none so left/right tap passes to nav; controls get pointer-events-auto. */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none">
+              {/* User Info + controls (mute, play, close) - must receive clicks */}
+              <div className="absolute top-8 left-4 right-4 flex items-center justify-between pointer-events-auto">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 rounded-full flex items-center justify-center">
                     {currentStory.user_image ? (
@@ -151,14 +163,20 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
                       >
                         {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleMute}
-                        className="text-white hover:bg-white/20"
+                      <div
+                        className="touch-none"
+                        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); toggleMute(e); }}
                       >
-                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => toggleMute(e)}
+                          className="text-white hover:bg-white/20"
+                        >
+                          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                        </Button>
+                      </div>
                     </>
                   )}
                   
@@ -177,14 +195,14 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
               </div>
 
               {/* Story Content */}
-              <div className="absolute bottom-20 left-4 right-4">
+              <div className="absolute bottom-20 left-4 right-4 pointer-events-auto">
                 <p className="text-white text-lg mb-4 leading-relaxed">
                   {currentStory.content}
                 </p>
               </div>
 
               {/* Action Buttons */}
-              <div className="absolute bottom-8 right-4 flex flex-col gap-4">
+              <div className="absolute bottom-8 right-4 flex flex-col gap-4 pointer-events-auto">
                 <div className="flex flex-col items-center gap-1">
                   <Button
                     variant="ghost"
@@ -219,20 +237,6 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
             </div>
           </>
         )}
-      </div>
-
-      {/* Navigation Areas */}
-      <div className="absolute inset-0 flex">
-        {/* Left side - Previous */}
-        <div
-          className="w-1/2 h-full cursor-pointer"
-          onClick={prevStory}
-        />
-        {/* Right side - Next */}
-        <div
-          className="w-1/2 h-full cursor-pointer"
-          onClick={nextStory}
-        />
       </div>
 
       {/* Progress Indicators */}
