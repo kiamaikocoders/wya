@@ -1,13 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserPlus, UserMinus, MessageCircle } from 'lucide-react';
+import { UserPlus, Check, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { followService } from '@/lib/follow';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface UserCardProps {
   id: string;
@@ -30,12 +29,11 @@ const UserCard: React.FC<UserCardProps> = ({
   isFollowing,
   onFollow,
   onUnfollow,
-  onMessage
+  onMessage,
 }) => {
   const navigate = useNavigate();
   const { user: currentUser, isAuthenticated } = useAuth();
   const [canMessage, setCanMessage] = useState(false);
-  const [isCheckingPermissions, setIsCheckingPermissions] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
 
   useEffect(() => {
@@ -44,154 +42,134 @@ const UserCard: React.FC<UserCardProps> = ({
         setCanMessage(false);
         return;
       }
-      
-      setIsCheckingPermissions(true);
       try {
         const canMsg = await followService.canMessage(id);
         setCanMessage(canMsg);
-      } catch (error) {
-        console.error('Error checking messaging permissions:', error);
+      } catch {
         setCanMessage(false);
-      } finally {
-        setIsCheckingPermissions(false);
       }
     };
-
     checkMessagingPermissions();
   }, [id, isAuthenticated, currentUser, isFollowing]);
 
-  const handleMessage = () => {
+  const handleMessage = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAuthenticated) {
       toast.error('You must be logged in to send messages');
       navigate('/login');
       return;
     }
-
     if (!canMessage) {
       toast.error('You can only message users you follow and who follow you back');
       return;
     }
-
-    // Navigate directly to chat with this specific user
     navigate(`/chat/${id}`);
   };
 
-  const handleFollow = async () => {
+  const handleFollowClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isAuthenticated) {
       toast.error('You must be logged in to follow users');
       navigate('/login');
       return;
     }
-    
     setIsFollowLoading(true);
-    try {
-      await followService.followUser(id);
-      onFollow();
-    } catch (error) {
-      console.error('Error following user:', error);
-    } finally {
-      setIsFollowLoading(false);
+    if (isFollowing) {
+      followService.unfollowUser(id).then(() => {
+        onUnfollow();
+        setIsFollowLoading(false);
+      }).catch(() => setIsFollowLoading(false));
+    } else {
+      followService.followUser(id).then(() => {
+        onFollow();
+        setIsFollowLoading(false);
+      }).catch(() => setIsFollowLoading(false));
     }
   };
 
-  const handleUnfollow = async () => {
-    if (!isAuthenticated) {
-      toast.error('You must be logged in to unfollow users');
-      return;
-    }
-    
-    setIsFollowLoading(true);
-    try {
-      await followService.unfollowUser(id);
-      onUnfollow();
-    } catch (error) {
-      console.error('Error unfollowing user:', error);
-    } finally {
-      setIsFollowLoading(false);
-    }
+  const goToProfile = () => {
+    navigate(`/users/${username || id}`);
   };
 
   return (
-    <Card
-      className="w-full hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={() => navigate(`/users/${username || id}`)}
+    <div
       role="button"
       tabIndex={0}
+      onClick={goToProfile}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          navigate(`/users/${username || id}`);
+          goToProfile();
         }
       }}
+      className={cn(
+        'w-full rounded-3xl p-6 text-left transition-all',
+        'bg-white/5 dark:bg-white/5 backdrop-blur-xl border border-white/10 dark:border-white/10',
+        'shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]',
+        'hover:bg-white/[0.07] dark:hover:bg-white/[0.07] cursor-pointer active:scale-[0.99]'
+      )}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <Avatar className="w-12 h-12">
-            <AvatarImage src={avatar} alt={name} />
-            <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+      <div className="flex items-start gap-4">
+        <div className="relative shrink-0">
+          <Avatar className="h-20 w-20 rounded-2xl ring-4 ring-white/5">
+            <AvatarImage src={avatar} alt={name} className="object-cover" />
+            <AvatarFallback className="rounded-2xl bg-gradient-to-br from-primary/80 to-orange-500 text-lg font-bold text-white">
+              {name.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg truncate">{name}</h3>
-            {bio && (
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {bio}
-              </p>
-            )}
-            
-            <div className="flex items-center space-x-2 mt-4">
-              {isAuthenticated && currentUser?.id !== id && (
-                <>
-                  {isFollowing ? (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUnfollow();
-                      }}
-                      disabled={isFollowLoading}
-                      className="flex items-center gap-2"
-                    >
-                      <UserMinus className="w-4 h-4" />
-                      {isFollowLoading ? 'Unfollowing...' : 'Unfollow'}
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleFollow();
-                      }}
-                      disabled={isFollowLoading}
-                      className="flex items-center gap-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      {isFollowLoading ? 'Following...' : 'Follow'}
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMessage();
-                    }}
-                    disabled={isCheckingPermissions || !canMessage}
-                    className="flex items-center gap-2"
-                    title={!canMessage ? "You can only message users you follow and who follow you back" : "Send message"}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Message
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-bold text-foreground truncate">{name}</h3>
+          {username && (
+            <p className="text-xs text-muted-foreground truncate mt-0.5">@{username}</p>
+          )}
+          {bio && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+              {bio}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {isAuthenticated && currentUser?.id !== id && (
+        <div className="mt-6 flex gap-3">
+          <Button
+            size="sm"
+            onClick={handleFollowClick}
+            disabled={isFollowLoading}
+            className={cn(
+              'flex-1 py-3 h-auto rounded-2xl font-bold text-sm flex items-center justify-center gap-2',
+              'shadow-lg active:scale-95 transition-transform',
+              isFollowing
+                ? 'bg-muted text-muted-foreground hover:bg-muted/90 border border-border'
+                : 'bg-gradient-to-r from-primary to-orange-400 text-white shadow-orange-500/20 hover:opacity-90'
+            )}
+          >
+            {isFollowing ? (
+              <>
+                <Check className="h-5 w-5" />
+                {isFollowLoading ? 'Updating...' : 'Following'}
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-5 w-5" />
+                {isFollowLoading ? 'Following...' : 'Follow'}
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleMessage}
+            disabled={!canMessage}
+            className="h-12 w-12 shrink-0 rounded-2xl border-white/10 dark:border-white/10 bg-white/5 hover:bg-white/10"
+            title={!canMessage ? 'Message users you follow who follow you back' : 'Message'}
+          >
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };
 
