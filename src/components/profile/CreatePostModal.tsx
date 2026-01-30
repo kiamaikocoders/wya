@@ -9,12 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload, Image as ImageIcon, Video, MapPin } from 'lucide-react';
+import { X, Upload, Image as ImageIcon, Video, MapPin, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { eventService } from '@/lib/event-service';
 import { storageService } from '@/lib/storage-service';
 import { storyService } from '@/lib/story/story-service';
+import { followService } from '@/lib/follow';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface CreatePostModalProps {
@@ -37,6 +39,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
 
   const [eventSearchQuery, setEventSearchQuery] = useState('');
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [friendSearchQuery, setFriendSearchQuery] = useState('');
 
   const { data: events = [] } = useQuery({
     queryKey: ['events', 'all-including-past'],
@@ -53,6 +57,39 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       sort: 'latest',
       includePast: true, // Allow past events for tagging
     }).then(result => result.events),
+  });
+
+  const { data: followers = [] } = useQuery({
+    queryKey: ['followers', user?.id],
+    queryFn: () => followService.getFollowers(user?.id || ''),
+    enabled: !!user?.id && open,
+  });
+  const { data: following = [] } = useQuery({
+    queryKey: ['following', user?.id],
+    queryFn: () => followService.getFollowing(user?.id || ''),
+    enabled: !!user?.id && open,
+  });
+  const mutualIds = React.useMemo(() => {
+    const set = new Set(followers);
+    return following.filter((id) => set.has(id));
+  }, [followers, following]);
+  const { data: friendProfiles = [] } = useQuery({
+    queryKey: ['profiles', mutualIds],
+    queryFn: async () => {
+      if (mutualIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', mutualIds);
+      if (error) throw error;
+      return (data || []) as { id: string; username: string | null; full_name: string | null; avatar_url: string | null }[];
+    },
+    enabled: mutualIds.length > 0 && open,
+  });
+  const filteredFriends = friendProfiles.filter((p) => {
+    if (!friendSearchQuery.trim()) return true;
+    const q = friendSearchQuery.toLowerCase();
+    return (p.username?.toLowerCase().includes(q) || p.full_name?.toLowerCase().includes(q)) ?? false;
   });
 
   // Helper function to check if event is within the last month
@@ -118,14 +155,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       return;
     }
 
-    // Validate that selected event is within the last month
-    if (selectedEventId) {
-      const selectedEvent = events.find(e => e.id === selectedEventId);
-      if (selectedEvent && !isEventWithinLastMonth(selectedEvent.date)) {
-        toast.error('This event is too old to tag. Only events from the last month can be tagged.');
-        setSelectedEventId(null);
-        return;
-      }
+    if (!selectedEventId) {
+      toast.error('Please select an event. Posts must be tied to an event.');
+      return;
+    }
+
+    const selectedEvent = events.find(e => e.id === selectedEventId);
+    if (selectedEvent && !isEventWithinLastMonth(selectedEvent.date)) {
+      toast.error('This event is too old to tag. Only events from the last month can be tagged.');
+      setSelectedEventId(null);
+      return;
     }
 
     try {
@@ -140,19 +179,28 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
         mediaUrl = uploadResult.publicUrl;
       }
 
-      // Create story/post
+      const taggedHandles =
+        selectedFriendIds.length > 0
+          ? friendProfiles
+              .filter((p) => selectedFriendIds.includes(p.id))
+              .map((p) => `@${p.username || p.full_name || 'user'}`)
+              .join(' ')
+          : '';
+      const finalCaption = [caption.trim(), taggedHandles].filter(Boolean).join(' ');
+
       await storyService.createStory({
-        content: caption || 'Shared a post',
-        caption: caption,
+        content: finalCaption || 'Shared a post',
+        caption: finalCaption,
         media_url: mediaUrl,
         media_type: mediaType,
-        event_id: selectedEventId || undefined,
+        event_id: selectedEventId,
       });
 
       toast.success('Post created successfully!');
       setCaption('');
       setSelectedFile(null);
       setSelectedEventId(null);
+      setSelectedFriendIds([]);
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
@@ -243,9 +291,76 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
             />
           </div>
 
-          {/* Event Tagging */}
+          {/* Tag Friends */}
           <div>
-            <Label>Tag Event (Optional)</Label>
+            <Label className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-gradient-orange-accent" aria-hidden />
+              Tag friends (Optional)
+            </Label>
+            <div className="mt-2 space-y-2">
+              {selectedFriendIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedFriendIds.map((id) => {
+                    const p = friendProfiles.find((f) => f.id === id);
+                    return (
+                      <Badge
+                        key={id}
+                        variant="secondary"
+                        className="flex items-center gap-1 bg-white/10 text-white border-white/20"
+                      >
+                        @{p?.username || p?.full_name || 'Friend'}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFriendIds((prev) => prev.filter((x) => x !== id))}
+                          className="rounded-full p-0.5 hover:bg-white/20"
+                          aria-label={`Remove ${p?.username || p?.full_name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              <input
+                type="text"
+                placeholder="Search friends to tag..."
+                value={friendSearchQuery}
+                onChange={(e) => setFriendSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-gradient-orange-accent/50"
+              />
+              <select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (id && !selectedFriendIds.includes(id)) {
+                    setSelectedFriendIds((prev) => [...prev, id]);
+                  }
+                }}
+                className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-white max-h-40 overflow-y-auto"
+              >
+                <option value="">Add a friend...</option>
+                {filteredFriends.map((p) => (
+                  <option key={p.id} value={p.id} disabled={selectedFriendIds.includes(p.id)}>
+                    {p.full_name || p.username || 'User'} {p.username ? `@${p.username}` : ''}
+                  </option>
+                ))}
+              </select>
+              {friendProfiles.length === 0 && user?.id && (
+                <p className="text-sm text-white/50">
+                  Add friends by following each other to tag them in posts.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Event Tagging (required) */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-gradient-orange-accent" aria-hidden />
+              Tag Event <span className="text-white/60 font-normal">(required)</span>
+            </Label>
+            <p className="mt-1 text-xs text-white/50">Posts must be tied to an event.</p>
             <div className="mt-2 space-y-2">
               {selectedEventId ? (
                 <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3">
@@ -312,7 +427,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isUploading || (!caption.trim() && !selectedFile)}
+              disabled={isUploading || (!caption.trim() && !selectedFile) || !selectedEventId}
               className="bg-gradient-to-r bg-gradient-accent text-black hover:opacity-90"
             >
               {isUploading ? 'Posting...' : 'Post'}
