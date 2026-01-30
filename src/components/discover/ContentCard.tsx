@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Heart, Share2, MapPin, Calendar, ChevronDown, ChevronUp, Volume2, VolumeX } from 'lucide-react';
@@ -77,19 +77,34 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const tapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // When card is not active: pause video and mute so sound doesn't play over other posts
-  useEffect(() => {
-    if (!videoRef.current || !isVideo) return;
-    if (!isActive) {
+  // Pause video immediately (synchronously before paint) when isActive changes
+  const pauseVideo = useCallback(() => {
+    if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.muted = true;
-      setIsMuted(true);
-    } else {
+    }
+  }, []);
+
+  const playVideo = useCallback(() => {
+    if (videoRef.current && isActive) {
       videoRef.current.muted = isMuted;
       videoRef.current.play().catch(() => {});
     }
-  }, [isActive, isVideo, isMuted]);
+  }, [isActive, isMuted]);
+
+  // Use useLayoutEffect for synchronous pause when isActive changes to false
+  // This runs before the browser paints, ensuring immediate pause
+  useLayoutEffect(() => {
+    if (!videoRef.current || !isVideo) return;
+    if (!isActive) {
+      pauseVideo();
+      setIsMuted(true);
+    } else {
+      playVideo();
+    }
+  }, [isActive, isVideo, pauseVideo, playVideo]);
 
   // Sync muted state with video element when user toggles
   useEffect(() => {
@@ -97,6 +112,45 @@ const ContentCard: React.FC<ContentCardProps> = ({
       videoRef.current.muted = isMuted;
     }
   }, [isMuted, isVideo, isActive]);
+
+  // Pause video on any vertical scroll in the discover container
+  // This catches cases where the IntersectionObserver hasn't fired yet
+  useEffect(() => {
+    if (!isVideo) return;
+
+    const discoverContainer = document.querySelector('[data-discover-container]');
+    if (!discoverContainer) return;
+
+    let scrollTimeout: NodeJS.Timeout | null = null;
+
+    const handleScroll = () => {
+      // Immediately pause when scrolling starts
+      if (videoRef.current && !videoRef.current.paused) {
+        pauseVideo();
+      }
+      // Clear any existing timeout
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      // After scroll ends, let the isActive prop determine if we should play
+      scrollTimeout = setTimeout(() => {
+        if (isActive) {
+          playVideo();
+        }
+      }, 150);
+    };
+
+    discoverContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      discoverContainer.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [isVideo, isActive, pauseVideo, playVideo]);
+
+  // Cleanup: pause video on unmount
+  useEffect(() => {
+    return () => {
+      pauseVideo();
+    };
+  }, [pauseVideo]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
