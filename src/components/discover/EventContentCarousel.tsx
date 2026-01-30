@@ -7,6 +7,8 @@ interface EventContentCarouselProps {
   eventTitle?: string;
   eventMetadata?: EventMetadata;
   initialIndex?: number;
+  /** When false, all cards pause and mute so sound doesn't play over other sections */
+  isSectionActive?: boolean;
   onItemChange?: (index: number) => void;
   onItemClick?: (item: DiscoverContent) => void;
   onLike?: (id: string | number) => void;
@@ -21,6 +23,7 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
   eventTitle,
   eventMetadata,
   initialIndex = 0,
+  isSectionActive = true,
   onItemChange,
   onItemClick,
   onLike,
@@ -114,6 +117,7 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
               content={item}
               isHero={true}
               position="center"
+              isActive={isSectionActive && index === currentIndex}
               onClick={() => onItemClick?.(item)}
               onExpand={() => onItemClick?.(item)}
               onLike={onLike}

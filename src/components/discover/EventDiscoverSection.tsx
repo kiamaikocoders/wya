@@ -82,6 +82,7 @@ const EventDiscoverSection: React.FC<EventDiscoverSectionProps> = ({
               totalContent: eventGroup.totalContent,
             }}
             initialIndex={initialContentIndex}
+            isSectionActive={isActive}
             onItemChange={onContentChange}
             onItemClick={handleContentClick}
             onLike={onLike}

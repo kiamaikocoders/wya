@@ -39,6 +39,8 @@ interface ContentCardProps {
   content: DiscoverContent;
   isHero: boolean;
   position: 'left' | 'center' | 'right';
+  /** When false, video is paused and muted so sound doesn't play over other posts */
+  isActive?: boolean;
   onClick?: () => void;
   onExpand?: () => void;
   onLike?: (id: string | number) => void;
@@ -53,6 +55,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   content,
   isHero,
   position,
+  isActive = true,
   onClick,
   onExpand,
   onLike,
@@ -75,12 +78,25 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Sync muted state with video element
+  // When card is not active: pause video and mute so sound doesn't play over other posts
   useEffect(() => {
-    if (videoRef.current && isVideo) {
+    if (!videoRef.current || !isVideo) return;
+    if (!isActive) {
+      videoRef.current.pause();
+      videoRef.current.muted = true;
+      setIsMuted(true);
+    } else {
+      videoRef.current.muted = isMuted;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isActive, isVideo, isMuted]);
+
+  // Sync muted state with video element when user toggles
+  useEffect(() => {
+    if (videoRef.current && isVideo && isActive) {
       videoRef.current.muted = isMuted;
     }
-  }, [isMuted, isVideo]);
+  }, [isMuted, isVideo, isActive]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
