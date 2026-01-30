@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Sparkles, Calendar, Rocket, User } from 'lucide-react';
+import { Home, Sparkles, Calendar, CalendarPlus, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useDiscoverUI } from '@/contexts/DiscoverUIContext';
@@ -26,7 +26,7 @@ const BottomNav = () => {
     { name: 'Overview', icon: Home, path: homePath },
     { name: 'Discover', icon: Sparkles, path: '/discover' },
     { name: 'Events', icon: Calendar, path: '/events' },
-    { name: 'Request', icon: Rocket, path: '/request-event' },
+    { name: 'Host', icon: CalendarPlus, path: '/request-event' },
     { name: 'Profile', icon: User, path: '/profile' },
   ];
   
@@ -49,49 +49,45 @@ const BottomNav = () => {
         isDiscoverPage && !uiVisible && 'translate-y-full opacity-0' // Hide when UI is hidden
       )}
     >
-      <div className="container mx-auto">
-        {/* Mobile: Horizontal scrollable nav */}
-        <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory md:justify-center md:overflow-x-visible">
-          <div className="flex min-w-full items-center justify-around gap-1 px-2 py-3 md:min-w-0 md:gap-4 md:px-4">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = isLinkActive(item.path);
-                
-          return (
-                  <Link
-              key={item.name}
-                    to={item.path}
+      <div className="mx-auto w-full max-w-full overflow-hidden px-1">
+        <div className="flex items-center justify-between gap-0 py-3 sm:justify-center sm:gap-4 sm:px-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = isLinkActive(item.path);
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  'flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 transition-all duration-200 sm:min-w-[60px] sm:flex-none sm:gap-1 sm:px-3',
+                  'hover:bg-muted active:scale-95',
+                  isActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <div className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
+                  isActive ? 'bg-primary/15 ring-2 ring-primary shadow-md' : ''
+                )}>
+                  <Icon
+                    size={20}
                     className={cn(
-                      'flex min-w-[60px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200',
-                      'hover:bg-muted active:scale-95',
-                      isActive 
-                        ? 'text-primary' 
-                        : 'text-muted-foreground hover:text-foreground'
+                      'transition-all',
+                      isActive && 'scale-110'
                     )}
-                  >
-                    <div className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                      isActive ? 'bg-primary/10' : ''
-                    )}>
-                      <Icon 
-                        size={20} 
-                        className={cn(
-                          'transition-all',
-                          isActive && 'scale-110'
-                        )}
-                        fill={isActive ? 'currentColor' : 'none'}
-                      />
-                    </div>
-                    <span className={cn(
-                      'text-[10px] font-medium leading-tight md:text-xs',
-                      isActive && 'font-semibold'
-                    )}>
-                      {item.name}
-                    </span>
-                  </Link>
-                );
-              })}
-          </div>
+                    fill={isActive ? 'currentColor' : 'none'}
+                  />
+                </div>
+                <span className={cn(
+                  'truncate text-[10px] font-medium leading-tight sm:max-w-none md:text-xs',
+                  isActive && 'font-semibold'
+                )}>
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </nav>
