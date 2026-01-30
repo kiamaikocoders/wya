@@ -23,42 +23,19 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Check for user preference in localStorage first
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    
-    // If there's a saved preference, use it
-    if (savedTheme) {
-      return savedTheme;
-    }
-    
-    // Otherwise, check for system preference
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    
-    // Default to light if nothing else
-    return 'light';
-  });
+  const [theme] = useState<Theme>('dark');
 
   useEffect(() => {
-    // Apply the theme to the document
     const root = window.document.documentElement;
-    
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
+    root.classList.add('dark');
+    root.classList.remove('light');
+  }, []);
 
-    // Save the choice to localStorage
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
+  const setTheme = (_theme: Theme) => {
+    // No-op: app is dark-only for now
+  };
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    // No-op: app is dark-only for now
   };
 
   return (

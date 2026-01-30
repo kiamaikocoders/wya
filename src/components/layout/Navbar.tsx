@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import NotificationBell from '@/components/notifications/NotificationBell';
@@ -116,8 +115,6 @@ const Navbar = () => {
               </div>
             </>
           )}
-
-          <ModeToggle />
 
           {isAuthenticated ? (
             <DropdownMenu>
