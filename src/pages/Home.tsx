@@ -191,7 +191,7 @@ const Home: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-background pb-24">
       {/* Onboarding Reminders */}
       {isAuthenticated && <OnboardingReminders />}
       <section className="relative overflow-hidden">
@@ -199,8 +199,8 @@ const Home: React.FC = () => {
         <div className="absolute inset-0 -z-20 bg-gradient-to-br from-indigo-50 via-purple-50/30 to-violet-50 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950" />
         {/* Subtle glow effect */}
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.12),transparent_45%)] dark:bg-subtle-glow" />
-        <div className="container mx-auto px-4 py-8 sm:py-12 md:py-16 relative z-10">
-          <div className="space-y-8">
+        <div className="container mx-auto min-w-0 max-w-full px-4 py-8 sm:py-12 md:py-16 relative z-10">
+          <div className="space-y-8 min-w-0">
             {/* Mobile AI Feed - Shows FIRST on mobile, hidden on desktop */}
             <div className="block md:hidden">
               <Card className="border-border bg-card p-6 shadow-sm">
@@ -299,92 +299,116 @@ const Home: React.FC = () => {
             </div>
 
             {/* Main Content Grid - Desktop shows 2 columns, mobile stacks */}
-            <div className="grid items-start gap-8 md:gap-10 md:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid min-w-0 items-start gap-8 md:gap-10 md:grid-cols-[1.2fr_0.8fr]">
               {/* Left Column - Main Content */}
-              <div className="space-y-6 md:space-y-8">
-                <div className="space-y-3">
+              <div className="min-w-0 space-y-6 md:space-y-8">
+                <div className="space-y-5 min-w-0">
                   <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800">Curated for you</Badge>
-                  <h1 className="text-3xl font-display font-extrabold leading-tight text-foreground sm:text-4xl md:text-5xl tracking-tight">
+                  <h1 className="break-words text-2xl font-display font-extrabold leading-tight text-foreground sm:text-3xl md:text-4xl lg:text-5xl tracking-tight">
                     Discover what's happening in <span className="text-gradient">Kenya</span> this week.
                   </h1>
-                  <p className="text-base text-muted-foreground sm:text-lg">
+                  <p className="text-base text-muted-foreground sm:text-lg leading-relaxed">
                     We combine cultural insight, real-time data, and AI curation to
                     surface events that feel made for you—whether you're attending,
                     hosting, or scouting partnerships.
                   </p>
                 </div>
             
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <div className="flex-1">
+                <div className="flex flex-col gap-3 min-w-0">
+                  <div className="w-full min-w-0">
                     <SearchBar onSearch={handleSearch} />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => navigate('/events')} size="sm" className="touch-target bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-md shadow-orange-500/20">
-                      Explore Events
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate('/request-event')}
-                      className="touch-target"
-                    >
-                      Launch Request
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate('/onboarding')}
-                      className="touch-target"
-                    >
-                      Personalise Feed
-                    </Button>
-                    <Button 
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate('/ai-assistance')}
-                      className="touch-target"
-                    >
-                      <Brain className="mr-2 h-4 w-4 text-accent" />
-                      <span className="hidden sm:inline">AI Studio</span>
-                      <span className="sm:hidden">AI</span>
-                    </Button>
+                  <div className="relative min-w-0 px-1">
+                    <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-10 bg-gradient-to-l from-background to-transparent" aria-hidden />
+                    <div className="flex gap-2 overflow-x-auto scroll-smooth pb-1 pl-0 pr-6 scrollbar-hide snap-x snap-mandatory [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
+                      <Button onClick={() => navigate('/events')} size="sm" className="touch-target shrink-0 snap-start bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap">
+                        Explore Events
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate('/request-event')}
+                        className="touch-target shrink-0 snap-start whitespace-nowrap"
+                      >
+                        Host an Event
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate('/onboarding')}
+                        className="touch-target shrink-0 snap-start whitespace-nowrap"
+                      >
+                        Personalise Feed
+                      </Button>
+                      <Button 
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/ai-assistance')}
+                        className="touch-target shrink-0 snap-start whitespace-nowrap"
+                      >
+                        <Brain className="mr-2 h-4 w-4 shrink-0 text-accent" />
+                        <span className="hidden sm:inline">AI Studio</span>
+                        <span className="sm:hidden">AI</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="space-y-1">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Happening now</span>
-                      <CardTitle className="text-3xl font-display font-bold">
-                        {events?.length || 0}+
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                      Live events across Nairobi, Mombasa, Kisumu, Eldoret, and
-                      more.
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="space-y-1">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">For creators</span>
-                      <CardTitle className="text-3xl font-display font-bold">350+</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                      Organizers partnering with WYA to fill venues and manage
-                      audiences.
-                    </CardContent>
-                  </Card>
-                  <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-accent/10 to-transparent rounded-bl-full"></div>
-                    <CardHeader className="space-y-1">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Powered by AI</span>
-                      <CardTitle className="text-3xl font-display font-bold text-gradient">Smart</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground leading-relaxed">
-                      Recommendations refresh every morning with cultural cues and
-                      community signals.
-                    </CardContent>
-                  </Card>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/events')}
+                      className="group flex flex-col items-start rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="text-sm font-medium text-muted-foreground">Live now</span>
+                      <span className="text-2xl font-display font-bold text-foreground group-hover:text-primary transition-colors">{events?.length || 0}+</span>
+                      <span className="mt-1 text-xs text-muted-foreground leading-snug">Nairobi, Mombasa, Kisumu & more</span>
+                    </button>
+                    <div className="flex flex-col items-start rounded-xl border border-border bg-card p-4 shadow-sm">
+                      <span className="text-sm font-medium text-muted-foreground">For creators</span>
+                      <span className="text-2xl font-display font-bold text-foreground">350+</span>
+                      <span className="mt-1 text-xs text-muted-foreground leading-snug">Organizers on WYA</span>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="mb-3 flex items-center gap-2">
+                      <Wand2 className="h-4 w-4 text-primary" aria-hidden />
+                      <h2 className="text-sm font-semibold text-foreground">Recommended for you</h2>
+                    </div>
+                    {trendingEvents.length > 0 ? (
+                      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 [scrollbar-width:none]">
+                        {trendingEvents.slice(0, 3).map((event) => (
+                          <button
+                            key={event.id}
+                            type="button"
+                            onClick={() => handleEventClick(String(event.id))}
+                            className="group flex shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/50 text-left transition-all hover:border-primary/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            {event.image_url ? (
+                              <div className="relative h-24 w-28 overflow-hidden sm:h-28 sm:w-32">
+                                <img src={event.image_url} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                                <Badge className="absolute top-1.5 right-1.5 bg-background/90 text-[10px] backdrop-blur-sm border border-border">
+                                  {format(new Date(event.date), 'MMM d')}
+                                </Badge>
+                              </div>
+                            ) : (
+                              <div className="flex h-24 w-28 items-center justify-center bg-muted sm:h-28 sm:w-32">
+                                <Music className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="p-2">
+                              <span className="line-clamp-2 text-xs font-medium text-foreground group-hover:text-primary transition-colors">{event.title}</span>
+                              {event.location && <span className="mt-0.5 block text-[10px] text-muted-foreground truncate">{event.location}</span>}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Recommendations refresh every morning. Check back soon.</p>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -498,39 +522,40 @@ const Home: React.FC = () => {
           </Button>
         }
       >
-        <Card className="border-white/10 bg-white/5">
-          <CardContent className="p-4 sm:p-6">
-            <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
-              <div className="space-y-4 sm:space-y-6">
+        <div className="min-w-0 overflow-hidden rounded-3xl bg-white/5 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.2)] backdrop-blur">
+          <div className="min-w-0 overflow-hidden px-5 py-5 sm:px-6 sm:py-6">
+            <div className="grid min-w-0 gap-6 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="min-w-0 space-y-4 overflow-hidden sm:space-y-5">
                 <div className="flex items-center gap-2 text-sm font-medium text-kenya-orange">
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
                   <span>Smart suggestions</span>
                 </div>
-                <p className="text-base sm:text-lg text-white/85">
+                <p className="max-w-full break-words text-sm leading-relaxed text-white/85 sm:text-base sm:leading-relaxed">
                   "I'm hosting a rooftop mixer for 60 creatives this Friday." WYA
                   responds with optimal time slots, invite lists, sponsor ideas,
                   and curated playlists—all within a few prompts.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="bg-white/10 text-white/70 text-xs">
+                <div className="flex w-full min-w-0 flex-wrap gap-3 pt-1">
+                  <Badge className="min-w-0 max-w-full shrink bg-white/10 px-3 py-1.5 text-white/70 text-xs whitespace-normal break-words">
                     Match sponsors instantly
                   </Badge>
-                  <Badge className="bg-white/10 text-white/70 text-xs">
+                  <Badge className="min-w-0 max-w-full shrink bg-white/10 px-3 py-1.5 text-white/70 text-xs whitespace-normal break-words">
                     Collaborative itinerary builder
                   </Badge>
-                  <Badge className="bg-white/10 text-white/70 text-xs">
+                  <Badge className="min-w-0 max-w-full shrink bg-white/10 px-3 py-1.5 text-white/70 text-xs whitespace-normal break-words">
                     Trend radar alerts
                   </Badge>
                 </div>
               </div>
-              <div className="rounded-2xl sm:rounded-3xl border border-white/10 bg-black/30 p-3 sm:p-4">
+              <div className="min-w-0 rounded-2xl bg-black/20 px-5 py-5 sm:rounded-3xl sm:px-6 sm:py-6">
                 <AIEventRecommendations
+                  embedded
                   onSelectCategory={handleCategorySelect}
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </Section>
       
       <Section 

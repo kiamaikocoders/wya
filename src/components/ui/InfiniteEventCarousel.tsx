@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import EventCard from './EventCard';
 import type { Event } from '@/types/event.types';
 
@@ -7,157 +7,183 @@ interface InfiniteEventCarouselProps {
   emptyMessage?: string;
   className?: string;
   slidesToShow?: number;
-  autoScrollSpeed?: number; // in milliseconds
+  autoScrollSpeed?: number; // milliseconds; 0 = no auto-scroll
 }
 
-const InfiniteEventCarousel: React.FC<InfiniteEventCarouselProps> = ({ 
-  events, 
-  emptyMessage = "No events available.",
-  className = "",
+const CARD_WIDTH_MOBILE = 280; // px; ~85vw on 320px screen
+const CARD_GAP = 12;
+const SCROLL_PADDING = 16; // px-4 on container
+const JUMP_COOLDOWN_MS = 200; // ignore scroll events after a jump to prevent flicker
+
+const InfiniteEventCarousel: React.FC<InfiniteEventCarouselProps> = ({
+  events,
+  emptyMessage = 'No events available.',
+  className = '',
   slidesToShow = 1.2,
-  autoScrollSpeed = 3000
+  autoScrollSpeed = 4200,
 }) => {
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [responsiveSlidesToShow, setResponsiveSlidesToShow] = useState(slidesToShow);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const rafRef = useRef<number | null>(null);
+  const setWidthRef = useRef(0);
+  const itemWidthRef = useRef(CARD_WIDTH_MOBILE);
+  const isJumpingRef = useRef(false);
+  const jumpTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Update slidesToShow based on screen size
-  useEffect(() => {
-    const updateSlidesToShow = () => {
-      if (window.innerWidth < 640) { // sm breakpoint
-        setResponsiveSlidesToShow(1.2);
-      } else if (window.innerWidth < 768) { // md breakpoint
-        setResponsiveSlidesToShow(1.5);
-      } else if (window.innerWidth < 1024) { // lg breakpoint
-        setResponsiveSlidesToShow(2.5);
-      } else {
-        setResponsiveSlidesToShow(3);
-      }
-    };
+  const duplicatedEvents = events.length > 0 ? [...events, ...events, ...events] : [];
 
-    updateSlidesToShow();
-    window.addEventListener('resize', updateSlidesToShow);
-    return () => window.removeEventListener('resize', updateSlidesToShow);
+  const getItemWidth = useCallback(() => {
+    if (typeof window === 'undefined') return CARD_WIDTH_MOBILE;
+    const w = window.innerWidth;
+    if (w < 640) return Math.min(CARD_WIDTH_MOBILE, w * 0.88);
+    if (w < 1024) return Math.min(320, w / 2.2);
+    return Math.min(360, w / 3.2);
   }, []);
 
-  // Duplicate events for infinite scroll
-  const duplicatedEvents = [...events, ...events, ...events];
+  const setupInfiniteScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || events.length === 0) return;
 
-  useEffect(() => {
-    if (events.length === 0) return;
+    const itemWidth = getItemWidth();
+    const setWidth = events.length * (itemWidth + CARD_GAP);
+    setWidthRef.current = setWidth;
+    itemWidthRef.current = itemWidth;
 
-    const startAutoScroll = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    isJumpingRef.current = true;
+    el.scrollLeft = SCROLL_PADDING + setWidth; // start at middle set
+    if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current);
+    jumpTimeoutRef.current = setTimeout(() => {
+      isJumpingRef.current = false;
+      jumpTimeoutRef.current = null;
+    }, JUMP_COOLDOWN_MS);
+  }, [events.length, getItemWidth]);
 
-      intervalRef.current = setInterval(() => {
-        if (!isPaused && scrollRef.current) {
-          setCurrentIndex((prev) => {
-            const nextIndex = prev + 1;
-            const maxIndex = events.length;
-            return nextIndex >= maxIndex ? 0 : nextIndex;
-          });
-        }
-      }, autoScrollSpeed); // Auto-scroll with custom speed
-    };
-
-    startAutoScroll();
-
+  // Set initial scroll position before paint to avoid visible jump
+  useLayoutEffect(() => {
+    setupInfiniteScroll();
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current);
     };
-  }, [events.length, isPaused, autoScrollSpeed]);
+  }, [setupInfiniteScroll]);
+
+  const handleScroll = useCallback(() => {
+    if (isJumpingRef.current) return;
+
+    const el = scrollRef.current;
+    if (!el || events.length === 0) return;
+
+    const setWidth = setWidthRef.current;
+    const { scrollLeft, clientWidth } = el;
+    const start = SCROLL_PADDING;
+    const endOfSecondSet = start + 2 * setWidth - clientWidth;
+    const deadZone = Math.min(80, setWidth * 0.15); // only jump when clearly in first or third set
+
+    // Only one jump per call: check end-of-list first, then start
+    if (scrollLeft >= endOfSecondSet - deadZone) {
+      isJumpingRef.current = true;
+      el.scrollLeft = start + setWidth - clientWidth + (scrollLeft - endOfSecondSet);
+      if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current);
+      jumpTimeoutRef.current = setTimeout(() => {
+        isJumpingRef.current = false;
+        jumpTimeoutRef.current = null;
+      }, JUMP_COOLDOWN_MS);
+      return;
+    }
+    if (scrollLeft <= start + deadZone) {
+      isJumpingRef.current = true;
+      el.scrollLeft = start + setWidth + (scrollLeft - start);
+      if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current);
+      jumpTimeoutRef.current = setTimeout(() => {
+        isJumpingRef.current = false;
+        jumpTimeoutRef.current = null;
+      }, JUMP_COOLDOWN_MS);
+    }
+  }, [events.length]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      const scrollAmount = (currentIndex % events.length) * (100 / responsiveSlidesToShow);
-      scrollRef.current.style.transform = `translateX(-${scrollAmount}%)`;
-    }
-  }, [currentIndex, events.length, responsiveSlidesToShow]);
+    const el = scrollRef.current;
+    if (!el) return;
 
-  const handleMouseEnter = () => {
-    setIsPaused(true);
-  };
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      rafRef.current = requestAnimationFrame(() => {
+        handleScroll();
+        ticking = false;
+      });
+    };
 
-  const handleMouseLeave = () => {
-    setIsPaused(false);
-  };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [handleScroll]);
 
-  const handleCardHover = () => {
-    setIsPaused(true);
-  };
+  // Auto-advance (optional)
+  useEffect(() => {
+    if (events.length === 0 || autoScrollSpeed <= 0 || isPaused) return;
 
-  const handleCardLeave = () => {
-    setIsPaused(false);
-  };
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const itemWidth = itemWidthRef.current + CARD_GAP;
+    const id = setInterval(() => {
+      if (!el || isPaused) return;
+      el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+    }, autoScrollSpeed);
+
+    return () => clearInterval(id);
+  }, [events.length, autoScrollSpeed, isPaused]);
+
+  const handleMouseEnter = () => setIsPaused(true);
+  const handleMouseLeave = () => setIsPaused(false);
 
   if (!events || events.length === 0) {
-    return <p className="text-center text-text-white/70 py-4">{emptyMessage}</p>;
+    return <p className="py-4 text-center text-white/70">{emptyMessage}</p>;
   }
 
+  const itemWidth = getItemWidth();
+
   return (
-    <div className={`relative ${className}`}>
-      {/* Carousel Container */}
-      <div 
+    <div
+      className={`relative min-w-0 overflow-hidden ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div
         ref={scrollRef}
-        className="flex transition-transform duration-1000 ease-in-out"
-        style={{ width: `${(duplicatedEvents.length / responsiveSlidesToShow) * 100}%` }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        className="flex gap-3 overflow-x-auto overflow-y-hidden px-4 py-2 scrollbar-hide snap-x snap-mandatory [scrollbar-width:none] [-webkit-overflow-scrolling:touch]"
       >
         {duplicatedEvents.map((event, index) => (
-          <div 
+          <div
             key={`${event.id}-${index}`}
-            className="flex-shrink-0 px-1 sm:px-2"
-            style={{ width: `${100 / duplicatedEvents.length}%` }}
+            className="flex-shrink-0 snap-start"
+            style={{
+              width: itemWidth,
+            }}
           >
-            <div 
-              onMouseEnter={handleCardHover}
-              onMouseLeave={handleCardLeave}
-              className="h-full"
-            >
-              <EventCard 
-                id={String(event.id)}
-                title={event.title}
-                category={event.category}
-                date={event.date}
-                location={event.location}
-                image={event.image_url || event.image}
-                capacity={event.capacity || 100}
-                attendees={Math.floor(Math.random() * 100)}
-                isFeatured={event.featured || event.is_featured}
-                price={event.price}
-                event={event}
-              />
-            </div>
+            <EventCard
+              id={String(event.id)}
+              title={event.title}
+              category={event.category}
+              date={event.date}
+              location={event.location}
+              image={event.image_url || event.image}
+              capacity={event.capacity || 100}
+              attendees={event.attendees ?? Math.floor(Math.random() * 100)}
+              isFeatured={event.featured ?? event.is_featured}
+              price={event.price}
+              event={event}
+            />
           </div>
         ))}
       </div>
 
-      {/* Progress Indicators */}
-      <div className="flex justify-center gap-2 mt-6">
-        {events.map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              currentIndex === index 
-                ? "bg-gradient-accent w-6" 
-                : "bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-light opacity-50"
-            }`}
-            onClick={() => setCurrentIndex(index)}
-          />
-        ))}
-      </div>
-
-      {/* Pause indicator */}
       {isPaused && (
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1">
-          <span className="text-white text-xs">Paused</span>
+        <div className="absolute top-2 right-2 rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur-sm">
+          Paused
         </div>
       )}
     </div>

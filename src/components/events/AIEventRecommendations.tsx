@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 
 interface AIEventRecommendationsProps {
   onSelectCategory: (category: string) => void;
+  /** When true, render without Card wrapper for use inside another section (aligns gutter, no nested border) */
+  embedded?: boolean;
 }
 
 // Updated type definition to be compatible with the User type from AuthContext
@@ -23,7 +25,7 @@ interface EnhancedUser {
   };
 }
 
-const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory }) => {
+const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelectCategory, embedded = false }) => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,24 +69,23 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
   // Parse recommendations text into clickable categories
   const renderRecommendations = () => {
     if (!recommendations) return null;
-    
+
     // Extract likely categories from the recommendations text
     const categories = ['Music', 'Food', 'Culture', 'Technology', 'Sports', 'Art']
       .filter(category => recommendations.toLowerCase().includes(category.toLowerCase()));
-    
+
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">{recommendations}</p>
-        
+      <div className="space-y-4">
+        <p className="break-words text-sm leading-relaxed text-white/85">{recommendations}</p>
         {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-3 pt-1">
             {categories.map(category => (
-              <Button 
-                key={category} 
-                variant="outline" 
+              <Button
+                key={category}
+                variant="outline"
                 size="sm"
                 onClick={() => onSelectCategory(category)}
-                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/20"
+                className="shrink-0 bg-white/10 text-white/90 hover:bg-white/20 border-white/20"
               >
                 {category} Events
               </Button>
@@ -94,7 +95,42 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
       </div>
     );
   };
-  
+
+  const header = (
+    <div className="flex flex-row items-center justify-between gap-2 pb-3">
+      <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+        <Sparkles className="h-5 w-5 shrink-0 text-gradient-orange-accent" aria-hidden />
+        AI Event Recommendations
+      </h3>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => void getRecommendations()}
+        disabled={isLoading}
+        className="text-white hover:text-gradient-orange-accent hover:bg-white/10"
+      >
+        <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+      </Button>
+    </div>
+  );
+
+  const content = isLoading ? (
+    <div className="flex items-center justify-center py-8">
+      <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
+    </div>
+  ) : (
+    renderRecommendations()
+  );
+
+  if (embedded) {
+    return (
+      <div className="min-w-0 overflow-hidden">
+        {header}
+        {content}
+      </div>
+    );
+  }
+
   return (
     <Card className="bg-gradient-promo border-white/20/30">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -102,8 +138,8 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
           <Sparkles className="h-5 w-5 text-gradient-orange-accent" />
           AI Event Recommendations
         </CardTitle>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           onClick={() => void getRecommendations()}
           disabled={isLoading}
