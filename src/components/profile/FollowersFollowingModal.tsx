@@ -158,13 +158,27 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
         ? 'Start sharing content to get followers'
         : 'Discover and follow interesting users';
 
+  const goToUsersDirectory = () => {
+    onOpenChange(false);
+    setTimeout(() => navigate('/users', { state: { returnTo } }), 100);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-gradient-promo border-white/10 text-white max-h-[80vh] flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between gap-2">
           <DialogTitle className="text-xl font-semibold text-white capitalize">
             {title}
           </DialogTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToUsersDirectory}
+            className="shrink-0 border-white/20 text-white hover:bg-white/10"
+          >
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            Add friends
+          </Button>
         </DialogHeader>
 
         <Tabs value={activeType} onValueChange={(v) => setActiveType(v as FollowersFollowingModalProps['type'])}>
@@ -192,11 +206,9 @@ const FollowersFollowingModal: React.FC<FollowersFollowingModalProps> = ({
               <p className="text-white/50 text-sm mt-2">{emptyDescription}</p>
               <Button
                 className="mt-5 bg-gradient-to-r bg-gradient-accent text-black"
-                onClick={() => {
-                  onOpenChange(false);
-                  setTimeout(() => navigate('/users', { state: { returnTo } }), 100);
-                }}
+                onClick={goToUsersDirectory}
               >
+                <UserPlus className="mr-2 h-4 w-4" />
                 Find Friends
               </Button>
             </div>
