@@ -14,6 +14,8 @@ interface DiscoverFeedProps {
   onEventClick?: (eventId: number) => void;
   onContentClick?: (contentId: string | number, type: 'story' | 'forum') => void;
   targetContentId?: number;
+  /** Called when content has loaded and sections are rendered - use to scroll to top */
+  onContentReady?: () => void;
 }
 
 const getEngagementScore = (item: {
@@ -31,7 +33,7 @@ const getEngagementScore = (item: {
   return likes * 2 + comments * 3 + views * 0.5 + recencyBoost;
 };
 
-const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, onContentClick, targetContentId }) => {
+const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, onContentClick, targetContentId, onContentReady }) => {
   const queryClient = useQueryClient();
 
   const { data: stories = [], isLoading: isLoadingStories } = useQuery({
@@ -289,6 +291,32 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       hasScrolledToTarget.current = true;
     }
   }, [targetContentId, eventGroups, isLoadingStories, isLoadingForum]);
+
+  // Notify parent when content has loaded so it can scroll to top (start at most recent)
+  const hasCalledContentReady = useRef(false);
+  useEffect(() => {
+    if (
+      !onContentReady ||
+      targetContentId ||
+      isLoadingStories ||
+      isLoadingForum ||
+      eventGroups.length === 0
+    ) {
+      return;
+    }
+    if (hasCalledContentReady.current) return;
+    hasCalledContentReady.current = true;
+
+    onContentReady();
+    const t1 = requestAnimationFrame(() => onContentReady());
+    const t2 = setTimeout(onContentReady, 100);
+    const t3 = setTimeout(onContentReady, 400);
+    return () => {
+      cancelAnimationFrame(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [onContentReady, targetContentId, isLoadingStories, isLoadingForum, eventGroups.length]);
 
   // Intersection Observer for active section detection
   useEffect(() => {
