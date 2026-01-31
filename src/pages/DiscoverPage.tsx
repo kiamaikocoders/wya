@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import DiscoverFeed from '@/components/discover/DiscoverFeed';
 import DiscoverHeader from '@/components/discover/DiscoverHeader';
@@ -10,24 +10,31 @@ const DiscoverPage = () => {
   const { id } = useParams<{ id?: string }>();
   const { setUiVisible } = useDiscoverUI();
 
-  // Scroll to top only on mount or when navigating to a specific content id (e.g. /discover/123)
+  const scrollToTop = useCallback(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, []);
+
+  // Scroll to top on mount and when navigating to a specific content id
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const scrollToTop = () => {
-      if (container) container.scrollTop = 0;
-    };
-
     scrollToTop();
     const t1 = setTimeout(scrollToTop, 100);
     const t2 = setTimeout(scrollToTop, 500);
-
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [id]);
+  }, [id, scrollToTop]);
+
+  // Prevent browser from restoring previous scroll position when navigating back
+  useEffect(() => {
+    const prev = history.scrollRestoration;
+    history.scrollRestoration = 'manual';
+    return () => {
+      history.scrollRestoration = prev;
+    };
+  }, []);
 
   // Handle scroll to hide navbar only (content info stays visible)
   useEffect(() => {
@@ -63,7 +70,10 @@ const DiscoverPage = () => {
       <DiscoverSwipeHint />
       
       {/* Content feed - full viewport height sections */}
-      <DiscoverFeed targetContentId={id ? Number(id) : undefined} />
+      <DiscoverFeed
+        targetContentId={id ? Number(id) : undefined}
+        onContentReady={scrollToTop}
+      />
     </div>
   );
 };
