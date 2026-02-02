@@ -19,6 +19,7 @@ import { storyService } from '@/lib/story/story-service';
 import { forumService } from '@/lib/forum-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
+import { onboardingService } from '@/lib/onboarding-service';
 import type { Event } from '@/types/event.types';
 import { format } from 'date-fns';
 import { differenceInHours } from 'date-fns';
@@ -28,6 +29,29 @@ const Home: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedEventForTickets, setSelectedEventForTickets] = useState<Event | null>(null);
+
+  // Redirect new users to onboarding wizard before showing Home
+  const { data: onboardingPreferences, isLoading: onboardingLoading } = useQuery({
+    queryKey: ['onboardingPreferences'],
+    queryFn: onboardingService.getPreferences,
+    enabled: isAuthenticated && !!user?.id,
+  });
+
+  useEffect(() => {
+    if (!onboardingLoading && isAuthenticated && onboardingPreferences === null && user?.id) {
+      navigate('/onboarding', { replace: true });
+    }
+  }, [onboardingLoading, isAuthenticated, onboardingPreferences, user?.id, navigate]);
+
+  // Show loader while checking onboarding or redirecting new users
+  const needsOnboarding = isAuthenticated && user?.id && (onboardingLoading || onboardingPreferences === null);
+  if (needsOnboarding) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange" />
+      </div>
+    );
+  }
 
   // Check for nearby events when user has location
   useEffect(() => {
