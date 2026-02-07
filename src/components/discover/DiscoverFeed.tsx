@@ -36,18 +36,6 @@ const getEngagementScore = (item: {
 const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, onContentClick, targetContentId, onContentReady }) => {
   const queryClient = useQueryClient();
 
-  const { data: stories = [], isLoading: isLoadingStories } = useQuery({
-    queryKey: ['allStories'],
-    queryFn: () => storyService.getAllStories(),
-    staleTime: 0, // Always allow refetch to ensure like counts update immediately
-  });
-
-  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
-    queryKey: ['forumPosts'],
-    queryFn: () => forumService.getAllPosts(),
-    staleTime: 1000 * 60,
-  });
-
   const { data: events = [], isLoading: isLoadingEvents } = useQuery({
     queryKey: ['allEvents', 'discover-including-past'],
     queryFn: async () => {
@@ -60,15 +48,37 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         startDate: null,
         endDate: null,
         page: 1,
-        pageSize: 500, // Increase page size to ensure we get all events
+        pageSize: 500,
         sort: 'latest',
-        includePast: true, // Include past events for event title lookup
+        includePast: true,
       });
-      console.log('Fetched events for discover:', result.events.length, 'events');
       return result.events;
     },
-    staleTime: 0, // Always refetch to ensure we have latest data
+    staleTime: 0,
   });
+
+  // Fetch event-specific stories (aligns with Event Highlights on event detail pages)
+  const { data: eventStories = [], isLoading: isLoadingEventStories } = useQuery({
+    queryKey: ['storiesForEvents', events.map(e => e.id).join(',')],
+    queryFn: () => storyService.getStoriesForEvents(events.map(e => e.id)),
+    enabled: events.length > 0,
+    staleTime: 0,
+  });
+
+  // Fetch ungrouped stories for Community Discover section
+  const { data: ungroupedStories = [], isLoading: isLoadingUngroupedStories } = useQuery({
+    queryKey: ['ungroupedStories'],
+    queryFn: () => storyService.getUngroupedStories(50),
+    staleTime: 0,
+  });
+
+  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
+    queryKey: ['forumPosts'],
+    queryFn: () => forumService.getAllPosts(),
+    staleTime: 1000 * 60,
+  });
+
+  const isLoadingStories = isLoadingEventStories || isLoadingUngroupedStories;
 
   // Track active section for scroll snapping
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -89,7 +99,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     });
 
     const content: DiscoverContent[] = [
-      ...stories.map(story => {
+      ...eventStories.map(story => {
         const eventInfo = story.event_id ? eventMap.get(story.event_id) : undefined;
         return {
           id: story.id,
@@ -107,6 +117,26 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           views_count: 0,
           event_id: story.event_id,
           event_title: eventInfo?.title,
+          engagementScore: getEngagementScore(story),
+        };
+      }),
+      ...ungroupedStories.map(story => {
+        return {
+          id: story.id,
+          type: 'story' as const,
+          title: story.caption || story.content.slice(0, 70),
+          content: story.content,
+          media_url: story.media_url,
+          media_type: story.media_type || 'image',
+          user_id: story.user_id,
+          user_name: story.user_name || 'Anonymous',
+          user_image: story.user_image,
+          created_at: story.created_at,
+          likes_count: story.likes_count || 0,
+          comments_count: story.comments_count || 0,
+          views_count: 0,
+          event_id: undefined,
+          event_title: undefined,
           engagementScore: getEngagementScore(story),
         };
       }),
@@ -134,7 +164,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     ];
 
     return content;
-  }, [stories, forumPosts, events]);
+  }, [eventStories, ungroupedStories, forumPosts, events]);
 
 
   // Group content by event
@@ -236,12 +266,9 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
-        // Limit to top 5 most engaging items per event initially
-        const topContent = sortedContent.slice(0, 5);
-
         return {
           event,
-          content: topContent,
+          content: sortedContent,
           totalContent: content.length,
         };
       })
@@ -471,8 +498,9 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
 
   // Debug logging (remove in production)
   useEffect(() => {
+    const storiesCount = eventStories.length + ungroupedStories.length;
     console.log('Discover Feed Debug:', {
-      storiesCount: stories.length,
+      storiesCount,
       forumPostsCount: forumPosts.length,
       eventsCount: events.length,
       allContentCount: allContent.length,
@@ -483,7 +511,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         totalContent: g.totalContent,
       })),
     });
-  }, [stories.length, forumPosts.length, events.length, allContent.length, eventGroups.length]);
+  }, [eventStories.length, ungroupedStories.length, forumPosts.length, events.length, allContent.length, eventGroups.length]);
 
   if (isLoadingStories || isLoadingForum) {
     return (
