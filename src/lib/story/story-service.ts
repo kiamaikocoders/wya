@@ -112,6 +112,134 @@ export const storyService = {
   },
 
   /**
+   * Get stories with no event (for Community Discover ungrouped section)
+   */
+  getUngroupedStories: async (limit = 50): Promise<Story[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          id, content, user_id, event_id, media_url, media_type, caption,
+          likes_count, comments_count, created_at, hashtags, status, is_featured, expires_at
+        `)
+        .is('event_id', null)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
+
+      const userIds = [...new Set(data.map(s => s.user_id).filter(Boolean))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      const profileMap = (profiles || []).reduce((m: Record<string, any>, p: any) => ({ ...m, [p.id]: p }), {});
+
+      return data.map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        event_id: item.event_id,
+        content: item.content,
+        caption: item.caption || '',
+        media_url: item.media_url,
+        media_type: item.media_type,
+        likes_count: item.likes_count || 0,
+        comments_count: item.comments_count || 0,
+        created_at: item.created_at,
+        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+        user_image: profileMap[item.user_id]?.avatar_url || null,
+        hashtags: item.hashtags,
+        status: item.status,
+        is_featured: item.is_featured,
+        expires_at: item.expires_at
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Get stories for multiple events (used by Discover to align with Event Highlights).
+   * Fetches all stories for the given event IDs, ensuring parity with event detail pages.
+   */
+  getStoriesForEvents: async (eventIds: number[], limit = 500): Promise<Story[]> => {
+    if (!eventIds || eventIds.length === 0) {
+      return [];
+    }
+    try {
+      const { data, error } = await supabase
+        .from('stories')
+        .select(`
+          id,
+          content,
+          user_id,
+          event_id,
+          media_url,
+          media_type,
+          caption,
+          likes_count,
+          comments_count,
+          created_at,
+          hashtags,
+          status,
+          is_featured,
+          expires_at
+        `)
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Supabase query error:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      const userIds = [...new Set(data.map(story => story.user_id).filter(Boolean))];
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+      }
+
+      const profileMap = (profiles || []).reduce((map: Record<string, any>, profile: any) => {
+        map[profile.id] = profile;
+        return map;
+      }, {});
+
+      return data.map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        event_id: item.event_id,
+        content: item.content,
+        caption: item.caption || '',
+        media_url: item.media_url,
+        media_type: item.media_type,
+        likes_count: item.likes_count || 0,
+        comments_count: item.comments_count || 0,
+        created_at: item.created_at,
+        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+        user_image: profileMap[item.user_id]?.avatar_url || null,
+        hashtags: item.hashtags,
+        status: item.status,
+        is_featured: item.is_featured,
+        expires_at: item.expires_at
+      }));
+    } catch (error: any) {
+      console.error('Error fetching stories for events:', error);
+      return [];
+    }
+  },
+
+  /**
    * Get featured stories (with is_featured = true)
    */
   getFeaturedStories: async (): Promise<Story[]> => {

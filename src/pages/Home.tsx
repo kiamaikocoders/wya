@@ -43,24 +43,12 @@ const Home: React.FC = () => {
     }
   }, [onboardingLoading, isAuthenticated, onboardingPreferences, user?.id, navigate]);
 
-  // Show loader while checking onboarding or redirecting new users
-  const needsOnboarding = isAuthenticated && user?.id && (onboardingLoading || onboardingPreferences === null);
-  if (needsOnboarding) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange" />
-      </div>
-    );
-  }
-
   // Check for nearby events when user has location
   useEffect(() => {
     if (isAuthenticated && user?.id) {
-      // Check for nearby events after 3 seconds
       const timer = setTimeout(() => {
         onboardingNotifications.sendNearbyEventsNotification(user.id);
       }, 3000);
-
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, user?.id]);
@@ -213,6 +201,16 @@ const Home: React.FC = () => {
   const handleEventClick = (eventId: string) => {
     navigate(`/events/${eventId}`);
   };
+
+  // Show loader while checking onboarding or redirecting new users (must be after all hooks)
+  const needsOnboarding = isAuthenticated && user?.id && (onboardingLoading || onboardingPreferences === null);
+  if (needsOnboarding) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange" />
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen min-w-0 overflow-x-hidden bg-background pb-24">
