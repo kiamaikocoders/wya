@@ -14,14 +14,25 @@ const shortcode = Deno.env.get("MPESA_SHORTCODE") || "";
 const passkey = Deno.env.get("MPESA_PASSKEY") || "";
 const callbackUrl = Deno.env.get("MPESA_CALLBACK_URL") || "";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// CORS: allowlist only (no wildcard). Set ALLOWED_ORIGINS env (comma-separated).
+const getAllowedOrigin = (requestOrigin: string | null): string | null => {
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
+  if (allowed.length === 0) return null;
+  if (requestOrigin && allowed.includes(requestOrigin)) return requestOrigin;
+  return allowed[0] ?? null;
 };
 
+const corsHeadersFor = (origin: string | null) => ({
+  ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+});
+
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  const requestOrigin = req.headers.get("Origin");
+  const corsOrigin = getAllowedOrigin(requestOrigin);
+  const corsHeaders = corsHeadersFor(corsOrigin);
+
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -117,15 +128,12 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
-    console.error("Error processing M-Pesa payment:", error);
-    
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error("Unknown error");
+    console.error("Error processing M-Pesa payment:", err.message);
     return new Response(
-      JSON.stringify({ success: false, message: error.message || "Failed to process payment" }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500 
-      }
+      JSON.stringify({ success: false, message: "Payment request failed. Please try again." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

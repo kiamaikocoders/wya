@@ -1,6 +1,8 @@
 
 // Migrated authentication service using Supabase
 import { supabase } from './supabase';
+import { getAllowedPasswordResetRedirectUrl } from './get-redirect-url';
+import { getRequestPasswordResetUrl } from './supabase-functions-url';
 import { toast } from 'sonner';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -34,8 +36,6 @@ export const authService = {
   // Login user with Supabase
   login: async (credentials: LoginCredentials) => {
     try {
-      console.log('Login with credentials:', credentials);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
@@ -57,8 +57,6 @@ export const authService = {
   // Register new user with Supabase
   signup: async (credentials: SignupCredentials) => {
     try {
-      console.log('Signup with credentials:', credentials);
-      
       // The database trigger (handle_new_user) will automatically create the profile
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
@@ -239,17 +237,30 @@ export const authService = {
     }
   },
 
-  // Request password reset
+  // Request password reset: uses rate-limited Edge Function if VITE_SUPABASE_URL set, else Supabase Auth (redirectTo allowlist only)
   forgotPassword: async (email: string): Promise<void> => {
     try {
+      const rateLimitedUrl = getRequestPasswordResetUrl();
+      if (rateLimitedUrl) {
+        const res = await fetch(rateLimitedUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data?.error ?? (res.status === 429 ? 'Too many attempts. Try again in an hour.' : 'Failed to send reset email.'));
+          return;
+        }
+        return;
+      }
+      const redirectTo = getAllowedPasswordResetRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        ...(redirectTo ? { redirectTo } : {}),
       });
-      
       if (error) throw error;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send password reset email';
-      toast.error(errorMessage);
+      toast.error('Failed to send password reset email. Please try again.');
       throw error;
     }
   },

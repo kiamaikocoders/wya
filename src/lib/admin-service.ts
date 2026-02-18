@@ -119,11 +119,8 @@ export const adminService = {
       });
 
       if (testError) {
-        return {
-          success: false,
-          message: `RPC Error: ${testError.message}`,
-          data: testError
-        };
+        console.error('testEmailRPC: RPC error', testError.message);
+        return { success: false, message: 'RPC check failed. Try again or contact support.' };
       }
 
       return {
@@ -131,12 +128,10 @@ export const adminService = {
         message: `RPC working! Found ${testEmails?.length || 0} email(s)`,
         data: testEmails
       };
-    } catch (error: any) {
-      return {
-        success: false,
-        message: `Exception: ${error?.message || error}`,
-        data: error
-      };
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      console.error('testEmailRPC:', err.message);
+      return { success: false, message: 'Something went wrong. Please try again.' };
     }
   },
   
@@ -205,40 +200,21 @@ export const adminService = {
           });
           
           if (emailError) {
-            // Log error for debugging - this is important to see
-            console.error('Failed to fetch user emails via RPC:', {
-              error: emailError,
-              message: emailError.message,
-              details: emailError.details,
-              hint: emailError.hint,
-              userIdsCount: userIds.length
-            });
-            console.error('Make sure the get_user_emails RPC function exists. Run migration: 20250124_add_user_emails_rpc.sql');
-            // Don't throw - continue without emails but log the error clearly
+            console.error('getUsers: RPC get_user_emails failed', emailError.message);
+            // Don't throw - continue without emails
           } else if (userEmails && Array.isArray(userEmails)) {
-            console.log(`Successfully fetched ${userEmails.length} emails for ${userIds.length} users`);
             userEmails.forEach((u: { user_id?: string; id?: string; email: string | null }) => {
               // Handle both old format (id) and new format (user_id)
               const userId = u.user_id || u.id;
               // Only add to map if email exists and is not null/empty
               if (userId && u.email && u.email.trim() !== '') {
                 emailMap.set(userId, u.email);
-              } else {
-                console.warn(`User ${userId} has no email or empty email`);
               }
             });
-            console.log(`Email map contains ${emailMap.size} entries`);
-          } else {
-            console.warn('RPC returned unexpected data format:', userEmails);
           }
-        } catch (error: any) {
-          // Log but continue - emails are optional
-          console.error('Exception fetching user emails:', {
-            error,
-            message: error?.message,
-            stack: error?.stack
-          });
-          console.error('To fix: Run migration 20250124_add_user_emails_rpc.sql to create the RPC function');
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error('Unknown error');
+          console.error('getUsers: exception fetching user emails', err.message);
         }
       }
       
