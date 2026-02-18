@@ -12,3 +12,9 @@ export function getRequestPasswordResetUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();
   return base ? `${base}/functions/v1/request-password-reset` : "";
 }
+
+/** Admin: fetch ghost user IDs (auth pattern) so stats can exclude them. Requires VITE_SUPABASE_URL. */
+export function getAdminGhostUserIdsUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/admin-get-ghost-user-ids` : "";
+}

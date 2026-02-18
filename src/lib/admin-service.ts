@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
 import { toast } from 'sonner';
 
 export interface AdminUser {
@@ -306,21 +307,32 @@ export const adminService = {
 
   getUserStats: async (): Promise<AdminUserStats> => {
     try {
+      // Ghost user IDs (auth email pattern): from Edge Function when available; else empty (client cannot call auth.admin)
+      let ghostUserIds = new Set<string>();
+      const ghostIdsUrl = getAdminGhostUserIdsUrl();
+      if (ghostIdsUrl) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          try {
+            const res = await fetch(ghostIdsUrl, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              ghostUserIds = new Set((data?.ghost_user_ids ?? []) as string[]);
+            }
+          } catch {
+            // Fallback: no ghost IDs from auth; stats may include some ghost users
+          }
+        }
+      }
+
       // Get total users (EXCLUDE ghost users from total count)
-      // Get all profiles first, then filter out ghost users by is_ghost flag
-      // Note: Some ghost users might have is_ghost=false, so we'll filter by checking auth users
       const { data: allProfiles } = await supabase
         .from('profiles')
         .select('id, is_ghost')
         .eq('is_ghost', false);
-      
-      // Also get auth users to check for ghost email pattern
-      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers();
-      const ghostUserIds = new Set(
-        authUsers
-          ?.filter(u => u.email?.includes('ghost.') && u.email?.endsWith('@wya.local'))
-          .map(u => u.id) || []
-      );
       
       // Filter out any profiles that are ghost users (by email pattern)
       const realUserProfiles = allProfiles?.filter(p => !ghostUserIds.has(p.id)) || [];
