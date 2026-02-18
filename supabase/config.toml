@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.request-password-reset]
 verify_jwt = false
+
+[functions.admin-get-ghost-user-ids]
+verify_jwt = true
