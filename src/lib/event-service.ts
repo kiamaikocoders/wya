@@ -79,12 +79,14 @@ export const eventService = {
 
   // Lightweight home feed (avoids count/stats queries and returns a small payload)
   getHomeFeedEvents: async (limit = 50): Promise<Event[]> => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from('events')
       .select(
         'id,title,date,time,location,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
-      .gte('date', new Date().toISOString())
+      .gte('date', startOfToday)
       .order('date', { ascending: true })
       .limit(limit);
 

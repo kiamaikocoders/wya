@@ -80,8 +80,11 @@ const Onboarding: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: onboardingService.upsertPreferences,
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Set cache immediately so Home doesn't refetch and get null (which would redirect back)
+      queryClient.setQueryData(['onboardingPreferences'], variables);
       queryClient.invalidateQueries({ queryKey: ['onboardingPreferences'] });
+      sessionStorage.setItem('onboarding_just_completed', 'true');
       toast.success('Preferences saved! Your feed will adapt immediately.');
       navigate('/home');
     },
@@ -150,20 +153,20 @@ const Onboarding: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-promo pb-16">
+    <div className="min-h-screen bg-gradient-promo pb-16 px-3 sm:px-4">
       <Section
         title="Let’s co-create your perfect WYA experience"
         subtitle="A few prompts now means smarter recommendations, stronger sponsor matches, and fewer cold outreach messages later."
       >
-        <div className="grid gap-6 lg:grid-cols-[0.35fr_0.65fr]">
-          <div className="space-y-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-[0.35fr_0.65fr]">
+          <div className="space-y-2 sm:space-y-3 order-2 lg:order-1">
             {stepDescriptions.map((step, index) => (
               <button
                 type="button"
                 key={step.title}
                 onClick={() => setCurrentStep(index)}
                 className={cn(
-                  'flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-kenya-orange/50 hover:bg-white/10',
+                  'flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4 text-left transition hover:border-kenya-orange/50 hover:bg-white/10 min-h-[44px] touch-manipulation',
                   currentStep === index &&
                     'border-kenya-orange/70 bg-white/10 shadow-[0_0_20px_rgba(255,128,0,0.3)]',
                   index < currentStep && 'border-kenya-orange/40'
@@ -185,7 +188,7 @@ const Onboarding: React.FC = () => {
             ))}
           </div>
 
-            <Card className="border-white/10 bg-white/5">
+            <Card className="border-white/10 bg-white/5 order-1 lg:order-2 w-full min-w-0">
               <CardHeader>
                 <div className="flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
                   <Sparkles className="h-4 w-4 text-gradient-orange-accent" />
@@ -215,7 +218,7 @@ const Onboarding: React.FC = () => {
                           key={interest}
                           onClick={() => toggleArrayValue('interests', interest)}
                           className={cn(
-                            'flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm text-white/70 transition hover:border-kenya-orange/40 hover:bg-white/10',
+                            'flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4 text-left text-sm text-white/70 transition hover:border-kenya-orange/40 hover:bg-white/10 min-h-[44px] touch-manipulation',
                             selected && 'border-kenya-orange/70 bg-white/10 text-white'
                           )}
                         >
@@ -249,7 +252,7 @@ const Onboarding: React.FC = () => {
                               key={city}
                               onClick={() => toggleArrayValue('preferredCities', city)}
                               className={cn(
-                                'cursor-pointer border border-white/15 bg-white/5 px-3 py-1 text-white/70 transition hover:border-kenya-orange/40 hover:text-white',
+                                'cursor-pointer border border-white/15 bg-white/5 px-3 py-2 min-h-[44px] touch-manipulation text-white/70 transition hover:border-kenya-orange/40 hover:text-white',
                                 selected && 'border-kenya-orange/70 bg-white/10 text-white'
                               )}
                             >

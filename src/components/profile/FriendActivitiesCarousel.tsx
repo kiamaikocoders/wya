@@ -37,16 +37,20 @@ const FriendActivitiesCarousel: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  // Get all stories/posts from following users
+  const ACTIVITY_VISIBILITY_DAYS = 7;
+
   const { data: friendActivities = [] } = useQuery({
     queryKey: ['friendActivities', following],
     queryFn: async () => {
       if (!following.length) return [];
-      
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - ACTIVITY_VISIBILITY_DAYS);
+      const cutoffIso = cutoff.toISOString();
+
       const allStories = await storyService.getAllStories();
-      const friendStories = allStories.filter(story => 
-        following.includes(story.user_id)
-      ).slice(0, 10); // Limit to 10 most recent
+      const friendStories = allStories
+        .filter(story => following.includes(story.user_id) && story.created_at >= cutoffIso)
+        .slice(0, 10);
 
       return friendStories.map(story => ({
         id: story.id,
@@ -115,7 +119,7 @@ const FriendActivitiesCarousel: React.FC = () => {
           {friendActivities.map((activity) => (
             <Card
               key={activity.id}
-              className="min-w-[280px] max-w-[280px] bg-[#1A1A1A] border border-white/8 overflow-hidden flex-shrink-0 rounded-xl shadow-lg hover:border-white/15 transition-all hover:shadow-xl"
+              className="min-w-[180px] max-w-[180px] bg-[#1A1A1A] border border-white/8 overflow-hidden flex-shrink-0 rounded-xl shadow-lg hover:border-white/15 transition-all hover:shadow-xl"
             >
               <Link to={`/discover/${activity.id}`} className="block">
                 <div className="relative aspect-[4/5] overflow-hidden">
@@ -125,6 +129,7 @@ const FriendActivitiesCarousel: React.FC = () => {
                         src={activity.media_url}
                         className="w-full h-full object-cover"
                         muted
+                        playsInline
                         preload="metadata"
                         onLoadedMetadata={(e) => {
                           const video = e.currentTarget;

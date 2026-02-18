@@ -28,7 +28,6 @@ interface EventProposal {
   estimatedDate: string;
   location: string;
   expectedAttendees: string;
-  budget: string;
   sponsorNeeds: string;
   contactEmail: string;
   contactPhone: string;
@@ -70,7 +69,6 @@ const RequestEvent: React.FC = () => {
     estimatedDate: '',
     location: '',
     expectedAttendees: '',
-    budget: '',
     sponsorNeeds: '',
     contactEmail: user?.email || '',
     contactPhone: '',
@@ -226,7 +224,7 @@ const RequestEvent: React.FC = () => {
           estimated_date: proposal.estimatedDate || null,
           location: proposal.location || null,
           expected_attendees: proposal.expectedAttendees ? parseInt(proposal.expectedAttendees, 10) : null,
-          budget: proposal.budget || null,
+          budget: null,
           sponsor_needs: proposal.sponsorNeeds || null,
           image_url: proposal.imageUrl || null,
           contact_email: proposal.contactEmail || null,
@@ -533,21 +531,6 @@ const RequestEvent: React.FC = () => {
                         placeholder="e.g. 150"
               />
             </div>
-            <div className="space-y-2">
-                      <label
-                        htmlFor="budget"
-                        className="text-sm font-medium text-white"
-                      >
-                        Estimated budget (KES)
-              </label>
-              <Input
-                id="budget"
-                name="budget"
-                value={proposal.budget}
-                onChange={handleChange}
-                        placeholder="Optional"
-              />
-            </div>
           </div>
                 </div>
               )}
@@ -657,17 +640,6 @@ const RequestEvent: React.FC = () => {
                       </p>
                       <p className="text-xs text-white/60">
                         Make sure capacity aligns with your venue.
-                      </p>
-                    </div>
-                    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-                        Budget
-                      </p>
-                      <p className="mt-3 text-lg font-semibold text-white">
-                        {proposal.budget ? `KES ${proposal.budget}` : 'Flexible'}
-                      </p>
-                      <p className="text-xs text-white/60">
-                        Sponsors use this to scope contributions.
                       </p>
                     </div>
                   </div>
