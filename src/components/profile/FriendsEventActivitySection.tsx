@@ -71,14 +71,18 @@ const FriendsEventActivitySection: React.FC<FriendsEventActivitySectionProps> = 
     enabled: mutualIds.length > 0,
   });
 
-  // Pull mutuals' event-tagged stories as a proxy for "events they attended"
+  const ACTIVITY_VISIBILITY_DAYS = 7;
+
   const { data: mutualEventStories = [] } = useQuery({
     queryKey: ['mutualEventStories', mutualIds],
     queryFn: async () => {
       if (mutualIds.length === 0) return [];
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - ACTIVITY_VISIBILITY_DAYS);
+      const cutoffIso = cutoff.toISOString();
       const stories = await storyService.getAllStories();
       return stories
-        .filter((s) => mutualIds.includes(s.user_id) && !!s.event_id)
+        .filter((s) => mutualIds.includes(s.user_id) && !!s.event_id && s.created_at >= cutoffIso)
         .slice(0, 300);
     },
     enabled: mutualIds.length > 0,

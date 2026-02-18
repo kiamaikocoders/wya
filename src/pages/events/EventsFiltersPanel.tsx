@@ -509,21 +509,22 @@ const EventsFiltersPanel = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="flex h-full flex-col gap-5 border-white/10 bg-gradient-promo/95 text-white">
-          <SheetHeader className="space-y-1 text-left">
-            <SheetTitle>Refine your search</SheetTitle>
-            <SheetDescription className="text-white/60">
-              Layer filters to surface the exact experiences you want to explore.
+        <SheetContent className="flex h-full flex-col gap-4 border-white/10 bg-gradient-promo/95 text-white">
+          <SheetHeader className="space-y-1 text-left shrink-0">
+            <SheetTitle className="text-lg">Filters</SheetTitle>
+            <SheetDescription className="text-sm text-white/60">
+              Category, location, date, and tags.
             </SheetDescription>
           </SheetHeader>
-          <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="flex-1 pr-3 -mr-3">
             <FiltersContent collapsible />
           </ScrollArea>
         </SheetContent>
       </Sheet>
 
-      <aside className="hidden w-72 flex-shrink-0 lg:block lg:min-h-0">
-        <div className="rounded-3xl border border-white/5 bg-black/40 p-6 backdrop-blur lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-4">
+      <aside className="hidden w-64 flex-shrink-0 lg:block lg:min-h-0">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto space-y-4">
+          <div className="text-sm font-semibold text-white/90 uppercase tracking-wider">Filters</div>
           <FiltersContent collapsible defaultOpenAll />
         </div>
       </aside>

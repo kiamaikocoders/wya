@@ -105,6 +105,7 @@ const RecentUpdatesSection: React.FC = () => {
                     src={post.media_url}
                     className="w-full h-full object-cover"
                     muted
+                    playsInline
                     preload="metadata"
                     onLoadedMetadata={(e) => {
                       const video = e.currentTarget;

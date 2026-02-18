@@ -185,7 +185,14 @@ const GhostManagement: React.FC = () => {
     }
   };
 
-  // Filter events by status
+  const isEventWithinLastMonth = (eventDate: string) => {
+    const d = new Date(eventDate);
+    const now = new Date();
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    return d >= oneMonthAgo;
+  };
+
   const filteredEvents = useMemo(() => {
     const now = new Date();
     return events.filter(event => {
@@ -193,16 +200,28 @@ const GhostManagement: React.FC = () => {
       if (eventFilter === 'upcoming') return eventDate >= now;
       if (eventFilter === 'past') return eventDate < now;
       if (eventFilter === 'ongoing') {
-        // Assume events last 4 hours
         const endDate = new Date(eventDate);
         endDate.setHours(endDate.getHours() + 4);
         return now >= eventDate && now <= endDate;
       }
-      return true; // all
+      return true;
     });
   }, [events, eventFilter]);
 
-  // Filter events for the "create story" event picker (search within filteredEvents)
+  // For "Like Story": use same event list as posting flow (Tagging Event) - last month + search
+  const eventsForLikeStoryTarget = useMemo(() => {
+    const q = (targetSearchQuery || '').trim().toLowerCase();
+    const base = events.filter((e: { date: string }) => isEventWithinLastMonth(e.date));
+    if (!q) return base.slice(0, 50);
+    return base
+      .filter((e: { title?: string; location?: string; description?: string }) =>
+        (e.title || '').toLowerCase().includes(q) ||
+        (e.location || '').toLowerCase().includes(q) ||
+        (e.description || '').toLowerCase().includes(q)
+      )
+      .slice(0, 50);
+  }, [events, targetSearchQuery]);
+
   const filteredEventsForStory = useMemo(() => {
     try {
       const base = filteredEvents || [];
@@ -978,12 +997,12 @@ const GhostManagement: React.FC = () => {
                       <SelectContent className="max-h-[300px]">
                         {getTargetTypeForAction() === 'event' && (
                           <>
-                            {filteredEvents.length === 0 ? (
+                            {eventsForLikeStoryTarget.length === 0 ? (
                               <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                {targetSearchQuery ? 'No events match your search' : 'No events found'}
+                                {targetSearchQuery ? 'No events match your search' : 'Search by title or location (events from last month)'}
                               </div>
                             ) : (
-                              filteredEvents.map((event) => (
+                              eventsForLikeStoryTarget.map((event) => (
                                 <SelectItem key={event.id} value={event.id.toString()}>
                                   {event.title} - {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
                                 </SelectItem>

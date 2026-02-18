@@ -110,8 +110,9 @@ const EventContentCarousel: React.FC<EventContentCarouselProps> = ({
               itemRefs.current[index] = el;
             }}
             className={cn(
-              'snap-center shrink-0 grow-0 basis-full'
+              'snap-center shrink-0 grow-0 basis-full min-w-0 isolate'
             )}
+            style={{ contain: 'layout style' }}
           >
             <ContentCard
               content={item}

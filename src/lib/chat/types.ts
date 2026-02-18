@@ -18,7 +18,7 @@ export interface ChatMessage {
 }
 
 export interface ChatConversation {
-  id: number;
+  id: string;
   participants: ChatParticipant[];
   last_message: {
     content: string;
