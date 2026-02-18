@@ -5,11 +5,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+// CORS: allowlist only (no wildcard). Set ALLOWED_ORIGINS env (comma-separated) e.g. https://app.example.com,https://www.example.com
+const getAllowedOrigin = (requestOrigin: string | null): string | null => {
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
+  if (allowed.length === 0) return null;
+  if (requestOrigin && allowed.includes(requestOrigin)) return requestOrigin;
+  return allowed[0] ?? null; // fallback to first allowed for same-origin or missing Origin
+};
+
+const corsHeadersFor = (origin: string | null) => ({
+  ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
+});
 
 interface GhostAction {
   id: number;
@@ -22,6 +30,10 @@ interface GhostAction {
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get("Origin");
+  const corsOrigin = getAllowedOrigin(requestOrigin);
+  const corsHeaders = corsHeadersFor(corsOrigin);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -233,10 +245,11 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error: any) {
-    console.error("Error in process-ghost-actions:", error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error("Unknown error");
+    console.error("Error in process-ghost-actions:", err.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Processing failed. Please try again later." }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

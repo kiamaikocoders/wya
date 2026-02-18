@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
+import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
+import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
 
 export interface User {
@@ -414,16 +416,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const forgotPassword = async (email: string) => {
     setLoading(true);
     try {
+      const rateLimitedUrl = getRequestPasswordResetUrl();
+      if (rateLimitedUrl) {
+        const res = await fetch(rateLimitedUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = data?.error ?? (res.status === 429 ? 'Too many attempts. Try again in an hour.' : 'Failed to send reset email.');
+          toast.error(msg);
+          return;
+        }
+        toast.success('If an account exists, you will receive a reset link.');
+        return;
+      }
+      const redirectTo = getAllowedPasswordResetRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        ...(redirectTo ? { redirectTo } : {}),
       });
-      
       if (error) throw error;
-      
       toast.success('Password reset email sent! Check your inbox.');
-    } catch (error: any) {
-      console.error('Forgot password error:', error);
-      toast.error(error.message || 'Failed to send password reset email');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      console.error('Forgot password error:', err.message);
+      toast.error('Failed to send password reset email. Please try again.');
       throw error;
     } finally {
       setLoading(false);

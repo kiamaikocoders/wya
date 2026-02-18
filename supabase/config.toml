@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.process-ghost-actions]
 verify_jwt = false
+
+[functions.request-password-reset]
+verify_jwt = false
