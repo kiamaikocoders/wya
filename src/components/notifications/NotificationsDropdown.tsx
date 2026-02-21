@@ -19,6 +19,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { requestNotificationPermission } from '@/lib/sounds';
 
 const NotificationsDropdown = () => {
   const { isAuthenticated, user } = useAuth();
@@ -79,7 +80,7 @@ const NotificationsDropdown = () => {
   };
   
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) requestNotificationPermission(); }}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />

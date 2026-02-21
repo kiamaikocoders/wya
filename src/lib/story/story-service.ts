@@ -665,13 +665,13 @@ export const storyService = {
         throw new Error('You must be logged in to like stories');
       }
 
-      // Check if the user has already liked this story
+      // Check if the user has already liked this story (.maybeSingle() avoids 406 when no row)
       const { data: existingLike } = await supabase
         .from('story_likes')
         .select('id')
         .eq('story_id', storyId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existingLike) {
         // User already liked this story, so unlike it
@@ -713,7 +713,13 @@ export const storyService = {
             story_id: storyId
           });
 
-        if (likeError) throw likeError;
+        if (likeError) {
+          // 409 = duplicate key (race: like already exists), treat as success
+          if (likeError.code === '23505') {
+            return true;
+          }
+          throw likeError;
+        }
 
         // Increment the likes count manually
         try {
@@ -761,9 +767,10 @@ export const storyService = {
         .from('story_likes')
         .select('id')
         .eq('story_id', storyId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      return data !== null && data.length > 0;
+      return data != null;
     } catch (error) {
       console.error(`Error checking like status for story ID ${storyId}:`, error);
       throw error;

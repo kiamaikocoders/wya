@@ -9,6 +9,7 @@ import { notificationService } from '@/lib/notification';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { playNotificationSound, requestNotificationPermission } from '@/lib/sounds';
 
 const NotificationBell = () => {
   const navigate = useNavigate();
@@ -47,13 +48,11 @@ const NotificationBell = () => {
         },
         (payload) => {
           console.log('New notification received:', payload);
-          // Show toast for new notification
           const newNotification = payload.new;
+          playNotificationSound();
           toast.success(newNotification.title || 'New notification received', {
             description: newNotification.message
           });
-          
-          // Refetch notifications to update the UI
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       )
@@ -68,6 +67,7 @@ const NotificationBell = () => {
   }, [user?.id, queryClient]);
 
   const handleClick = () => {
+    requestNotificationPermission();
     navigate('/notifications');
   };
 

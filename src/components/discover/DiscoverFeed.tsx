@@ -5,6 +5,7 @@ import { forumService } from '@/lib/forum-service';
 import { eventService } from '@/lib/event-service';
 import { notificationService } from '@/lib/notification';
 import { supabase } from '@/lib/supabase';
+import { playLikeSound } from '@/lib/sounds';
 import EventDiscoverSection, { EventDiscoverGroup } from './EventDiscoverSection';
 import { DiscoverContent } from './ContentCard';
 import { differenceInHours } from 'date-fns';
@@ -411,6 +412,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         
         // Only send notification if it was a new like (success === true)
         if (success) {
+          playLikeSound();
           await sendLikeNotification(contentItem.user_id, 'story', Number(id), contentItem.title || contentItem.content.slice(0, 50));
         }
       } else if (contentItem.type === 'forum') {
@@ -431,6 +433,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           queryClient.invalidateQueries({ queryKey: ['forumPosts'], refetchType: 'active' });
           
           // Send notification to content creator
+          playLikeSound();
           await sendLikeNotification(contentItem.user_id, 'forum_post', Number(id), contentItem.title || contentItem.content.slice(0, 50));
         }
       }
