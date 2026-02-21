@@ -1,23 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Metric } from "@/data/landing";
-import { landingHero, landingSocialProof } from "@/data/landing";
+import { landingHero } from "@/data/landing";
 
 type LandingHeroProps = {
-  metrics: Metric[];
   onPrimaryCta: () => void;
   onSecondaryCta: () => void;
   onTertiaryCta: () => void;
 };
 
 const LandingHero = ({
-  metrics,
   onPrimaryCta,
   onSecondaryCta,
   onTertiaryCta,
 }: LandingHeroProps) => {
-  const SocialIcon = landingSocialProof.supportingIcon;
-
   return (
     <section
       id="hero"
@@ -83,30 +78,6 @@ const LandingHero = ({
             >
               {landingHero.tertiaryCta}
             </button>
-          </div>
-
-          <div className="mt-10 flex flex-wrap items-center gap-6 text-white/80">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
-                <SocialIcon className="h-5 w-5 text-kenya-orange" />
-              </div>
-              <span>{landingSocialProof.label}</span>
-            </div>
-            <div className="flex flex-wrap gap-6 text-sm">
-              {metrics.map((metric) => (
-                <div
-                  key={metric.label}
-                  className="flex flex-col rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur"
-                >
-                  <span className="text-lg font-semibold text-white">
-                    {metric.value}
-                  </span>
-                  <span className="text-xs uppercase tracking-wide text-white/70">
-                    {metric.label}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
