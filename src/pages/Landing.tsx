@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LandingHero from "@/components/marketing/LandingHero";
-import LandingTrustBar from "@/components/marketing/LandingTrustBar";
 import LandingFeatureGrid from "@/components/marketing/LandingFeatureGrid";
 import LandingPersonalization from "@/components/marketing/LandingPersonalization";
 import LandingCommunityStories from "@/components/marketing/LandingCommunityStories";
@@ -12,7 +11,6 @@ import LandingFinalCTA from "@/components/marketing/LandingFinalCTA";
 import {
   landingFeatures,
   landingFaqs,
-  landingMetrics,
   landingSteps,
   landingTestimonials,
 } from "@/data/landing";
@@ -59,12 +57,10 @@ const Landing = () => {
   return (
     <div className="space-y-0">
       <LandingHero
-        metrics={landingMetrics}
         onPrimaryCta={handlePrimaryCta}
         onSecondaryCta={handleSecondaryCta}
         onTertiaryCta={handleTertiaryCta}
       />
-      <LandingTrustBar metrics={landingMetrics} />
       <LandingFeatureGrid features={landingFeatures} />
       <LandingPersonalization onTryAi={handleTertiaryCta} />
       <LandingCommunityStories testimonials={landingTestimonials} />

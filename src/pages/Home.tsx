@@ -377,22 +377,6 @@ const Home: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/events')}
-                      className="group flex flex-col items-start rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <span className="text-sm font-medium text-muted-foreground">Live now</span>
-                      <span className="text-2xl font-display font-bold text-foreground group-hover:text-primary transition-colors">{events?.length || 0}+</span>
-                      <span className="mt-1 text-xs text-muted-foreground leading-snug">Nairobi, Mombasa, Kisumu & more</span>
-                    </button>
-                    <div className="flex flex-col items-start rounded-xl border border-border bg-card p-4 shadow-sm">
-                      <span className="text-sm font-medium text-muted-foreground">For creators</span>
-                      <span className="text-2xl font-display font-bold text-foreground">350+</span>
-                      <span className="mt-1 text-xs text-muted-foreground leading-snug">Organizers on WYA</span>
-                    </div>
-                  </div>
                   <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <div className="mb-3 flex items-center gap-2">
                       <Wand2 className="h-4 w-4 text-primary" aria-hidden />
