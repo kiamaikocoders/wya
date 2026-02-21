@@ -166,8 +166,10 @@ const ContentCard: React.FC<ContentCardProps> = ({
     const DOUBLE_TAP_DELAY = 300; // milliseconds
 
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected
-      e.preventDefault();
+      // Double tap detected - only preventDefault if cancelable (avoids [Intervention] when scroll is in progress)
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       e.stopPropagation();
       if (tapTimeoutRef.current) {
         clearTimeout(tapTimeoutRef.current);
