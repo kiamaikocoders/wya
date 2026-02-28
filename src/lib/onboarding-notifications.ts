@@ -227,11 +227,15 @@ class OnboardingNotifications {
       }
     }
 
-    // Get events within 50km
+    // Get events from start of today (so events on the current day are included)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayStr = startOfToday.toISOString().slice(0, 10);
+
     const { data: events } = await supabase
       .from('events')
       .select('id, title, latitude, longitude, date, location')
-      .gte('date', new Date().toISOString());
+      .gte('date', startOfTodayStr);
 
     if (!events || events.length === 0) return;
 
