@@ -149,11 +149,14 @@ export const eventService = {
         query = query.contains('tags', tags);
       }
 
-      const nowIso = new Date().toISOString();
+      // Use start-of-today (date-only) so events on the current day are included.
+      // Using nowIso would exclude today's events because DB dates are often stored as midnight.
+      const now = new Date();
+      const startOfTodayIso = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
 
       if (!includePast) {
-        // If includePast is false, only show future events
-        query = query.gte('date', nowIso);
+        // If includePast is false, only show events from start of today onward
+        query = query.gte('date', startOfTodayIso);
       }
       // If includePast is true, don't filter by date (get all events)
       // Only apply date filters if explicitly provided via startDate/endDate
@@ -205,7 +208,6 @@ export const eventService = {
         throw error;
       }
 
-      const now = new Date();
       const { count: featuredCount } = await supabase
         .from('events')
         .select('id', { count: 'exact', head: true })
@@ -225,7 +227,7 @@ export const eventService = {
               .from('events')
               .select('id', { count: 'exact', head: true })
               .eq('location', curatedCity)
-              .gte('date', new Date().toISOString())
+              .gte('date', startOfTodayIso)
           : Promise.resolve({ count: 0 }),
       ]);
 
