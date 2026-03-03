@@ -61,12 +61,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!content) {
-      toast.error('Please add a caption for your story');
-      return;
-    }
-    
+
     if (!selectedFile && !previewUrl) {
       toast.error('Please upload a photo or video for your story');
       return;
@@ -86,7 +81,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
       
       await onSubmit({
         event_id: eventId,
-        content,
+        content: content.trim() || '',
         media_url: mediaUrl,
         media_type: mediaType,
       });
@@ -182,7 +177,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="content">Caption</Label>
+            <Label htmlFor="content">Caption (optional)</Label>
             <Textarea
               id="content"
               value={content}
@@ -197,7 +192,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || isUploading || (!content.trim() && !selectedFile)}>
+            <Button type="submit" disabled={isSubmitting || isUploading || (!selectedFile && !previewUrl)}>
               {isSubmitting || isUploading ? 'Posting...' : 'Post Story'}
             </Button>
           </div>

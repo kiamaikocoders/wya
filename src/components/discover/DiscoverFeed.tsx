@@ -185,6 +185,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           id: event.id,
           title: event.title,
           date: event.date,
+          end_date: event.end_date ?? undefined,
           location: event.location,
           image_url: event.image_url,
         });

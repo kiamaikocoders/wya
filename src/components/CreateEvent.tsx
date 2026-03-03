@@ -32,6 +32,7 @@ const CreateEvent: React.FC = () => {
     description: '',
     category: '',
     date: '',
+    end_date: undefined,
     location: '',
     image_url: '',
     price: 0,
@@ -107,7 +108,13 @@ const CreateEvent: React.FC = () => {
     }
     
     if (!formData.date) {
-      toast.error('Please set an event date');
+      toast.error('Please set the event start date');
+      return;
+    }
+    const startDateStr = formData.date.slice(0, 10);
+    const endDateStr = formData.end_date?.slice(0, 10);
+    if (endDateStr && endDateStr < startDateStr) {
+      toast.error('End date must be on or after the start date');
       return;
     }
     
@@ -137,6 +144,7 @@ const CreateEvent: React.FC = () => {
       // Prepare event data - ensure empty time is sent as null/undefined instead of empty string
       const eventData: CreateEventPayload = {
         ...formData,
+        end_date: formData.end_date ? formData.end_date.slice(0, 10) : undefined,
         time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
         organizer_id: user?.id
       };
@@ -231,7 +239,7 @@ const CreateEvent: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date & Time</Label>
+                  <Label htmlFor="date">From (date & time)</Label>
                   <Input
                     id="date"
                     name="date"
@@ -241,7 +249,20 @@ const CreateEvent: React.FC = () => {
                     required
                   />
                 </div>
-                
+                <div className="space-y-2">
+                  <Label htmlFor="end_date">To (date & time, optional)</Label>
+                  <Input
+                    id="end_date"
+                    name="end_date"
+                    type="datetime-local"
+                    min={formData.date ? formData.date.slice(0, 16) : undefined}
+                    value={formData.end_date ?? ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value || undefined }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty for single-day events</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (KES)</Label>
                   <Input

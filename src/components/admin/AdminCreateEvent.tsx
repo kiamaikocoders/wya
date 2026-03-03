@@ -48,6 +48,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     category_id: null as number | null,
     category_ids: [] as number[], // Multiple categories
     date: '',
+    end_date: '' as string,
     time: '',
     location: '',
     latitude: null as number | null,
@@ -640,6 +641,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       category: categoryName, // Ensure category name is set (first category for backward compatibility)
       category_id: categoryId, // Set category_id to first selected category
       date: new Date(formData.date).toISOString(),
+      end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
       latitude: formData.latitude,
       longitude: formData.longitude,
@@ -872,7 +874,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">From (date) *</Label>
                 <Input
                   id="date"
                   name="date"
@@ -882,7 +884,18 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   required
                 />
               </div>
-              
+              <div className="space-y-2">
+                <Label htmlFor="end_date">To (date, optional)</Label>
+                <Input
+                  id="end_date"
+                  name="end_date"
+                  type="date"
+                  min={formData.date || undefined}
+                  value={formData.end_date || ''}
+                  onChange={handleInputChange}
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for single-day events</p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Time</Label>
                 <Input

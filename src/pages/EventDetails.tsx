@@ -173,7 +173,11 @@ const EventDetails: React.FC = () => {
             <div className="flex flex-wrap items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar size={16} />
-                <span>{format(new Date(event.date), 'EEEE, MMMM d, yyyy')}</span>
+                <span>
+                  {event.end_date && event.end_date !== event.date.slice(0, 10)
+                    ? `${format(new Date(event.date), 'EEEE, MMM d')} – ${format(new Date(event.end_date), 'MMM d, yyyy')}`
+                    : format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={16} />
@@ -280,7 +284,11 @@ const EventDetails: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-text-white/70">Date</span>
-                    <span>{format(new Date(event.date), 'MMM d, yyyy')}</span>
+                    <span>
+                      {event.end_date && event.end_date !== event.date.slice(0, 10)
+                        ? `${format(new Date(event.date), 'MMM d')} – ${format(new Date(event.end_date), 'MMM d, yyyy')}`
+                        : format(new Date(event.date), 'MMM d, yyyy')}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-text-white/70">Time</span>
