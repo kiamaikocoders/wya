@@ -78,6 +78,7 @@ const EventDiscoverSection: React.FC<EventDiscoverSectionProps> = ({
               id: eventGroup.event.id,
               title: eventGroup.event.title,
               date: eventGroup.event.date,
+              end_date: eventGroup.event.end_date ?? undefined,
               location: eventGroup.event.location,
               totalContent: eventGroup.totalContent,
             }}

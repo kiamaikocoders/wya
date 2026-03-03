@@ -35,6 +35,7 @@ export interface AdminEvent {
   title: string;
   description?: string;
   date: string;
+  end_date?: string | null;
   time?: string;
   location: string;
   image_url?: string;

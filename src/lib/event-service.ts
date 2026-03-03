@@ -10,6 +10,7 @@ export interface Event {
   title: string;
   description?: string;
   date: string;
+  end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time (HH:MM:SS format)
   location: string;
   image_url?: string;
@@ -34,6 +35,7 @@ export interface CreateEventPayload {
   title: string;
   description?: string;
   date: string;
+  end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time
   location: string;
   image_url?: string;
@@ -48,6 +50,7 @@ export interface UpdateEventPayload {
   title?: string;
   description?: string;
   date?: string;
+  end_date?: string | null;
   time?: string; // Optional event start time
   location?: string;
   image_url?: string;
@@ -84,7 +87,7 @@ export const eventService = {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id,title,date,time,location,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+        'id,title,date,end_date,time,location,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
       .gte('date', startOfToday)
       .order('date', { ascending: true })
@@ -309,8 +312,8 @@ export const eventService = {
     try {
       const { data, error } = await supabase
         .from('events')
-        .select(
-          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
+.select(
+        'id,title,description,date,end_date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
         )
         .eq('id', id)
         .single();

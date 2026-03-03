@@ -31,6 +31,7 @@ export interface EventMetadata {
   id: number;
   title: string;
   date: string;
+  end_date?: string | null;
   location: string;
   totalContent?: number;
 }
@@ -361,7 +362,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
                         <div className="flex items-center gap-3 mt-1 text-xs text-white/80">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            <span>{format(new Date(eventMetadata.date), 'MMM d, yyyy')}</span>
+                            <span>
+                            {eventMetadata.end_date && eventMetadata.end_date !== eventMetadata.date.slice(0, 10)
+                              ? `${format(new Date(eventMetadata.date), 'MMM d')} – ${format(new Date(eventMetadata.end_date), 'MMM d, yyyy')}`
+                              : format(new Date(eventMetadata.date), 'MMM d, yyyy')}
+                          </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
@@ -373,7 +378,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
                         <div className="mt-2 space-y-1 text-xs text-white/80">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
-                            <span>{format(new Date(eventMetadata.date), 'EEEE, MMMM d, yyyy')}</span>
+                            <span>
+                            {eventMetadata.end_date && eventMetadata.end_date !== eventMetadata.date.slice(0, 10)
+                              ? `${format(new Date(eventMetadata.date), 'EEEE, MMM d')} – ${format(new Date(eventMetadata.end_date), 'MMM d, yyyy')}`
+                              : format(new Date(eventMetadata.date), 'EEEE, MMMM d, yyyy')}
+                          </span>
                           </div>
                           <div className="flex items-center gap-2">
                             <MapPin className="h-3 w-3" />

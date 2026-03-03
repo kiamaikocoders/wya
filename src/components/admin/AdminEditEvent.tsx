@@ -43,6 +43,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     category_id: null as number | null,
     category_ids: [] as number[], // Multiple categories
     date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
+    end_date: event.end_date ? String(event.end_date).slice(0, 10) : '',
     time: event.time || '',
     location: event.location || '',
     image_url: event.image_url || '',
@@ -365,6 +366,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       ...eventDataWithoutCategoryIds,
       category_id: categoryId, // Set category_id to first selected category
       date: new Date(formData.date).toISOString(),
+      end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
     };
     
@@ -497,9 +499,9 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
           <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold">Scheduling</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">From (date) *</Label>
                 <Input
                   id="date"
                   name="date"
@@ -509,7 +511,20 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   required
                 />
               </div>
-              
+              <div className="space-y-2">
+                <Label htmlFor="end_date">To (date, optional)</Label>
+                <Input
+                  id="end_date"
+                  name="end_date"
+                  type="date"
+                  min={formData.date || undefined}
+                  value={formData.end_date || ''}
+                  onChange={handleInputChange}
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for single-day events</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="time">Time</Label>
                 <Input
