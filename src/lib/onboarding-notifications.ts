@@ -89,10 +89,14 @@ class OnboardingNotifications {
     if (currentStatus.granted) {
       const location = await locationService.getCurrentLocation(false, true); // Silent mode
       if (location) {
-        // Update user profile with location silently
+        // Update user profile with location and coordinates silently
         await supabase
           .from('profiles')
-          .update({ location: location.address || location.city || 'Unknown' })
+          .update({
+            location: location.address || location.city || 'Unknown',
+            latitude: location.latitude,
+            longitude: location.longitude,
+          })
           .eq('id', userId);
       }
       return; // Exit early, no need to show prompts
@@ -104,10 +108,14 @@ class OnboardingNotifications {
     if (permission.granted) {
       const location = await locationService.getCurrentLocation(false, true); // Silent mode
       if (location) {
-        // Update user profile with location
+        // Update user profile with location and coordinates
         await supabase
           .from('profiles')
-          .update({ location: location.address || location.city || 'Unknown' })
+          .update({
+            location: location.address || location.city || 'Unknown',
+            latitude: location.latitude,
+            longitude: location.longitude,
+          })
           .eq('id', userId);
 
         await notificationService.createNotification({
@@ -142,7 +150,11 @@ class OnboardingNotifications {
             if (loc) {
               await supabase
                 .from('profiles')
-                .update({ location: loc.address || loc.city || 'Unknown' })
+                .update({
+                  location: loc.address || loc.city || 'Unknown',
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                })
                 .eq('id', userId);
               toast.success('Location enabled!');
             }

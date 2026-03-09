@@ -12,6 +12,7 @@ import { adminService, AdminEvent } from '@/lib/admin-service';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import LocationPicker from '@/components/maps/LocationPicker';
 
 interface Category {
   id: number;
@@ -22,8 +23,6 @@ interface Category {
 }
 
 const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
-const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
-
 interface AdminEditEventProps {
   event: AdminEvent;
   onSuccess?: () => void;
@@ -46,6 +45,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     end_date: event.end_date ? String(event.end_date).slice(0, 10) : '',
     time: event.time || '',
     location: event.location || '',
+    latitude: (event as any).latitude ?? null,
+    longitude: (event as any).longitude ?? null,
     image_url: event.image_url || '',
     price: event.price || 0,
     capacity: event.capacity || 0,
@@ -361,6 +362,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     
     // Remove category_ids from the data being sent to the events table
     const { category_ids, ...eventDataWithoutCategoryIds } = formData;
+    if (formData.latitude != null) (eventDataWithoutCategoryIds as any).latitude = formData.latitude;
+    if (formData.longitude != null) (eventDataWithoutCategoryIds as any).longitude = formData.longitude;
     
     const eventData = {
       ...eventDataWithoutCategoryIds,
@@ -474,23 +477,28 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                 </Accordion>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Select 
-                  value={formData.location} 
-                  onValueChange={(value) => handleSelectChange('location', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locations.map(location => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Location</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Search for a location in Kenya. This pins the event on the map.
+                </p>
+                <LocationPicker
+                  onLocationSelect={(loc) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      location: loc.address,
+                      latitude: loc.latitude,
+                      longitude: loc.longitude,
+                    }));
+                  }}
+                  initialLocation={
+                    formData.latitude != null && formData.longitude != null
+                      ? { address: formData.location, latitude: formData.latitude, longitude: formData.longitude }
+                      : undefined
+                  }
+                  height={280}
+                  mode="event"
+                />
               </div>
             </div>
           </div>

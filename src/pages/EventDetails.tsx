@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDate } from '@/utils/event-utils';
 import { useEvents } from '@/hooks/use-events';
 import BackButton from '@/components/navigation/BackButton';
+import MapView from '@/components/ui/MapView';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -350,7 +351,28 @@ const EventDetails: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-            
+
+            {/* Event Location Map */}
+            {event.location && (
+              <Card className="bg-gradient-promo border-white/20 overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <MapPin size={18} />
+                    Location
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <MapView
+                    location={event.location}
+                    latitude={event.latitude}
+                    longitude={event.longitude}
+                    className="h-48"
+                    interactive
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             {/* Event Sponsors Section */}
             <EventSponsorsSection eventId={Number(eventId)} />
           </div>

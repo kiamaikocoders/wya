@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon, Clock, Flame } from 'lucide-react';
+import { CalendarIcon, Clock, Flame, MapPin } from 'lucide-react';
 import type { EventFilterState } from './types';
 import { format } from 'date-fns';
 import { Switch } from '@/components/ui/switch';
@@ -119,25 +119,68 @@ const EventsFiltersPanel = ({
     </div>
   );
 
+  const RADIUS_OPTIONS = [
+    { label: '10 km', value: 10 },
+    { label: '25 km', value: 25 },
+    { label: '50 km', value: 50 },
+    { label: '100 km', value: 100 },
+  ];
+
   const LocationBody = () => (
-    <div className="flex flex-wrap gap-2 pt-2">
-      {locations.map(location => (
-        <Button
-          key={location}
-          variant={filters.location === location ? 'default' : 'outline'}
-          size="sm"
-          className={cn(
-            'h-auto rounded-full px-3 py-2 text-xs leading-none',
-            filters.location === location
-              ? 'bg-gradient-accent text-white'
-              : 'border-white/20 text-white/80 hover:border-kenya-orange hover:text-white'
-          )}
-          onClick={() => updateFilter('location', filters.location === location ? null : location)}
-          title={location.length > 30 ? location : undefined}
-        >
-          <span className="block max-w-[220px] truncate">{location}</span>
-        </Button>
-      ))}
+    <div className="space-y-3 pt-2">
+      <div className="flex flex-wrap gap-2">
+        {RADIUS_OPTIONS.map(({ label, value }) => {
+          const isNearMe = filters.radiusKm === value;
+          return (
+            <Button
+              key={value}
+              variant={isNearMe ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                'h-auto rounded-full px-3 py-2 text-xs leading-none',
+                isNearMe
+                  ? 'bg-gradient-accent text-white'
+                  : 'border-white/20 text-white/80 hover:border-kenya-orange hover:text-white'
+              )}
+              onClick={() => {
+                if (isNearMe) {
+                  updateFilter('radiusKm', null);
+                } else {
+                  updateFilter('radiusKm', value);
+                  updateFilter('location', null);
+                }
+              }}
+            >
+              <MapPin className="mr-1.5 h-3 w-3" />
+              Near me {label}
+            </Button>
+          );
+        })}
+      </div>
+      {(filters.radiusKm == null || filters.radiusKm === 0) && (
+        <div className="flex flex-wrap gap-2">
+          {locations.map(location => (
+            <Button
+              key={location}
+              variant={filters.location === location ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                'h-auto rounded-full px-3 py-2 text-xs leading-none',
+                filters.location === location
+                  ? 'bg-gradient-accent text-white'
+                  : 'border-white/20 text-white/80 hover:border-kenya-orange hover:text-white'
+              )}
+              onClick={() => {
+                updateFilter('location', filters.location === location ? null : location);
+                updateFilter('radiusKm', null);
+              }}
+              title={location.length > 30 ? location : undefined}
+            >
+              <span className="block max-w-[220px] truncate">{location}</span>
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -257,7 +300,9 @@ const EventsFiltersPanel = ({
     defaultOpenAll?: boolean;
   }) => {
     const selectedCategory = filters.category ?? null;
-    const selectedLocation = filters.location ?? null;
+    const selectedLocation = filters.radiusKm
+      ? `Near me (${filters.radiusKm} km)`
+      : filters.location ?? null;
     const selectedTagsCount = filters.tags.length;
     const hasDate = Boolean(filters.startDate || filters.endDate);
     const dateLabel =
@@ -322,7 +367,7 @@ const EventsFiltersPanel = ({
                       </span>
                     )}
                   </div>
-                  {selectedLocation && (
+                  {(selectedLocation || filters.radiusKm) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -331,6 +376,7 @@ const EventsFiltersPanel = ({
                         e.preventDefault();
                         e.stopPropagation();
                         updateFilter('location', null);
+                        updateFilter('radiusKm', null);
                       }}
                     >
                       Clear
@@ -443,12 +489,15 @@ const EventsFiltersPanel = ({
         <div>
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold uppercase tracking-wide text-white/70">Location</h4>
-            {filters.location && (
+            {(filters.location || filters.radiusKm) && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-white/60 hover:text-white"
-                onClick={() => updateFilter('location', null)}
+                onClick={() => {
+                  updateFilter('location', null);
+                  updateFilter('radiusKm', null);
+                }}
               >
                 Clear
               </Button>

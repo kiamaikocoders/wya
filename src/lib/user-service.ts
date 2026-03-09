@@ -25,6 +25,8 @@ export interface Profile {
   updated_at?: string;
   created_at?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UpdateProfilePayload {
@@ -33,6 +35,8 @@ export interface UpdateProfilePayload {
   avatar_url?: string;
   bio?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const userService = {
@@ -43,7 +47,7 @@ export const userService = {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, created_at')
+        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at')
         .eq('id', user.id)
         .single();
       
@@ -96,7 +100,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, created_at, updated_at')
+        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at')
         .eq('id', userId)
         .single();
       
@@ -139,7 +143,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, created_at, updated_at')
+        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at')
         .eq('username', username)
         .single();
 
