@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { locationService, generateSessionToken } from '@/lib/location-service';
+import { locationService, generateSessionToken, getSuggestionCountryCode } from '@/lib/location-service';
 
 interface Category {
   id: number;
@@ -87,28 +87,26 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   }, []);
   
   // Search locations using Mapbox Search Box API - Kenya only
+  // Uses tryCorrectLocationTypo in location-service for common typos (e.g. nairoi -> Nairobi)
   const searchLocations = useCallback(async (query: string) => {
     if (!query.trim()) {
       setLocationSearchResults([]);
       return;
     }
-    
+
     setIsSearchingLocation(true);
     try {
-      // Generate new session token for each new search
       const currentSessionToken = sessionToken || generateSessionToken();
       if (!sessionToken) {
         setSessionToken(currentSessionToken);
       }
-      
-      // Use Search Box API suggest endpoint
-      // Note: Search Box API has a maximum limit of 10
-      const suggestions = await locationService.searchLocationsSuggest(query, currentSessionToken, {
+
+      const suggestions = await locationService.searchLocationsSuggest(query.trim(), currentSessionToken, {
         country: 'ke',
-        proximity: '36.8219,-1.2921', // Nairobi coordinates
+        proximity: '36.8219,-1.2921',
         limit: 10
       });
-      
+
       if (suggestions.length === 0) {
         toast.error('No locations found in Kenya. Try a different search term.');
         setLocationSearchResults([]);
@@ -116,28 +114,16 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         return;
       }
       
-      // Filter to ONLY Kenyan results
-      const kenyanSuggestions = suggestions.filter((suggestion: any) => {
-        // Check if suggestion has country code
-        // Search Box API returns country_code directly on the suggestion object
-        const countryCode = suggestion.country_code || suggestion.country;
-        
-        // Also check context if it's an array
-        let contextCountryCode = null;
-        if (Array.isArray(suggestion.context)) {
-          const countryContext = suggestion.context.find((ctx: any) => 
-            ctx.country_code || ctx.type === 'country'
-          );
-          contextCountryCode = countryContext?.country_code || countryContext?.country;
-        } else if (suggestion.context && typeof suggestion.context === 'object') {
-          // Context might be an object with country information
-          contextCountryCode = suggestion.context.country_code || suggestion.context.country;
-        }
-        
-        const finalCountryCode = countryCode || contextCountryCode;
-        return finalCountryCode === 'KE' || finalCountryCode === 'ke';
+      // Filter to Kenyan results (Search Box API: context.country.country_code)
+      let kenyanSuggestions = suggestions.filter((suggestion: any) => {
+        const code = getSuggestionCountryCode(suggestion);
+        return code === 'KE' || code === 'ke';
       });
-      
+      // Fallback: if filter removes all but we have results, trust API (country=ke was passed)
+      if (kenyanSuggestions.length === 0 && suggestions.length > 0) {
+        kenyanSuggestions = suggestions;
+      }
+
       if (kenyanSuggestions.length === 0) {
         toast.error('No locations found in Kenya. Try a different search term.');
         setLocationSearchResults([]);
@@ -145,30 +131,17 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         return;
       }
       
-      // Sort by type priority and relevance
+      // Sort by type priority (feature_type is string in Search Box API) and distance
       const typePriority: Record<string, number> = {
-        'address': 1,
-        'poi': 2,
-        'locality': 3,
-        'neighborhood': 4,
-        'place': 5,
+        address: 1, poi: 2, locality: 3, neighborhood: 4, place: 5, city: 6,
       };
-      
       const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
-        const aTypes = a.feature_type || [];
-        const bTypes = b.feature_type || [];
-        
-        const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
-        const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
-        
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-        
-        // Sort by distance score if available (lower is better)
-        const aDistance = a.distance || Infinity;
-        const bDistance = b.distance || Infinity;
-        return aDistance - bDistance;
+        const aType = Array.isArray(a.feature_type) ? a.feature_type[0] : a.feature_type;
+        const bType = Array.isArray(b.feature_type) ? b.feature_type[0] : b.feature_type;
+        const aPriority = typePriority[aType] ?? 99;
+        const bPriority = typePriority[bType] ?? 99;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return (a.distance ?? Infinity) - (b.distance ?? Infinity);
       });
       
       setLocationSearchResults(sortedSuggestions);
@@ -196,7 +169,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         // Generate new session token for each search session and pass it directly
         const newSessionToken = generateSessionToken();
         setSessionToken(newSessionToken);
-        searchLocations(locationSearchQuery, newSessionToken);
+        searchLocations(locationSearchQuery);
       } else {
         setLocationSearchResults([]);
         setShowLocationResults(false);
@@ -788,25 +761,23 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   {showLocationResults && locationSearchResults.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
                       {locationSearchResults.map((result, index) => {
-                        const [lng, lat] = result.center;
-                        const isKenya = result.context?.some((ctx: any) => 
-                          ctx.id?.startsWith('country') && ctx.short_code === 'ke'
-                        );
-                        // Get result type (address, poi, or place)
-                        const resultTypes = result.place_type || [];
-                        const primaryType = resultTypes[0] || 'place';
+                        const ft = result.feature_type;
+                        const primaryType = Array.isArray(ft) ? ft[0] : ft;
                         const typeLabels: Record<string, string> = {
-                          'address': 'Address',
-                          'poi': 'Landmark',
-                          'locality': 'Area',
-                          'neighborhood': 'Neighborhood',
-                          'place': 'Place',
+                          address: 'Address',
+                          poi: 'Landmark',
+                          locality: 'Area',
+                          neighborhood: 'Neighborhood',
+                          place: 'Place',
+                          city: 'City',
                         };
                         const typeLabel = typeLabels[primaryType] || 'Location';
-                        
+                        const displayName = result.name || result.full_address || result.place_formatted || 'Location';
+                        const subText = result.place_formatted || result.full_address || '';
+
                         return (
                           <button
-                            key={index}
+                            key={result.mapbox_id || index}
                             type="button"
                             onClick={() => handleLocationSelect(result)}
                             className="w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b last:border-b-0"
@@ -815,25 +786,16 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                               <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium truncate">{result.place_name || result.text}</p>
+                                  <p className="text-sm font-medium truncate">{displayName}</p>
                                   <Badge variant="secondary" className="text-xs flex-shrink-0">
                                     {typeLabel}
                                   </Badge>
-              </div>
-                                {result.context && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {result.context
-                                      .filter((ctx: any) => ctx.id?.startsWith('place') || ctx.id?.startsWith('region'))
-                                      .map((ctx: any) => ctx.text)
-                                      .join(', ')}
-                                  </p>
+                                </div>
+                                {subText && subText !== displayName && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{subText}</p>
                                 )}
                               </div>
-                              {isKenya && (
-                                <Badge variant="outline" className="text-xs flex-shrink-0">
-                                  KE
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs flex-shrink-0">KE</Badge>
                             </div>
                           </button>
                         );

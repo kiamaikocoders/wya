@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Search, Navigation, Check } from 'lucide-react';
-import { locationService, generateSessionToken } from '@/lib/location-service';
+import { locationService, generateSessionToken, getSuggestionCountryCode } from '@/lib/location-service';
 import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -101,58 +101,32 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         limit: 10
       });
       
-      // Filter to ONLY Kenyan results
-      const kenyanSuggestions = suggestions.filter((suggestion: any) => {
-        // Check if suggestion has country code
-        // Search Box API returns country_code directly on the suggestion object
-        const countryCode = suggestion.country_code || suggestion.country;
-        
-        // Also check context if it's an array
-        let contextCountryCode = null;
-        if (Array.isArray(suggestion.context)) {
-          const countryContext = suggestion.context.find((ctx: any) => 
-            ctx.country_code || ctx.type === 'country'
-          );
-          contextCountryCode = countryContext?.country_code || countryContext?.country;
-        } else if (suggestion.context && typeof suggestion.context === 'object') {
-          // Context might be an object with country information
-          contextCountryCode = suggestion.context.country_code || suggestion.context.country;
-        }
-        
-        const finalCountryCode = countryCode || contextCountryCode;
-        return finalCountryCode === 'KE' || finalCountryCode === 'ke';
+      // Filter to Kenyan results (Search Box API: context.country.country_code)
+      let kenyanSuggestions = suggestions.filter((suggestion: any) => {
+        const code = getSuggestionCountryCode(suggestion);
+        return code === 'KE' || code === 'ke';
       });
-      
+      if (kenyanSuggestions.length === 0 && suggestions.length > 0) {
+        kenyanSuggestions = suggestions;
+      }
+
       if (kenyanSuggestions.length === 0) {
         toast.error('No locations found in Kenya. Try a different search term.');
         setSearchResults([]);
         return;
       }
       
-      // Sort by type priority and distance
+      // Sort by type priority (feature_type is string in Search Box API) and distance
       const typePriority: Record<string, number> = {
-        'address': 1,
-        'poi': 2,
-        'locality': 3,
-        'neighborhood': 4,
-        'place': 5,
+        address: 1, poi: 2, locality: 3, neighborhood: 4, place: 5, city: 6,
       };
-      
       const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
-        const aTypes = a.feature_type || [];
-        const bTypes = b.feature_type || [];
-        
-        const aPriority = Math.min(...aTypes.map((t: string) => typePriority[t] || 99));
-        const bPriority = Math.min(...bTypes.map((t: string) => typePriority[t] || 99));
-        
-        if (aPriority !== bPriority) {
-          return aPriority - bPriority;
-        }
-        
-        // Sort by distance if available (lower is better)
-        const aDistance = a.distance || Infinity;
-        const bDistance = b.distance || Infinity;
-        return aDistance - bDistance;
+        const aType = Array.isArray(a.feature_type) ? a.feature_type[0] : a.feature_type;
+        const bType = Array.isArray(b.feature_type) ? b.feature_type[0] : b.feature_type;
+        const aPriority = typePriority[aType] ?? 99;
+        const bPriority = typePriority[bType] ?? 99;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return (a.distance ?? Infinity) - (b.distance ?? Infinity);
       });
       
       setSearchResults(sortedSuggestions);

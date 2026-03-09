@@ -1,7 +1,7 @@
 // Location service with Mapbox integration
 import { toast } from 'sonner';
 
-const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoidW5tYXNraW5nIiwiYSI6ImNtaHo5dmY5cDBpcncybHM1aTI4cjZ3b3IifQ.yNt2bslI1wAyoeoKREtVyw';
+const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 
 /**
  * Generate a session token for Mapbox Search Box API
@@ -9,6 +9,37 @@ const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoidW5tYXNraW5nIiwiYSI6ImNtaHo5dmY5cDBpcncy
  */
 export function generateSessionToken(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/** Common typos for Kenyan locations; used to improve search results */
+const LOCATION_TYPO_MAP: Record<string, string> = {
+  nairoi: 'Nairobi', narobi: 'Nairobi', nairobi: 'Nairobi',
+  mombasa: 'Mombasa', kisumu: 'Kisumu', nakuru: 'Nakuru',
+  eldoret: 'Eldoret', malindi: 'Malindi', machakos: 'Machakos',
+};
+
+export function tryCorrectLocationTypo(query: string): string {
+  const normalized = query.trim().toLowerCase();
+  return LOCATION_TYPO_MAP[normalized] || query.trim();
+}
+
+/**
+ * Extract country code from a Mapbox Search Box API suggestion.
+ * Format: context.country.country_code (object) or legacy context array.
+ */
+export function getSuggestionCountryCode(suggestion: any): string | null {
+  if (!suggestion) return null;
+  const country = suggestion.context?.country;
+  if (country && typeof country === 'object') {
+    return country.country_code || country.country || null;
+  }
+  const code = suggestion.country_code || suggestion.country;
+  if (code) return code;
+  if (Array.isArray(suggestion.context)) {
+    const ctx = suggestion.context.find((c: any) => c.country_code || c.type === 'country');
+    return ctx?.country_code || ctx?.country || null;
+  }
+  return null;
 }
 
 export interface UserLocation {
@@ -192,8 +223,14 @@ class LocationService {
           resolve(location);
         },
         (error) => {
-          console.error('Error getting location:', error);
-          
+          // POSITION_UNAVAILABLE (code 2) often comes from Google's network provider returning 403
+          // — we can't fix that; avoid noisy console.error
+          if (error.code === 2) {
+            console.warn('Geolocation unavailable (network provider may be blocked):', error.message);
+          } else {
+            console.error('Error getting location:', error);
+          }
+
           // Only show error messages if not in silent mode
           if (!silent) {
             let errorMessage = 'Failed to get your location. ';
@@ -354,20 +391,21 @@ class LocationService {
     country?: string;
     proximity?: string;
     limit?: number;
+    tryTypoCorrection?: boolean;
   }): Promise<any[]> {
     try {
-      // Search Box API has a maximum limit of 10
-      const { country = 'ke', proximity = '36.8219,-1.2921', limit = 10 } = options || {};
-      const clampedLimit = Math.min(Math.max(limit, 1), 10); // Ensure limit is between 1 and 10
-      
+      const { country = 'ke', proximity = '36.8219,-1.2921', limit = 10, tryTypoCorrection = true } = options || {};
+      const clampedLimit = Math.min(Math.max(limit, 1), 10);
+      const searchQuery = tryTypoCorrection ? (tryCorrectLocationTypo(query) || query.trim()) : query.trim();
+
       const url = new URL('https://api.mapbox.com/search/searchbox/v1/suggest');
-      url.searchParams.set('q', query);
+      url.searchParams.set('q', searchQuery);
       url.searchParams.set('access_token', MAPBOX_ACCESS_TOKEN);
       url.searchParams.set('session_token', sessionToken);
       url.searchParams.set('country', country);
       url.searchParams.set('proximity', proximity);
       url.searchParams.set('limit', clampedLimit.toString());
-      url.searchParams.set('types', 'address,poi,place,locality,neighborhood');
+      // Omit types to allow all (city, place, address, poi, etc.) - was too restrictive
       
       const response = await fetch(url.toString());
       
