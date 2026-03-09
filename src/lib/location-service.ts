@@ -393,6 +393,13 @@ class LocationService {
     limit?: number;
     tryTypoCorrection?: boolean;
   }): Promise<any[]> {
+    if (!MAPBOX_ACCESS_TOKEN) {
+      const err = new Error(
+        'Mapbox token is required for location search. Set VITE_MAPBOX_ACCESS_TOKEN in your environment (e.g. Vercel → Project Settings → Environment Variables).'
+      );
+      console.error(err.message);
+      throw err;
+    }
     try {
       const { country = 'ke', proximity = '36.8219,-1.2921', limit = 10, tryTypoCorrection = true } = options || {};
       const clampedLimit = Math.min(Math.max(limit, 1), 10);
