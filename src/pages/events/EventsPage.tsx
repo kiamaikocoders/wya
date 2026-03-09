@@ -45,6 +45,7 @@ const EventsPage = () => {
     changeTab,
     recommendationTags,
     contextLocation,
+    userCoordsForRadius,
     isSavingFilter,
   } = useEventFilters();
 
@@ -64,6 +65,7 @@ const EventsPage = () => {
       activeTab,
       recommendationTags,
       contextLocation,
+      userCoordsForRadius,
     ],
     queryFn: () =>
       eventService.queryEvents({
@@ -74,6 +76,9 @@ const EventsPage = () => {
         recommendationTags,
         curatedCity: contextLocation,
         includePast: activeTab === 'past',
+        radiusKm: filters.radiusKm ?? undefined,
+        latitude: userCoordsForRadius?.latitude,
+        longitude: userCoordsForRadius?.longitude,
       }),
     enabled: activeTab !== 'attending',
     keepPreviousData: true,

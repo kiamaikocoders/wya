@@ -21,6 +21,8 @@ interface EditProfileModalProps {
     bio?: string;
     avatar_url?: string;
     location?: string;
+    latitude?: number;
+    longitude?: number;
   };
 }
 
@@ -96,6 +98,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
         avatar_url: formData.avatar_url,
         location: formData.location,
       };
+      if (selectedLocation) {
+        updateData.latitude = selectedLocation.latitude;
+        updateData.longitude = selectedLocation.longitude;
+      }
 
       await userService.updateProfile(updateData);
       queryClient.invalidateQueries({ queryKey: ['userProfile', profile.id] });
@@ -236,7 +242,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
                   // Update formData but don't submit
                   setFormData(prev => ({ ...prev, location: location.address }));
                 }}
-                initialLocation={selectedLocation || undefined}
+                initialLocation={
+                  selectedLocation ||
+                  (profile.latitude != null && profile.longitude != null && profile.location
+                    ? { address: profile.location, latitude: profile.latitude, longitude: profile.longitude }
+                    : undefined)
+                }
                 height={300}
                 mode="user"
               />

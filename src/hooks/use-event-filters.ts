@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { onboardingService } from '@/lib/onboarding-service';
 import { eventFilterService } from '@/lib/event-filter-service';
+import { userService } from '@/lib/user-service';
 import type { EventFilterState, EventSortOption, EventViewMode, EventsTab, SavedEventFilter } from '@/pages/events/types';
 
 const DEFAULT_FILTERS: EventFilterState = {
@@ -14,6 +15,9 @@ const DEFAULT_FILTERS: EventFilterState = {
   featuredOnly: false,
   startDate: null,
   endDate: null,
+  radiusKm: null,
+  latitude: null,
+  longitude: null,
 };
 
 const DEFAULT_SORT: EventSortOption = 'soonest';
@@ -33,6 +37,7 @@ export const useEventFilters = () => {
     // This ensures filters start neutral unless user explicitly navigated with filters
     const category = searchParams.get('category');
     const location = searchParams.get('location');
+    const radiusKm = searchParams.get('radiusKm');
     const search = searchParams.get('search');
     const tags = parseArrayParam(searchParams.get('tags'));
     const featured = searchParams.get('featured');
@@ -48,6 +53,7 @@ export const useEventFilters = () => {
       featuredOnly: featured === 'true',
       startDate: startDate || null,
       endDate: endDate || null,
+      radiusKm: radiusKm ? parseInt(radiusKm, 10) || null : null,
     };
   });
 
@@ -85,6 +91,13 @@ export const useEventFilters = () => {
     enabled: isAuthenticated,
   });
 
+  const { data: currentUser } = useAuth();
+  const profileQuery = useQuery({
+    queryKey: ['userProfile', currentUser?.id],
+    queryFn: () => (currentUser?.id ? userService.getUserProfile(currentUser.id) : null),
+    enabled: !!currentUser?.id && (filters.radiusKm != null && filters.radiusKm > 0),
+  });
+
   // Removed auto-fill from onboarding preferences
   // Filters should start neutral until user explicitly applies them
   // Users can still use their saved filters or manually set location if needed
@@ -115,6 +128,8 @@ export const useEventFilters = () => {
 
       if (merged.location) params.set('location', merged.location);
       else params.delete('location');
+      if (merged.radiusKm != null) params.set('radiusKm', String(merged.radiusKm));
+      else params.delete('radiusKm');
 
       if (merged.tags.length) params.set('tags', merged.tags.join(','));
       else params.delete('tags');
@@ -282,6 +297,15 @@ export const useEventFilters = () => {
     return onboardingQuery.data?.homeBase ?? onboardingQuery.data?.preferredCities?.[0] ?? null;
   }, [filters.location, onboardingQuery.data]);
 
+  const userCoordsForRadius = useMemo(() => {
+    if (!filters.radiusKm || filters.radiusKm <= 0) return null;
+    const profile = profileQuery.data;
+    if (profile?.latitude != null && profile?.longitude != null) {
+      return { latitude: profile.latitude, longitude: profile.longitude };
+    }
+    return null;
+  }, [filters.radiusKm, profileQuery.data]);
+
   return {
     filters,
     sortOption,
@@ -304,6 +328,7 @@ export const useEventFilters = () => {
     changeTab,
     recommendationTags,
     contextLocation,
+    userCoordsForRadius,
     onboardingPreferences: onboardingQuery.data,
     isSavingFilter: saveFilterMutation.isPending,
     isDeletingFilter: deleteFilterMutation.isPending,

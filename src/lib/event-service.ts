@@ -145,17 +145,12 @@ export const eventService = {
       }
 
       if (location) {
-        query = query.eq('location', location);
+        query = query.ilike('location', `%${location.trim()}%`);
       }
 
       if (tags && tags.length > 0) {
         query = query.contains('tags', tags);
       }
-
-      // Use start-of-today (date-only) so events on the current day are included.
-      // Using nowIso would exclude today's events because DB dates are often stored as midnight.
-      const now = new Date();
-      const startOfTodayIso = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
 
       if (!includePast) {
         // If includePast is false, only show events from start of today onward
@@ -229,7 +224,7 @@ export const eventService = {
           ? supabase
               .from('events')
               .select('id', { count: 'exact', head: true })
-              .eq('location', curatedCity)
+              .ilike('location', `%${curatedCity}%`)
               .gte('date', startOfTodayIso)
           : Promise.resolve({ count: 0 }),
       ]);

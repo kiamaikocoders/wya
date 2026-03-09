@@ -52,6 +52,8 @@ export interface AdminEvent {
   tickets_sold?: number;
   attendees_count?: number;
   ticket_link?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface AdminEventStats {
@@ -546,6 +548,8 @@ export const adminService = {
           tickets_sold: ticketCountMap.get(event.id) || 0,
           attendees_count: ticketCountMap.get(event.id) || 0,
           ticket_link: event.ticket_link ?? null,
+          latitude: event.latitude ?? null,
+          longitude: event.longitude ?? null,
         };
       });
 
