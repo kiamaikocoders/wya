@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { updateService } from './lib/update-service';
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { Analytics } from "@vercel/analytics/react";
 
 const Layout = lazy(() => import("./components/layout/Layout"));
 const MarketingLayout = lazy(() => import("./components/layout/MarketingLayout"));
@@ -330,6 +331,7 @@ const App = () => {
         <Sonner />
       </HelmetProvider>
     </TooltipProvider>
+    <Analytics />
   </QueryClientProvider>
 );
 };
