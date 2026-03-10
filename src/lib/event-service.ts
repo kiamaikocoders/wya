@@ -103,6 +103,9 @@ export const eventService = {
 
   queryEvents: async (options: EventQueryOptions): Promise<EventQueryResponse> => {
     try {
+      const now = new Date();
+      const startOfTodayIso = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
+
       const {
         search,
         category,
