@@ -1,0 +1,16 @@
+---
+description: Always use Supabase MCP to run migrations
+alwaysApply: true
+---
+
+# Database Migrations
+
+**ALWAYS use the Supabase MCP to run migrations.** Do not use `supabase db push`, `supabase migration up`, or any terminal command to apply migrations.
+
+## How to run migrations
+
+1. Use the `apply_migration` tool from the `user-supabase` MCP server
+2. Pass `name` (snake_case migration name) and `query` (the SQL content)
+3. Read the migration file from `supabase/migrations/*.sql` and pass its contents as the query
+
+Example: When applying a new migration, call `call_mcp_tool` with `server: "user-supabase"`, `toolName: "apply_migration"`, and the migration SQL as the query.
