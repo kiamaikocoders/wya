@@ -38,6 +38,7 @@ export interface AdminEvent {
   end_date?: string | null;
   time?: string;
   location: string;
+  location_url?: string | null;
   image_url?: string;
   capacity?: number;
   price?: number;
@@ -534,6 +535,7 @@ export const adminService = {
           date: event.date,
           time: event.time,
           location: event.location,
+          location_url: event.location_url ?? null,
           image_url: event.image_url,
           capacity: event.capacity,
           price: event.price,

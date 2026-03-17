@@ -47,6 +47,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     location: event.location || '',
     latitude: (event as any).latitude ?? null,
     longitude: (event as any).longitude ?? null,
+    location_url: (event as any).location_url || '',
     image_url: event.image_url || '',
     price: event.price || 0,
     capacity: event.capacity || 0,
@@ -360,10 +361,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       categoryId = formData.category_ids[0];
     }
     
-    // Remove category_ids from the data being sent to the events table
+    // Remove category_ids from the data being sent to the events table.
+    // Always include latitude/longitude (including null) so admins can clear an existing pin.
     const { category_ids, ...eventDataWithoutCategoryIds } = formData;
-    if (formData.latitude != null) (eventDataWithoutCategoryIds as any).latitude = formData.latitude;
-    if (formData.longitude != null) (eventDataWithoutCategoryIds as any).longitude = formData.longitude;
+    (eventDataWithoutCategoryIds as any).latitude = formData.latitude;
+    (eventDataWithoutCategoryIds as any).longitude = formData.longitude;
     
     const eventData = {
       ...eventDataWithoutCategoryIds,
@@ -499,6 +501,53 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   height={280}
                   mode="event"
                 />
+
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        latitude: null,
+                        longitude: null,
+                      }));
+                      toast.success('Pinned location cleared. Save changes to apply.');
+                    }}
+                  >
+                    Clear pinned location
+                  </Button>
+                </div>
+
+                <div className="space-y-2 pt-3">
+                  <Label htmlFor="location">Location name/address</Label>
+                  <Input
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Jifunze International, Nairobi"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If the search can’t find the exact venue, you can manually edit the location text shown to users.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-3">
+                  <Label htmlFor="location_url">Manual location link (optional)</Label>
+                  <Input
+                    id="location_url"
+                    name="location_url"
+                    value={formData.location_url}
+                    onChange={handleInputChange}
+                    placeholder="Paste a maps link (Google, Apple, Mapbox, etc.)"
+                    inputMode="url"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If search can’t find the exact venue, paste a maps link here so users can get directions.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

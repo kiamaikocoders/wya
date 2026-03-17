@@ -8,7 +8,7 @@ import { CreateStoryDto } from '@/lib/story/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, MapPin, Users, Link2, Share2, ImagePlus, Loader2, Heart, HeartOff, MessageSquare, Clock } from 'lucide-react';
+import { Calendar, MapPin, Users, Link2, Share2, ImagePlus, Loader2, Heart, HeartOff, MessageSquare, Clock, ExternalLink } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { StoryModal } from '@/components/StoryModal';
 import EventSponsorsSection from '@/components/sponsors/EventSponsorsSection';
@@ -35,6 +35,7 @@ import { formatDate } from '@/utils/event-utils';
 import { useEvents } from '@/hooks/use-events';
 import BackButton from '@/components/navigation/BackButton';
 import MapView from '@/components/ui/MapView';
+import { Capacitor } from '@capacitor/core';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -115,6 +116,25 @@ const EventDetails: React.FC = () => {
       toast.success('Event added to saved list');
     } else {
       toast.success('Event removed from saved list');
+    }
+  };
+
+  const handleOpenLocation = async () => {
+    if (!event?.location_url) return;
+    const url = event.location_url.trim();
+    if (!url) return;
+
+    // Web: open a new tab. Native: window.open still works, but will likely use in-app browser / custom tab.
+    // We keep this lightweight; deeper "Open with…" integrations (Uber/Bolt) can be added later.
+    try {
+      if (Capacitor.isNativePlatform()) {
+        window.open(url, '_blank');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error('Failed to open location URL:', err);
+      toast.error('Failed to open location');
     }
   };
   
@@ -353,17 +373,23 @@ const EventDetails: React.FC = () => {
             </Card>
 
             {/* Event Location Map */}
-            {event.location && (
+            {(event.location || event.location_url) && (
               <Card className="bg-gradient-promo border-white/20 overflow-hidden">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <MapPin size={18} />
                     Location
                   </CardTitle>
+                  {event.location_url?.trim() ? (
+                    <Button variant="outline" size="sm" onClick={handleOpenLocation}>
+                      <ExternalLink size={16} className="mr-2" />
+                      Open location
+                    </Button>
+                  ) : null}
                 </CardHeader>
                 <CardContent className="p-0">
                   <MapView
-                    location={event.location}
+                    location={event.location || 'Event location'}
                     latitude={event.latitude}
                     longitude={event.longitude}
                     className="h-48"

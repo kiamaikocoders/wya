@@ -53,6 +53,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     location: '',
     latitude: null as number | null,
     longitude: null as number | null,
+    location_url: '',
     image_url: '',
     price: 0,
     capacity: 0,
@@ -831,6 +832,21 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 <p className="text-xs text-muted-foreground">
                   Optional. Search for any location worldwide. The location will be pinned on the map if provided.
                 </p>
+
+                <div className="space-y-2 pt-3">
+                  <Label htmlFor="location_url">Manual location link (optional)</Label>
+                  <Input
+                    id="location_url"
+                    name="location_url"
+                    value={formData.location_url}
+                    onChange={handleInputChange}
+                    placeholder="Paste a maps link (Google, Apple, Mapbox, etc.)"
+                    inputMode="url"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If search can’t find the exact venue, paste a maps link here so users can get directions.
+                  </p>
+                </div>
               </div>
             </div>
             

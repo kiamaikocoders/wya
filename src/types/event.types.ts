@@ -9,6 +9,7 @@ export interface Event {
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time (HH:MM:SS format)
   location: string;
+  location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url: string;
   organizer_id: string;
   created_at: string;
@@ -30,6 +31,7 @@ export interface CreateEventPayload {
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time
   location: string;
+  location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url?: string;
   price?: number;
   tags?: string[];
