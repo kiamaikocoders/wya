@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { Calendar, MapPin, Ticket, User } from 'lucide-react';
+import { Calendar, MapPin, Ticket, User, ExternalLink } from 'lucide-react';
 import type { Event } from '@/types/event.types';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,8 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
   const ticketLabel =
     event.price && event.price > 0 ? `KES ${event.price.toLocaleString()}` : 'Free';
+  const hasLocationText = Boolean(event.location && event.location.trim());
+  const hasLocationUrl = Boolean((event as any).location_url && String((event as any).location_url).trim());
 
   return (
     <motion.article
@@ -95,7 +97,16 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gradient-orange-accent" />
-              <span>{event.location}</span>
+              {hasLocationText ? (
+                <span>{event.location}</span>
+              ) : hasLocationUrl ? (
+                <span className="inline-flex items-center gap-1">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open location
+                </span>
+              ) : (
+                <span className="text-white/50">Location TBA</span>
+              )}
             </div>
             {event.capacity && (
               <div className="flex items-center gap-2">

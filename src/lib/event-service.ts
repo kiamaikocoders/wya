@@ -13,6 +13,7 @@ export interface Event {
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time (HH:MM:SS format)
   location: string;
+  location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url?: string;
   capacity?: number;
   price?: number;
@@ -87,7 +88,7 @@ export const eventService = {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id,title,date,end_date,time,location,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+        'id,title,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
       .gte('date', startOfToday)
       .order('date', { ascending: true })
@@ -126,7 +127,7 @@ export const eventService = {
       let query = supabase
         .from('events')
         .select(
-          'id,title,description,date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
+          'id,title,description,date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
           { count: 'exact' }
         );
 
@@ -311,7 +312,7 @@ export const eventService = {
       const { data, error } = await supabase
         .from('events')
 .select(
-        'id,title,description,date,end_date,time,location,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
+        'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
         )
         .eq('id', id)
         .single();
