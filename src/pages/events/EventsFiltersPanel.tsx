@@ -295,9 +295,11 @@ const EventsFiltersPanel = ({
   const FiltersContent = ({
     collapsible,
     defaultOpenAll,
+    showActions = true,
   }: {
     collapsible?: boolean;
     defaultOpenAll?: boolean;
+    showActions?: boolean;
   }) => {
     const selectedCategory = filters.category ?? null;
     const selectedLocation = filters.radiusKm
@@ -460,7 +462,7 @@ const EventsFiltersPanel = ({
           </Accordion>
 
           <FeaturedSection />
-          <FiltersActions />
+          {showActions && <FiltersActions />}
         </div>
       );
     }
@@ -550,7 +552,7 @@ const EventsFiltersPanel = ({
         <Separator className="bg-white/10" />
 
         <FeaturedSection />
-        <FiltersActions />
+        {showActions && <FiltersActions />}
       </div>
     );
   };
@@ -566,8 +568,11 @@ const EventsFiltersPanel = ({
             </SheetDescription>
           </SheetHeader>
           <ScrollArea className="flex-1 pr-3 -mr-3">
-            <FiltersContent collapsible />
+            <FiltersContent collapsible showActions={false} />
           </ScrollArea>
+          <div className="shrink-0 border-t border-white/10 px-4 pb-4 pt-3">
+            <FiltersActions />
+          </div>
         </SheetContent>
       </Sheet>
 

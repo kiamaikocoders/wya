@@ -113,15 +113,17 @@ const EventManagement = () => {
     },
   });
 
+  const eventsQueryKey = ['admin-events', page, pageSize, searchQuery, categoryFilter, statusFilter] as const;
+
   // Delete event mutation
   const deleteEventMutation = useMutation({
     mutationFn: (eventId: number) => adminService.deleteEvent(eventId),
     onMutate: async (eventId: number) => {
-      // Optimistic UI: remove the event from all cached admin-events pages immediately.
-      await queryClient.cancelQueries({ queryKey: ['admin-events'] });
-      const previous = queryClient.getQueriesData({ queryKey: ['admin-events'] });
-      queryClient.setQueriesData({ queryKey: ['admin-events'] }, (old: any) => {
-        if (!old || !old.data) return old;
+      // Optimistic UI: remove the event from the currently visible table results immediately.
+      await queryClient.cancelQueries({ queryKey: eventsQueryKey });
+      const previous = queryClient.getQueryData<any>(eventsQueryKey);
+      queryClient.setQueryData(eventsQueryKey, (old: any) => {
+        if (!old?.data) return old;
         return {
           ...old,
           data: old.data.filter((e: any) => e.id !== eventId),
@@ -131,7 +133,7 @@ const EventManagement = () => {
       return { previous };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: eventsQueryKey });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       setSelectedEvent(null);
       toast.success('Event deleted');
@@ -139,11 +141,7 @@ const EventManagement = () => {
     onError: (error: any, _eventId, context: any) => {
       console.error('Error deleting event:', error);
       // Roll back optimistic update
-      if (context?.previous) {
-        for (const [key, data] of context.previous) {
-          queryClient.setQueryData(key, data);
-        }
-      }
+      if (context?.previous) queryClient.setQueryData(eventsQueryKey, context.previous);
       toast.error(error?.message || 'Failed to delete event');
     },
   });
