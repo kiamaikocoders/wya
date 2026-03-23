@@ -142,6 +142,7 @@ const EventsPage = () => {
           searchValue={filters.search}
           onSearchChange={handleSearchChange}
           onOpenFilters={() => setFiltersOpen(true)}
+          filtersOpen={filtersOpen}
           sortOption={sortOption}
           onSortChange={changeSort}
           viewMode={viewMode}

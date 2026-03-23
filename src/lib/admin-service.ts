@@ -666,12 +666,54 @@ export const adminService = {
 
   deleteEvent: async (eventId: number): Promise<void> => {
     try {
-      const { error } = await supabase
+      // Determine whether the current user is an admin according to RLS setup.
+      // NOTE: RLS admin checks currently use `profiles.username = 'admin'`.
+      const { data: authUserData } = await supabase.auth.getUser();
+      const authUser = authUserData?.user ?? null;
+
+      const { data: profile } = authUser
+        ? await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', authUser.id)
+            .maybeSingle()
+        : { data: null };
+
+      const isAdmin = profile?.username === 'admin';
+
+      // Confirm the event exists (select policy is open, so this helps produce a useful error).
+      const { data: existingEvent, error: existingError } = await supabase
+        .from('events')
+        .select('id')
+        .eq('id', eventId)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      if (!existingEvent) {
+        throw new Error(`Event not found (id=${eventId}).`);
+      }
+
+      const { data, error } = await supabase
         .from('events')
         .delete()
-        .eq('id', eventId);
+        .eq('id', eventId)
+        // Return deleted rows so we can detect "0 rows deleted" as a failure.
+        .select('id');
 
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        if (isAdmin) {
+          throw new Error(
+            `Delete was blocked (id=${eventId}). Your account appears to be admin, but RLS did not allow the DELETE.`
+          );
+        }
+
+        throw new Error(
+          `You are not authorized to delete this event (id=${eventId}). Admin deletes require profiles.username = "admin".`
+        );
+      }
     } catch (error) {
       console.error('Error deleting event:', error);
       throw error;

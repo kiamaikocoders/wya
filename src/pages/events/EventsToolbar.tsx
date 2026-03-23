@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -35,6 +35,7 @@ type EventsToolbarProps = {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onOpenFilters: () => void;
+  filtersOpen: boolean;
   sortOption: EventSortOption;
   onSortChange: (option: EventSortOption) => void;
   viewMode: EventViewMode;
@@ -65,6 +66,7 @@ const EventsToolbar = ({
   searchValue,
   onSearchChange,
   onOpenFilters,
+  filtersOpen,
   sortOption,
   onSortChange,
   viewMode,
@@ -78,6 +80,16 @@ const EventsToolbar = ({
 }: EventsToolbarProps) => {
   const [filterName, setFilterName] = useState('');
   const [isSavePopoverOpen, setIsSavePopoverOpen] = useState(false);
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isSavedViewsPopoverOpen, setIsSavedViewsPopoverOpen] = useState(false);
+
+  // Prevent multiple overlays (sort dropdown / popovers) from stacking over the mobile Filters sheet.
+  useEffect(() => {
+    if (!filtersOpen) return;
+    setIsSavePopoverOpen(false);
+    setIsSortMenuOpen(false);
+    setIsSavedViewsPopoverOpen(false);
+  }, [filtersOpen]);
 
   const handleSaveFilter = async () => {
     if (!filterName.trim()) return;
@@ -117,7 +129,7 @@ const EventsToolbar = ({
       <Separator className="bg-white/10 md:hidden" />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-        <DropdownMenu>
+        <DropdownMenu open={isSortMenuOpen} onOpenChange={setIsSortMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
@@ -135,14 +147,19 @@ const EventsToolbar = ({
             {sortOptions.map(option => (
               <DropdownMenuItem
                 key={option.value}
-                onClick={() => onSortChange(option.value)}
+                onClick={() => {
+                  onSortChange(option.value);
+                  setIsSortMenuOpen(false);
+                }}
                 className={cn(
                   'flex items-center justify-between text-sm',
                   option.value === sortOption && 'text-gradient-orange-accent'
                 )}
               >
                 {option.label}
-                {option.value === sortOption && <Badge className="bg-gradient-accent/20 text-gradient-orange-accent">Active</Badge>}
+                {option.value === sortOption && (
+                  <Badge className="bg-gradient-accent/20 text-gradient-orange-accent">Active</Badge>
+                )}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -205,7 +222,7 @@ const EventsToolbar = ({
           </PopoverContent>
         </Popover>
 
-        <Popover>
+        <Popover open={isSavedViewsPopoverOpen} onOpenChange={setIsSavedViewsPopoverOpen}>
           <PopoverTrigger asChild>
             <Button variant="ghost" className="inline-flex items-center gap-2 rounded-full text-white/80 hover:text-white">
               <Bookmark className="h-4 w-4 text-gradient-orange-accent" />
