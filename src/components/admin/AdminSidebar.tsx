@@ -11,7 +11,8 @@ import {
   Ghost,
   ChevronLeft,
   Menu,
-  X
+  X,
+  Images
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Proposals', path: '/admin/proposals', icon: FileText },
   { label: 'Users', path: '/admin/users', icon: Users },
   { label: 'Content Moderation', path: '/admin/moderation', icon: MessageSquare },
+  { label: 'Event media', path: '/admin/media-gallery', icon: Images },
   { label: 'Analytics', path: '/admin/analytics', icon: ActivitySquare },
   { label: 'Sponsor Analytics', path: '/admin/sponsor-analytics', icon: BarChart3 },
   { label: 'Ghost Management', path: '/admin/ghost', icon: Ghost },
