@@ -7,6 +7,8 @@ import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
+import { ATTENDEE_TERMS_VERSION, PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
+import type { AttendeeSignupConsents } from '@/lib/signup-consent';
 
 export interface User {
   id: string;
@@ -28,7 +30,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, name: string, consents: AttendeeSignupConsents) => Promise<void>;
   adminLogin: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -322,9 +324,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = async (email: string, password: string, name: string, consents: AttendeeSignupConsents) => {
     setLoading(true);
     try {
+      const now = new Date().toISOString();
       // Create user with Supabase auth
       // The database trigger (handle_new_user) will automatically create the profile
       const { data, error } = await supabase.auth.signUp({
@@ -333,7 +336,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         options: {
           data: {
             full_name: name,
-            username: email.split('@')[0], // Pass username to trigger
+            username: email.split('@')[0],
+            phone: consents.phone?.trim() || undefined,
+            date_of_birth: consents.dateOfBirth,
+            terms_version_accepted: ATTENDEE_TERMS_VERSION,
+            terms_accepted_at: now,
+            privacy_version_accepted: PRIVACY_POLICY_VERSION,
+            privacy_accepted_at: now,
+            marketing_consent: consents.marketingOptIn,
+            ...(consents.marketingOptIn ? { marketing_consent_at: now } : {}),
+            location_consent: consents.locationOptIn,
+            ...(consents.locationOptIn ? { location_consent_at: now } : {}),
+            organizer_content_sharing_opt_in: consents.organizerSharingOptIn,
           }
         }
       });

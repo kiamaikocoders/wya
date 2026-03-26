@@ -87,6 +87,16 @@ const SponsorsPage: React.FC = () => {
                             style={{ backgroundColor: sponsor.brand_color }}
                           ></div>
                         )}
+                        <div className="absolute top-3 right-3 z-20 flex flex-wrap gap-1 justify-end">
+                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                            Sponsored
+                          </Badge>
+                          {sponsor.content_category === 'alcohol' && (
+                            <Badge variant="outline" className="text-[10px] border-amber-400/60 text-amber-200">
+                              18+
+                            </Badge>
+                          )}
+                        </div>
                         <CardContent className="pt-6 relative z-10">
                           <div className="flex flex-col items-center mb-4">
                             <Avatar className="h-24 w-24 mb-4 bg-white">

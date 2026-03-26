@@ -18,3 +18,9 @@ export function getAdminGhostUserIdsUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();
   return base ? `${base}/functions/v1/admin-get-ghost-user-ids` : "";
 }
+
+/** Full account deletion (RPC + auth user removal). Requires deployed Edge Function. */
+export function getDeleteMyAccountUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/delete-my-account` : "";
+}

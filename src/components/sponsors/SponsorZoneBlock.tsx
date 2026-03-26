@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Calendar, Clock, Gift, PieChart, Play, ShoppingBag, Timer, Video } from 'lucide-react';
+import { REPORT_SPONSORED_EMAIL } from '@/legal/policy-versions';
 
 interface SponsorZoneBlockProps {
   block: SponsorContentBlock;
@@ -369,6 +370,17 @@ const SponsorZoneBlock: React.FC<SponsorZoneBlockProps> = ({ block, sponsorId, s
       }}
     >
       <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground mb-1">
+          <span className="rounded-md bg-white/10 px-2 py-0.5 font-medium uppercase tracking-wide text-white/80">
+            Sponsored
+          </span>
+          <a
+            href={`mailto:${REPORT_SPONSORED_EMAIL}?subject=${encodeURIComponent('Sponsored content report')}`}
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            Report this content
+          </a>
+        </div>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className={getSponsorClasses(sponsor as any)}>{getBlockIcon(block.type as SponsorContentBlockType)}</span>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
+import { getDeleteMyAccountUrl } from '@/lib/supabase-functions-url';
 
 export interface User {
   id: string;
@@ -27,6 +28,21 @@ export interface Profile {
   location?: string;
   latitude?: number;
   longitude?: number;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  terms_version_accepted?: string | null;
+  terms_accepted_at?: string | null;
+  privacy_version_accepted?: string | null;
+  privacy_accepted_at?: string | null;
+  marketing_consent?: boolean;
+  marketing_consent_at?: string | null;
+  location_consent?: boolean;
+  location_consent_at?: string | null;
+  organizer_content_sharing_opt_in?: boolean;
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  profile_visibility?: string;
+  two_factor_auth?: boolean;
 }
 
 export interface UpdateProfilePayload {
@@ -37,6 +53,15 @@ export interface UpdateProfilePayload {
   location?: string;
   latitude?: number;
   longitude?: number;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  marketing_consent?: boolean;
+  location_consent?: boolean;
+  organizer_content_sharing_opt_in?: boolean;
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  profile_visibility?: string;
+  two_factor_auth?: boolean;
 }
 
 export const userService = {
@@ -47,7 +72,9 @@ export const userService = {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at')
+        .select(
+          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, phone, date_of_birth, marketing_consent, location_consent, organizer_content_sharing_opt_in, email_notifications, push_notifications, profile_visibility, two_factor_auth'
+        )
         .eq('id', user.id)
         .single();
       
@@ -83,6 +110,35 @@ export const userService = {
       if (profile.avatar_url !== undefined) updateData.avatar_url = profile.avatar_url;
       if (profile.bio !== undefined) updateData.bio = profile.bio;
       if (profile.location !== undefined) updateData.location = profile.location;
+      if (profile.latitude !== undefined) updateData.latitude = profile.latitude;
+      if (profile.longitude !== undefined) updateData.longitude = profile.longitude;
+      if (profile.phone !== undefined) updateData.phone = profile.phone;
+      if (profile.date_of_birth !== undefined) updateData.date_of_birth = profile.date_of_birth;
+
+      const now = new Date().toISOString();
+      if (profile.marketing_consent !== undefined) {
+        updateData.marketing_consent = profile.marketing_consent;
+        updateData.marketing_consent_at = now;
+      }
+      if (profile.location_consent !== undefined) {
+        updateData.location_consent = profile.location_consent;
+        updateData.location_consent_at = now;
+      }
+      if (profile.organizer_content_sharing_opt_in !== undefined) {
+        updateData.organizer_content_sharing_opt_in = profile.organizer_content_sharing_opt_in;
+      }
+      if (profile.email_notifications !== undefined) {
+        updateData.email_notifications = profile.email_notifications;
+      }
+      if (profile.push_notifications !== undefined) {
+        updateData.push_notifications = profile.push_notifications;
+      }
+      if (profile.profile_visibility !== undefined) {
+        updateData.profile_visibility = profile.profile_visibility;
+      }
+      if (profile.two_factor_auth !== undefined) {
+        updateData.two_factor_auth = profile.two_factor_auth;
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -100,7 +156,9 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at')
+        .select(
+          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, email_notifications, push_notifications, profile_visibility, two_factor_auth'
+        )
         .eq('id', userId)
         .single();
       
@@ -162,5 +220,34 @@ export const userService = {
       console.error('Error fetching profile by username:', error);
       return null;
     }
-  }
+  },
+
+  deleteAccount: async (): Promise<void> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error('Not signed in');
+
+    const url = getDeleteMyAccountUrl();
+    if (!url) {
+      throw new Error(
+        'Account deletion is not configured (missing VITE_SUPABASE_URL or delete-my-account function).'
+      );
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error((body as { error?: string }).error || 'Failed to delete account');
+    }
+
+    await supabase.auth.signOut();
+  },
 };

@@ -3,12 +3,31 @@ import { notificationService } from './notification';
 import { supabase } from './supabase';
 import { locationService } from './location-service';
 import { toast } from 'sonner';
+import { consentService } from '@/lib/consent-service';
+import { PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
 
 export interface OnboardingCheck {
   hasProfilePicture: boolean;
   hasBio: boolean;
   hasLocation: boolean;
   hasCompletedOnboarding: boolean;
+}
+
+async function recordLocationConsentGranted(userId: string): Promise<void> {
+  const now = new Date().toISOString();
+  await supabase
+    .from('profiles')
+    .update({
+      location_consent: true,
+      location_consent_at: now,
+    })
+    .eq('id', userId);
+  await consentService.logConsent({
+    userId,
+    consentType: 'location',
+    granted: true,
+    policyVersion: PRIVACY_POLICY_VERSION,
+  });
 }
 
 class OnboardingNotifications {
@@ -117,6 +136,7 @@ class OnboardingNotifications {
             longitude: location.longitude,
           })
           .eq('id', userId);
+        await recordLocationConsentGranted(userId);
 
         await notificationService.createNotification({
           user_id: userId,
@@ -156,6 +176,7 @@ class OnboardingNotifications {
                   longitude: loc.longitude,
                 })
                 .eq('id', userId);
+              await recordLocationConsentGranted(userId);
               toast.success('Location enabled!');
             }
           },
