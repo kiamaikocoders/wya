@@ -99,7 +99,7 @@ const Footer = () => {
                   <Link to="/privacy-policy" className="text-kenya-brown-light hover:text-white transition-colors">Privacy Policy</Link>
                 </li>
                 <li>
-                  <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Terms of Service</Link>
+                  <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Attendee Terms</Link>
                 </li>
                 <li>
                   <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>
@@ -228,7 +228,7 @@ const Footer = () => {
                 <Link to="/privacy-policy" className="text-kenya-brown-light hover:text-white transition-colors">Privacy Policy</Link>
               </li>
               <li>
-                <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Terms of Service</Link>
+                <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Attendee Terms</Link>
               </li>
               <li>
                 <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>

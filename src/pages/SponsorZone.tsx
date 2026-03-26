@@ -1,18 +1,20 @@
-
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { sponsorService } from '@/lib/sponsor';
 import { getSponsorColorVars, getSponsorClasses } from '@/lib/sponsor/brand-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink, Globe } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import SponsorZoneBlock from '@/components/sponsors/SponsorZoneBlock';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { isVerifiedAdultFromDob } from '@/lib/age-verification';
 
 const SponsorZone: React.FC = () => {
   const { sponsorId } = useParams<{ sponsorId: string }>();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   
   // Fetch sponsor details
   const { 
@@ -38,6 +40,25 @@ const SponsorZone: React.FC = () => {
   
   const isLoading = sponsorLoading || zoneLoading;
   const error = sponsorError || zoneError;
+
+  const { data: dobRow } = useQuery({
+    queryKey: ['profile-dob', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error: qErr } = await supabase
+        .from('profiles')
+        .select('date_of_birth')
+        .eq('id', user.id)
+        .single();
+      if (qErr) return null;
+      return data;
+    },
+    enabled: !!user?.id && sponsor?.content_category === 'alcohol',
+  });
+
+  const alcoholBlocked =
+    sponsor?.content_category === 'alcohol' &&
+    (!isAuthenticated || !isVerifiedAdultFromDob(dobRow?.date_of_birth ?? null));
   
   if (isLoading) {
     return (
@@ -133,20 +154,34 @@ const SponsorZone: React.FC = () => {
           <p className="text-text-white/70 mb-6">{sponsorZone.description}</p>
         )}
         
-        {sponsorZone?.content_blocks && sponsorZone.content_blocks.length > 0 ? (
+        {alcoholBlocked ? (
+          <div className="rounded-lg border border-white/20 bg-black/30 p-6 text-center text-text-white/80">
+            <p className="mb-3">
+              This partner zone may include alcohol-related content. It is only shown to users who are 18 or older
+              with a verified date of birth on file.
+            </p>
+            {!isAuthenticated ? (
+              <Button asChild variant="secondary">
+                <Link to="/login">Sign in</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="secondary">
+                <Link to="/settings">Add date of birth in Settings</Link>
+              </Button>
+            )}
+          </div>
+        ) : sponsorZone?.content_blocks && sponsorZone.content_blocks.length > 0 ? (
           <div className="space-y-6">
-            {/* Sort blocks by their order property */}
             {[...sponsorZone.content_blocks]
               .sort((a, b) => a.order - b.order)
               .map((block) => (
-                <SponsorZoneBlock 
-                  key={block.id} 
+                <SponsorZoneBlock
+                  key={block.id}
                   block={block as any}
                   sponsorId={Number(sponsorId)}
                   sponsor={sponsor as any}
                 />
-              ))
-            }
+              ))}
           </div>
         ) : (
           <div className="text-center py-8 text-text-white/70">

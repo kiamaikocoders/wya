@@ -8,6 +8,8 @@ export interface Sponsor {
   partnership_level: 'title' | 'presenting' | 'gold' | 'silver' | 'bronze' | 'partner' | string; // Modified to accept string
   brand_color?: string;
   brand_gradient?: string;
+  /** general | alcohol — alcohol zones are shown only to users with verified 18+ DOB */
+  content_category?: string;
   created_at: string;
   updated_at: string;
 }

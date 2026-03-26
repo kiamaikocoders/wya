@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      consent_audit: {
+        Row: {
+          consent_type: string
+          created_at: string
+          granted: boolean | null
+          id: number
+          metadata: Json | null
+          policy_version: string | null
+          user_id: string
+        }
+        Insert: {
+          consent_type: string
+          created_at?: string
+          granted?: boolean | null
+          id?: number
+          metadata?: Json | null
+          policy_version?: string | null
+          user_id: string
+        }
+        Update: {
+          consent_type?: string
+          created_at?: string
+          granted?: boolean | null
+          id?: number
+          metadata?: Json | null
+          policy_version?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      data_subject_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          failure_reason: string | null
+          id: string
+          metadata: Json | null
+          request_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          request_type: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          request_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_sponsors: {
         Row: {
           created_at: string | null
@@ -411,9 +474,28 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          date_of_birth: string | null
+          email_notifications: boolean
           full_name: string | null
           id: string
+          is_ghost: boolean | null
+          last_login: string | null
+          latitude: number | null
           location: string | null
+          location_consent: boolean
+          location_consent_at: string | null
+          longitude: number | null
+          marketing_consent: boolean
+          marketing_consent_at: string | null
+          organizer_content_sharing_opt_in: boolean
+          phone: string | null
+          privacy_accepted_at: string | null
+          privacy_version_accepted: string | null
+          profile_visibility: string
+          push_notifications: boolean
+          terms_accepted_at: string | null
+          terms_version_accepted: string | null
+          two_factor_auth: boolean
           updated_at: string | null
           username: string | null
         }
@@ -421,9 +503,28 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
+          email_notifications?: boolean
           full_name?: string | null
           id: string
+          is_ghost?: boolean | null
+          last_login?: string | null
+          latitude?: number | null
           location?: string | null
+          location_consent?: boolean
+          location_consent_at?: string | null
+          longitude?: number | null
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          organizer_content_sharing_opt_in?: boolean
+          phone?: string | null
+          privacy_accepted_at?: string | null
+          privacy_version_accepted?: string | null
+          profile_visibility?: string
+          push_notifications?: boolean
+          terms_accepted_at?: string | null
+          terms_version_accepted?: string | null
+          two_factor_auth?: boolean
           updated_at?: string | null
           username?: string | null
         }
@@ -431,9 +532,28 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
+          email_notifications?: boolean
           full_name?: string | null
           id?: string
+          is_ghost?: boolean | null
+          last_login?: string | null
+          latitude?: number | null
           location?: string | null
+          location_consent?: boolean
+          location_consent_at?: string | null
+          longitude?: number | null
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          organizer_content_sharing_opt_in?: boolean
+          phone?: string | null
+          privacy_accepted_at?: string | null
+          privacy_version_accepted?: string | null
+          profile_visibility?: string
+          push_notifications?: boolean
+          terms_accepted_at?: string | null
+          terms_version_accepted?: string | null
+          two_factor_auth?: boolean
           updated_at?: string | null
           username?: string | null
         }
@@ -576,6 +696,7 @@ export type Database = {
         Row: {
           brand_color: string | null
           brand_gradient: string | null
+          content_category: string
           created_at: string | null
           description: string | null
           id: number
@@ -588,6 +709,7 @@ export type Database = {
         Insert: {
           brand_color?: string | null
           brand_gradient?: string | null
+          content_category?: string
           created_at?: string | null
           description?: string | null
           id?: number
@@ -600,6 +722,7 @@ export type Database = {
         Update: {
           brand_color?: string | null
           brand_gradient?: string | null
+          content_category?: string
           created_at?: string | null
           description?: string | null
           id?: number
