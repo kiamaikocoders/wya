@@ -41,6 +41,7 @@ const AdminModeration = lazy(() => import("./pages/AdminModeration"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminSponsorAnalytics = lazy(() => import("./pages/AdminSponsorAnalytics"));
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
+const AdminMediaGallery = lazy(() => import("./pages/AdminMediaGallery"));
 
 const RequestEvent = lazy(() => import("./pages/RequestEvent"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -135,6 +136,7 @@ const App = () => {
                     <Route path="proposals" element={<AdminProposals />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="moderation" element={<AdminModeration />} />
+                    <Route path="media-gallery" element={<AdminMediaGallery />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
                     <Route path="ghost" element={<AdminGhost />} />
