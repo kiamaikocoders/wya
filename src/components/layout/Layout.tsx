@@ -49,7 +49,7 @@ const Layout = () => {
     <DiscoverUIProvider>
       <div className="relative flex min-h-screen flex-col bg-background">
         {!isAuthPage && !isDiscoverPage && <Navbar />}
-        <main className={cn("flex-1", !isDiscoverPage && "pb-20 md:pb-24")}>
+        <main className={cn("flex-1", !isDiscoverPage && !isAuthPage && "pb-20 md:pb-24")}>
           <Outlet />
         </main>
         {!isAuthPage && <BottomNav />}
