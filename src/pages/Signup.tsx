@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ const Signup = () => {
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [locationOptIn, setLocationOptIn] = useState(false);
   const [organizerSharingOptIn, setOrganizerSharingOptIn] = useState(true);
+  const [mediaConsentChoice, setMediaConsentChoice] = useState<'yes' | 'no' | ''>('');
   const { signup } = useAuth();
 
   const passwordsMatch = password === confirmPassword;
@@ -38,6 +40,13 @@ const Signup = () => {
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (!mediaConsentChoice) {
+      toast.error(
+        'Please indicate whether you consent to promotional use of photos, video, or audio of you (see Media consent).'
+      );
       return;
     }
 
@@ -53,6 +62,7 @@ const Signup = () => {
       marketingOptIn,
       locationOptIn,
       organizerSharingOptIn,
+      mediaRecordingPromotionalConsent: mediaConsentChoice === 'yes',
       acceptTerms,
       acceptPrivacy,
     };
@@ -281,6 +291,39 @@ const Signup = () => {
                 <label htmlFor="organizer" className="text-sm text-kenya-brown-light leading-snug">
                   I understand my event-related posts may be shared with organisers for promotion (see Privacy Policy). You can change this later in Settings.
                 </label>
+              </div>
+
+              <div className="space-y-2 pt-1 border-t border-kenya-brown-dark/60">
+                <p className="text-sm font-medium text-white">
+                  Photos, video, and audio for marketing <span className="text-red-400">*</span>
+                </p>
+                <p className="text-xs text-kenya-brown-light leading-snug">
+                  See the{' '}
+                  <Link to="/media-consent" className="text-kenya-orange underline" target="_blank" rel="noreferrer">
+                    Media consent
+                  </Link>{' '}
+                  form. You can update this later in Settings.
+                </p>
+                <RadioGroup
+                  value={mediaConsentChoice === '' ? undefined : mediaConsentChoice}
+                  onValueChange={(v) => setMediaConsentChoice(v as 'yes' | 'no')}
+                  className="gap-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <RadioGroupItem value="yes" id="media-yes" className="mt-0.5 border-white/40" />
+                    <label htmlFor="media-yes" className="text-sm text-kenya-brown-light leading-snug cursor-pointer">
+                      I consent to the collection and use of my image, video, and/or audio recordings as described in
+                      the Media consent form, for promotional and marketing purposes.
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <RadioGroupItem value="no" id="media-no" className="mt-0.5 border-white/40" />
+                    <label htmlFor="media-no" className="text-sm text-kenya-brown-light leading-snug cursor-pointer">
+                      I do not consent to the collection and use of my image, video, and/or audio recordings for
+                      promotional and marketing purposes.
+                    </label>
+                  </div>
+                </RadioGroup>
               </div>
             </div>
 

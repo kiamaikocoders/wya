@@ -1,26 +1,18 @@
 import React from 'react';
 
-/** Groups non-empty lines into paragraphs (blank line = break). */
+/** One blank line (or more) between paragraphs in source; single newlines preserved inside a paragraph. */
 export function PlainLegalBody({ text }: { text: string }) {
-  const blocks: string[] = [];
-  let cur: string[] = [];
-  for (const line of text.split(/\n/)) {
-    const t = line.trim();
-    if (!t) {
-      if (cur.length) {
-        blocks.push(cur.join(' '));
-        cur = [];
-      }
-    } else {
-      cur.push(t);
-    }
-  }
-  if (cur.length) blocks.push(cur.join(' '));
+  const paragraphs = text
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 
   return (
     <div className="space-y-3 text-sm leading-relaxed text-foreground/90">
-      {blocks.map((p, i) => (
-        <p key={i}>{p}</p>
+      {paragraphs.map((p, i) => (
+        <p key={i} className="whitespace-pre-line">
+          {p}
+        </p>
       ))}
     </div>
   );

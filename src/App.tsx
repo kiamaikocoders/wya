@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LegalConsentGate } from "@/components/legal/LegalConsentGate";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { updateService } from './lib/update-service';
@@ -64,6 +65,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 const AIAssistance = lazy(() => import("./pages/AIAssistance"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const MediaConsentPolicy = lazy(() => import("./pages/MediaConsentPolicy"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent"));
 const UsersDirectory = lazy(() => import("./pages/UsersDirectory"));
 const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
@@ -117,6 +119,7 @@ const App = () => {
                   </div>
                 }
               >
+                <LegalConsentGate />
                 <Routes>
                   <Route element={<MarketingLayout />}>
                     <Route path="/" element={<Landing />} />
@@ -178,6 +181,7 @@ const App = () => {
                     <Route path="/ai-assistance" element={<AIAssistance />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/media-consent" element={<MediaConsentPolicy />} />
                     <Route
                       path="/favorites"
                       element={

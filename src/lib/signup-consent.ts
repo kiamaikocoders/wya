@@ -6,6 +6,8 @@ export interface AttendeeSignupConsents {
   marketingOptIn: boolean;
   locationOptIn: boolean;
   organizerSharingOptIn: boolean;
+  /** Promotional / marketing use of photographs, video, and audio recordings (media consent form). */
+  mediaRecordingPromotionalConsent: boolean;
   acceptTerms: boolean;
   acceptPrivacy: boolean;
 }

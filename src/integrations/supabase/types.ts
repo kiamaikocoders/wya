@@ -494,6 +494,9 @@ export type Database = {
           longitude: number | null
           marketing_consent: boolean
           marketing_consent_at: string | null
+          media_consent: boolean
+          media_consent_at: string | null
+          media_consent_version: string | null
           organizer_content_sharing_opt_in: boolean
           phone: string | null
           privacy_accepted_at: string | null
@@ -527,6 +530,9 @@ export type Database = {
           longitude?: number | null
           marketing_consent?: boolean
           marketing_consent_at?: string | null
+          media_consent?: boolean
+          media_consent_at?: string | null
+          media_consent_version?: string | null
           organizer_content_sharing_opt_in?: boolean
           phone?: string | null
           privacy_accepted_at?: string | null
@@ -560,6 +566,9 @@ export type Database = {
           longitude?: number | null
           marketing_consent?: boolean
           marketing_consent_at?: string | null
+          media_consent?: boolean
+          media_consent_at?: string | null
+          media_consent_version?: string | null
           organizer_content_sharing_opt_in?: boolean
           phone?: string | null
           privacy_accepted_at?: string | null

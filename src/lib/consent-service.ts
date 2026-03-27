@@ -4,6 +4,7 @@ export type ConsentType =
   | 'marketing'
   | 'location'
   | 'organizer_content_sharing'
+  | 'media'
   | 'terms'
   | 'privacy';
 
