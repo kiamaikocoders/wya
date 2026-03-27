@@ -163,19 +163,24 @@ export function LegalConsentGate() {
   return (
     <AlertDialog open={open}>
       <AlertDialogContent
-        className="max-h-[min(90vh,720px)] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto border-border bg-card sm:max-w-lg"
+        className={
+          // flex + inset positioning so tall content is not clipped on phones (avoids top-1/2 centering)
+          'flex max-h-[calc(100dvh-2rem)] w-[calc(100%-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border border-border bg-card p-0 shadow-lg ' +
+          'fixed left-1/2 top-4 bottom-4 z-50 -translate-x-1/2 translate-y-0 rounded-xl ' +
+          'sm:bottom-auto sm:top-1/2 sm:max-h-[min(90vh,720px)] sm:-translate-y-1/2 sm:rounded-lg'
+        }
         onEscapeKeyDown={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         {showBlockingLoading && (
-          <div className="flex flex-col items-center justify-center gap-3 py-12">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
             <p className="text-sm text-muted-foreground">Loading your account…</p>
           </div>
         )}
 
         {enabled && isError && !isLoading && (
-          <div className="space-y-4 py-2">
+          <div className="flex flex-1 flex-col justify-center gap-4 px-4 py-6">
             <AlertDialogHeader>
               <AlertDialogTitle>Could not load your profile</AlertDialogTitle>
               <AlertDialogDescription>
@@ -189,138 +194,142 @@ export function LegalConsentGate() {
         )}
 
         {needsGate && !showBlockingLoading && (
-          <div className="space-y-4 py-1">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Please review and confirm</AlertDialogTitle>
-              <AlertDialogDescription className="text-left">
-                Our Attendee Terms, Privacy Policy, or media consent have been updated, or your
-                account needs a one-time confirmation. You must accept the required items below to
-                keep using WYA.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-4 pt-4 pb-2 [-webkit-overflow-scrolling:touch]">
+              <AlertDialogHeader className="text-left">
+                <AlertDialogTitle>Please review and confirm</AlertDialogTitle>
+                <AlertDialogDescription className="text-left">
+                  Our Attendee Terms, Privacy Policy, or media consent have been updated, or your
+                  account needs a one-time confirmation. You must accept the required items below to
+                  keep using WYA.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
 
-            <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="gate-terms"
-                  checked={acceptTerms}
-                  onCheckedChange={(c) => setAcceptTerms(c === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="gate-terms" className="text-sm leading-snug cursor-pointer">
-                  I agree to the{' '}
-                  <Link
-                    to="/terms-of-service"
-                    className="text-primary underline"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Attendee Terms and Conditions
-                  </Link>{' '}
-                  (version {ATTENDEE_TERMS_VERSION}).
-                </label>
+              <div className="mt-4 space-y-3 rounded-md border border-border bg-muted/30 p-3">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="gate-terms"
+                    checked={acceptTerms}
+                    onCheckedChange={(c) => setAcceptTerms(c === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="gate-terms" className="text-sm leading-snug cursor-pointer">
+                    I agree to the{' '}
+                    <Link
+                      to="/terms-of-service"
+                      className="text-primary underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Attendee Terms and Conditions
+                    </Link>{' '}
+                    (version {ATTENDEE_TERMS_VERSION}).
+                  </label>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="gate-privacy"
+                    checked={acceptPrivacy}
+                    onCheckedChange={(c) => setAcceptPrivacy(c === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="gate-privacy" className="text-sm leading-snug cursor-pointer">
+                    I agree to the{' '}
+                    <Link
+                      to="/privacy-policy"
+                      className="text-primary underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Privacy Policy
+                    </Link>{' '}
+                    (version {PRIVACY_POLICY_VERSION}).
+                  </label>
+                </div>
               </div>
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="gate-privacy"
-                  checked={acceptPrivacy}
-                  onCheckedChange={(c) => setAcceptPrivacy(c === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="gate-privacy" className="text-sm leading-snug cursor-pointer">
-                  I agree to the{' '}
-                  <Link
-                    to="/privacy-policy"
-                    className="text-primary underline"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Privacy Policy
+
+              <div className="mt-4 space-y-2 rounded-md border border-border bg-muted/30 p-3">
+                <p className="text-sm font-medium">Photos, video, and audio for marketing</p>
+                <p className="text-xs text-muted-foreground">
+                  Open the{' '}
+                  <Link to="/media-consent" className="text-primary underline" target="_blank" rel="noreferrer">
+                    Media consent
                   </Link>{' '}
-                  (version {PRIVACY_POLICY_VERSION}).
-                </label>
+                  form for full wording (version {MEDIA_CONSENT_VERSION}).
+                </p>
+                <RadioGroup
+                  value={mediaChoice === '' ? undefined : mediaChoice}
+                  onValueChange={(v) => setMediaChoice(v as 'yes' | 'no')}
+                  className="gap-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <RadioGroupItem value="yes" id="gate-media-yes" className="mt-0.5" />
+                    <label htmlFor="gate-media-yes" className="text-sm leading-snug cursor-pointer">
+                      I consent to the collection and use of my image, video, and/or audio recordings
+                      for promotional and marketing purposes, as described in the Media consent form.
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <RadioGroupItem value="no" id="gate-media-no" className="mt-0.5" />
+                    <label htmlFor="gate-media-no" className="text-sm leading-snug cursor-pointer">
+                      I do not consent to the collection and use of my image, video, and/or audio
+                      recordings for promotional and marketing purposes.
+                    </label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="mt-4 space-y-3 rounded-md border border-border bg-muted/30 p-3 pb-4">
+                <p className="text-sm font-medium">Other preferences</p>
+                <p className="text-xs text-muted-foreground">
+                  Confirm or update these now; you can change them anytime in Settings.
+                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="gate-mkt" className="text-sm font-normal cursor-pointer">
+                    Marketing and partner events
+                  </Label>
+                  <Switch
+                    id="gate-mkt"
+                    checked={marketingOptIn}
+                    onCheckedChange={setMarketingOptIn}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="gate-loc" className="text-sm font-normal cursor-pointer">
+                    Location-based recommendations (when enabled on your device)
+                  </Label>
+                  <Switch
+                    id="gate-loc"
+                    checked={locationOptIn}
+                    onCheckedChange={setLocationOptIn}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="gate-org" className="text-sm font-normal cursor-pointer">
+                    Share event posts with organisers for promotion
+                  </Label>
+                  <Switch id="gate-org" checked={organizerOptIn} onCheckedChange={setOrganizerOptIn} />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
-              <p className="text-sm font-medium">Photos, video, and audio for marketing</p>
-              <p className="text-xs text-muted-foreground">
-                Open the{' '}
-                <Link to="/media-consent" className="text-primary underline" target="_blank" rel="noreferrer">
-                  Media consent
-                </Link>{' '}
-                form for full wording (version {MEDIA_CONSENT_VERSION}).
-              </p>
-              <RadioGroup
-                value={mediaChoice === '' ? undefined : mediaChoice}
-                onValueChange={(v) => setMediaChoice(v as 'yes' | 'no')}
-                className="gap-3"
+            <div className="shrink-0 border-t border-border bg-card px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+              <Button
+                type="button"
+                className="w-full"
+                disabled={!canSubmit}
+                onClick={() => void handleSubmit()}
               >
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="yes" id="gate-media-yes" className="mt-0.5" />
-                  <label htmlFor="gate-media-yes" className="text-sm leading-snug cursor-pointer">
-                    I consent to the collection and use of my image, video, and/or audio recordings
-                    for promotional and marketing purposes, as described in the Media consent form.
-                  </label>
-                </div>
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="no" id="gate-media-no" className="mt-0.5" />
-                  <label htmlFor="gate-media-no" className="text-sm leading-snug cursor-pointer">
-                    I do not consent to the collection and use of my image, video, and/or audio
-                    recordings for promotional and marketing purposes.
-                  </label>
-                </div>
-              </RadioGroup>
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  'Save and continue'
+                )}
+              </Button>
             </div>
-
-            <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
-              <p className="text-sm font-medium">Other preferences</p>
-              <p className="text-xs text-muted-foreground">
-                Confirm or update these now; you can change them anytime in Settings.
-              </p>
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="gate-mkt" className="text-sm font-normal cursor-pointer">
-                  Marketing and partner events
-                </Label>
-                <Switch
-                  id="gate-mkt"
-                  checked={marketingOptIn}
-                  onCheckedChange={setMarketingOptIn}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="gate-loc" className="text-sm font-normal cursor-pointer">
-                  Location-based recommendations (when enabled on your device)
-                </Label>
-                <Switch
-                  id="gate-loc"
-                  checked={locationOptIn}
-                  onCheckedChange={setLocationOptIn}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="gate-org" className="text-sm font-normal cursor-pointer">
-                  Share event posts with organisers for promotion
-                </Label>
-                <Switch id="gate-org" checked={organizerOptIn} onCheckedChange={setOrganizerOptIn} />
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              className="w-full"
-              disabled={!canSubmit}
-              onClick={() => void handleSubmit()}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save and continue'
-              )}
-            </Button>
           </div>
         )}
       </AlertDialogContent>
