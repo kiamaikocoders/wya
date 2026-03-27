@@ -30,13 +30,11 @@ const AINameSuggestions: React.FC<AINameSuggestionsProps> = ({
     
     setIsLoading(true);
     try {
-      const prompt = `Suggest 5 catchy and creative event names ${category ? `for a ${category} event` : ''} 
-        ${description ? `with this description: ${description}` : ''} 
-        ${keyword ? `including the keyword: ${keyword}` : ''}. 
-        Respond with only the event names, separated by commas.`;
-      
-      const result = await aiService.generateStoryContent(prompt);
-      const names = result.split(',').map(name => name.trim());
+      const descParts = [description?.trim(), keyword?.trim()].filter(Boolean);
+      const desc = descParts.length > 0 ? descParts.join('. ') : 'General community event';
+      const cat = category?.trim() || 'General';
+
+      const names = await aiService.generateEventNames(desc, cat);
       
       if (names.length > 0) {
         setSuggestions(names);

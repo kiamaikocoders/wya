@@ -1,6 +1,9 @@
 import { supabase } from './supabase';
 import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
+import { isUndefinedColumnError } from './supabase-schema-compat';
 import { toast } from 'sonner';
+
+export type ProfileAccountStatus = 'active' | 'suspended' | 'banned' | 'deleted';
 
 export interface AdminUser {
   id: string;
@@ -8,7 +11,11 @@ export interface AdminUser {
   name: string;
   username?: string;
   role: 'attendee' | 'organizer' | 'admin';
+  /** Derived for filters/badges */
   status: 'active' | 'inactive' | 'suspended';
+  /** Raw profile flag from database */
+  account_status?: ProfileAccountStatus;
+  account_status_reason?: string | null;
   profile_picture?: string;
   bio?: string;
   location?: string;
@@ -145,7 +152,7 @@ export const adminService = {
     pageSize?: number;
     search?: string;
     role?: 'attendee' | 'organizer' | 'admin' | 'all';
-    status?: 'active' | 'inactive' | 'suspended' | 'all';
+    status?: 'active' | 'inactive' | 'suspended' | 'all'; // inactive = not active (suspended, banned, or deleted)
     sortBy?: 'created_at' | 'name' | 'email';
     sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResponse<AdminUser>> => {
@@ -160,35 +167,39 @@ export const adminService = {
         sortOrder = 'desc',
       } = options;
 
-      let query = supabase
-        .from('profiles')
-        .select('*', { count: 'exact' });
-
-      // Apply search filter
-      if (search) {
-        query = query.or(`full_name.ilike.%${search}%,username.ilike.%${search}%`);
-      }
-
-      // Apply role filter
-      if (role !== 'all') {
-        if (role === 'admin') {
-          query = query.eq('username', 'admin');
-        } else {
-          // For attendees/organizers, we need to check events they've created
-          // This is a simplified approach - in production you might want a roles table
-          query = query.neq('username', 'admin');
-        }
-      }
-
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      // Apply pagination
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
-      query = query.range(from, to);
 
-      const { data, error, count } = await query;
+      const buildProfilesQuery = (withAccountStatusFilters: boolean) => {
+        let q = supabase.from('profiles').select('*', { count: 'exact' });
+        if (withAccountStatusFilters) {
+          if (status === 'active') {
+            q = q.eq('account_status', 'active');
+          } else if (status === 'suspended') {
+            q = q.eq('account_status', 'suspended');
+          } else if (status === 'inactive') {
+            q = q.in('account_status', ['suspended', 'banned', 'deleted']);
+          }
+        }
+        if (search) {
+          q = q.or(`full_name.ilike.%${search}%,username.ilike.%${search}%`);
+        }
+        if (role !== 'all') {
+          if (role === 'admin') {
+            q = q.eq('username', 'admin');
+          } else {
+            q = q.neq('username', 'admin');
+          }
+        }
+        q = q.order(sortBy, { ascending: sortOrder === 'asc' });
+        q = q.range(from, to);
+        return q;
+      };
+
+      let { data, error, count } = await buildProfilesQuery(true);
+      if (error && isUndefinedColumnError(error, 'account_status')) {
+        ({ data, error, count } = await buildProfilesQuery(false));
+      }
 
       if (error) throw error;
 
@@ -269,13 +280,20 @@ export const adminService = {
           profile.username === 'admin' ? 'admin' :
           (eventsCreatedMap.get(profile.id) || 0) > 0 ? 'organizer' : 'attendee';
 
+        const acct = (profile as { account_status?: ProfileAccountStatus }).account_status ?? 'active';
+        let uiStatus: AdminUser['status'] = 'active';
+        if (acct === 'suspended') uiStatus = 'suspended';
+        else if (acct === 'banned' || acct === 'deleted') uiStatus = 'inactive';
+
         return {
           id: profile.id,
           email: emailMap.get(profile.id) || '',
           name: profile.full_name || profile.username || 'Unknown',
           username: profile.username,
           role: userRole,
-          status: 'active' as const, // TODO: Add status field to profiles table
+          status: uiStatus,
+          account_status: acct,
+          account_status_reason: (profile as { account_status_reason?: string | null }).account_status_reason ?? null,
           profile_picture: profile.avatar_url,
           bio: profile.bio,
           location: profile.location,
@@ -287,16 +305,11 @@ export const adminService = {
         };
       });
 
-      // Filter by status (after transformation since status is computed)
-      const filteredUsers = status === 'all' 
-        ? users 
-        : users.filter(u => u.status === status);
-
       const total = count || 0;
       const totalPages = Math.ceil(total / pageSize);
 
       return {
-        data: filteredUsers,
+        data: users,
         total,
         page,
         pageSize,
@@ -429,17 +442,39 @@ export const adminService = {
   },
 
   suspendUser: async (userId: string, reason?: string): Promise<void> => {
-    try {
-      // TODO: Add status field to profiles table
-      // For now, fail explicitly instead of pretending success.
-      // Proper suspension should be implemented via a status field + RLS or via a server-side admin endpoint.
-      void userId;
-      void reason;
-      throw new Error('Suspend user is not implemented yet');
-    } catch (error) {
-      console.error('Error suspending user:', error);
-      throw error;
-    }
+    const { error } = await supabase.rpc('admin_set_account_status', {
+      p_target: userId,
+      p_status: 'suspended',
+      p_reason: reason ?? null,
+    });
+    if (error) throw error;
+  },
+
+  banUser: async (userId: string, reason?: string): Promise<void> => {
+    const { error } = await supabase.rpc('admin_set_account_status', {
+      p_target: userId,
+      p_status: 'banned',
+      p_reason: reason ?? null,
+    });
+    if (error) throw error;
+  },
+
+  restoreUserAccount: async (userId: string): Promise<void> => {
+    const { error } = await supabase.rpc('admin_set_account_status', {
+      p_target: userId,
+      p_status: 'active',
+      p_reason: 'Restored by administrator',
+    });
+    if (error) throw error;
+  },
+
+  /** Soft-delete: anonymizes profile and sets account_status deleted. Does not remove auth.users (use Supabase Dashboard / service role for full removal). */
+  softDeleteUserAccount: async (userId: string, reason?: string): Promise<void> => {
+    const { error } = await supabase.rpc('admin_soft_delete_user', {
+      p_target: userId,
+      p_reason: reason ?? null,
+    });
+    if (error) throw error;
   },
 
   // ==========================================
@@ -725,13 +760,14 @@ export const adminService = {
   // ==========================================
 
   exportUsersToCSV: async (users: AdminUser[]): Promise<string> => {
-    const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Events Attended', 'Events Created', 'Joined'];
+    const headers = ['ID', 'Name', 'Email', 'Role', 'Status', 'Account status', 'Events Attended', 'Events Created', 'Joined'];
     const rows = users.map(user => [
       user.id,
       user.name,
       user.email || '',
       user.role,
       user.status,
+      user.account_status || user.status,
       user.events_attended || 0,
       user.events_created || 0,
       new Date(user.created_at).toLocaleDateString(),

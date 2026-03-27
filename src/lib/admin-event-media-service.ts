@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 
 export type EventMediaSource = 'story' | 'forum_post';
 
@@ -78,22 +79,43 @@ export const adminEventMediaService = {
   },
 
   async fetchMediaForEvent(eventId: number): Promise<EventMediaSummary> {
-    const [storiesRes, forumRes] = await Promise.all([
-      supabase
+    let storiesRes = await supabase
+      .from('stories')
+      .select(
+        'id, user_id, event_id, media_url, media_type, caption, content, created_at, likes_count, comments_count'
+      )
+      .eq('event_id', eventId)
+      .neq('moderation_status', 'archived')
+      .not('media_url', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (storiesRes.error && isUndefinedColumnError(storiesRes.error, 'moderation_status')) {
+      storiesRes = await supabase
         .from('stories')
         .select(
           'id, user_id, event_id, media_url, media_type, caption, content, created_at, likes_count, comments_count'
         )
         .eq('event_id', eventId)
         .not('media_url', 'is', null)
-        .order('created_at', { ascending: false }),
-      supabase
+        .order('created_at', { ascending: false });
+    }
+
+    let forumRes = await supabase
+      .from('forum_posts')
+      .select('id, user_id, event_id, media_url, title, created_at, likes_count, comments_count')
+      .eq('event_id', eventId)
+      .neq('moderation_status', 'archived')
+      .not('media_url', 'is', null)
+      .order('created_at', { ascending: false });
+
+    if (forumRes.error && isUndefinedColumnError(forumRes.error, 'moderation_status')) {
+      forumRes = await supabase
         .from('forum_posts')
         .select('id, user_id, event_id, media_url, title, created_at, likes_count, comments_count')
         .eq('event_id', eventId)
         .not('media_url', 'is', null)
-        .order('created_at', { ascending: false }),
-    ]);
+        .order('created_at', { ascending: false });
+    }
 
     if (storiesRes.error) throw storiesRes.error;
     if (forumRes.error) throw forumRes.error;
