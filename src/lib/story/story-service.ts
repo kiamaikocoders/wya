@@ -1,17 +1,10 @@
 
 import { supabase } from '@/lib/supabase';
+import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 import { toast } from 'sonner';
 import type { Story, StoryComment, CreateStoryDto, CreateStoryCommentDto } from './types';
 
-export const storyService = {
-  /**
-   * Get all stories with optional event filtering
-   */
-  getAllStories: async (eventId?: number, limit = 50): Promise<Story[]> => {
-    try {
-      let query = supabase
-        .from('stories')
-        .select(`
+const STORY_PUBLIC_COLUMNS = `
           id,
           content,
           user_id,
@@ -26,7 +19,18 @@ export const storyService = {
           status,
           is_featured,
           expires_at
-        `)
+        `;
+
+export const storyService = {
+  /**
+   * Get all stories with optional event filtering
+   */
+  getAllStories: async (eventId?: number, limit = 50): Promise<Story[]> => {
+    try {
+      let query = supabase
+        .from('stories')
+        .select(STORY_PUBLIC_COLUMNS)
+        .eq('moderation_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -34,7 +38,17 @@ export const storyService = {
         query = query.eq('event_id', eventId);
       }
 
-      const { data, error } = await query;
+      let { data, error } = await query;
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        let q2 = supabase
+          .from('stories')
+          .select(STORY_PUBLIC_COLUMNS)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (eventId) q2 = q2.eq('event_id', eventId);
+        ({ data, error } = await q2);
+      }
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -116,15 +130,28 @@ export const storyService = {
    */
   getUngroupedStories: async (limit = 50): Promise<Story[]> => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('stories')
         .select(`
           id, content, user_id, event_id, media_url, media_type, caption,
           likes_count, comments_count, created_at, hashtags, status, is_featured, expires_at
         `)
         .is('event_id', null)
+        .eq('moderation_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select(`
+          id, content, user_id, event_id, media_url, media_type, caption,
+          likes_count, comments_count, created_at, hashtags, status, is_featured, expires_at
+        `)
+          .is('event_id', null)
+          .order('created_at', { ascending: false })
+          .limit(limit));
+      }
 
       if (error) throw error;
       if (!data || data.length === 0) return [];
@@ -169,27 +196,22 @@ export const storyService = {
       return [];
     }
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('stories')
-        .select(`
-          id,
-          content,
-          user_id,
-          event_id,
-          media_url,
-          media_type,
-          caption,
-          likes_count,
-          comments_count,
-          created_at,
-          hashtags,
-          status,
-          is_featured,
-          expires_at
-        `)
+        .select(STORY_PUBLIC_COLUMNS)
         .in('event_id', eventIds)
+        .eq('moderation_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select(STORY_PUBLIC_COLUMNS)
+          .in('event_id', eventIds)
+          .order('created_at', { ascending: false })
+          .limit(limit));
+      }
 
       if (error) {
         console.error('Supabase query error:', error);
@@ -244,26 +266,20 @@ export const storyService = {
    */
   getFeaturedStories: async (): Promise<Story[]> => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('stories')
-        .select(`
-          id,
-          content,
-          user_id,
-          event_id,
-          media_url,
-          media_type,
-          caption,
-          likes_count,
-          comments_count,
-          created_at,
-          hashtags,
-          status,
-          is_featured,
-          expires_at
-        `)
+        .select(STORY_PUBLIC_COLUMNS)
         .eq('is_featured', true)
+        .eq('moderation_status', 'verified')
         .order('created_at', { ascending: false });
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select(STORY_PUBLIC_COLUMNS)
+          .eq('is_featured', true)
+          .order('created_at', { ascending: false }));
+      }
 
       if (error) throw error;
 
@@ -315,26 +331,20 @@ export const storyService = {
    */
   getStoryById: async (storyId: number): Promise<Story | null> => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('stories')
-        .select(`
-          id,
-          content,
-          user_id,
-          event_id,
-          media_url,
-          media_type,
-          caption,
-          likes_count,
-          comments_count,
-          created_at,
-          hashtags,
-          status,
-          is_featured,
-          expires_at
-        `)
+        .select(STORY_PUBLIC_COLUMNS)
         .eq('id', storyId)
+        .eq('moderation_status', 'verified')
         .single();
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select(STORY_PUBLIC_COLUMNS)
+          .eq('id', storyId)
+          .single());
+      }
 
       if (error) throw error;
 
@@ -398,14 +408,24 @@ export const storyService = {
         caption: storyData.caption || storyData.content,
         media_url: storyData.media_url,
         media_type: storyData.media_url ? (storyData.media_type || 'image') : null,
-        hashtags: hashtags.length > 0 ? hashtags : []
+        hashtags: hashtags.length > 0 ? hashtags : [],
+        moderation_status: 'pending' as const,
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('stories')
         .insert(insertData)
         .select()
         .single();
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        const { moderation_status: _m, ...insertWithoutMod } = insertData;
+        ({ data, error } = await supabase
+          .from('stories')
+          .insert(insertWithoutMod)
+          .select()
+          .single());
+      }
 
       if (error) throw error;
 

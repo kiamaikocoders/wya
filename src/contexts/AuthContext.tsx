@@ -9,6 +9,7 @@ import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
 import { ATTENDEE_TERMS_VERSION, PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
 import type { AttendeeSignupConsents } from '@/lib/signup-consent';
+import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 
 export interface User {
   id: string;
@@ -90,11 +91,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Fetch profile data to determine admin status before unblocking UI
         try {
-          const { data: profile, error: profileError } = await supabase
+          let { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('id, full_name, username, avatar_url, bio, created_at')
+            .select('id, full_name, username, avatar_url, bio, created_at, account_status, account_status_reason')
             .eq('id', session.user.id)
             .single();
+
+          if (profileError && isUndefinedColumnError(profileError, 'account_status')) {
+            ({ data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, full_name, username, avatar_url, bio, created_at')
+              .eq('id', session.user.id)
+              .single());
+          }
 
           // PGRST116 = no rows; treat as "profile missing"
           if (profileError && profileError.code !== 'PGRST116') {
@@ -117,6 +126,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               setIsAdmin(false);
             }
           } else {
+            const acct =
+              'account_status' in profile && profile.account_status != null
+                ? profile.account_status
+                : 'active';
+            if (acct !== 'active' && profile.username !== 'admin') {
+              await supabase.auth.signOut();
+              setUser(null);
+              setIsAdmin(false);
+              toast.error(
+                acct === 'suspended'
+                  ? 'Your account has been suspended. Contact support if you believe this is a mistake.'
+                  : acct === 'banned'
+                    ? 'Your account access has been revoked.'
+                    : 'This account is no longer available.'
+              );
+              setLoading(false);
+              return;
+            }
+
             // Profile exists, update user and admin status
             const userType: User['user_type'] =
               profile.username === 'admin' ? 'admin' : 'attendee';
@@ -237,8 +265,43 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       if (error) throw error;
-      
-      // Navigate IMMEDIATELY after successful auth - don't wait for anything
+
+      let { data: lockProfile, error: lockErr } = await supabase
+        .from('profiles')
+        .select('account_status, username')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (lockErr && isUndefinedColumnError(lockErr, 'account_status')) {
+        ({ data: lockProfile, error: lockErr } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', data.user.id)
+          .maybeSingle());
+        if (lockProfile) {
+          lockProfile = { ...lockProfile, account_status: 'active' as const };
+        }
+      }
+
+      if (!lockErr && lockProfile) {
+        const acct =
+          'account_status' in lockProfile && lockProfile.account_status != null
+            ? lockProfile.account_status
+            : 'active';
+        if (acct !== 'active' && lockProfile.username !== 'admin') {
+          await supabase.auth.signOut();
+          const msg =
+            acct === 'suspended'
+              ? 'Your account has been suspended. Contact support if you believe this is a mistake.'
+              : acct === 'banned'
+                ? 'Your account access has been revoked.'
+                : 'This account is no longer available.';
+          toast.error(msg);
+          throw new Error(msg);
+        }
+      }
+
+      // Navigate after account status check
       navigate('/home');
       
       // Get user profile for welcome message (non-blocking - run after navigation)

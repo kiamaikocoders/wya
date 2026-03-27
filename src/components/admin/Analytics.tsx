@@ -24,6 +24,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminService } from '@/lib/admin-service';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import { runAdminInsightsAnalysis } from '@/lib/admin-ai-analysis';
 
 const COLORS = ['#FF8042', '#FFBB28', '#00C49F', '#0088FE', '#8884d8'];
 
@@ -156,44 +157,36 @@ const Analytics = () => {
   });
 
   const runPerformanceAnalysis = async () => {
-    if (!eventStats || !userStats) return;
-    
+    if (!eventStats || !userStats) {
+      toast.error('Statistics are still loading. Wait a moment, then try again.');
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyBRF6q949E70yC36OvT-BYsGBeP7Jfux9Y'}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Analyze this event platform performance data and provide 3 key insights with actionable recommendations:
+      const text = await runAdminInsightsAnalysis(
+        `Analyze this event platform performance data and provide 3 key insights with actionable recommendations:
 
-                - Total events: ${eventStats.total_events}
-                - Revenue: KES ${eventStats.total_revenue.toLocaleString()}
-                - Active users: ${userStats.active_users}
-                - Total users: ${userStats.total_users}
-                - New users this month: ${userStats.new_users_this_month}
-                - Average events per user: ${userStats.average_events_per_user}
-                - Events this month: ${eventStats.events_this_month}
-                
-                Provide 3 clear insights with specific actionable recommendations to improve platform performance and growth.`
-              }]
-            }]
-          })
-        }
+- Total events: ${eventStats.total_events}
+- Revenue: KES ${eventStats.total_revenue.toLocaleString()}
+- Active users: ${userStats.active_users}
+- Total users: ${userStats.total_users}
+- New users this month: ${userStats.new_users_this_month}
+- Average events per user: ${userStats.average_events_per_user}
+- Events this month: ${eventStats.events_this_month}
+
+Provide 3 clear insights with specific actionable recommendations to improve platform performance and growth.`
       );
-
-      const data = await response.json();
-      setAnalysisResult(data.candidates[0].content.parts[0].text);
+      setAnalysisResult(text);
       toast.success('AI analysis complete');
     } catch (error) {
       console.error('Error running AI performance analysis:', error);
-      toast.error('Failed to complete analysis');
-      setAnalysisResult('Failed to generate analysis. Please try again later.');
+      const msg =
+        error instanceof Error ? error.message : 'Failed to complete analysis';
+      toast.error(msg);
+      setAnalysisResult(
+        `Could not generate insights.\n\n${msg}\n\nTips: use npm run dev locally (with VERCEL_AI_API_KEY in .env), or deploy to Vercel with that env var. Static preview (vite preview) has no /api/ai route.`
+      );
     } finally {
       setIsAnalyzing(false);
     }

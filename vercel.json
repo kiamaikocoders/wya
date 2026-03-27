@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/ai.ts": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/downloads/(.*)",
@@ -21,10 +26,6 @@
       "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Content-Type",
-          "value": "application/json"
-        },
-        {
           "key": "Access-Control-Allow-Origin",
           "value": "*"
         }
@@ -41,7 +42,7 @@
       "destination": "/robots.txt"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]

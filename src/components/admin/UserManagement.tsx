@@ -46,7 +46,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminService, AdminUser } from '@/lib/admin-service';
+import { adminService, AdminUser, type ProfileAccountStatus } from '@/lib/admin-service';
+import { runAdminInsightsAnalysis } from '@/lib/admin-ai-analysis';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,9 +58,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -76,6 +79,10 @@ const UserManagement = () => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [viewingUser, setViewingUser] = useState<AdminUser | null>(null);
   const [emailDebugInfo, setEmailDebugInfo] = useState<string | null>(null);
+  const [accountActionOpen, setAccountActionOpen] = useState(false);
+  const [accountActionKind, setAccountActionKind] = useState<'suspend' | 'ban' | 'delete' | null>(null);
+  const [accountActionUserId, setAccountActionUserId] = useState<string | null>(null);
+  const [accountActionReason, setAccountActionReason] = useState('');
 
   // Fetch user stats
   const { data: userStats, isLoading: isLoadingStats } = useQuery({
@@ -129,6 +136,7 @@ const UserManagement = () => {
       adminService.suspendUser(userId, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
       toast.success('User suspended');
     },
     onError: (error: any) => {
@@ -136,6 +144,84 @@ const UserManagement = () => {
       toast.error(error?.message || 'Failed to suspend user');
     },
   });
+
+  const banUserMutation = useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason?: string }) =>
+      adminService.banUser(userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+      toast.success('Access revoked');
+    },
+    onError: (error: any) => {
+      console.error('Failed to ban user:', error);
+      toast.error(error?.message || 'Failed to revoke access');
+    },
+  });
+
+  const restoreUserMutation = useMutation({
+    mutationFn: (userId: string) => adminService.restoreUserAccount(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+      toast.success('Account restored to active');
+    },
+    onError: (error: any) => {
+      console.error('Failed to restore user:', error);
+      toast.error(error?.message || 'Failed to restore account');
+    },
+  });
+
+  const softDeleteUserMutation = useMutation({
+    mutationFn: ({ userId, reason }: { userId: string; reason?: string }) =>
+      adminService.softDeleteUserAccount(userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-user-stats'] });
+      toast.success('Account removed and profile anonymized');
+    },
+    onError: (error: any) => {
+      console.error('Failed to remove account:', error);
+      toast.error(error?.message || 'Failed to remove account');
+    },
+  });
+
+  const closeAccountActionDialog = () => {
+    setAccountActionOpen(false);
+    setAccountActionKind(null);
+    setAccountActionUserId(null);
+    setAccountActionReason('');
+  };
+
+  const openAccountAction = (userId: string, kind: 'suspend' | 'ban' | 'delete') => {
+    setAccountActionUserId(userId);
+    setAccountActionKind(kind);
+    setAccountActionReason('');
+    setAccountActionOpen(true);
+  };
+
+  const submitAccountAction = () => {
+    if (!accountActionUserId || !accountActionKind) return;
+    const reason = accountActionReason.trim() || undefined;
+    const onDone = {
+      onSuccess: () => closeAccountActionDialog(),
+    };
+    if (accountActionKind === 'suspend') {
+      suspendUserMutation.mutate({ userId: accountActionUserId, reason }, onDone);
+    } else if (accountActionKind === 'ban') {
+      banUserMutation.mutate({ userId: accountActionUserId, reason }, onDone);
+    } else {
+      softDeleteUserMutation.mutate({ userId: accountActionUserId, reason }, onDone);
+    }
+  };
+
+  const accountStatusLabel = (u: AdminUser): string => {
+    const raw = u.account_status as ProfileAccountStatus | undefined;
+    if (raw === 'suspended') return 'Suspended';
+    if (raw === 'banned') return 'Revoked';
+    if (raw === 'deleted') return 'Removed';
+    return 'Active';
+  };
 
   // Bulk update roles mutation
   const bulkUpdateRolesMutation = useMutation({
@@ -159,7 +245,9 @@ const UserManagement = () => {
     
     const filtered = usersData.data;
     const total = filtered.length;
-    const active = filtered.filter(u => u.status === 'active').length;
+    const active = filtered.filter(
+      (u) => (u.account_status ?? 'active') === 'active'
+    ).length;
     
     // Calculate role distribution from filtered data
     const attendees = filtered.filter(u => u.role === 'attendee').length;
@@ -210,43 +298,35 @@ const UserManagement = () => {
 
   // AI Analysis
   const runAIAnalysis = async () => {
-    if (!userStats) return;
-    
+    if (!userStats) {
+      toast.error('Statistics are still loading. Wait a moment, then try again.');
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY || 'AIzaSyBRF6q949E70yC36OvT-BYsGBeP7Jfux9Y'}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Analyze this user data and provide insights (growth trends, engagement patterns, retention opportunities):
-                - Total users: ${userStats.total_users}
-                - New users this month: ${userStats.new_users_this_month}
-                - Attendees: ${userStats.attendees}
-                - Organizers: ${userStats.organizers}
-                - Admins: ${userStats.admins}
-                - Active users in last 30 days: ${userStats.active_users}
-                - Average events attended per user: ${userStats.average_events_per_user}
-                
-                Keep the analysis concise (3-4 bullet points) and actionable for an event platform admin.`
-              }]
-            }]
-          })
-        }
-      );
+      const text = await runAdminInsightsAnalysis(
+        `Analyze this user data and provide insights (growth trends, engagement patterns, retention opportunities):
+- Total users: ${userStats.total_users}
+- New users this month: ${userStats.new_users_this_month}
+- Attendees: ${userStats.attendees}
+- Organizers: ${userStats.organizers}
+- Admins: ${userStats.admins}
+- Active users in last 30 days: ${userStats.active_users}
+- Average events attended per user: ${userStats.average_events_per_user}
 
-      const data = await response.json();
-      setAnalysisResult(data.candidates[0].content.parts[0].text);
+Keep the analysis concise (3-4 bullet points) and actionable for an event platform admin.`
+      );
+      setAnalysisResult(text);
       toast.success('AI analysis complete');
     } catch (error) {
       console.error('Error running AI analysis:', error);
-      toast.error('Failed to complete analysis');
-      setAnalysisResult('Failed to generate analysis. Please try again later.');
+      const msg =
+        error instanceof Error ? error.message : 'Failed to complete analysis';
+      toast.error(msg);
+      setAnalysisResult(
+        `Could not generate insights.\n\n${msg}\n\nTips: use npm run dev locally (with VERCEL_AI_API_KEY in .env), or deploy to Vercel with that env var. Static preview (vite preview) has no /api/ai route.`
+      );
     } finally {
       setIsAnalyzing(false);
     }
@@ -254,12 +334,6 @@ const UserManagement = () => {
 
   const handleRoleChange = (userId: string, newRole: 'attendee' | 'organizer' | 'admin') => {
     updateRoleMutation.mutate({ userId, role: newRole });
-  };
-
-  const handleSuspend = (userId: string) => {
-    if (confirm('Are you sure you want to suspend this user?')) {
-      suspendUserMutation.mutate({ userId });
-    }
   };
 
   // Test email RPC on mount to help debug email issues
@@ -433,8 +507,8 @@ const UserManagement = () => {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
+            <SelectItem value="inactive">Not active (suspended / revoked / removed)</SelectItem>
+            <SelectItem value="suspended">Suspended only</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -719,8 +793,12 @@ const UserManagement = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
-                    {user.status}
+                  <Badge
+                    variant={
+                      user.account_status === 'active' || !user.account_status ? 'default' : 'destructive'
+                    }
+                  >
+                    {accountStatusLabel(user)}
                   </Badge>
                 </TableCell>
                       <TableCell>
@@ -753,12 +831,32 @@ const UserManagement = () => {
                                 Set as Admin
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem 
-                              onClick={() => handleSuspend(user.id)}
-                              className="text-destructive"
-                            >
-                              Suspend User
-                            </DropdownMenuItem>
+                            {user.role !== 'admin' &&
+                              user.account_status !== 'active' &&
+                              user.account_status !== 'deleted' && (
+                                <DropdownMenuItem
+                                  onClick={() => restoreUserMutation.mutate(user.id)}
+                                  disabled={restoreUserMutation.isPending}
+                                >
+                                  Restore account (active)
+                                </DropdownMenuItem>
+                              )}
+                            {user.role !== 'admin' && user.account_status === 'active' && (
+                              <>
+                                <DropdownMenuItem onClick={() => openAccountAction(user.id, 'suspend')}>
+                                  Suspend account…
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openAccountAction(user.id, 'ban')}>
+                                  Revoke access (ban)…
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openAccountAction(user.id, 'delete')}
+                                  className="text-destructive"
+                                >
+                                  Remove account…
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                 </TableCell>
@@ -826,10 +924,21 @@ const UserManagement = () => {
                     <Badge variant={viewingUser.role === 'organizer' ? 'outline' : viewingUser.role === 'admin' ? 'default' : 'secondary'}>
                       {viewingUser.role}
                     </Badge>
-                    <Badge variant={viewingUser.status === 'active' ? 'default' : 'destructive'}>
-                      {viewingUser.status}
+                    <Badge
+                      variant={
+                        viewingUser.account_status === 'active' || !viewingUser.account_status
+                          ? 'default'
+                          : 'destructive'
+                      }
+                    >
+                      {accountStatusLabel(viewingUser)}
                     </Badge>
                   </div>
+                  {viewingUser.account_status_reason ? (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Reason: {viewingUser.account_status_reason}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -901,6 +1010,60 @@ const UserManagement = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={accountActionOpen} onOpenChange={(open) => !open && closeAccountActionDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {accountActionKind === 'suspend' && 'Suspend account'}
+              {accountActionKind === 'ban' && 'Revoke access (ban)'}
+              {accountActionKind === 'delete' && 'Remove account'}
+            </DialogTitle>
+            <DialogDescription>
+              {accountActionKind === 'suspend' &&
+                'User cannot post, buy tickets, or edit their profile until restored. They can be reinstated later.'}
+              {accountActionKind === 'ban' &&
+                'Permanent policy action: same lock as suspend. Use for malicious abuse after investigation.'}
+              {accountActionKind === 'delete' &&
+                'Soft-delete: profile is anonymized and hidden from normal use. The auth record may still exist—delete the user in Supabase Auth if you need full removal.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium" htmlFor="account-action-reason">
+              Internal note (optional)
+            </label>
+            <Textarea
+              id="account-action-reason"
+              placeholder="e.g. Reported spam, terms violation reference…"
+              value={accountActionReason}
+              onChange={(e) => setAccountActionReason(e.target.value)}
+              className="min-h-[88px]"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={closeAccountActionDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={accountActionKind === 'delete' ? 'destructive' : 'default'}
+              disabled={
+                suspendUserMutation.isPending ||
+                banUserMutation.isPending ||
+                softDeleteUserMutation.isPending
+              }
+              onClick={submitAccountAction}
+            >
+              {(suspendUserMutation.isPending ||
+                banUserMutation.isPending ||
+                softDeleteUserMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Confirm
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Tabs>

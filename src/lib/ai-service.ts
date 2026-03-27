@@ -1,9 +1,4 @@
-
-import { toast } from 'sonner';
-
-// Use the correct API endpoint for Gemini API (updated endpoint)
-const API_KEY = 'AIzaSyBRF6q949E70yC36OvT-BYsGBeP7Jfux9Y';
-const API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+import { callAiChat } from '@/lib/ai-gateway-client';
 
 interface AIResponse {
   text: string;
@@ -81,43 +76,9 @@ const sampleImageURLs = {
   ]
 };
 
-// Helper function to make API requests
 const makeAIRequest = async (prompt: string): Promise<AIResponse> => {
-  try {
-    const response = await fetch(
-      `${API_URL}?key=${API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`API request failed with status: ${response.status}`);
-      throw new Error(`API request failed with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('API returned unexpected format');
-    }
-    
-    return {
-      text: data.candidates[0].content.parts[0].text
-    };
-  } catch (error) {
-    console.error('Error making AI request:', error);
-    throw error;
-  }
+  const text = await callAiChat({ user: prompt });
+  return { text };
 };
 
 export const aiService = {
@@ -276,7 +237,7 @@ export const aiService = {
         `Generate 5 creative and catchy event names for a ${category} event with this description: "${description}". 
         Provide only the names separated by commas without numbers or explanations.`
       );
-      return result.text.split(',').map(name => name.trim());
+      return result.text.split(',').map(name => name.trim()).filter(Boolean);
     } catch (error) {
       console.error('Error generating event names:', error);
       return [

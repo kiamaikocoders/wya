@@ -273,6 +273,7 @@ export type Database = {
           id: number
           likes_count: number | null
           media_url: string | null
+          moderation_status: string
           title: string
           updated_at: string | null
           user_id: string
@@ -284,6 +285,7 @@ export type Database = {
           id?: number
           likes_count?: number | null
           media_url?: string | null
+          moderation_status?: string
           title: string
           updated_at?: string | null
           user_id: string
@@ -295,6 +297,7 @@ export type Database = {
           id?: number
           likes_count?: number | null
           media_url?: string | null
+          moderation_status?: string
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -471,6 +474,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string
+          account_status_changed_at: string | null
+          account_status_changed_by: string | null
+          account_status_reason: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -500,6 +507,10 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_status?: string
+          account_status_changed_at?: string | null
+          account_status_changed_by?: string | null
+          account_status_reason?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -529,6 +540,10 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_status?: string
+          account_status_changed_at?: string | null
+          account_status_changed_by?: string | null
+          account_status_reason?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -748,6 +763,7 @@ export type Database = {
           likes_count: number | null
           media_type: string | null
           media_url: string | null
+          moderation_status: string
           status: string | null
           user_id: string
         }
@@ -764,6 +780,7 @@ export type Database = {
           likes_count?: number | null
           media_type?: string | null
           media_url?: string | null
+          moderation_status?: string
           status?: string | null
           user_id: string
         }
@@ -780,6 +797,7 @@ export type Database = {
           likes_count?: number | null
           media_type?: string | null
           media_url?: string | null
+          moderation_status?: string
           status?: string | null
           user_id?: string
         }
@@ -1020,7 +1038,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_set_account_status: {
+        Args: {
+          p_target: string
+          p_status: string
+          p_reason?: string | null
+        }
+        Returns: undefined
+      }
+      admin_soft_delete_user: {
+        Args: {
+          p_target: string
+          p_reason?: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

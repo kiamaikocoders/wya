@@ -1,6 +1,12 @@
 
 import { supabase } from '@/lib/supabase';
+import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 import { toast } from 'sonner';
+
+const FORUM_LIST_COLUMNS =
+  'id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category,moderation_status';
+const FORUM_LIST_COLUMNS_LEGACY =
+  'id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category';
 
 export interface ForumPost {
   id: number;
@@ -10,6 +16,7 @@ export interface ForumPost {
   event_id?: number;
   created_at: string;
   updated_at?: string;
+  moderation_status?: 'pending' | 'verified' | 'archived';
   media_url?: string;
   likes_count?: number;
   views_count?: number;
@@ -61,14 +68,21 @@ export const forumService = {
   getAllPosts: async (limit = 50): Promise<ForumPost[]> => {
     try {
       // Get posts first
-      const { data: posts, error: postsError } = await supabase
+      let { data: posts, error: postsError } = await supabase
         .from('forum_posts')
-        .select(
-          'id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category'
-        )
+        .select(FORUM_LIST_COLUMNS)
+        .eq('moderation_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
-      
+
+      if (postsError && isUndefinedColumnError(postsError, 'moderation_status')) {
+        ({ data: posts, error: postsError } = await supabase
+          .from('forum_posts')
+          .select(FORUM_LIST_COLUMNS_LEGACY)
+          .order('created_at', { ascending: false })
+          .limit(limit));
+      }
+
       if (postsError) throw postsError;
       
       // Get user profiles for all posts
@@ -110,12 +124,21 @@ export const forumService = {
   getPostById: async (id: number): Promise<ForumPost> => {
     try {
       // Get post first
-      const { data: post, error: postError } = await supabase
+      let { data: post, error: postError } = await supabase
         .from('forum_posts')
-        .select('id,title,content,user_id,event_id,created_at,updated_at,media_url,likes_count,views_count,comments_count,category')
+        .select(FORUM_LIST_COLUMNS)
         .eq('id', id)
+        .eq('moderation_status', 'verified')
         .single();
-      
+
+      if (postError && isUndefinedColumnError(postError, 'moderation_status')) {
+        ({ data: post, error: postError } = await supabase
+          .from('forum_posts')
+          .select(FORUM_LIST_COLUMNS_LEGACY)
+          .eq('id', id)
+          .single());
+      }
+
       if (postError) throw postError;
       
       // Get user profile
@@ -156,18 +179,28 @@ export const forumService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to create a post');
       
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .insert({
-          title: postData.title,
-          content: postData.content,
-          event_id: postData.event_id,
-          media_url: postData.media_url,
-          user_id: user.id
-        })
-        .select()
-        .single();
-      
+      const rowWithMod = {
+        title: postData.title,
+        content: postData.content,
+        event_id: postData.event_id,
+        media_url: postData.media_url,
+        user_id: user.id,
+        moderation_status: postData.media_url?.trim() ? ('pending' as const) : ('verified' as const),
+      };
+      const rowLegacy = {
+        title: postData.title,
+        content: postData.content,
+        event_id: postData.event_id,
+        media_url: postData.media_url,
+        user_id: user.id,
+      };
+
+      let { data, error } = await supabase.from('forum_posts').insert(rowWithMod).select().single();
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase.from('forum_posts').insert(rowLegacy).select().single());
+      }
+
       if (error) throw error;
       
       return data as ForumPost;
