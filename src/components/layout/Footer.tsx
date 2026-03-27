@@ -102,6 +102,9 @@ const Footer = () => {
                   <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Attendee Terms</Link>
                 </li>
                 <li>
+                  <Link to="/media-consent" className="text-kenya-brown-light hover:text-white transition-colors">Media consent</Link>
+                </li>
+                <li>
                   <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>
                 </li>
               </ul>
@@ -229,6 +232,9 @@ const Footer = () => {
               </li>
               <li>
                 <Link to="/terms-of-service" className="text-kenya-brown-light hover:text-white transition-colors">Attendee Terms</Link>
+              </li>
+              <li>
+                <Link to="/media-consent" className="text-kenya-brown-light hover:text-white transition-colors">Media consent</Link>
               </li>
               <li>
                 <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>

@@ -7,7 +7,11 @@ import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
-import { ATTENDEE_TERMS_VERSION, PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
+import {
+  ATTENDEE_TERMS_VERSION,
+  MEDIA_CONSENT_VERSION,
+  PRIVACY_POLICY_VERSION,
+} from '@/legal/policy-versions';
 import type { AttendeeSignupConsents } from '@/lib/signup-consent';
 import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 
@@ -411,6 +415,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             location_consent: consents.locationOptIn,
             ...(consents.locationOptIn ? { location_consent_at: now } : {}),
             organizer_content_sharing_opt_in: consents.organizerSharingOptIn,
+            media_consent: consents.mediaRecordingPromotionalConsent,
+            media_consent_at: now,
+            media_consent_version: MEDIA_CONSENT_VERSION,
           }
         }
       });

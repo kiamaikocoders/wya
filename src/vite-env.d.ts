@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+declare module '*.txt?raw' {
+  const content: string;
+  export default content;
+}
+
 interface ImportMetaEnv {
   /** When the UI is served from a different origin than the Vercel app that hosts /api/ai */
   readonly VITE_AI_PROXY_BASE_URL?: string;

@@ -1,0 +1,178 @@
+WYA — Where You At
+Attendee Terms & Conditions
+Effective Date: 26 March 2026
+Issued by Eventsphere Ltd
+
+Welcome to WYA ("Where You At"), a real-time event discovery platform connecting you to the best events happening in and around Nairobi. These Terms and Conditions ("Terms") are issued by Eventsphere Ltd ("Eventsphere", "we", "our", or "us"), the registered company operating the WYA Platform, and govern your use of our mobile and web application as an Attendee. By creating an account or using our platform, you confirm that you have read, understood, and agreed to be bound by these Terms.
+
+Please read these Terms carefully. If you do not agree, you must not use the WYA platform.
+
+1. Definitions
+
+In these Terms, the following words and phrases have the meanings set out below:
+
+"Eventsphere" or "we" refers to Eventsphere Ltd, a company registered in Kenya, trading as WYA — Where You At.
+
+"WYA" or "Platform" refers to the Where You At mobile application, website, and associated services operated by Eventsphere Ltd from Nairobi, Kenya.
+
+"Attendee" or "You" refers to any individual who registers for or uses the WYA platform to discover and engage with events.
+
+"Organizer" refers to any individual, company, or entity that lists events on the WYA platform.
+
+"Event" refers to any activity, show, party, experience, or gathering listed or promoted on WYA.
+
+"Content" refers to any text, images, video, audio, or other material posted on or through the Platform.
+
+2. Eligibility
+
+To use WYA as an Attendee, you must:
+
+• Be at least 18 years of age. By registering, you confirm that you are 18 or older.
+• Be a resident of or currently located in Kenya or any other jurisdiction where use of the Platform is lawful.
+• Have the legal capacity to enter into a binding agreement.
+• Not be barred from receiving services under applicable Kenyan law or any other applicable law.
+
+Eventsphere Ltd reserves the right to request proof of age or identity at any time and to terminate accounts where eligibility requirements are not met.
+
+3. Account Registration & Security
+
+To access the full features of WYA, you are required to create an account. By registering, you agree to:
+
+• Provide accurate, current, and complete information during registration.
+• Keep your account information updated at all times.
+• Maintain the confidentiality of your login credentials and not share them with any third party.
+• Notify WYA immediately at hello@wya.com if you suspect unauthorized access to your account.
+
+You are solely responsible for all activity that occurs under your account. Eventsphere Ltd will not be liable for any loss arising from unauthorized use of your account where you have failed to safeguard your credentials.
+
+4. Use of the Platform
+
+4.1 Permitted Use
+
+You may use WYA to:
+
+• Discover events in Nairobi and surrounding areas in real time.
+• Save, share, and engage with event listings.
+• Receive personalized event recommendations based on your preferences and location.
+• Interact with event content, including RSVPs, reactions, and user-generated check-ins.
+
+4.2 Prohibited Conduct
+
+You agree not to:
+
+• Use the Platform for any unlawful purpose or in violation of any applicable Kenyan law or regulation.
+• Post, transmit, or share any content that is defamatory, obscene, offensive, hateful, or discriminatory.
+• Impersonate any person or entity, or misrepresent your affiliation with any person or organization.
+• Scrape, harvest, or systematically extract data from the Platform without prior written consent from WYA.
+• Interfere with or disrupt the integrity or performance of the Platform or its servers.
+• Attempt to gain unauthorized access to any part of the Platform or any other system or network connected to it.
+• Use automated tools, bots, or scripts to interact with the Platform in a manner not intended by WYA.
+• Sell, transfer, or sublicense your account or any rights granted under these Terms.
+
+5. Event Listings & Third-Party Organizers
+
+WYA is a discovery platform. Events listed on WYA are organized and managed by independent third-party Organizers. You acknowledge and agree that:
+
+• WYA does not organize, manage, or control the events listed on the Platform.
+• WYA makes no representations or warranties regarding the accuracy, quality, safety, or legality of any event listed.
+• Your attendance at any event is at your own risk. WYA shall not be liable for any personal injury, loss, damage, or disappointment arising from your attendance at an event.
+• Any disputes arising from an event — including cancellations, refunds, or conduct at the event — are between you and the relevant Organizer.
+• WYA will endeavor to verify Organizer details and remove inaccurate or misleading listings, but we do not guarantee that all listings are complete or up to date.
+
+6. Location Services & Personalization
+
+WYA uses your device's location to provide real-time, location-based event recommendations. By enabling location permissions on your device, you consent to WYA accessing and processing your location data to:
+
+• Show events near you in real time.
+• Improve the relevance of recommendations and notifications sent to you.
+• Generate anonymized, aggregated insights used to improve the Platform.
+
+You may disable location services at any time through your device settings. Disabling location services may limit certain features of the Platform. WYA will handle your location data in accordance with our Privacy Policy and the Kenya Data Protection Act, 2019.
+
+7. Data Protection & Privacy
+
+WYA is committed to protecting your personal data. We collect, process, and store your personal information in compliance with the Kenya Data Protection Act, 2019 ("KDPA"). By using WYA, you consent to:
+
+• The collection of personal data including your name, email address, phone number, and location data for purposes of providing the service.
+• The processing of usage data to personalize your experience on the Platform.
+• The receipt of marketing communications related to WYA and partner events, subject to your communication preferences.
+
+Your rights under the KDPA include the right to access, correct, and request deletion of your personal data. To exercise these rights, please contact us at hello@wya.com. For full details on how we collect, use, and protect your data, please refer to our Privacy Policy available on the Platform.
+
+8. Branded Content & Advertising
+
+WYA partners with brands, including alcohol, fashion, and telecommunications companies, to deliver sponsored content and event experiences to our users. You acknowledge that:
+
+• Sponsored content and brand placements may appear on your feed and within event listings. These will be clearly identified where required by law.
+• Alcohol-related content displayed on the Platform complies with the Alcoholic Drinks Control Act (Kenya) and is intended for users who are 18 years of age or older.
+
+WYA does not endorse any brand or product featured on the Platform. Your interactions with branded content are voluntary.
+
+If you believe any sponsored content is inaccurate, misleading, or inappropriate, please report it to hello@wya.com.
+
+9. User-Generated Content
+
+The Platform may allow you to post content such as event check-ins, reviews, reactions, and photos ("User Content"). By submitting User Content, you:
+
+• Grant WYA a non-exclusive, royalty-free, worldwide license to use, display, reproduce, and distribute your User Content in connection with operating and promoting the Platform.
+• Confirm that your User Content does not infringe any third-party intellectual property rights or violate any applicable law.
+• Acknowledge that WYA may remove any User Content that violates these Terms or that we determine, in our sole discretion, to be harmful, offensive, or inappropriate.
+
+You retain ownership of your User Content. WYA does not claim ownership over content you post to the Platform.
+
+10. Intellectual Property
+
+All intellectual property rights in the WYA Platform, including its design, branding, software, logos, and content created by WYA, are owned by or licensed to WYA. You agree not to:
+
+• Reproduce, copy, distribute, or commercially exploit any part of the Platform without express prior written consent from WYA.
+• Reverse engineer, decompile, or attempt to extract the source code of the Platform or any associated software.
+• Use WYA's name, logo, or brand marks in any manner that implies endorsement without prior written approval.
+
+11. Notifications & Communications
+
+By registering on WYA, you agree to receive service-related communications including account notifications, event updates, and safety alerts. You may opt out of promotional and marketing communications at any time through your account settings or by contacting us at hello@wya.com.
+
+Push notifications may be enabled or disabled through your device settings. Please note that disabling push notifications may mean you miss time-sensitive event updates.
+
+12. Modification & Suspension of Service
+
+WYA reserves the right, at its sole discretion, to:
+
+• Modify, suspend, or discontinue any feature or the entire Platform at any time with or without notice.
+• Suspend or terminate your account if you are found to have violated these Terms or if your use of the Platform poses a risk to WYA, other users, or third parties.
+• Modify these Terms at any time. Updated Terms will be posted on the Platform with the revised effective date. Your continued use of the Platform after any changes constitutes your acceptance of the updated Terms.
+
+We will endeavor to provide reasonable notice of material changes to these Terms via email or in-app notification.
+
+13. Limitation of Liability
+
+To the maximum extent permitted by applicable Kenyan law, WYA, its directors, employees, and agents shall not be liable for:
+
+• Any indirect, incidental, consequential, or punitive damages arising from your use of or inability to use the Platform.
+• Any loss or damage resulting from events that occur at third-party Organizer events.
+• Any inaccuracies in event listings posted by Organizers.
+• Any unauthorized access to your account arising from your failure to maintain the security of your credentials.
+
+Nothing in these Terms shall limit WYA's liability for fraud, willful misconduct, or any liability that cannot be excluded by law.
+
+14. Indemnity
+
+You agree to indemnify, defend, and hold harmless WYA and its affiliates, officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising out of or in any way connected with:
+
+• Your use of the Platform in breach of these Terms.
+• Your User Content.
+• Your violation of any applicable law or the rights of any third party.
+
+15. Governing Law & Dispute Resolution
+
+These Terms shall be governed by and construed in accordance with the laws of the Republic of Kenya. In the event of any dispute arising out of or in connection with these Terms or your use of the Platform, WYA encourages you to first contact us directly at hello@wya.com to seek an informal resolution. If a dispute cannot be resolved informally within 30 days, it shall be referred to mediation administered by the Nairobi Centre for International Arbitration (NCIA) in accordance with its Mediation Rules. The seat of mediation shall be Nairobi, Kenya, and the language of proceedings shall be English.
+
+16. Contact Us
+
+If you have any questions, concerns, or complaints regarding these Terms or your use of the WYA Platform, please contact us at:
+
+Eventsphere Ltd (trading as WYA — Where You At)
+Email: hello@wya.com
+Location: Nairobi, Kenya
+
+These Terms were last updated on 26 March 2026. WYA recommends that you retain a copy of these Terms for your records.

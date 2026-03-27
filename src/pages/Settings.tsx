@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
 import { gdprService } from '@/lib/gdpr-service';
 import { consentService } from '@/lib/consent-service';
-import { PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
+import { MEDIA_CONSENT_VERSION, PRIVACY_POLICY_VERSION } from '@/legal/policy-versions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ type SettingsForm = {
   two_factor_auth: boolean;
   location_consent: boolean;
   organizer_content_sharing_opt_in: boolean;
+  media_recording_promotional_consent: boolean;
   phone: string;
   date_of_birth: string;
 };
@@ -40,6 +41,7 @@ const Settings: React.FC = () => {
     two_factor_auth: false,
     location_consent: false,
     organizer_content_sharing_opt_in: true,
+    media_recording_promotional_consent: false,
     phone: '',
     date_of_birth: '',
   });
@@ -67,6 +69,7 @@ const Settings: React.FC = () => {
       two_factor_auth: profile.two_factor_auth ?? false,
       location_consent: profile.location_consent ?? false,
       organizer_content_sharing_opt_in: profile.organizer_content_sharing_opt_in ?? true,
+      media_recording_promotional_consent: profile.media_consent ?? false,
       phone: profile.phone ?? '',
       date_of_birth: profile.date_of_birth ?? '',
     });
@@ -82,6 +85,7 @@ const Settings: React.FC = () => {
         marketing_consent: settings.marketing_emails,
         location_consent: settings.location_consent,
         organizer_content_sharing_opt_in: settings.organizer_content_sharing_opt_in,
+        media_consent: settings.media_recording_promotional_consent,
         profile_visibility: settings.profile_visibility,
         two_factor_auth: settings.two_factor_auth,
         phone: settings.phone.trim() || null,
@@ -112,6 +116,16 @@ const Settings: React.FC = () => {
           consentType: 'organizer_content_sharing',
           granted: settings.organizer_content_sharing_opt_in,
           policyVersion: PRIVACY_POLICY_VERSION,
+        });
+      }
+      if (
+        settings.media_recording_promotional_consent !== (profile.media_consent ?? false)
+      ) {
+        await consentService.logConsent({
+          userId: user.id,
+          consentType: 'media',
+          granted: settings.media_recording_promotional_consent,
+          policyVersion: MEDIA_CONSENT_VERSION,
         });
       }
 
@@ -363,6 +377,24 @@ const Settings: React.FC = () => {
                     checked={settings.organizer_content_sharing_opt_in}
                     onCheckedChange={(checked) =>
                       setSettings({ ...settings, organizer_content_sharing_opt_in: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-white">Promotional photos, video, and audio</Label>
+                    <p className="text-sm text-text-white/70">
+                      See the{' '}
+                      <Link to="/media-consent" className="text-kenya-orange underline">
+                        Media consent
+                      </Link>{' '}
+                      form.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.media_recording_promotional_consent}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, media_recording_promotional_consent: checked })
                     }
                   />
                 </div>

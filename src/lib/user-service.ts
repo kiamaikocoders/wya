@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { getDeleteMyAccountUrl } from '@/lib/supabase-functions-url';
+import { MEDIA_CONSENT_VERSION } from '@/legal/policy-versions';
 
 export interface User {
   id: string;
@@ -39,6 +40,9 @@ export interface Profile {
   location_consent?: boolean;
   location_consent_at?: string | null;
   organizer_content_sharing_opt_in?: boolean;
+  media_consent?: boolean;
+  media_consent_at?: string | null;
+  media_consent_version?: string | null;
   email_notifications?: boolean;
   push_notifications?: boolean;
   profile_visibility?: string;
@@ -55,9 +59,14 @@ export interface UpdateProfilePayload {
   longitude?: number;
   phone?: string | null;
   date_of_birth?: string | null;
+  terms_version_accepted?: string | null;
+  terms_accepted_at?: string | null;
+  privacy_version_accepted?: string | null;
+  privacy_accepted_at?: string | null;
   marketing_consent?: boolean;
   location_consent?: boolean;
   organizer_content_sharing_opt_in?: boolean;
+  media_consent?: boolean;
   email_notifications?: boolean;
   push_notifications?: boolean;
   profile_visibility?: string;
@@ -116,6 +125,20 @@ export const userService = {
       if (profile.date_of_birth !== undefined) updateData.date_of_birth = profile.date_of_birth;
 
       const now = new Date().toISOString();
+      if (profile.terms_version_accepted !== undefined) {
+        updateData.terms_version_accepted = profile.terms_version_accepted;
+        updateData.terms_accepted_at =
+          profile.terms_accepted_at !== undefined && profile.terms_accepted_at !== null
+            ? profile.terms_accepted_at
+            : now;
+      }
+      if (profile.privacy_version_accepted !== undefined) {
+        updateData.privacy_version_accepted = profile.privacy_version_accepted;
+        updateData.privacy_accepted_at =
+          profile.privacy_accepted_at !== undefined && profile.privacy_accepted_at !== null
+            ? profile.privacy_accepted_at
+            : now;
+      }
       if (profile.marketing_consent !== undefined) {
         updateData.marketing_consent = profile.marketing_consent;
         updateData.marketing_consent_at = now;
@@ -126,6 +149,11 @@ export const userService = {
       }
       if (profile.organizer_content_sharing_opt_in !== undefined) {
         updateData.organizer_content_sharing_opt_in = profile.organizer_content_sharing_opt_in;
+      }
+      if (profile.media_consent !== undefined) {
+        updateData.media_consent = profile.media_consent;
+        updateData.media_consent_at = now;
+        updateData.media_consent_version = MEDIA_CONSENT_VERSION;
       }
       if (profile.email_notifications !== undefined) {
         updateData.email_notifications = profile.email_notifications;
@@ -157,7 +185,7 @@ export const userService = {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, email_notifications, push_notifications, profile_visibility, two_factor_auth'
+          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth'
         )
         .eq('id', userId)
         .single();

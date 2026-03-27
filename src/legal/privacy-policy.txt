@@ -1,0 +1,221 @@
+WYA — Where You At
+
+Privacy Policy
+
+Effective Date: 26 March 2026
+
+Issued by Eventsphere Ltd
+
+This Privacy Policy explains how Eventsphere Ltd ("Eventsphere", "we", "our", or "us"), the registered company operating the WYA — Where You At? platform, collects, uses, stores, shares, and protects your personal data when you use our mobile application, website, and related services (collectively, the "Platform").
+
+We are committed to protecting your privacy and handling your personal data responsibly in accordance with the Kenya Data Protection Act, 2019 ("KDPA") and any other applicable data protection laws.
+
+By registering on or using the WYA Platform, you acknowledge that you have read and understood this Privacy Policy and consent to the collection and use of your data as described herein. If you do not agree, please discontinue use of the Platform.
+
+1. Who We Are
+
+The WYA Platform is owned and operated by:
+
+Eventsphere Ltd
+Trading as: WYA — Where You At?
+Registered in: Nairobi, Kenya
+Email: hello@wya.ke
+
+Eventsphere Ltd is the Data Controller in respect of your personal data for the purposes of the KDPA.
+
+2. Personal Data We Collect
+
+We collect personal data in the following categories:
+
+2.1 Data You Provide Directly
+
+• Full name and username
+• Email address and phone number
+• Date of birth (for age verification purposes)
+• Profile photo (if uploaded)
+• Event preferences and interests
+
+2.2 Data Collected Automatically
+
+• Device information (model, operating system, unique device identifiers)
+• IP address and browser or app type
+• Log data including pages visited, time and date of access, and features used
+• Crash reports and performance data
+
+2.3 Location Data
+
+• Real-time location data when location services are enabled on your device
+• General location inferred from your IP address
+
+You may disable location services at any time through your device settings. Disabling this will limit real-time event discovery features on the Platform.
+
+2.4 User-Generated Content
+
+• Photos, videos, and captions you post or share on the Platform
+• Event check-ins, reactions, comments, and reviews you submit
+• Any other content you voluntarily upload to the Platform
+
+Please see Section 5 below for important information on how your User-Generated Content may be shared with Event Organizers.
+
+3. How We Use Your Personal Data
+
+Eventsphere Ltd uses your personal data for the following purposes:
+
+3.1 To Provide and Improve the Platform
+
+• Creating and managing your attendee account
+• Delivering real-time, location-based event recommendations tailored to your preferences
+• Processing your event interactions including RSVPs, check-ins, and reactions
+• Providing customer support and responding to your enquiries
+• Diagnosing and fixing technical issues
+
+3.2 For Marketing & Communications
+
+• Sending you event recommendations, platform updates, and promotional notifications
+• Serving you personalized in-app content and branded event promotions
+• Conducting surveys or research to improve the Platform
+
+You may opt out of marketing communications at any time through your account settings or by contacting us at hello@wya.ke. Opting out of marketing messages will not affect essential service communications.
+
+3.3 For Safety, Legal & Compliance Purposes
+
+• Enforcing our Attendee Terms & Conditions and other platform policies
+• Detecting, investigating, and preventing fraud, abuse, or illegal activity
+• Complying with our obligations under applicable Kenyan law
+• Responding to lawful requests from law enforcement or regulatory authorities
+
+3.4 For Analytics & Platform Development
+
+• Generating anonymized and aggregated usage insights to understand how the Platform is used
+• Improving algorithm performance for event discovery and content personalization
+• Informing product decisions and future feature development
+
+4. Legal Basis for Processing
+
+Under the Kenya Data Protection Act, 2019, we process your personal data on the following legal bases:
+
+• Consent — where you have given us explicit consent, such as for location data and marketing communications.
+• Contractual necessity — where processing is necessary to perform our contract with you (i.e., to provide the WYA Platform).
+• Legal obligation — where processing is required to comply with applicable Kenyan law.
+• Legitimate interests — where processing is necessary for our legitimate business interests, such as fraud prevention and platform analytics, provided those interests are not overridden by your rights.
+
+You have the right to withdraw consent at any time where consent is the basis for processing. Withdrawal of consent does not affect the lawfulness of processing carried out before withdrawal.
+
+5. Sharing of User Content with Event Organizers
+
+This section is important and we ask that you read it carefully.
+
+When you post content on the WYA Platform — including but not limited to event check-ins, photos, videos, captions, reactions, and reviews relating to a specific event — you acknowledge and agree that:
+
+• Such User-Generated Content may be shared with the relevant Event Organizer(s) responsible for that event for the purpose of event promotion and marketing.
+• Event Organizers may use your Content across their own promotional channels, including social media platforms, websites, email campaigns, printed materials, and event recaps, subject to the terms they have agreed with Eventsphere Ltd.
+• Your username or display name may be associated with your Content when it is shared with Organizers.
+• Eventsphere Ltd does not sell your personal data to Event Organizers. The sharing of Content is limited strictly to the promotional purposes described in this section.
+
+If you do not wish your content to be shared with Event Organizers for promotional purposes, you may:
+
+• Adjust your content-sharing preferences in your account privacy settings (where available), or
+• Refrain from posting content relating to specific events on the Platform, or
+• Contact us at hello@wya.ke to request that specific content not be shared.
+
+Eventsphere Ltd will endeavor to ensure content attribution is maintained where possible. However, once content has been shared with an Event Organizer, we cannot guarantee how that Organizer stores or further uses it. We encourage you to review the privacy practices of Event Organizers whose events you engage with on the Platform.
+
+6. Other Third-Party Sharing
+
+6.1 Brand & Sponsor Partners
+
+WYA works with brand partners including companies in the alcohol, fashion, fintech, and telecommunications sectors. We may share aggregated, anonymized analytics data with sponsors to measure the reach and performance of sponsored content. We do not share your personally identifiable information with sponsors without your explicit consent.
+
+6.2 Service Providers
+
+We engage trusted third-party service providers to support the operation of the Platform, including cloud hosting providers, analytics platforms, payment processors, and customer support tools. These providers process your data only on our instruction and are bound by confidentiality and data processing obligations.
+
+6.3 Legal & Regulatory Authorities
+
+We may disclose your personal data to government or regulatory authorities, law enforcement agencies, or courts where required by law, legal process, or to protect the rights, property, or safety of Eventsphere Ltd, our users, or others.
+
+6.4 Business Transfers
+
+In the event of a merger, acquisition, restructuring, or sale of all or part of our business assets, your personal data may be transferred as part of that transaction. We will notify you via email or prominent notice on the Platform if such a transfer materially changes how your data is handled.
+
+7. Data Retention
+
+We retain your personal data for as long as is necessary to fulfil the purposes described in this Privacy Policy, including for the duration of your account with us and for a reasonable period thereafter in order to:
+
+• Comply with our legal and regulatory obligations
+• Resolve disputes and enforce our agreements
+• Maintain records required by applicable law
+
+When your data is no longer required for these purposes, we will securely delete or anonymize it. You may request deletion of your account and associated personal data at any time as described in Section 9 below.
+
+8. Data Security
+
+Eventsphere Ltd implements appropriate technical and organizational measures to protect your personal data against unauthorized access, accidental loss, destruction, or disclosure. These measures include:
+
+• Encryption of data in transit using industry-standard protocols
+• Access controls limiting data access to authorized personnel only
+• Regular security reviews and testing of our systems
+
+While we take data security seriously, no method of transmission over the internet or electronic storage is completely secure. We cannot guarantee absolute security of your data and encourage you to take steps to protect your own account, including using a strong, unique password. In the event of a data breach that is likely to result in a risk to your rights and freedoms, we will notify you and the Office of the Data Protection Commissioner (ODPC) as required by the KDPA.
+
+9. Your Rights Under the Kenya Data Protection Act, 2019
+
+As a data subject under the KDPA, you have the following rights in respect of your personal data:
+
+• Right of Access — to request a copy of the personal data we hold about you.
+• Right to Rectification — to request correction of inaccurate or incomplete personal data.
+• Right to Erasure — to request deletion of your personal data where it is no longer necessary for the purposes it was collected.
+• Right to Object — to object to the processing of your personal data for direct marketing or where processing is based on our legitimate interests.
+• Right to Restriction — to request that we restrict processing of your personal data in certain circumstances.
+• Right to Data Portability — to receive a copy of your personal data in a structured, commonly used, and machine-readable format.
+• Right to Withdraw Consent — to withdraw consent at any time where processing is based on consent, without affecting the lawfulness of prior processing.
+
+To exercise any of these rights, please contact us at hello@wya.ke. We will respond to your request within 21 days as required by the KDPA. We may need to verify your identity before processing your request. If you are unsatisfied with our response, you have the right to lodge a complaint with the Office of the Data Protection Commissioner (ODPC) of Kenya.
+
+10. Cookies & Tracking Technologies
+
+WYA uses cookies and similar tracking technologies to enhance your experience on the Platform. These technologies help us:
+
+• Keep you logged into your account
+• Remember your preferences and settings
+• Understand how you use the Platform and improve its performance
+• Deliver relevant content and event recommendations
+
+You can control cookies through your browser or device settings. Please note that disabling cookies may affect the functionality of certain features on the Platform.
+
+11. Children's Privacy
+
+The WYA Platform is intended for users who are 18 years of age or older. We do not knowingly collect personal data from individuals under the age of 18. If we become aware that we have inadvertently collected data from a minor, we will take immediate steps to delete that data.
+
+If you believe that we may have collected data from a person under 18, please contact us immediately at hello@wya.ke.
+
+12. Cross-Border Data Transfers
+
+WYA primarily operates within Kenya. However, some of our service providers may be located in other jurisdictions and your data may be transferred to and processed in those countries. Where such transfers occur, we will ensure that appropriate safeguards are in place in accordance with the KDPA, including entering into data transfer agreements that provide equivalent protection to that afforded under Kenyan law.
+
+13. Changes to This Privacy Policy
+
+Eventsphere Ltd may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or for other operational reasons. When we make material changes, we will:
+
+• Post the updated Privacy Policy on the Platform with a revised effective date, and
+• Notify you via email or in-app notification where the changes are significant.
+
+Your continued use of the Platform following notification of changes constitutes your acceptance of the updated Privacy Policy.
+
+14. Contact & Data Protection Queries
+
+For any questions, concerns, or requests relating to this Privacy Policy or the handling of your personal data, please contact us:
+
+Eventsphere Ltd (trading as WYA — Where You At?)
+Email: hello@wya.ke
+Location: Nairobi, Kenya
+
+You also have the right to contact the Office of the Data Protection Commissioner (ODPC) of Kenya:
+
+Office of the Data Protection Commissioner (ODPC)
+Website: www.odpc.go.ke
+Email: info@odpc.go.ke
+
+This Privacy Policy was last updated on 26 March 2026. 
+
+© Eventsphere Ltd. All rights reserved.
