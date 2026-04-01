@@ -33,12 +33,13 @@ import { toast } from 'sonner';
  * and media consent version are accepted (and optional preferences reviewed).
  */
 export function LegalConsentGate() {
-  const { user, loading: authLoading, refreshAuth } = useAuth();
+  const { user, loading: authLoading, refreshAuth, isAdmin } = useAuth();
   const location = useLocation();
   const queryClient = useQueryClient();
   const skip = shouldSkipLegalConsentGate(location.pathname);
 
-  const enabled = Boolean(user?.id && !skip && !authLoading);
+  // Admins operate ghost tooling and may not use attendee signup/consent on their operator account.
+  const enabled = Boolean(user?.id && !skip && !authLoading && !isAdmin);
 
   const { data: profile, isLoading, isError, refetch } = useQuery({
     queryKey: ['userProfile', user?.id],

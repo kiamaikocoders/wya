@@ -47,6 +47,8 @@ export interface Profile {
   push_notifications?: boolean;
   profile_visibility?: string;
   two_factor_auth?: boolean;
+  /** System-managed ghost accounts; exempt from attendee legal consent gate. */
+  is_ghost?: boolean | null;
 }
 
 export interface UpdateProfilePayload {
@@ -185,7 +187,7 @@ export const userService = {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth'
+          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth, is_ghost'
         )
         .eq('id', userId)
         .single();
