@@ -58,12 +58,10 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     staleTime: 0,
   });
 
-  // Fetch event-specific stories (aligns with Event Highlights on event detail pages)
-  const { data: eventStories = [], isLoading: isLoadingEventStories } = useQuery({
-    queryKey: ['storiesForEvents', events.map(e => e.id).join(',')],
-    queryFn: () => storyService.getStoriesForEvents(events.map(e => e.id)),
-    enabled: events.length > 0,
-    staleTime: 0,
+  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
+    queryKey: ['forumPosts'],
+    queryFn: () => forumService.getAllPosts(),
+    staleTime: 1000 * 60,
   });
 
   // Fetch ungrouped stories for Community Discover section
@@ -73,11 +71,52 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     staleTime: 0,
   });
 
-  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
-    queryKey: ['forumPosts'],
-    queryFn: () => forumService.getAllPosts(),
-    staleTime: 1000 * 60,
+  // Time-ordered verified stories with an event (no mega .in('event_id', ...) — avoids PostgREST limits and missing new posts).
+  const { data: eventStories = [], isLoading: isLoadingEventStories } = useQuery({
+    queryKey: ['discoverRecentEventStories'],
+    queryFn: () => storyService.getRecentVerifiedEventStoriesForDiscover(600),
+    staleTime: 0,
   });
+
+  const storyBackedEventIds = useMemo(() => {
+    const ids = eventStories
+      .map(s => s.event_id)
+      .map(id => (typeof id === 'number' ? id : Number(id)))
+      .filter((id): id is number => Number.isFinite(id));
+    return [...new Set(ids)];
+  }, [eventStories]);
+
+  const forumBackedEventIds = useMemo(() => {
+    const ids = forumPosts
+      .map(p => p.event_id)
+      .map(id => (id == null ? NaN : typeof id === 'number' ? id : Number(id)))
+      .filter((id): id is number => Number.isFinite(id));
+    return [...new Set(ids)];
+  }, [forumPosts]);
+
+  const missingDiscoverEventIds = useMemo(() => {
+    const inPage = new Set(events.map(e => e.id).filter((id): id is number => id != null));
+    const need = [...new Set([...storyBackedEventIds, ...forumBackedEventIds])];
+    return need.filter(id => !inPage.has(id));
+  }, [events, storyBackedEventIds, forumBackedEventIds]);
+
+  const { data: discoverExtraEvents = [] } = useQuery({
+    queryKey: ['discoverEventsByIds', missingDiscoverEventIds.sort((a, b) => a - b).join(',')],
+    queryFn: () => eventService.getEventsByIds(missingDiscoverEventIds),
+    enabled: missingDiscoverEventIds.length > 0,
+    staleTime: 0,
+  });
+
+  const eventsForDiscover = useMemo(() => {
+    const byId = new Map<number, (typeof events)[number]>();
+    for (const e of events) {
+      if (e.id != null) byId.set(e.id, e);
+    }
+    for (const e of discoverExtraEvents) {
+      if (e.id != null && !byId.has(e.id)) byId.set(e.id, e);
+    }
+    return Array.from(byId.values());
+  }, [events, discoverExtraEvents]);
 
   const isLoadingStories = isLoadingEventStories || isLoadingUngroupedStories;
 
@@ -90,7 +129,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
   const allContent = useMemo(() => {
     // Create event map for quick lookup
     const eventMap = new Map<number, { id: number; title: string }>();
-    events.forEach(event => {
+    eventsForDiscover.forEach(event => {
       if (event.id) {
         eventMap.set(event.id, {
           id: event.id,
@@ -165,7 +204,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     ];
 
     return content;
-  }, [eventStories, ungroupedStories, forumPosts, events]);
+  }, [eventStories, ungroupedStories, forumPosts, eventsForDiscover]);
 
 
   // Group content by event
@@ -179,7 +218,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       image_url?: string;
     }>();
 
-    events.forEach(event => {
+    eventsForDiscover.forEach(event => {
       if (event.id) {
         eventMap.set(event.id, {
           id: event.id,
@@ -256,7 +295,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           };
           // Only log warning if events have finished loading
           if (!isLoadingEvents) {
-            console.warn(`Event ${eventId} not found in eventMap after events loaded. Events count: ${events.length}`);
+            console.warn(`Event ${eventId} not found in eventMap after events loaded. Events count: ${eventsForDiscover.length}`);
           }
         }
 
@@ -283,7 +322,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       });
 
     return groups;
-  }, [allContent, events, isLoadingEvents]);
+  }, [allContent, eventsForDiscover, isLoadingEvents]);
 
   // Find target content and scroll to it
   useEffect(() => {
@@ -506,7 +545,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     console.log('Discover Feed Debug:', {
       storiesCount,
       forumPostsCount: forumPosts.length,
-      eventsCount: events.length,
+      eventsCount: eventsForDiscover.length,
       allContentCount: allContent.length,
       eventGroupsCount: eventGroups.length,
       eventGroups: eventGroups.map(g => ({
@@ -515,7 +554,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         totalContent: g.totalContent,
       })),
     });
-  }, [eventStories.length, ungroupedStories.length, forumPosts.length, events.length, allContent.length, eventGroups.length]);
+  }, [eventStories.length, ungroupedStories.length, forumPosts.length, eventsForDiscover.length, allContent.length, eventGroups.length]);
 
   if (isLoadingStories || isLoadingForum) {
     return (

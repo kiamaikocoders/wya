@@ -188,6 +188,120 @@ export const storyService = {
   },
 
   /**
+   * Distinct event_ids from recent verified stories (ordered by story recency).
+   * Discover uses this so past events outside the paginated events list still load highlights.
+   */
+  getEventIdsFromRecentStories: async (storyRowLimit = 1500): Promise<number[]> => {
+    try {
+      let { data, error } = await supabase
+        .from('stories')
+        .select('event_id')
+        .not('event_id', 'is', null)
+        .eq('moderation_status', 'verified')
+        .order('created_at', { ascending: false })
+        .limit(storyRowLimit);
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select('event_id')
+          .not('event_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(storyRowLimit));
+      }
+
+      if (error || !data?.length) return [];
+
+      const seen = new Set<number>();
+      const out: number[] = [];
+      for (const row of data) {
+        const n = typeof row.event_id === 'number' ? row.event_id : Number(row.event_id);
+        if (Number.isFinite(n) && !seen.has(n)) {
+          seen.add(n);
+          out.push(n);
+        }
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Discover feed: latest verified stories that belong to an event.
+   * Uses a single time-ordered query (no giant .in(event_id, ...) list), so new posts always
+   * surface and PostgREST URL limits cannot drop the request.
+   */
+  getRecentVerifiedEventStoriesForDiscover: async (limit = 600): Promise<Story[]> => {
+    try {
+      let { data, error } = await supabase
+        .from('stories')
+        .select(STORY_PUBLIC_COLUMNS)
+        .not('event_id', 'is', null)
+        .eq('moderation_status', 'verified')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error && isUndefinedColumnError(error, 'moderation_status')) {
+        ({ data, error } = await supabase
+          .from('stories')
+          .select(STORY_PUBLIC_COLUMNS)
+          .not('event_id', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(limit));
+      }
+
+      if (error) {
+        console.error('Supabase query error (discover recent event stories):', error);
+        throw error;
+      }
+
+      if (!data?.length) return [];
+
+      const userIds = [...new Set(data.map(story => story.user_id).filter(Boolean))];
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', userIds);
+
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+      }
+
+      const profileMap = (profiles || []).reduce((map: Record<string, any>, profile: any) => {
+        map[profile.id] = profile;
+        return map;
+      }, {});
+
+      return data.map((item: any) => {
+        const eid = item.event_id;
+        const eventId = typeof eid === 'number' ? eid : Number(eid);
+        return {
+          id: item.id,
+          user_id: item.user_id,
+          event_id: Number.isFinite(eventId) ? eventId : item.event_id,
+          content: item.content,
+          caption: item.caption || '',
+          media_url: item.media_url,
+          media_type: item.media_type,
+          likes_count: item.likes_count || 0,
+          comments_count: item.comments_count || 0,
+          created_at: item.created_at,
+          user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+          user_image: profileMap[item.user_id]?.avatar_url || null,
+          hashtags: item.hashtags,
+          status: item.status,
+          is_featured: item.is_featured,
+          expires_at: item.expires_at,
+        };
+      });
+    } catch (error: any) {
+      console.error('Error fetching recent event stories for discover:', error);
+      return [];
+    }
+  },
+
+  /**
    * Get stories for multiple events (used by Discover to align with Event Highlights).
    * Fetches all stories for the given event IDs, ensuring parity with event detail pages.
    */

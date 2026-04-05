@@ -325,7 +325,26 @@ export const eventService = {
       throw error;
     }
   },
-  
+
+  /** Batch fetch events by id (e.g. Discover stories tied to events not in the first events page). */
+  getEventsByIds: async (ids: number[]): Promise<Event[]> => {
+    if (!ids.length) return [];
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select(
+          'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists'
+        )
+        .in('id', ids);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching events by ids:', error);
+      return [];
+    }
+  },
+
   // Create event
   createEvent: async (eventData: CreateEventPayload): Promise<Event> => {
     try {
