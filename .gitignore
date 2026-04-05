@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 .env
+mcp-config.env
+.tmp_mcp_deploy_ghost.json
+.deploy_one_line.json
+mcp-deploy-process-ghost-actions.json
+.cursor_mcp_deploy_payload.txt
 dist-ssr
 *.local
 

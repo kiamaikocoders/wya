@@ -317,6 +317,11 @@ const GhostManagement: React.FC = () => {
     try {
       const result = await ghostService.processActions();
       toast.success(`Processed ${result.processed} actions`);
+      queryClient.invalidateQueries({ queryKey: ['discoverRecentEventStories'] });
+      queryClient.invalidateQueries({ queryKey: ['discoverEventStories'] });
+      queryClient.invalidateQueries({ queryKey: ['discoverEventsByIds'] });
+      queryClient.invalidateQueries({ queryKey: ['ungroupedStories'] });
+      queryClient.invalidateQueries({ queryKey: ['allEvents', 'discover-including-past'] });
       // Reload data after processing
       setTimeout(() => {
         loadData();
@@ -1361,6 +1366,9 @@ const GhostManagement: React.FC = () => {
                   // Invalidate React Query cache to refresh Discover page
                   queryClient.invalidateQueries({ queryKey: ['allStories'] });
                   queryClient.invalidateQueries({ queryKey: ['stories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverRecentEventStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverEventStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverEventsByIds'] });
                   
                   setEditingStory(null);
                   toast.success('Story updated successfully');
@@ -1448,6 +1456,9 @@ const GhostManagement: React.FC = () => {
                   // Invalidate React Query cache to refresh Discover page
                   queryClient.invalidateQueries({ queryKey: ['allStories'] });
                   queryClient.invalidateQueries({ queryKey: ['stories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverRecentEventStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverEventStories'] });
+                  queryClient.invalidateQueries({ queryKey: ['discoverEventsByIds'] });
                   
                   toast.success('Story deleted successfully');
                   setStoryToDelete(null);

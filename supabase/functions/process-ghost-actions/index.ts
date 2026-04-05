@@ -5,16 +5,43 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// CORS: allowlist only (no wildcard). Set ALLOWED_ORIGINS env (comma-separated) e.g. https://app.example.com,https://www.example.com
+// CORS: ALLOWED_ORIGINS (comma-separated) for production/staging web origins.
+// Local dev: http://localhost:* and http://127.0.0.1:* are allowed when ALLOW_LOCALHOST_CORS is not "false".
+// Set ALLOW_LOCALHOST_CORS=false on the function if you must block browser calls from loopback only.
+const isLocalHttpOrigin = (origin: string | null): boolean => {
+  if (!origin) return false;
+  try {
+    const u = new URL(origin);
+    return (
+      u.protocol === "http:" &&
+      (u.hostname === "localhost" || u.hostname === "127.0.0.1")
+    );
+  } catch {
+    return false;
+  }
+};
+
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
-  const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
-  if (allowed.length === 0) return null;
-  if (requestOrigin && allowed.includes(requestOrigin)) return requestOrigin;
-  return allowed[0] ?? null; // fallback to first allowed for same-origin or missing Origin
+  const fromEnv = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const allowLocal =
+    (Deno.env.get("ALLOW_LOCALHOST_CORS") ?? "true").toLowerCase() !== "false";
+
+  if (!requestOrigin) return null;
+  if (fromEnv.includes(requestOrigin)) return requestOrigin;
+  if (allowLocal && isLocalHttpOrigin(requestOrigin)) return requestOrigin;
+  return null;
 };
 
 const corsHeadersFor = (origin: string | null) => ({
-  ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
+  ...(origin
+    ? {
+        "Access-Control-Allow-Origin": origin,
+        Vary: "Origin",
+      }
+    : {}),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 });
@@ -358,6 +385,8 @@ async function executeGhostAction(
             caption: storyContent,
             media_url: storyMedia,
             media_type: mediaType, // Always set to 'image' or 'video', never null
+            // Default DB column is 'pending'; feeds only show 'verified' (see story-service).
+            moderation_status: "verified",
           });
         if (createStoryError) {
           console.error("Error creating story:", createStoryError);
