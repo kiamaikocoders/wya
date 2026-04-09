@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 import { Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { aiService } from '@/lib/ai-service';
@@ -76,7 +77,13 @@ const AIEventRecommendations: React.FC<AIEventRecommendationsProps> = ({ onSelec
 
     return (
       <div className="space-y-4">
-        <p className="break-words text-sm leading-relaxed text-white/85">{recommendations}</p>
+        <div className="space-y-2">
+          {toDisplayParagraphs(recommendations).map((p, i) => (
+            <p key={i} className="break-words text-sm leading-relaxed text-white/85">
+              {p}
+            </p>
+          ))}
+        </div>
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-3 pt-1">
             {categories.map(category => (

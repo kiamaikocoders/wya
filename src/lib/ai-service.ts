@@ -76,8 +76,11 @@ const sampleImageURLs = {
   ]
 };
 
-const makeAIRequest = async (prompt: string): Promise<AIResponse> => {
-  const text = await callAiChat({ user: prompt });
+const makeAIRequest = async (
+  prompt: string,
+  opts?: { preserveRaw?: boolean }
+): Promise<AIResponse> => {
+  const text = await callAiChat({ user: prompt, preserveRaw: opts?.preserveRaw });
   return { text };
 };
 
@@ -171,7 +174,8 @@ export const aiService = {
         `Analyze this event title and description and suggest the best category matches from this list: Music, Food, Technology, Culture, Sports, Art, Business.
         Title: "${title}"
         Description: "${description}"
-        Format your response as a JSON array of objects with "name" and "confidence" (a number between 0 and 1) properties, sorted by confidence descending.`
+        Format your response as a JSON array of objects with "name" and "confidence" (a number between 0 and 1) properties, sorted by confidence descending.`,
+        { preserveRaw: true }
       );
       
       try {

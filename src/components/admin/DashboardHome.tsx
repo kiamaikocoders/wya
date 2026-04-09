@@ -210,20 +210,6 @@ const DashboardHome: React.FC = () => {
     },
   });
 
-  // Fetch new users this month
-  const { data: newUsersThisMonth } = useQuery({
-    queryKey: ['new-users-this-month'],
-    queryFn: async () => {
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const { count } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', monthStart.toISOString());
-      return count || 0;
-    },
-  });
-
   // Fetch tickets sold count
   const { data: ticketsSold } = useQuery({
     queryKey: ['tickets-sold'],
@@ -570,9 +556,13 @@ const DashboardHome: React.FC = () => {
                   <Loader2 className="h-6 w-6 animate-spin" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{userStats?.total_users || 0}</div>
+                    <div className="text-2xl font-bold">{userStats?.active_users || 0}</div>
                     <p className="text-xs text-green-500 mt-1">
-                      {newUsersThisMonth || 0} new this month
+                      {userStats?.new_users_this_month || 0} new real users this month
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                      {userStats?.total_registered_profiles ?? 0} registered · {userStats?.total_users ?? 0} real ·{' '}
+                      {userStats?.ghost_users ?? 0} ghost
                     </p>
                   </>
                 )}

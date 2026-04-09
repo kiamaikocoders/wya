@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Sparkles, Send, Loader2, User, Bot } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { aiService } from '@/lib/ai-service';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 import { toast } from 'sonner';
 
 interface Message {
@@ -128,7 +129,17 @@ const AIEventAssistant: React.FC = () => {
                     {message.sender === 'user' ? 'You' : 'Assistant'}
                   </span>
                 </div>
-                <p className="text-sm">{message.content}</p>
+                {message.sender === 'assistant' ? (
+                  <div className="space-y-2">
+                    {toDisplayParagraphs(message.content).map((p, i) => (
+                      <p key={i} className="text-sm leading-relaxed">
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                )}
               </div>
             </div>
           ))}

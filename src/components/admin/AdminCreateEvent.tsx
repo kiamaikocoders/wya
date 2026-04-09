@@ -17,6 +17,9 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { locationService, generateSessionToken, getSuggestionCountryCode } from '@/lib/location-service';
+import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
+import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
+import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 
 interface Category {
   id: number;
@@ -240,16 +243,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     },
   });
 
-  // Organize categories hierarchically
-  const organizedCategories = useMemo(() => {
-    const parents = categoriesData.filter(c => c.parent_id === null);
-    return parents.map(parent => ({
-      ...parent,
-      subcategories: categoriesData
-        .filter(c => c.parent_id === parent.id)
-        .sort((a, b) => a.order_index - b.order_index)
-    }));
-  }, [categoriesData]);
+  // Organize categories hierarchically (merge duplicate root rows by name)
+  const organizedCategories = useMemo(
+    () => organizeEventCategoryParents(categoriesData),
+    [categoriesData],
+  );
 
   // Get selected category name for display (singular, for backward compatibility)
   const selectedCategoryName = useMemo(() => {
@@ -714,6 +712,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                               </label>
                             </div>
                           ))}
+                          <AddSubcategoryField
+                            parentCategoryId={parentCategory.id}
+                            categories={categoriesData}
+                            onCreated={(id) => toggleCategory(id)}
+                          />
                           {/* Also allow selecting parent category directly */}
                           <div className="flex items-center space-x-2 pt-1 border-t border-white/10">
                             <Checkbox
@@ -1274,7 +1277,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               {formData.description && (
                 <div>
                   <Label className="text-muted-foreground">Description</Label>
-                  <p className="text-sm mt-1">{formData.description}</p>
+                  <ParagraphizedDescription
+                    text={formData.description}
+                    className="mt-1"
+                    paragraphClassName="text-sm"
+                  />
                 </div>
               )}
 

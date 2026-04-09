@@ -56,6 +56,14 @@ interface GhostAction {
   metadata: any;
 }
 
+/** Postgres unique violation / common duplicate wording */
+function isDuplicateRowError(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false;
+  if (err.code === "23505") return true;
+  const m = (err.message ?? "").toLowerCase();
+  return m.includes("duplicate") || m.includes("unique constraint") || m.includes("already exists");
+}
+
 serve(async (req) => {
   const requestOrigin = req.headers.get("Origin");
   const corsOrigin = getAllowedOrigin(requestOrigin);
@@ -180,34 +188,86 @@ serve(async (req) => {
         let successCount = 0;
         let errorCount = 0;
 
-        for (const userId of participants) {
-          try {
-            // Random delay between actions
-            const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-            await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+        const batchMeta = action.metadata as {
+          total_likes?: number;
+          story_ids?: number[];
+          prefer_media_first?: boolean;
+        } | null;
+        const isBatchLike =
+          action.action_type === "like_story" &&
+          batchMeta != null &&
+          typeof batchMeta.total_likes === "number" &&
+          !Number.isNaN(batchMeta.total_likes) &&
+          batchMeta.total_likes >= 1;
 
-            // Execute the action
-            const result = await executeGhostAction(
-              supabase,
-              userId,
-              action,
-              personaGroup
-            );
+        if (isBatchLike) {
+          const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+          await new Promise((resolve) => setTimeout(resolve, delay * 1000));
 
-            if (result.success) {
-              successCount++;
-              // Log success
-              await supabase.rpc("log_ghost_action", {
-                p_queue_id: action.id,
-                p_ghost_user_id: userId,
-                p_action_type: action.action_type,
-                p_target_id: action.target_id?.toString() || null,
-                p_target_type: action.target_type,
-                p_success: true,
-              });
-            } else {
+          const batchResult = await executeLikeStoryBatch(supabase, action, ghostUserIds);
+          if (batchResult.inserted > 0) {
+            successCount = 1;
+            await supabase.rpc("log_ghost_action", {
+              p_queue_id: action.id,
+              p_ghost_user_id: ghostUserIds[0],
+              p_action_type: action.action_type,
+              p_target_id: action.target_id?.toString() || null,
+              p_target_type: action.target_type,
+              p_success: true,
+              p_error_message: `Distributed ${batchResult.inserted} ghost like(s)${
+                batchResult.capped ? " (capped by available ghost×story pairs)" : ""
+              }`,
+            });
+          } else {
+            errorCount = 1;
+            await supabase.rpc("log_ghost_action", {
+              p_queue_id: action.id,
+              p_ghost_user_id: ghostUserIds[0],
+              p_action_type: action.action_type,
+              p_target_id: action.target_id?.toString() || null,
+              p_target_type: action.target_type,
+              p_success: false,
+              p_error_message: batchResult.error || "No new likes applied",
+            });
+          }
+        } else {
+          for (const userId of participants) {
+            try {
+              const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+              await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+
+              const result = await executeGhostAction(
+                supabase,
+                userId,
+                action,
+                personaGroup
+              );
+
+              if (result.success) {
+                successCount++;
+                await supabase.rpc("log_ghost_action", {
+                  p_queue_id: action.id,
+                  p_ghost_user_id: userId,
+                  p_action_type: action.action_type,
+                  p_target_id: action.target_id?.toString() || null,
+                  p_target_type: action.target_type,
+                  p_success: true,
+                });
+              } else {
+                errorCount++;
+                await supabase.rpc("log_ghost_action", {
+                  p_queue_id: action.id,
+                  p_ghost_user_id: userId,
+                  p_action_type: action.action_type,
+                  p_target_id: action.target_id?.toString() || null,
+                  p_target_type: action.target_type,
+                  p_success: false,
+                  p_error_message: result.error || "Unknown error",
+                });
+              }
+            } catch (error: any) {
               errorCount++;
-              // Log failure
+              console.error(`Error executing action for user ${userId}:`, error);
               await supabase.rpc("log_ghost_action", {
                 p_queue_id: action.id,
                 p_ghost_user_id: userId,
@@ -215,21 +275,9 @@ serve(async (req) => {
                 p_target_id: action.target_id?.toString() || null,
                 p_target_type: action.target_type,
                 p_success: false,
-                p_error_message: result.error || "Unknown error",
+                p_error_message: error.message,
               });
             }
-          } catch (error: any) {
-            errorCount++;
-            console.error(`Error executing action for user ${userId}:`, error);
-            await supabase.rpc("log_ghost_action", {
-              p_queue_id: action.id,
-              p_ghost_user_id: userId,
-              p_action_type: action.action_type,
-              p_target_id: action.target_id?.toString() || null,
-              p_target_type: action.target_type,
-              p_success: false,
-              p_error_message: error.message,
-            });
           }
         }
 
@@ -286,6 +334,153 @@ serve(async (req) => {
 });
 
 /**
+ * Admin sets metadata.total_likes; optional story_ids and prefer_media_first.
+ * Uses the full ghost pool (not engagement-sampled) for unique (ghost, story) pairs.
+ */
+async function executeLikeStoryBatch(
+  supabase: any,
+  action: GhostAction,
+  ghostUserIds: string[],
+): Promise<{ inserted: number; capped?: boolean; error?: string }> {
+  const meta = (action.metadata || {}) as {
+    total_likes?: number;
+    story_ids?: number[];
+    prefer_media_first?: boolean;
+  };
+  const totalTarget = Math.min(100000, Math.max(1, Math.floor(Number(meta.total_likes))));
+  const preferMedia = Boolean(meta.prefer_media_first);
+
+  if (!action.target_id) {
+    return { inserted: 0, error: "Event ID required" };
+  }
+  const eventId =
+    typeof action.target_id === "string"
+      ? parseInt(action.target_id, 10)
+      : action.target_id;
+  if (isNaN(eventId)) {
+    return { inserted: 0, error: "Invalid event ID" };
+  }
+
+  let storyIds: number[] = [];
+  if (Array.isArray(meta.story_ids) && meta.story_ids.length > 0) {
+    storyIds = meta.story_ids
+      .map((x: unknown) => (typeof x === "number" ? x : parseInt(String(x), 10)))
+      .filter((n: number) => !isNaN(n));
+
+    const { data: belong, error: belongErr } = await supabase
+      .from("stories")
+      .select("id")
+      .eq("event_id", eventId)
+      .in("id", storyIds);
+    if (belongErr) {
+      return { inserted: 0, error: belongErr.message };
+    }
+    const ok = new Set((belong || []).map((r: { id: number }) => r.id));
+    storyIds = storyIds.filter((id) => ok.has(id));
+    if (storyIds.length === 0) {
+      return { inserted: 0, error: "No valid stories for this event (check story selection)" };
+    }
+  } else {
+    const { data: rows, error: stErr } = await supabase
+      .from("stories")
+      .select("id, media_url")
+      .eq("event_id", eventId);
+    if (stErr) {
+      return { inserted: 0, error: stErr.message };
+    }
+    const list = rows || [];
+    if (list.length === 0) {
+      return { inserted: 0, error: "No stories for this event" };
+    }
+    if (preferMedia) {
+      list.sort((a: { media_url?: string | null }, b: { media_url?: string | null }) => {
+        const am = a.media_url ? 1 : 0;
+        const bm = b.media_url ? 1 : 0;
+        return bm - am;
+      });
+    }
+    storyIds = list.map((r: { id: number }) => r.id);
+  }
+
+  if (preferMedia && meta.story_ids && meta.story_ids.length > 0) {
+    const { data: rows } = await supabase
+      .from("stories")
+      .select("id, media_url")
+      .in("id", storyIds);
+    const map = new Map(
+      (rows || []).map((r: { id: number; media_url?: string | null }) => [r.id, r.media_url]),
+    );
+    storyIds = [...storyIds].sort((a, b) => {
+      const am = map.get(a) ? 1 : 0;
+      const bm = map.get(b) ? 1 : 0;
+      return bm - am;
+    });
+  }
+
+  const { data: existing, error: exErr } = await supabase
+    .from("story_likes")
+    .select("story_id, user_id")
+    .in("story_id", storyIds)
+    .in("user_id", ghostUserIds);
+  if (exErr) {
+    return { inserted: 0, error: exErr.message };
+  }
+
+  const taken = new Set(
+    (existing || []).map(
+      (r: { story_id: number; user_id: string }) => `${r.user_id}:${r.story_id}`,
+    ),
+  );
+
+  const pairs: { story_id: number; user_id: string }[] = [];
+  for (const sid of storyIds) {
+    for (const gid of ghostUserIds) {
+      const key = `${gid}:${sid}`;
+      if (!taken.has(key)) {
+        pairs.push({ story_id: sid, user_id: gid });
+      }
+    }
+  }
+
+  if (!preferMedia) {
+    for (let i = pairs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = pairs[i]!;
+      pairs[i] = pairs[j]!;
+      pairs[j] = t;
+    }
+  }
+
+  const maxPossible = pairs.length;
+  const toApply = pairs.slice(0, totalTarget);
+  const capped = totalTarget > maxPossible;
+
+  let inserted = 0;
+  for (const p of toApply) {
+    const { error: insErr } = await supabase.from("story_likes").insert({
+      story_id: p.story_id,
+      user_id: p.user_id,
+    });
+    if (insErr) {
+      if (isDuplicateRowError(insErr)) continue;
+      console.error("like batch insert", insErr);
+      continue;
+    }
+    const { error: rpcErr } = await supabase.rpc("increment_story_likes_count", {
+      p_story_id: p.story_id,
+    });
+    if (rpcErr) console.error("increment_story_likes_count", rpcErr);
+    else inserted++;
+  }
+
+  return {
+    inserted,
+    capped: capped && inserted > 0,
+    error: inserted === 0 ? "No new likes could be added (all pairs may already exist)" : undefined,
+  };
+}
+
+/**
  * Execute a single ghost action
  */
 async function executeGhostAction(
@@ -338,17 +533,14 @@ async function executeGhostAction(
             .insert({
               story_id: story.id,
               user_id: ghostUserId,
-            })
-            .select()
-            .single();
-          
-          if (likeStoryError && !likeStoryError.message.includes("duplicate")) {
+            });
+
+          if (likeStoryError) {
+            if (isDuplicateRowError(likeStoryError)) continue;
             console.error(`Error liking story ${story.id}:`, likeStoryError);
-            // Continue with other stories even if one fails
             continue;
           }
-          
-          // Update story likes count
+
           await supabase.rpc("increment_story_likes_count", {
             p_story_id: story.id,
           });
@@ -371,11 +563,16 @@ async function executeGhostAction(
           mediaType = isVideo ? "video" : "image";
         }
         
-        // Convert target_id to number if it exists (for event_id)
-        const storyEventId = action.target_id 
-          ? (typeof action.target_id === 'string' ? parseInt(action.target_id) : action.target_id)
-          : null;
-        
+        // Convert target_id to event_id; invalid numbers become null (Community / ungrouped Discover).
+        let storyEventId: number | null = null;
+        if (action.target_id != null && String(action.target_id).trim() !== "") {
+          const n =
+            typeof action.target_id === "string"
+              ? parseInt(action.target_id, 10)
+              : Number(action.target_id);
+          storyEventId = Number.isFinite(n) ? n : null;
+        }
+
         const { error: createStoryError } = await supabase
           .from("stories")
           .insert({
@@ -396,20 +593,39 @@ async function executeGhostAction(
 
       case "follow_user":
         if (!action.target_id) throw new Error("Target ID required");
-        // target_id is a UUID string for user actions
-        const targetUserId = typeof action.target_id === 'number' 
-          ? action.target_id.toString() 
-          : action.target_id;
-        
-        const { error: followError } = await supabase
+        // target_id is TEXT in queue (UUID string for real users)
+        const targetUserId = String(
+          typeof action.target_id === "number"
+            ? action.target_id
+            : action.target_id,
+        ).trim();
+
+        if (!targetUserId) throw new Error("Invalid target user id");
+
+        const followerId = ghostUserId.toLowerCase();
+        const followingId = targetUserId.toLowerCase();
+
+        if (followingId === followerId) {
+          console.log(`follow_user: skip self-follow ghost=${followerId}`);
+          break;
+        }
+
+        const { data: existingFollow } = await supabase
           .from("follows")
-          .insert({
-            follower_id: ghostUserId,
-            following_id: targetUserId,
-          })
-          .select()
-          .single();
-        if (followError && !followError.message.includes("duplicate")) {
+          .select("id")
+          .eq("follower_id", followerId)
+          .eq("following_id", followingId)
+          .maybeSingle();
+
+        if (existingFollow) break;
+
+        const { error: followError } = await supabase.from("follows").insert({
+          follower_id: followerId,
+          following_id: followingId,
+        });
+
+        if (followError && !isDuplicateRowError(followError)) {
+          console.error("follow_user insert failed:", followError);
           throw followError;
         }
         break;

@@ -16,7 +16,6 @@ import CircularGallery from '@/components/ui/CircularGallery';
 import OnboardingReminders from '@/components/onboarding/OnboardingReminders';
 import { eventService } from '@/lib/event-service';
 import { storyService } from '@/lib/story/story-service';
-import { forumService } from '@/lib/forum-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
 import { onboardingService } from '@/lib/onboarding-service';
@@ -58,16 +57,10 @@ const Home: React.FC = () => {
     queryFn: () => eventService.getHomeFeedEvents(60),
   });
 
-  // Fetch stories and forum posts for trending content
+  // Fetch stories for trending content
   const { data: stories = [] } = useQuery({
     queryKey: ['homeStories'],
     queryFn: () => storyService.getAllStories(undefined, 60),
-    staleTime: 1000 * 60,
-  });
-
-  const { data: forumPosts = [] } = useQuery({
-    queryKey: ['homeForumPosts'],
-    queryFn: () => forumService.getAllPosts(60),
     staleTime: 1000 * 60,
   });
 
@@ -84,10 +77,7 @@ const Home: React.FC = () => {
 
   // Get trending events from Discover content, fallback to featured/upcoming events
   const trendingEvents = useMemo(() => {
-    const allContent = [
-      ...stories.map(s => ({ ...s, type: 'story' as const })),
-      ...forumPosts.map(p => ({ ...p, type: 'forum' as const })),
-    ];
+    const allContent = [...stories.map(s => ({ ...s, type: 'story' as const }))];
 
     // Get unique event IDs from content with engagement scores
     const eventScores = new Map<number, number>();
@@ -122,13 +112,12 @@ const Home: React.FC = () => {
     }
 
     return trendingFromContent;
-  }, [stories, forumPosts, events]);
+  }, [stories, events]);
 
   // Get events with recent posts (last 48 hours)
   const eventsWithRecentPosts = useMemo(() => {
     const recentContent = [
       ...stories.filter(s => differenceInHours(new Date(), new Date(s.created_at)) <= 48),
-      ...forumPosts.filter(p => differenceInHours(new Date(), new Date(p.created_at)) <= 48),
     ];
 
     const eventIds = new Set(
@@ -138,7 +127,7 @@ const Home: React.FC = () => {
     );
 
     return events.filter(event => eventIds.has(event.id));
-  }, [stories, forumPosts, events]);
+  }, [stories, events]);
   
   const featuredEvents = useMemo(() => {
     // Prefer events with recent posts, then featured events, then any upcoming events
@@ -635,7 +624,6 @@ const Home: React.FC = () => {
                       date={event.date}
                       location={event.location}
                       image={event.image_url || ''}
-                      capacity={event.capacity || 100}
                       event={event as Event}
                     />
                   ))}
@@ -665,7 +653,6 @@ const Home: React.FC = () => {
                 date: event.date,
                 location: event.location,
                 image_url: event.image_url || '',
-                capacity: event.capacity || 100,
                 featured: event.featured,
               price: event.price,
               }))}

@@ -2,6 +2,8 @@
  * Calls the server-side AI proxy (/api/ai). Never sends API keys from the browser.
  */
 
+import { formatAiResponseForDisplay } from "@/lib/ai-plain-text";
+
 const CHAT_TIMEOUT_MS = 90_000;
 
 /** Optional: full origin of the app that hosts /api/ai (e.g. https://myapp.vercel.app) when the SPA is served from another host. */
@@ -73,5 +75,9 @@ export async function callAiChat(options: {
     throw new Error(payload.error || "Empty AI response");
   }
 
-  return payload.text;
+  const raw = payload.text;
+  if (options.preserveRaw) {
+    return raw;
+  }
+  return formatAiResponseForDisplay(raw);
 }

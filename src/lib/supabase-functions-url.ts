@@ -1,11 +1,22 @@
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * Base URL for Supabase Edge Functions (e.g. https://xxx.supabase.co).
- * Set VITE_SUPABASE_URL so the app can call rate-limited request-password-reset.
- * If unset, password reset uses supabase.auth.resetPasswordForEmail (no rate limit).
+ *
+ * Prefer `VITE_SUPABASE_URL` when set (build-time). If omitted, falls back to the same
+ * project URL as `integrations/supabase/client` so features like the media share link work
+ * without a local `.env` copy.
  */
 export function getSupabaseFunctionsBaseUrl(): string {
-  const base = import.meta.env.VITE_SUPABASE_URL;
-  return typeof base === "string" && base.trim() ? base.trim().replace(/\/$/, "") : "";
+  const fromEnv = import.meta.env.VITE_SUPABASE_URL;
+  if (typeof fromEnv === "string" && fromEnv.trim()) {
+    return fromEnv.trim().replace(/\/$/, "");
+  }
+  const fromClient = (supabase as unknown as { supabaseUrl?: string }).supabaseUrl;
+  if (typeof fromClient === "string" && fromClient.trim()) {
+    return fromClient.trim().replace(/\/$/, "");
+  }
+  return "";
 }
 
 export function getRequestPasswordResetUrl(): string {
@@ -23,4 +34,16 @@ export function getAdminGhostUserIdsUrl(): string {
 export function getDeleteMyAccountUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();
   return base ? `${base}/functions/v1/delete-my-account` : "";
+}
+
+/** Admin JWT: create a time-limited share token for the event media gallery. */
+export function getCreateEventMediaShareUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/create-event-media-share` : "";
+}
+
+/** Public GET ?token= — returns gallery JSON (no auth). */
+export function getPublicEventMediaGalleryUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/public-event-media-gallery` : "";
 }

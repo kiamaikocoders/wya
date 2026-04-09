@@ -12,7 +12,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Settings as SettingsIcon, User, Bell, Shield, Trash2, Save, Download, UserX, Database } from 'lucide-react';
+import {
+  Settings as SettingsIcon,
+  User,
+  Bell,
+  Shield,
+  PowerOff,
+  Save,
+  Download,
+  UserX,
+  Database,
+  MessageSquareText,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 type SettingsForm = {
@@ -203,22 +214,24 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeactivateAccount = async () => {
     if (
       !window.confirm(
-        'Permanently delete your account and data? You will be signed out. This cannot be undone.'
+        'Deactivate your account? You will be signed out and will not be able to sign in again. Your profile and data are removed. This cannot be undone.'
       )
     ) {
       return;
     }
     try {
-      await userService.deleteAccount();
-      toast.success('Account deleted');
+      await userService.deactivateAccount();
+      toast.success('Account deactivated');
       window.location.href = '/';
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error('Error deactivating account:', error);
       toast.error(
-        error instanceof Error ? error.message : 'Failed to delete account. Is delete-my-account deployed?'
+        error instanceof Error
+          ? error.message
+          : 'Failed to deactivate account. Is delete-my-account deployed?'
       );
     }
   };
@@ -430,6 +443,23 @@ const Settings: React.FC = () => {
             <Card className="bg-gradient-promo border-white/20 lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
+                  <MessageSquareText className="h-5 w-5" />
+                  Feedback
+                </CardTitle>
+                <CardDescription className="text-text-white/70">
+                  Suggest improvements or report issues. You are signed in, so we can follow up if needed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="secondary" asChild className="gap-2">
+                  <Link to="/feedback">Send feedback</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-promo border-white/20 lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
                   <Database className="h-5 w-5" />
                   Your data (KDPA)
                 </CardTitle>
@@ -483,19 +513,20 @@ const Settings: React.FC = () => {
 
           <Card className="bg-red-900/20 border-red-500/20">
             <CardHeader>
-              <CardTitle className="text-red-400">Danger zone</CardTitle>
+              <CardTitle className="text-red-400">Account deactivation</CardTitle>
               <CardDescription className="text-red-300">
-                Permanently delete your account via the secure delete function (removes auth user).
+                Deactivate your account to end access permanently. You will be signed out; sign-in is disabled and
+                your profile data is removed through the secure account closure flow.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button
                 variant="destructive"
-                onClick={handleDeleteAccount}
+                onClick={handleDeactivateAccount}
                 className="bg-red-600 hover:bg-red-700"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete account
+                <PowerOff className="h-4 w-4 mr-2" />
+                Deactivate account
               </Button>
             </CardContent>
           </Card>

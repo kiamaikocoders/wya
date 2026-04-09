@@ -2,10 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Suspense, lazy } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
+import { MediaConsentPostingProvider } from "@/contexts/MediaConsentPostingContext";
 import { LegalConsentGate } from "@/components/legal/LegalConsentGate";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -43,14 +44,14 @@ const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminSponsorAnalytics = lazy(() => import("./pages/AdminSponsorAnalytics"));
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
 const AdminMediaGallery = lazy(() => import("./pages/AdminMediaGallery"));
+const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
+const PublicEventMediaGallery = lazy(() => import("./pages/PublicEventMediaGallery"));
 
 const RequestEvent = lazy(() => import("./pages/RequestEvent"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const SurveyPage = lazy(() => import("./pages/SurveyPage"));
 const CreateSurveyPage = lazy(() => import("./pages/CreateSurveyPage"));
 const SurveyResultsPage = lazy(() => import("./pages/SurveyResultsPage"));
-const Forum = lazy(() => import("./pages/Forum"));
-const PostDetail = lazy(() => import("./pages/PostDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Search = lazy(() => import("./pages/Search"));
@@ -72,6 +73,7 @@ const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
 const SponsorZone = lazy(() => import("./pages/SponsorZone"));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
 const Settings = lazy(() => import("./pages/Settings"));
+const FeedbackPage = lazy(() => import("./pages/FeedbackPage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,6 +114,7 @@ const App = () => {
         <BrowserRouter>
           <ThemeProvider>
             <AuthProvider>
+              <MediaConsentPostingProvider>
               <Suspense
                 fallback={
                   <div className="flex items-center justify-center min-h-screen bg-gradient-promo">
@@ -140,6 +143,7 @@ const App = () => {
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="moderation" element={<AdminModeration />} />
                     <Route path="media-gallery" element={<AdminMediaGallery />} />
+                    <Route path="feedback" element={<AdminFeedback />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
                     <Route path="ghost" element={<AdminGhost />} />
@@ -157,6 +161,7 @@ const App = () => {
                     />
                     <Route path="/events" element={<Events />} />
                     <Route path="/events/:eventId" element={<EventDetails />} />
+                    <Route path="/share/event-media/:token" element={<PublicEventMediaGallery />} />
                     <Route path="/categories/:slug" element={<Categories />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -212,6 +217,14 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
+                    <Route
+                      path="/feedback"
+                      element={
+                        <ProtectedRoute>
+                          <FeedbackPage />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route path="/users/:userId" element={<UserProfile />} />
 
                     {/* Chat */}
@@ -258,23 +271,9 @@ const App = () => {
                       }
                     />
 
-                    {/* Forum routes */}
-                    <Route
-                      path="/forum"
-                      element={
-                        <ProtectedRoute>
-                          <Forum />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/forum/:postId"
-                      element={
-                        <ProtectedRoute>
-                          <PostDetail />
-                        </ProtectedRoute>
-                      }
-                    />
+                    {/* Forum sunset — keep redirects for old links */}
+                    <Route path="/forum" element={<Navigate to="/discover" replace />} />
+                    <Route path="/forum/:postId" element={<Navigate to="/discover" replace />} />
 
                     {/* Tickets */}
                     <Route
@@ -330,6 +329,7 @@ const App = () => {
                   </Route>
                 </Routes>
               </Suspense>
+              </MediaConsentPostingProvider>
             </AuthProvider>
           </ThemeProvider>
         </BrowserRouter>

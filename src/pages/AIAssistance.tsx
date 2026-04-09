@@ -10,6 +10,7 @@ import AIEventCategorizer from '@/components/events/AIEventCategorizer';
 import AIEventAssistant from '@/components/events/AIEventAssistant';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 
 const AIAssistance: React.FC = () => {
   const navigate = useNavigate();
@@ -119,7 +120,13 @@ const AIAssistance: React.FC = () => {
           {generatedContent && (
             <div className="mt-4 p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 rounded-lg">
               <h3 className="text-lg font-medium text-white mb-2">Generated Content</h3>
-              <p className="text-text-white/70">{generatedContent}</p>
+              <div className="space-y-2">
+                {toDisplayParagraphs(generatedContent).map((p, i) => (
+                  <p key={i} className="text-text-white/70 leading-relaxed">
+                    {p}
+                  </p>
+                ))}
+              </div>
             </div>
           )}
         </TabsContent>

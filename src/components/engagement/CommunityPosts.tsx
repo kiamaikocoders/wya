@@ -23,6 +23,12 @@ import {
 } from 'lucide-react';
 import { engagementService } from '@/lib/engagement-service';
 import { storageService } from '@/lib/storage-service';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
+import {
+  LegalReconsentRequiredForPostingError,
+  MediaConsentRequiredForPostingError,
+} from '@/lib/posting-guard';
 import { toast } from 'sonner';
 
 interface CommunityPostsProps {
@@ -30,6 +36,8 @@ interface CommunityPostsProps {
 }
 
 const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
+  const { user } = useAuth();
+  const { runWithPostingConsent } = useMediaConsentPosting();
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -103,51 +111,59 @@ const CommunityPosts: React.FC<CommunityPostsProps> = ({ onPostCreated }) => {
       toast.error('Please fill in all required fields');
       return;
     }
-
-    try {
-      let mediaUrl = '';
-      let mediaType = '';
-
-      // Upload media if provided
-      if (formData.mediaFile) {
-        const uploadResult = await storageService.uploadCommunityContent(
-          formData.mediaFile,
-          'current-user-id' // This should be the actual user ID
-        );
-        mediaUrl = uploadResult.publicUrl;
-        mediaType = formData.mediaFile.type.startsWith('video/') ? 'video' : 'image';
-      }
-
-      // Create community post
-      await engagementService.createCommunityPost(
-        formData.title,
-        formData.content,
-        formData.category,
-        mediaUrl,
-        mediaType,
-        formData.location,
-        formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-      );
-
-      // Reset form
-      setFormData({
-        title: '',
-        content: '',
-        category: 'general',
-        location: '',
-        tags: '',
-        mediaFile: null
-      });
-      setPreviewUrl(null);
-      setShowCreateForm(false);
-
-      // Reload posts
-      loadPosts();
-      
-      if (onPostCreated) onPostCreated();
-    } catch (error) {
-      console.error('Error creating community post:', error);
+    if (!user?.id) {
+      toast.error('Please log in to post');
+      return;
     }
+
+    runWithPostingConsent(async () => {
+      try {
+        let mediaUrl = '';
+        let mediaType = '';
+
+        if (formData.mediaFile) {
+          const uploadResult = await storageService.uploadCommunityContent(
+            formData.mediaFile,
+            user.id
+          );
+          mediaUrl = uploadResult.publicUrl;
+          mediaType = formData.mediaFile.type.startsWith('video/') ? 'video' : 'image';
+        }
+
+        await engagementService.createCommunityPost(
+          formData.title,
+          formData.content,
+          formData.category,
+          mediaUrl,
+          mediaType,
+          formData.location,
+          formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+        );
+
+        setFormData({
+          title: '',
+          content: '',
+          category: 'general',
+          location: '',
+          tags: '',
+          mediaFile: null
+        });
+        setPreviewUrl(null);
+        setShowCreateForm(false);
+
+        loadPosts();
+
+        if (onPostCreated) onPostCreated();
+      } catch (error) {
+        if (
+          error instanceof MediaConsentRequiredForPostingError ||
+          error instanceof LegalReconsentRequiredForPostingError
+        ) {
+          throw error;
+        }
+        console.error('Error creating community post:', error);
+      }
+    });
   };
 
   const handleLike = async (postId: number) => {
