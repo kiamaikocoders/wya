@@ -178,6 +178,16 @@ function generateFunAvatarUrl(userIndex: number, userData: GhostUserData): strin
   }
 }
 
+/** Public profile username must not advertise "ghost"; email may still use ghost.{username}@wya.local */
+function stripGhostFromProfileUsername(raw: string, index: number): string {
+  let s = raw.replace(/ghost/gi, '');
+  s = s.replace(/_+/g, '_').replace(/^_|_$/g, '');
+  if (!s) {
+    return `user_${index}`;
+  }
+  return s;
+}
+
 function generateGhostUser(index: number, gender: 'male' | 'female', personaGroup: string): GhostUserData {
   const firstNames = kenyanFirstNames[gender];
   const lastName = kenyanLastNames[Math.floor(Math.random() * kenyanLastNames.length)];
@@ -185,7 +195,8 @@ function generateGhostUser(index: number, gender: 'male' | 'female', personaGrou
   // Pick a random first name, ensuring diversity
   const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
   
-  const username = `${firstName.toLowerCase()}_${lastName.toLowerCase()}_${index}`.replace(/\s+/g, '_');
+  const rawUsername = `${firstName.toLowerCase()}_${lastName.toLowerCase()}_${index}`.replace(/\s+/g, '_');
+  const username = stripGhostFromProfileUsername(rawUsername, index);
   const fullName = `${firstName} ${lastName}`;
   const email = `ghost.${username}@wya.local`;
   const bio = kenyanBios[Math.floor(Math.random() * kenyanBios.length)];

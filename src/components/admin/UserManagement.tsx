@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminUser, type ProfileAccountStatus } from '@/lib/admin-service';
 import { runAdminInsightsAnalysis } from '@/lib/admin-ai-analysis';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -239,40 +240,26 @@ const UserManagement = () => {
     },
   });
 
-  // Calculate filtered stats based on active tab
-  const filteredStats = useMemo(() => {
-    if (!usersData?.data || !userStats) return null;
-    
-    const filtered = usersData.data;
-    const total = filtered.length;
-    const active = filtered.filter(
-      (u) => (u.account_status ?? 'active') === 'active'
-    ).length;
-    
-    // Calculate role distribution from filtered data
-    const attendees = filtered.filter(u => u.role === 'attendee').length;
-    const organizers = filtered.filter(u => u.role === 'organizer').length;
-    const admins = filtered.filter(u => u.role === 'admin').length;
-    
-    return {
-      total,
-      active,
-      attendees,
-      organizers,
-      admins,
-      activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
-    };
-  }, [usersData, userStats]);
+  const activeUsersGlobalPercentage =
+    userStats && userStats.total_users > 0
+      ? Math.round((userStats.active_users / userStats.total_users) * 100)
+      : 0;
 
-  // Chart data from filtered stats
+  const listHasFilters =
+    Boolean(searchQuery.trim()) ||
+    roleFilter !== 'all' ||
+    statusFilter !== 'all' ||
+    activeTab !== 'all';
+
+  // Role distribution from aggregate stats (not current page — avoids capping at pageSize)
   const userRoleData = useMemo(() => {
-    if (!filteredStats) return [];
+    if (!userStats) return [];
     return [
-      { name: 'Attendees', value: filteredStats.attendees },
-      { name: 'Organizers', value: filteredStats.organizers },
-      { name: 'Admins', value: filteredStats.admins },
-    ].filter(item => item.value > 0);
-  }, [filteredStats]);
+      { name: 'Attendees', value: userStats.attendees },
+      { name: 'Organizers', value: userStats.organizers },
+      { name: 'Admins', value: userStats.admins },
+    ].filter((item) => item.value > 0);
+  }, [userStats]);
 
   // Export to CSV
   const handleExport = async () => {
@@ -529,19 +516,31 @@ Keep the analysis concise (3-4 bullet points) and actionable for an event platfo
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle>Total Users</CardTitle>
+              <CardTitle>Registered users</CardTitle>
               <CardDescription>
-                {activeTab === 'all' ? 'All registered users' :
-                 activeTab === 'attendees' ? 'Total attendees' :
-                 activeTab === 'organizers' ? 'Total organizers' :
-                 'Inactive users'}
+                {activeTab === 'all' ? 'All profiles (real + ghost)' :
+                 activeTab === 'attendees' ? 'Real-user attendees (below); totals are platform-wide' :
+                 activeTab === 'organizers' ? 'Real-user organizers (below); totals are platform-wide' :
+                 'Inactive real users (below); totals are platform-wide'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-3xl font-bold">{filteredStats?.total || usersData?.total || 0}</div>
+                <div className="text-3xl font-bold">{userStats?.total_registered_profiles ?? 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {activeTab === 'all' && `+${userStats?.new_users_this_month || 0} this month`}
-                  {activeTab !== 'all' && `${filteredStats?.total || 0} ${activeTab}`}
+                  <span className="font-medium text-foreground">{userStats?.total_users ?? 0}</span>
+                  {' '}real
+                  <span className="mx-1.5 text-muted-foreground/70">·</span>
+                  <span className="font-medium text-foreground">{userStats?.ghost_users ?? 0}</span>
+                  {' '}ghost
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  +{userStats?.new_users_this_month ?? 0} new real users this month
+                  {listHasFilters && (
+                    <>
+                      {' · '}
+                      {usersData?.total ?? 0} match current table filters
+                    </>
+                  )}
                 </p>
             </CardContent>
           </Card>
@@ -549,13 +548,13 @@ Keep the analysis concise (3-4 bullet points) and actionable for an event platfo
           <Card>
             <CardHeader className="pb-2">
               <CardTitle>Active Users</CardTitle>
-              <CardDescription>Last 30 days</CardDescription>
+              <CardDescription>Last 30 days (non-ghost)</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-3xl font-bold">{filteredStats?.active || 0}</div>
+                <div className="text-3xl font-bold">{userStats?.active_users ?? 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {filteredStats?.total 
-                    ? `${filteredStats.activePercentage}% of total`
+                  {userStats?.total_users
+                    ? `${activeUsersGlobalPercentage}% of total`
                     : '0% of total'}
                 </p>
             </CardContent>
@@ -581,10 +580,10 @@ Keep the analysis concise (3-4 bullet points) and actionable for an event platfo
             <CardHeader>
               <CardTitle>User Roles</CardTitle>
               <CardDescription>
-                {activeTab === 'all' ? 'Distribution of all users' :
-                 activeTab === 'attendees' ? 'Attendee distribution' :
-                 activeTab === 'organizers' ? 'Organizer distribution' :
-                 'Inactive user distribution'}
+                {activeTab === 'all' ? 'Real users only (ghost accounts excluded)' :
+                 activeTab === 'attendees' ? 'Real-user roles (ghost excluded)' :
+                 activeTab === 'organizers' ? 'Real-user roles (ghost excluded)' :
+                 'Real-user roles (ghost excluded)'}
               </CardDescription>
             </CardHeader>
             <CardContent className="h-80">
@@ -645,12 +644,12 @@ Keep the analysis concise (3-4 bullet points) and actionable for an event platfo
           </CardHeader>
           <CardContent>
             {analysisResult ? (
-              <div className="bg-muted p-4 rounded-lg">
-                <div className="prose dark:prose-invert">
-                  {analysisResult.split('\n').map((paragraph, i) => (
-                    <p key={i}>{paragraph}</p>
-                  ))}
-                </div>
+              <div className="bg-muted p-4 rounded-lg space-y-3">
+                {toDisplayParagraphs(analysisResult).map((paragraph, i) => (
+                  <p key={i} className="text-sm leading-relaxed text-foreground">
+                    {paragraph}
+                  </p>
+                ))}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">

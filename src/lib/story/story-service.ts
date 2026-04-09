@@ -2,6 +2,11 @@
 import { supabase } from '@/lib/supabase';
 import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
 import { toast } from 'sonner';
+import {
+  assertUserMayPostUserGeneratedContent,
+  LegalReconsentRequiredForPostingError,
+  MediaConsentRequiredForPostingError,
+} from '@/lib/posting-guard';
 import type { Story, StoryComment, CreateStoryDto, CreateStoryCommentDto } from './types';
 
 const STORY_PUBLIC_COLUMNS = `
@@ -509,6 +514,8 @@ export const storyService = {
         return null;
       }
 
+      await assertUserMayPostUserGeneratedContent(user.id);
+
       // Extract hashtags from content if present
       const hashtagRegex = /#(\w+)/g;
       const matches = storyData.content.match(hashtagRegex) || [];
@@ -558,6 +565,12 @@ export const storyService = {
         user_image: profile?.avatar_url || null
       };
     } catch (error) {
+      if (
+        error instanceof MediaConsentRequiredForPostingError ||
+        error instanceof LegalReconsentRequiredForPostingError
+      ) {
+        throw error;
+      }
       console.error('Error creating story:', error);
       toast.error('Failed to create story');
       return null;
@@ -732,6 +745,8 @@ export const storyService = {
         throw new Error('You must be logged in to comment');
       }
 
+      await assertUserMayPostUserGeneratedContent(user.id);
+
       const { data: comment, error: commentError } = await supabase
         .from('story_comments')
         .insert({
@@ -781,6 +796,12 @@ export const storyService = {
         user_image: profile?.avatar_url || null
       };
     } catch (error) {
+      if (
+        error instanceof MediaConsentRequiredForPostingError ||
+        error instanceof LegalReconsentRequiredForPostingError
+      ) {
+        throw error;
+      }
       console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
       throw error;

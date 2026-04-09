@@ -21,9 +21,11 @@ import {
   ShieldAlert,
   Settings,
   MessageCircle,
+  MessageSquarePlus,
   Rocket,
   BarChart3,
   Home as HomeIcon,
+  User,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -81,7 +83,24 @@ const Navbar = () => {
         {/* Action Buttons */}
         <div className="flex items-center gap-1 sm:gap-2">
           {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-orange-600 dark:text-orange-400 sm:hidden"
+              asChild
+            >
+              <Link to="/feedback" aria-label="Send feedback">
+                <MessageSquarePlus className="h-5 w-5" />
+              </Link>
+            </Button>
+          )}
+          {isAuthenticated && (
             <div className="hidden items-center gap-2 sm:flex md:hidden">
+              <Button variant="ghost" size="icon" className="rounded-full text-orange-600 dark:text-orange-400" asChild>
+                <Link to="/feedback" aria-label="Send feedback">
+                  <MessageSquarePlus className="h-5 w-5" />
+                </Link>
+              </Button>
               <NotificationBell />
               <ChatButton variant="ghost" />
             </div>
@@ -100,6 +119,11 @@ const Navbar = () => {
               <div className="hidden items-center gap-2 md:flex">
                 {isAuthenticated && (
                   <>
+                    <Button variant="ghost" size="icon" className="rounded-full text-orange-600 dark:text-orange-400" asChild>
+                      <Link to="/feedback" aria-label="Send feedback">
+                        <MessageSquarePlus className="h-5 w-5" />
+                      </Link>
+                    </Button>
                     <NotificationBell />
                     <ChatButton variant="ghost" />
                   </>
@@ -152,8 +176,20 @@ const Navbar = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="flex w-full items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="flex w-full items-center gap-2">
                     <Settings className="h-4 w-4" />
-                    <span>Profile & Settings</span>
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/feedback" className="flex w-full items-center gap-2 text-orange-600 dark:text-orange-400">
+                    <MessageSquarePlus className="h-4 w-4" />
+                    <span>Send feedback</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

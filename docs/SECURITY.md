@@ -14,6 +14,13 @@ Do **not** use wildcard `*` for CORS. Set an allowlist:
 - **Env (all Edge Functions)**: `ALLOWED_ORIGINS` — comma-separated list of allowed origins. Include production and local dev, e.g.  
   `https://www.wya254.com,https://wya254.com,http://localhost:8080,http://localhost:5173`
 
+Supabase stores this as **one** project secret: **Dashboard → Project Settings → Edge Functions → Secrets** → `ALLOWED_ORIGINS`. Every function that checks CORS against this variable uses the **same** value—no per-function duplicate. Add **every origin** where your SPA runs (production, preview/staging, local Vite ports such as `http://localhost:5173`). If an origin is missing, browser calls from that site to `*.supabase.co/functions/v1/...` will fail CORS.
+
+Functions that rely on `ALLOWED_ORIGINS` include (non-exhaustive): `request-password-reset`, `admin-get-ghost-user-ids`, `delete-my-account`, `mpesa`, `process-ghost-actions`, **`create-event-media-share`**, **`public-event-media-gallery`**, and others that mirror the same pattern.
+
+- **`create-event-media-share`**: Admin copies a share link from the dashboard; the **admin app origin** must be in `ALLOWED_ORIGINS` (same as other admin Edge calls).
+- **`public-event-media-gallery`**: The **shared gallery page** loads on your main app (`/share/event-media/...`) and the browser requests this function **cross-origin** from that same app origin—so that origin must also appear in `ALLOWED_ORIGINS` (typically the same list you already use for production + localhost).
+
 ## Redirect URLs (Open Redirect Prevention)
 
 - **Client**: Set `VITE_ALLOWED_REDIRECT_ORIGINS` to a comma-separated list of origins allowed for password-reset redirects, e.g.  

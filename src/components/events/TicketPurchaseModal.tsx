@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { ticketService } from '@/lib/ticket-service';
 import { toast } from 'sonner';
 import type { Event } from '@/types/event.types';
+import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 
 interface TicketPurchaseModalProps {
   open: boolean;
@@ -124,7 +125,10 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
 
             {event.description && (
               <div className="pt-2">
-                <p className="text-sm text-white/70">{event.description}</p>
+                <ParagraphizedDescription
+                  text={event.description}
+                  paragraphClassName="text-sm text-white/70 leading-relaxed"
+                />
               </div>
             )}
           </div>

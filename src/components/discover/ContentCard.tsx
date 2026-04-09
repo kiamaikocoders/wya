@@ -10,7 +10,7 @@ import { useDiscoverUI } from '@/contexts/DiscoverUIContext';
 
 export interface DiscoverContent {
   id: string | number;
-  type: 'story' | 'forum';
+  type: 'story';
   title?: string;
   content: string;
   media_url?: string | null;

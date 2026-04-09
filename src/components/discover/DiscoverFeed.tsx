@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { storyService } from '@/lib/story/story-service';
-import { forumService } from '@/lib/forum-service';
 import { eventService } from '@/lib/event-service';
 import { notificationService } from '@/lib/notification';
 import { supabase } from '@/lib/supabase';
@@ -13,7 +12,7 @@ import { differenceInHours } from 'date-fns';
 interface DiscoverFeedProps {
   className?: string;
   onEventClick?: (eventId: number) => void;
-  onContentClick?: (contentId: string | number, type: 'story' | 'forum') => void;
+  onContentClick?: (contentId: string | number, type: 'story') => void;
   targetContentId?: number;
   /** Called when content has loaded and sections are rendered - use to scroll to top */
   onContentReady?: () => void;
@@ -29,8 +28,9 @@ const getEngagementScore = (item: {
   const comments = item.comments_count || 0;
   const views = item.views_count || 0;
   const hoursAgo = differenceInHours(new Date(), new Date(item.created_at));
-  const recencyBoost = Math.max(0, 24 - hoursAgo) * 0.5;
-  
+  // Stronger recency so new posts (e.g. ghost / scheduled content) surface on Discover, not only viral items.
+  const recencyBoost = Math.max(0, 72 - hoursAgo) * 1.5;
+
   return likes * 2 + comments * 3 + views * 0.5 + recencyBoost;
 };
 
@@ -56,19 +56,17 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       return result.events;
     },
     staleTime: 0,
-  });
-
-  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
-    queryKey: ['forumPosts'],
-    queryFn: () => forumService.getAllPosts(),
-    staleTime: 1000 * 60,
+    refetchInterval: 120_000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch ungrouped stories for Community Discover section
   const { data: ungroupedStories = [], isLoading: isLoadingUngroupedStories } = useQuery({
     queryKey: ['ungroupedStories'],
-    queryFn: () => storyService.getUngroupedStories(50),
+    queryFn: () => storyService.getUngroupedStories(80),
     staleTime: 0,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   // Time-ordered verified stories with an event (no mega .in('event_id', ...) — avoids PostgREST limits and missing new posts).
@@ -76,6 +74,8 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     queryKey: ['discoverRecentEventStories'],
     queryFn: () => storyService.getRecentVerifiedEventStoriesForDiscover(600),
     staleTime: 0,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const storyBackedEventIds = useMemo(() => {
@@ -86,25 +86,18 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     return [...new Set(ids)];
   }, [eventStories]);
 
-  const forumBackedEventIds = useMemo(() => {
-    const ids = forumPosts
-      .map(p => p.event_id)
-      .map(id => (id == null ? NaN : typeof id === 'number' ? id : Number(id)))
-      .filter((id): id is number => Number.isFinite(id));
-    return [...new Set(ids)];
-  }, [forumPosts]);
-
   const missingDiscoverEventIds = useMemo(() => {
     const inPage = new Set(events.map(e => e.id).filter((id): id is number => id != null));
-    const need = [...new Set([...storyBackedEventIds, ...forumBackedEventIds])];
+    const need = [...new Set(storyBackedEventIds)];
     return need.filter(id => !inPage.has(id));
-  }, [events, storyBackedEventIds, forumBackedEventIds]);
+  }, [events, storyBackedEventIds]);
 
   const { data: discoverExtraEvents = [] } = useQuery({
     queryKey: ['discoverEventsByIds', missingDiscoverEventIds.sort((a, b) => a - b).join(',')],
     queryFn: () => eventService.getEventsByIds(missingDiscoverEventIds),
     enabled: missingDiscoverEventIds.length > 0,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const eventsForDiscover = useMemo(() => {
@@ -180,31 +173,10 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           engagementScore: getEngagementScore(story),
         };
       }),
-      ...forumPosts.map(post => {
-        const eventInfo = post.event_id ? eventMap.get(post.event_id) : undefined;
-        return {
-          id: post.id,
-          type: 'forum' as const,
-          title: post.title || post.content.slice(0, 70),
-          content: post.content,
-          media_url: post.media_url,
-          media_type: 'image',
-          user_id: post.user_id,
-          user_name: post.user?.username || post.user?.name || post.user_name || 'Anonymous',
-          user_image: post.user?.avatar_url || post.user_image,
-          created_at: post.created_at,
-          likes_count: post.likes_count || 0,
-          comments_count: post.comments_count || 0,
-          views_count: post.views_count || 0,
-          event_id: post.event_id,
-          event_title: eventInfo?.title,
-          engagementScore: getEngagementScore(post),
-        };
-      }),
     ];
 
     return content;
-  }, [eventStories, ungroupedStories, forumPosts, eventsForDiscover]);
+  }, [eventStories, ungroupedStories, eventsForDiscover]);
 
 
   // Group content by event
@@ -264,8 +236,9 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
 
-          // Limit to top 5 most engaging items initially
-          const topContent = sortedContent.slice(0, 5);
+          // Show the full merged pool (ghost/community posts without an event were capped at 5 before,
+          // so new verified stories never appeared). Cap at 60 for carousel performance.
+          const topContent = sortedContent.slice(0, 60);
 
           return {
             event: {
@@ -326,7 +299,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
 
   // Find target content and scroll to it
   useEffect(() => {
-    if (!targetContentId || hasScrolledToTarget.current || eventGroups.length === 0 || isLoadingStories || isLoadingForum) return;
+    if (!targetContentId || hasScrolledToTarget.current || eventGroups.length === 0 || isLoadingStories) return;
 
     // Find which event group contains the target content
     let targetGroupIndex = -1;
@@ -358,7 +331,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       // Content not found, mark as scrolled to avoid infinite loops
       hasScrolledToTarget.current = true;
     }
-  }, [targetContentId, eventGroups, isLoadingStories, isLoadingForum]);
+  }, [targetContentId, eventGroups, isLoadingStories]);
 
   // Notify parent when content has loaded so it can scroll to top (start at most recent)
   const hasCalledContentReady = useRef(false);
@@ -367,7 +340,6 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       !onContentReady ||
       targetContentId ||
       isLoadingStories ||
-      isLoadingForum ||
       eventGroups.length === 0
     ) {
       return;
@@ -384,7 +356,7 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [onContentReady, targetContentId, isLoadingStories, isLoadingForum, eventGroups.length]);
+  }, [onContentReady, targetContentId, isLoadingStories, eventGroups.length]);
 
   // Intersection Observer for active section detection
   useEffect(() => {
@@ -455,27 +427,6 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
           playLikeSound();
           await sendLikeNotification(contentItem.user_id, 'story', Number(id), contentItem.title || contentItem.content.slice(0, 50));
         }
-      } else if (contentItem.type === 'forum') {
-        // forumService.likePost only likes (returns false if already liked)
-        const success = await forumService.likePost(Number(id));
-        if (success) {
-          // Optimistically update the cache for forum posts
-          queryClient.setQueryData(['forumPosts'], (oldData: any) => {
-            if (!oldData) return oldData;
-            return oldData.map((post: any) => 
-              post.id === Number(id) 
-                ? { ...post, likes_count: (post.likes_count || 0) + 1 }
-                : post
-            );
-          });
-          
-          // Invalidate to refetch and ensure correct count
-          queryClient.invalidateQueries({ queryKey: ['forumPosts'], refetchType: 'active' });
-          
-          // Send notification to content creator
-          playLikeSound();
-          await sendLikeNotification(contentItem.user_id, 'forum_post', Number(id), contentItem.title || contentItem.content.slice(0, 50));
-        }
       }
     } catch (error) {
       console.error('Error handling like:', error);
@@ -510,10 +461,10 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         p_user_id: creatorUserId,
         p_type: 'system',
         p_title: 'New Like',
-        p_message: `${likerName} liked your ${resourceType === 'story' ? 'story' : 'post'}: "${contentTitle.slice(0, 50)}${contentTitle.length > 50 ? '...' : ''}"`,
+        p_message: `${likerName} liked your story: "${contentTitle.slice(0, 50)}${contentTitle.length > 50 ? '...' : ''}"`,
         p_resource_type: resourceType,
         p_resource_id: resourceId,
-        p_link: resourceType === 'story' ? `/stories/${resourceId}` : `/forum/${resourceId}`,
+        p_link: `/discover/${resourceId}`,
         p_data: null,
       });
 
@@ -544,7 +495,6 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
     const storiesCount = eventStories.length + ungroupedStories.length;
     console.log('Discover Feed Debug:', {
       storiesCount,
-      forumPostsCount: forumPosts.length,
       eventsCount: eventsForDiscover.length,
       allContentCount: allContent.length,
       eventGroupsCount: eventGroups.length,
@@ -554,9 +504,9 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({ className, onEventClick, on
         totalContent: g.totalContent,
       })),
     });
-  }, [eventStories.length, ungroupedStories.length, forumPosts.length, eventsForDiscover.length, allContent.length, eventGroups.length]);
+  }, [eventStories.length, ungroupedStories.length, eventsForDiscover.length, allContent.length, eventGroups.length]);
 
-  if (isLoadingStories || isLoadingForum) {
+  if (isLoadingStories) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-white/70">

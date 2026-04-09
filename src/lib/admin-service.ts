@@ -28,7 +28,12 @@ export interface AdminUser {
 }
 
 export interface AdminUserStats {
+  /** Non-ghost profiles (real users); excludes ghost-flagged and email-pattern ghosts */
   total_users: number;
+  /** Every row in public.profiles — real + ghost */
+  total_registered_profiles: number;
+  /** Subset of registrations that count as ghost (derived: registered minus real) */
+  ghost_users: number;
   active_users: number;
   new_users_this_month: number;
   attendees: number;
@@ -171,7 +176,10 @@ export const adminService = {
       const to = from + pageSize - 1;
 
       const buildProfilesQuery = (withAccountStatusFilters: boolean) => {
-        let q = supabase.from('profiles').select('*', { count: 'exact' });
+        let q = supabase
+          .from('profiles')
+          .select('*', { count: 'exact' })
+          .or('is_ghost.is.null,is_ghost.eq.false');
         if (withAccountStatusFilters) {
           if (status === 'active') {
             q = q.eq('account_status', 'active');
@@ -345,15 +353,41 @@ export const adminService = {
         }
       }
 
-      // Get total users (EXCLUDE ghost users from total count)
-      const { data: allProfiles } = await supabase
+      /** Rows that are not explicitly ghost (includes is_ghost null for legacy rows) */
+      const nonGhostOr = 'is_ghost.is.null,is_ghost.eq.false';
+
+      const subtractStrayEmailGhosts = async (
+        baseCount: number,
+        options?: { fromIso?: string; dateField?: 'created_at' | 'updated_at' }
+      ): Promise<number> => {
+        let n = baseCount;
+        if (ghostUserIds.size === 0) return n;
+        let strayQ = supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .in('id', [...ghostUserIds])
+          .or(nonGhostOr);
+        if (options?.fromIso && options?.dateField) {
+          strayQ = strayQ.gte(options.dateField, options.fromIso);
+        }
+        const { count: stray, error: strayErr } = await strayQ;
+        if (strayErr) throw strayErr;
+        return n - (stray ?? 0);
+      };
+
+      const { count: totalNonGhost, error: totalErr } = await supabase
         .from('profiles')
-        .select('id, is_ghost')
-        .eq('is_ghost', false);
-      
-      // Filter out any profiles that are ghost users (by email pattern)
-      const realUserProfiles = allProfiles?.filter(p => !ghostUserIds.has(p.id)) || [];
-      const totalUsers = realUserProfiles.length;
+        .select('*', { count: 'exact', head: true })
+        .or(nonGhostOr);
+      if (totalErr) throw totalErr;
+      const totalUsers = await subtractStrayEmailGhosts(totalNonGhost ?? 0);
+
+      const { count: allProfilesCount, error: allProfilesErr } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+      if (allProfilesErr) throw allProfilesErr;
+      const totalRegisteredProfiles = allProfilesCount ?? 0;
+      const ghostUsersCount = Math.max(0, totalRegisteredProfiles - Math.max(0, totalUsers));
 
       // Get admins
       const { count: admins } = await supabase
@@ -377,25 +411,33 @@ export const adminService = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { data: activeProfiles } = await supabase
+      const { count: activeNonGhost, error: activeErr } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('is_ghost', false)
+        .select('*', { count: 'exact', head: true })
+        .or(nonGhostOr)
         .gte('updated_at', thirtyDaysAgo.toISOString());
-      
-      // Filter out ghost users by email pattern
-      const realActiveUsers = activeProfiles?.filter(p => !ghostUserIds.has(p.id)) || [];
-      const activeUsers = realActiveUsers.length;
+      if (activeErr) throw activeErr;
+      const activeUsers = await subtractStrayEmailGhosts(activeNonGhost ?? 0, {
+        fromIso: thirtyDaysAgo.toISOString(),
+        dateField: 'updated_at',
+      });
 
       // Get new users this month
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
+      const monthStartIso = startOfMonth.toISOString();
 
-      const { count: newUsersThisMonth } = await supabase
+      const { count: newNonGhost, error: newErr } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', startOfMonth.toISOString());
+        .select('*', { count: 'exact', head: true })
+        .or(nonGhostOr)
+        .gte('created_at', monthStartIso);
+      if (newErr) throw newErr;
+      const newUsersThisMonth = await subtractStrayEmailGhosts(newNonGhost ?? 0, {
+        fromIso: monthStartIso,
+        dateField: 'created_at',
+      });
 
       // Get average events per user
       const { data: tickets } = await supabase
@@ -409,9 +451,11 @@ export const adminService = {
         : 0;
 
       return {
-        total_users: totalUsers || 0,
-        active_users: activeUsers || 0,
-        new_users_this_month: newUsersThisMonth || 0,
+        total_users: Math.max(0, totalUsers),
+        total_registered_profiles: totalRegisteredProfiles,
+        ghost_users: ghostUsersCount,
+        active_users: Math.max(0, activeUsers),
+        new_users_this_month: Math.max(0, newUsersThisMonth),
         attendees,
         organizers,
         admins: admins || 0,

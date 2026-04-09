@@ -252,7 +252,10 @@ export const userService = {
     }
   },
 
-  deleteAccount: async (): Promise<void> => {
+  /**
+   * Permanently deactivates the signed-in account (removes auth user and app data via delete-my-account).
+   */
+  deactivateAccount: async (): Promise<void> => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -261,7 +264,7 @@ export const userService = {
     const url = getDeleteMyAccountUrl();
     if (!url) {
       throw new Error(
-        'Account deletion is not configured (missing VITE_SUPABASE_URL or delete-my-account function).'
+        'Account deactivation is not configured (missing VITE_SUPABASE_URL or delete-my-account function).'
       );
     }
 
@@ -275,7 +278,7 @@ export const userService = {
 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error((body as { error?: string }).error || 'Failed to delete account');
+      throw new Error((body as { error?: string }).error || 'Failed to deactivate account');
     }
 
     await supabase.auth.signOut();

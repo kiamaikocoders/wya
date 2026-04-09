@@ -13,6 +13,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import LocationPicker from '@/components/maps/LocationPicker';
+import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
+import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
 
 interface Category {
   id: number;
@@ -74,16 +76,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     },
   });
 
-  // Organize categories hierarchically
-  const organizedCategories = useMemo(() => {
-    const parents = categoriesData.filter(c => c.parent_id === null);
-    return parents.map(parent => ({
-      ...parent,
-      subcategories: categoriesData
-        .filter(c => c.parent_id === parent.id)
-        .sort((a, b) => a.order_index - b.order_index)
-    }));
-  }, [categoriesData]);
+  // Organize categories hierarchically (merge duplicate root rows by name)
+  const organizedCategories = useMemo(
+    () => organizeEventCategoryParents(categoriesData),
+    [categoriesData],
+  );
 
   // Fetch existing event categories from junction table
   const { data: existingEventCategories = [] } = useQuery({
@@ -458,6 +455,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                               </label>
                             </div>
                           ))}
+                          <AddSubcategoryField
+                            parentCategoryId={parentCategory.id}
+                            categories={categoriesData}
+                            onCreated={(id) => toggleCategory(id)}
+                          />
                           {/* Also allow selecting parent category directly */}
                           <div className="flex items-center space-x-2 pt-1 border-t border-white/10">
                             <Checkbox

@@ -1,8 +1,17 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Settings, UserPlus, Check, MessageCircle, Grid, Users, Calendar } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Settings,
+  UserPlus,
+  Check,
+  MessageCircle,
+  Grid,
+  Users,
+  Calendar,
+  MessageSquarePlus,
+} from 'lucide-react';
 
 interface ProfileHeaderProps {
   profile: {
@@ -110,14 +119,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       {/* Action Buttons */}
       <section className="px-6 mt-6 flex gap-3">
         {isCurrentUser ? (
-          <Button
-            variant="outline"
-            onClick={onEdit}
-            className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold py-3 rounded-full border border-transparent dark:border-slate-700"
-          >
-            <Settings className="mr-2 h-5 w-5" />
-            Edit Profile
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={onEdit}
+              className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold py-3 rounded-full border border-transparent dark:border-slate-700"
+            >
+              <Settings className="mr-2 h-5 w-5" />
+              Edit Profile
+            </Button>
+          </>
         ) : (
           <>
             <Button
@@ -147,6 +158,31 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           </>
         )}
       </section>
+
+      {isCurrentUser && (
+        <section className="px-6 mt-3 flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            asChild
+            className="flex-1 rounded-full border-orange-500/30 bg-transparent py-2.5 text-sm font-semibold text-orange-600 dark:text-orange-400"
+          >
+            <Link to="/settings" className="flex items-center justify-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings & privacy
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="flex-1 rounded-full border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-600 dark:text-orange-400"
+          >
+            <Link to="/feedback" className="flex items-center justify-center gap-2">
+              <MessageSquarePlus className="h-4 w-4" />
+              Send feedback
+            </Link>
+          </Button>
+        </section>
+      )}
 
       {/* Stats Section - Single Row with Dividers */}
       <section className="px-6 mt-8">

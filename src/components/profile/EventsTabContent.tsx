@@ -25,7 +25,6 @@ const EventsTabContent: React.FC<EventsTabContentProps> = ({
           emptyDescription="Browse events happening soon."
           emptyCtaLabel="Browse Events"
           emptyCtaHref="/events"
-          attendeesLabel="attending"
         />
       </div>
 
@@ -41,7 +40,6 @@ const EventsTabContent: React.FC<EventsTabContentProps> = ({
           emptyDescription="Grab a ticket and start exploring."
           emptyCtaLabel="Find Events"
           emptyCtaHref="/events"
-          attendeesLabel="attended"
         />
       </div>
     </div>

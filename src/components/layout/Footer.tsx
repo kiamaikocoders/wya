@@ -71,9 +71,6 @@ const Footer = () => {
                 <li>
                   <Link to="/stories" className="text-kenya-brown-light hover:text-white transition-colors">Stories</Link>
                 </li>
-                <li>
-                  <Link to="/forum" className="text-kenya-brown-light hover:text-white transition-colors">Forum</Link>
-                </li>
               </ul>
             )}
           </div>
@@ -94,6 +91,9 @@ const Footer = () => {
                 </li>
                 <li>
                   <a href="mailto:support@wyakenya.com" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</a>
+                </li>
+                <li>
+                  <Link to="/feedback" className="text-kenya-brown-light hover:text-white transition-colors">Send feedback</Link>
                 </li>
                 <li>
                   <Link to="/privacy-policy" className="text-kenya-brown-light hover:text-white transition-colors">Privacy Policy</Link>
@@ -198,9 +198,6 @@ const Footer = () => {
               <li>
                 <Link to="/stories" className="text-kenya-brown-light hover:text-white transition-colors">Stories</Link>
               </li>
-              <li>
-                <Link to="/forum" className="text-kenya-brown-light hover:text-white transition-colors">Forum</Link>
-              </li>
             </ul>
             )}
           </div>
@@ -226,6 +223,9 @@ const Footer = () => {
               </li>
               <li>
                 <a href="mailto:support@wyakenya.com" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</a>
+              </li>
+              <li>
+                <Link to="/feedback" className="text-kenya-brown-light hover:text-white transition-colors">Send feedback</Link>
               </li>
               <li>
                 <Link to="/privacy-policy" className="text-kenya-brown-light hover:text-white transition-colors">Privacy Policy</Link>

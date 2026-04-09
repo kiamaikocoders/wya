@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { storyService } from '@/lib/story/story-service';
-import { forumService } from '@/lib/forum-service';
 import { eventService } from '@/lib/event-service';
 import ReelItem from './ReelItem';
 import { differenceInHours } from 'date-fns';
@@ -32,12 +31,6 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
     staleTime: 1000 * 60,
   });
 
-  const { data: forumPosts = [], isLoading: isLoadingForum } = useQuery({
-    queryKey: ['forumPosts'],
-    queryFn: () => forumService.getAllPosts(),
-    staleTime: 1000 * 60,
-  });
-
   const { data: events = [] } = useQuery({
     queryKey: ['allEvents'],
     queryFn: () => eventService.getAllEvents(),
@@ -63,22 +56,6 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
         event_id: story.event_id,
         engagementScore: getEngagementScore(story),
       })),
-      ...forumPosts.map(post => ({
-        id: post.id,
-        type: 'forum' as const,
-        title: post.title || post.content.slice(0, 70),
-        content: post.content,
-        media_url: post.media_url,
-        media_type: 'image',
-        user_name: post.user?.username || post.user?.name || post.user_name || 'Anonymous',
-        user_image: post.user?.avatar_url || post.user_image,
-        created_at: post.created_at,
-        likes_count: post.likes_count || 0,
-        comments_count: post.comments_count || 0,
-        views_count: post.views_count || 0,
-        event_id: post.event_id,
-        engagementScore: getEngagementScore(post),
-      })),
     ];
 
     // Sort by engagement score, then by recency
@@ -88,7 +65,7 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
       }
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [stories, forumPosts]);
+  }, [stories]);
 
   // Create event map for quick lookup
   const eventMap = useMemo(() => {
@@ -111,7 +88,7 @@ const ReelsFeed: React.FC<ReelsFeedProps> = ({ className }) => {
     console.log('Share:', id);
   };
 
-  if (isLoadingStories || isLoadingForum) {
+  if (isLoadingStories) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center text-white/70">

@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { ImagePlus, X } from 'lucide-react';
-import { useStories } from '@/hooks/use-stories';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
+import { storyService } from '@/lib/story/story-service';
 import { supabase } from '@/lib/supabase';
+import {
+  LegalReconsentRequiredForPostingError,
+  MediaConsentRequiredForPostingError,
+} from '@/lib/posting-guard';
 import { toast } from 'sonner';
 import { CreateStoryDto } from '@/lib/story/types';
 
@@ -17,8 +23,10 @@ interface CreateStoryFormProps {
 
 const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const { createStory, isCreating } = useStories(eventId);
+  const queryClient = useQueryClient();
+  const { runWithPostingConsent } = useMediaConsentPosting();
 
   const form = useForm<{
     content: string;
@@ -78,29 +86,41 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
   };
 
   const onSubmit = async (values: { content: string; media_file?: FileList }) => {
-    try {
-      const storyData: CreateStoryDto = {
-        content: values.content,
-        event_id: eventId
-      };
+    runWithPostingConsent(async () => {
+      setIsPosting(true);
+      try {
+        const storyData: CreateStoryDto = {
+          content: values.content,
+          event_id: eventId
+        };
 
-      // Upload image if provided
-      if (values.media_file && values.media_file.length > 0) {
-        const url = await handleImageUpload(values.media_file[0]);
-        storyData.media_url = url;
-      }
-
-      // Create the story
-      createStory(storyData, {
-        onSuccess: () => {
-          form.reset();
-          setPreviewUrl(null);
-          if (onSuccess) onSuccess();
+        if (values.media_file && values.media_file.length > 0) {
+          const url = await handleImageUpload(values.media_file[0]);
+          storyData.media_url = url;
         }
-      });
-    } catch (error) {
-      console.error('Error creating story:', error);
-    }
+
+        const created = await storyService.createStory(storyData);
+        if (!created) return;
+
+        await queryClient.invalidateQueries({ queryKey: ['stories'] });
+        if (eventId != null) {
+          await queryClient.invalidateQueries({ queryKey: ['stories', eventId] });
+        }
+        form.reset();
+        setPreviewUrl(null);
+        onSuccess?.();
+      } catch (error) {
+        if (
+          error instanceof MediaConsentRequiredForPostingError ||
+          error instanceof LegalReconsentRequiredForPostingError
+        ) {
+          throw error;
+        }
+        console.error('Error creating story:', error);
+      } finally {
+        setIsPosting(false);
+      }
+    });
   };
 
   return (
@@ -131,7 +151,7 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
             accept="image/*"
             className="hidden"
             onChange={onFileChange}
-            disabled={isUploading || isCreating}
+            disabled={isUploading || isPosting}
           />
           
           {previewUrl ? (
@@ -157,9 +177,9 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
           <Button
             type="submit"
             className="ml-auto bg-gradient-accent hover:bg-gradient-accent/90"
-            disabled={isUploading || isCreating || form.formState.isSubmitting}
+            disabled={isUploading || isPosting || form.formState.isSubmitting}
           >
-            {isUploading || isCreating ? 'Posting...' : 'Post Story'}
+            {isUploading || isPosting ? 'Posting...' : 'Post Story'}
           </Button>
         </div>
       </form>

@@ -11,8 +11,12 @@ import {
   Video,
   Calendar,
   User,
+  Share2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { GalleryVideo } from '@/components/event-media/GalleryVideo';
 import { adminEventMediaService } from '@/lib/admin-event-media-service';
+import { buildPublicEventMediaGalleryPath, createEventMediaShareLink } from '@/lib/event-media-share';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -56,6 +60,7 @@ const EventMediaGalleryDashboard: React.FC = () => {
   const [eventPickerOpen, setEventPickerOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+  const [shareBusy, setShareBusy] = useState(false);
 
   const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['admin-event-media-events'],
@@ -86,6 +91,25 @@ const EventMediaGalleryDashboard: React.FC = () => {
     return summary.items.filter((i) => i.mediaType === mediaFilter);
   }, [summary, mediaFilter]);
 
+  const handleCopyShareLink = async () => {
+    if (selectedEventId == null) return;
+    setShareBusy(true);
+    try {
+      const { token, expiresAt } = await createEventMediaShareLink(selectedEventId, 30);
+      const path = buildPublicEventMediaGalleryPath(token);
+      const fullUrl = `${window.location.origin}${path}`;
+      await navigator.clipboard.writeText(fullUrl);
+      toast.success('Share link copied', {
+        description: `Valid until ${formatDateTime(expiresAt)}`,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not create link';
+      toast.error(msg);
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
   return (
     <div className="relative min-h-[calc(100vh-6rem)] overflow-hidden rounded-3xl border border-white/[0.06] bg-[#050508] p-6 text-zinc-100 md:p-8">
       <div
@@ -113,7 +137,29 @@ const EventMediaGalleryDashboard: React.FC = () => {
             </p>
           </div>
 
-          <div className={cn('flex flex-col gap-2 p-1', glassPanel, accentGlow)}>
+          <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[340px] lg:items-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={selectedEventId == null || shareBusy}
+              onClick={() => void handleCopyShareLink()}
+              className={cn(
+                'h-10 w-full gap-2 border-amber-500/35 bg-black/30 text-zinc-100 hover:bg-white/[0.06] hover:text-white lg:w-auto',
+                accentBorder
+              )}
+            >
+              {shareBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Share2 className="h-4 w-4 text-amber-400/90" />
+              )}
+              Copy organizer share link
+            </Button>
+            <p className="px-1 text-center text-[11px] leading-snug text-zinc-500 lg:text-right">
+              Creates a new 30-day link and invalidates any previous link for this event.
+            </p>
+            <div className={cn('flex w-full flex-col gap-2 p-1', glassPanel, accentGlow)}>
             <span className="px-3 pt-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               Filter by event
             </span>
@@ -190,6 +236,7 @@ const EventMediaGalleryDashboard: React.FC = () => {
                 </Command>
               </PopoverContent>
             </Popover>
+            </div>
           </div>
         </header>
 
@@ -289,25 +336,18 @@ const EventMediaGalleryDashboard: React.FC = () => {
                       key={item.compositeId}
                       className="group relative overflow-hidden rounded-xl border border-white/[0.07] bg-black/40 shadow-lg transition-all duration-300 hover:border-amber-500/25 hover:shadow-[0_0_32px_rgba(251,191,36,0.08)]"
                     >
-                      <div className="relative aspect-square bg-zinc-900">
+                      <div className="relative aspect-square overflow-hidden bg-zinc-900">
                         {item.mediaType === 'video' ? (
-                          <video
-                            src={item.mediaUrl}
-                            className="h-full w-full object-cover"
-                            muted
-                            playsInline
-                            controls
-                            preload="metadata"
-                          />
+                          <GalleryVideo url={item.mediaUrl} />
                         ) : (
                           <img
                             src={item.mediaUrl}
                             alt=""
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                            className="absolute inset-0 z-[1] h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                             loading="lazy"
                           />
                         )}
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+                        <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
                         <Badge
                           className={cn(
                             'absolute left-2 top-2 border-0 text-[10px] font-semibold uppercase tracking-wide',

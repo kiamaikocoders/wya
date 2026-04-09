@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar, MapPin, Users, Star } from 'lucide-react';
+import { Calendar, MapPin, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import type { Event } from '@/types/event.types';
@@ -14,8 +14,6 @@ export interface EventCardProps {
   date: string;
   location: string;
   image: string;
-  capacity: number;
-  attendees?: number;
   isFeatured?: boolean;
   price?: number;
   event?: Event; // Add event prop for direct passing of event object
@@ -35,8 +33,6 @@ const EventCard: React.FC<EventCardProps> = (props) => {
     date,
     location,
     image,
-    capacity,
-    attendees = 0,
     isFeatured = false,
     price,
     event
@@ -49,8 +45,6 @@ const EventCard: React.FC<EventCardProps> = (props) => {
   const eventDate = event ? event.date : date;
   const eventLocation = event ? event.location : location;
   const eventImage = event ? event.image_url : image;
-  const eventCapacity = capacity || 100; // Default capacity to 100 if not provided
-  const eventAttendees = attendees;
   const eventIsFeatured = event ? event.featured : isFeatured;
   const eventPrice = event ? event.price : price;
 
@@ -62,10 +56,6 @@ const EventCard: React.FC<EventCardProps> = (props) => {
     formattedDate = eventDate;
   }
 
-  // Calculate percentage of capacity filled
-  const capacityPercentage = Math.min(Math.round((eventAttendees / eventCapacity) * 100), 100);
-  const isAlmostFull = capacityPercentage >= 80;
-  
   return (
     <Card 
       className={`overflow-hidden bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 transition-all duration-300 h-full flex flex-col
@@ -117,27 +107,6 @@ const EventCard: React.FC<EventCardProps> = (props) => {
                 </span>
               </div>
             )}
-          </div>
-          
-          <div className={`mt-auto transition-transform duration-300 ${isHovered ? 'transform translate-y-[-5px]' : ''}`}>
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center">
-                <Users className="h-3 w-3 mr-1" />
-                <span>{eventAttendees} attending</span>
-              </div>
-              {isAlmostFull && (
-                <Badge variant="outline" className="text-red-400 border-red-400/30 text-xs">
-                  Almost full
-                </Badge>
-              )}
-            </div>
-            
-            <div className="w-full bg-gray-700 rounded-full h-1 sm:h-1.5 mt-2">
-              <div 
-                className={`${isAlmostFull ? 'bg-red-500' : 'bg-gradient-accent'} h-1 sm:h-1.5 rounded-full transition-all duration-300`} 
-                style={{ width: `${capacityPercentage}%` }}
-              ></div>
-            </div>
           </div>
         </div>
       </Link>

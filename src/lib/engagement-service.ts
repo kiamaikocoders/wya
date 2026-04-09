@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
+import { assertUserMayPostUserGeneratedContent } from '@/lib/posting-guard';
 
 export interface ThrowbackContent {
   id: number;
@@ -216,9 +217,16 @@ export const engagementService = {
     tags?: string[]
   ): Promise<CommunityPost> => {
     try {
+      const { data: authData } = await supabase.auth.getUser();
+      const uid = authData.user?.id;
+      if (!uid) throw new Error('You must be logged in to post');
+
+      await assertUserMayPostUserGeneratedContent(uid);
+
       const { data, error } = await supabase
         .from('community_posts')
         .insert({
+          user_id: uid,
           title,
           content,
           category,

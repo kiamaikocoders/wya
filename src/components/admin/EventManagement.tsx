@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, AdminEvent } from '@/lib/admin-service';
 import AdminCreateEvent from './AdminCreateEvent';
 import AdminEditEvent from './AdminEditEvent';
+import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 import {
   Table,
   TableBody,
@@ -695,7 +696,14 @@ const EventManagement = () => {
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground mb-1">Description</div>
-                <div className="text-sm">{selectedEvent.description || 'No description'}</div>
+                {selectedEvent.description ? (
+                  <ParagraphizedDescription
+                    text={selectedEvent.description}
+                    paragraphClassName="text-sm"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">No description</div>
+                )}
               </div>
             </div>
           )}

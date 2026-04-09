@@ -70,7 +70,7 @@ const NotificationsDropdown = () => {
       return `/events/${notification.resource_id}`;
     }
     if (notification.resource_type === 'post' && notification.resource_id) {
-      return `/forum/${notification.resource_id}`;
+      return `/discover/${notification.resource_id}`;
     }
     if (notification.resource_type === 'ticket' && notification.resource_id) {
       return `/tickets/${notification.resource_id}`;

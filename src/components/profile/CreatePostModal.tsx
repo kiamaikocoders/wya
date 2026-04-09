@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Upload, Image as ImageIcon, Video, MapPin, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
 import { eventService } from '@/lib/event-service';
 import { storageService } from '@/lib/storage-service';
 import { storyService } from '@/lib/story/story-service';
@@ -31,6 +32,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  const { runWithPostingConsent } = useMediaConsentPosting();
   const [caption, setCaption] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -167,52 +169,60 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
       return;
     }
 
-    try {
-      setIsUploading(true);
+    runWithPostingConsent(async () => {
+      try {
+        setIsUploading(true);
 
-      let mediaUrl: string | undefined;
+        let mediaUrl: string | undefined;
 
-      // Upload media if selected
-      if (selectedFile && user?.id) {
-        // Use stories bucket since posts are created as stories
-        const uploadResult = await storageService.uploadStoryMedia(selectedFile, user.id);
-        mediaUrl = uploadResult.publicUrl;
+        if (selectedFile && user?.id) {
+          const uploadResult = await storageService.uploadStoryMedia(selectedFile, user.id);
+          mediaUrl = uploadResult.publicUrl;
+        }
+
+        const taggedHandles =
+          selectedFriendIds.length > 0
+            ? friendProfiles
+                .filter((p) => selectedFriendIds.includes(p.id))
+                .map((p) => `@${p.username || p.full_name || 'user'}`)
+                .join(' ')
+            : '';
+        const finalCaption = [caption.trim(), taggedHandles].filter(Boolean).join(' ');
+
+        const created = await storyService.createStory({
+          content: finalCaption || 'Shared a post',
+          caption: finalCaption,
+          media_url: mediaUrl,
+          media_type: mediaType,
+          event_id: selectedEventId,
+        });
+
+        if (!created) return;
+
+        toast.success('Post created successfully!');
+        setCaption('');
+        setSelectedFile(null);
+        setSelectedEventId(null);
+        setSelectedFriendIds([]);
+        if (previewUrl) {
+          URL.revokeObjectURL(previewUrl);
+          setPreviewUrl(null);
+        }
+        onSuccess?.();
+        onClose();
+      } catch (error) {
+        if (
+          error instanceof MediaConsentRequiredForPostingError ||
+          error instanceof LegalReconsentRequiredForPostingError
+        ) {
+          throw error;
+        }
+        console.error('Error creating post:', error);
+        toast.error('Failed to create post');
+      } finally {
+        setIsUploading(false);
       }
-
-      const taggedHandles =
-        selectedFriendIds.length > 0
-          ? friendProfiles
-              .filter((p) => selectedFriendIds.includes(p.id))
-              .map((p) => `@${p.username || p.full_name || 'user'}`)
-              .join(' ')
-          : '';
-      const finalCaption = [caption.trim(), taggedHandles].filter(Boolean).join(' ');
-
-      await storyService.createStory({
-        content: finalCaption || 'Shared a post',
-        caption: finalCaption,
-        media_url: mediaUrl,
-        media_type: mediaType,
-        event_id: selectedEventId,
-      });
-
-      toast.success('Post created successfully!');
-      setCaption('');
-      setSelectedFile(null);
-      setSelectedEventId(null);
-      setSelectedFriendIds([]);
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
-      onSuccess?.();
-      onClose();
-    } catch (error) {
-      console.error('Error creating post:', error);
-      toast.error('Failed to create post');
-    } finally {
-      setIsUploading(false);
-    }
+    });
   };
 
   return (

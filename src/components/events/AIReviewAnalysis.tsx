@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sparkles, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { aiService } from '@/lib/ai-service';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 import { toast } from 'sonner';
 
 interface AIReviewAnalysisProps {
@@ -116,7 +117,13 @@ const AIReviewAnalysis: React.FC<AIReviewAnalysisProps> = ({
                 </div>
               )}
             </div>
-            <p className="text-text-white/70">{analysis}</p>
+            <div className="space-y-2">
+              {toDisplayParagraphs(analysis).map((p, i) => (
+                <p key={i} className="text-text-white/70 leading-relaxed">
+                  {p}
+                </p>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

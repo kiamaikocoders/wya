@@ -18,3 +18,10 @@ verify_jwt = true
 
 [functions.delete-my-account]
 verify_jwt = true
+
+[functions.create-event-media-share]
+# Rely on in-function getUser(jwt); avoids gateway 401 when platform JWT checks disagree with Auth.
+verify_jwt = false
+
+[functions.public-event-media-gallery]
+verify_jwt = false

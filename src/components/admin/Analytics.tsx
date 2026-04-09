@@ -25,6 +25,7 @@ import { adminService } from '@/lib/admin-service';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { runAdminInsightsAnalysis } from '@/lib/admin-ai-analysis';
+import { toDisplayParagraphs } from '@/lib/ai-plain-text';
 
 const COLORS = ['#FF8042', '#FFBB28', '#00C49F', '#0088FE', '#8884d8'];
 
@@ -170,7 +171,7 @@ const Analytics = () => {
 - Total events: ${eventStats.total_events}
 - Revenue: KES ${eventStats.total_revenue.toLocaleString()}
 - Active users: ${userStats.active_users}
-- Total users: ${userStats.total_users}
+- Registered profiles: ${userStats.total_registered_profiles} (${userStats.total_users} real, ${userStats.ghost_users} ghost)
 - New users this month: ${userStats.new_users_this_month}
 - Average events per user: ${userStats.average_events_per_user}
 - Events this month: ${eventStats.events_this_month}
@@ -406,12 +407,12 @@ Provide 3 clear insights with specific actionable recommendations to improve pla
               </CardHeader>
               <CardContent>
                 {analysisResult ? (
-                  <div className="bg-muted p-4 rounded-lg">
-                    <div className="prose dark:prose-invert">
-                      {analysisResult.split('\n').map((paragraph, i) => (
-                        <p key={i}>{paragraph}</p>
-                      ))}
-                    </div>
+                  <div className="bg-muted p-4 rounded-lg space-y-3">
+                    {toDisplayParagraphs(analysisResult).map((paragraph, i) => (
+                      <p key={i} className="text-sm leading-relaxed text-foreground">
+                        {paragraph}
+                      </p>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">

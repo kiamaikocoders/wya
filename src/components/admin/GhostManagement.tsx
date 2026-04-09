@@ -46,6 +46,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { Story } from '@/lib/story/types';
 
 const GhostManagement: React.FC = () => {
   const queryClient = useQueryClient();
@@ -88,6 +90,9 @@ const GhostManagement: React.FC = () => {
   const [targetSearchQuery, setTargetSearchQuery] = useState<string>('');
   const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'ongoing' | 'past'>('all');
   const [eventSearchQuery, setEventSearchQuery] = useState<string>('');
+  const [likeTotalTarget, setLikeTotalTarget] = useState(30);
+  const [preferMediaFirstLikes, setPreferMediaFirstLikes] = useState(false);
+  const [selectedStoryIdsForLike, setSelectedStoryIdsForLike] = useState<number[]>([]);
 
   // Fetch events, stories, posts for target selection
   const { data: events = [] } = useQuery({
@@ -110,7 +115,7 @@ const GhostManagement: React.FC = () => {
 
   const { data: stories = [] } = useQuery({
     queryKey: ['allStories', 'ghost-management'],
-    queryFn: () => storyService.getAllStories(),
+    queryFn: () => storyService.getAllStories(undefined, 500),
     staleTime: 1000 * 60,
   });
 
@@ -257,6 +262,17 @@ const GhostManagement: React.FC = () => {
     }
   }, [stories, targetSearchQuery]);
 
+  const storiesInSelectedLikeEvent = useMemo(() => {
+    if (actionType !== 'like_story' || !targetId) return [];
+    const eid = parseInt(targetId, 10);
+    if (Number.isNaN(eid)) return [];
+    return (stories as Story[]).filter((s) => s.event_id === eid);
+  }, [actionType, targetId, stories]);
+
+  useEffect(() => {
+    if (actionType === 'like_story') setSelectedStoryIdsForLike([]);
+  }, [targetId, actionType]);
+
   // Handle file upload
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
@@ -390,9 +406,14 @@ const GhostManagement: React.FC = () => {
         finalTargetId = targetId || undefined;
         finalTargetType = 'user';
       } else if (actionType === 'like_story') {
-        // For like_story, target_id is an event_id (stored as string in DB)
         finalTargetId = targetId || undefined;
         finalTargetType = 'event';
+        const n = Math.max(1, Math.min(100_000, Math.floor(Number(likeTotalTarget)) || 30));
+        metadata = {
+          total_likes: n,
+          prefer_media_first: preferMediaFirstLikes,
+          ...(selectedStoryIdsForLike.length > 0 ? { story_ids: [...selectedStoryIdsForLike] } : {}),
+        };
       } else {
         // For other non-create actions, use the selected target_id
         finalTargetId = targetId || undefined;
@@ -419,6 +440,9 @@ const GhostManagement: React.FC = () => {
         setMediaPreview(null);
         setTargetSearchQuery('');
         setEventSearchQuery('');
+        setLikeTotalTarget(30);
+        setPreferMediaFirstLikes(false);
+        setSelectedStoryIdsForLike([]);
         // Reload actions
         loadData();
       }
@@ -956,6 +980,9 @@ const GhostManagement: React.FC = () => {
                     setMediaUrl('');
                     setMediaPreview(null);
                     setSelectedEventId('');
+                    setLikeTotalTarget(30);
+                    setPreferMediaFirstLikes(false);
+                    setSelectedStoryIdsForLike([]);
                   }}
                 >
                   <SelectTrigger>
@@ -1035,6 +1062,97 @@ const GhostManagement: React.FC = () => {
                     {targetId && (
                       <p className="text-xs text-muted-foreground">
                         Selected: {getTargetTypeForAction()} #{targetId}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {actionType === 'like_story' && targetId && (
+                <div className="space-y-4 rounded-lg border bg-muted/40 p-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="like-total">Total ghost likes to add</Label>
+                    <Input
+                      id="like-total"
+                      type="number"
+                      min={1}
+                      max={100000}
+                      value={likeTotalTarget}
+                      onChange={(e) => setLikeTotalTarget(parseInt(e.target.value, 10) || 1)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      One action distributes up to this many new likes across unique ghost×story pairs. Capped by
+                      (ghosts × stories) minus likes that already exist.
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="prefer-media-likes"
+                      checked={preferMediaFirstLikes}
+                      onCheckedChange={(v) => setPreferMediaFirstLikes(v === true)}
+                    />
+                    <label htmlFor="prefer-media-likes" className="text-sm font-medium leading-none cursor-pointer">
+                      Prioritize stories with photo/video when assigning likes
+                    </label>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Label>Stories to include (optional)</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setSelectedStoryIdsForLike(storiesInSelectedLikeEvent.map((s) => s.id))
+                          }
+                          disabled={storiesInSelectedLikeEvent.length === 0}
+                        >
+                          Select all
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedStoryIdsForLike([])}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Leave none selected to use every story on this event (including items not listed here).
+                      Listed: verified stories ({storiesInSelectedLikeEvent.length}).
+                    </p>
+                    {storiesInSelectedLikeEvent.length > 0 ? (
+                      <div className="max-h-52 overflow-y-auto rounded-md border bg-background p-3 space-y-2">
+                        {storiesInSelectedLikeEvent.map((s) => (
+                          <label
+                            key={s.id}
+                            className="flex cursor-pointer items-start gap-2 rounded-sm p-1 text-sm hover:bg-muted/80"
+                          >
+                            <Checkbox
+                              checked={selectedStoryIdsForLike.includes(s.id)}
+                              onCheckedChange={(checked) =>
+                                setSelectedStoryIdsForLike((prev) =>
+                                  checked === true
+                                    ? [...prev, s.id]
+                                    : prev.filter((id) => id !== s.id)
+                                )
+                              }
+                            />
+                            <span className="line-clamp-2 text-muted-foreground">
+                              <span className="font-mono text-foreground">#{s.id}</span>{' '}
+                              {(s.caption || s.content || '').slice(0, 80)}
+                              {s.media_url ? ' · media' : ''}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        No verified stories in this feed for this event ID. The job will still use all DB stories for
+                        the event when nothing is checked above.
                       </p>
                     )}
                   </div>

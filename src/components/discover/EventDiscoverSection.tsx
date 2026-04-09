@@ -47,13 +47,7 @@ const EventDiscoverSection: React.FC<EventDiscoverSectionProps> = ({
   };
 
   const handleContentClick = (content: DiscoverContent) => {
-    if (content.type === 'story') {
-      // Navigate to story detail or expand modal
-      onExpand?.(content.id);
-    } else {
-      // Navigate to forum post
-      navigate(`/forum/${content.id}`);
-    }
+    onExpand?.(content.id);
   };
 
   return (

@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventService, Event } from '@/lib/event-service';
 import { ticketService } from '@/lib/ticket-service';
 import { storyService } from '@/lib/story/story-service';
 import { CreateStoryDto } from '@/lib/story/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Users, Link2, Share2, ImagePlus, Loader2, Heart, HeartOff, MessageSquare, Clock, ExternalLink } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { StoryModal } from '@/components/StoryModal';
+import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 import EventSponsorsSection from '@/components/sponsors/EventSponsorsSection';
 import { toast } from 'sonner';
+import {
+  LegalReconsentRequiredForPostingError,
+  MediaConsentRequiredForPostingError,
+} from '@/lib/posting-guard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -65,19 +71,6 @@ const EventDetails: React.FC = () => {
     enabled: !!eventId,
   });
   
-  const createStoryMutation = useMutation({
-    mutationFn: (storyData: CreateStoryDto) => storyService.createStory(storyData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['eventStories', eventId] });
-      setIsStoryModalOpen(false);
-      toast.success('Your story has been shared!');
-    },
-    onError: (error) => {
-      console.error('Error sharing story:', error);
-      toast.error('Failed to share story');
-    },
-  });
-  
   useEffect(() => {
     if (event) {
       setShareLink(window.location.href);
@@ -89,25 +82,32 @@ const EventDetails: React.FC = () => {
   }, [eventId]);
   
   const handleShareStory = async (data: CreateStoryDto) => {
-    try {
-      const storyData = {
-        event_id: data.event_id,
-        user_id: user?.id || '',
-        caption: data.content,
-        content: data.content,
-        media_url: data.media_url,
-        media_type: 'image' as const,
-        likes_count: 0,
-        comments_count: 0
-      };
-      
-      await storyService.createStory(storyData);
-      queryClient.invalidateQueries({ queryKey: ['eventStories', eventId] });
-      setIsStoryModalOpen(false);
-      toast.success('Your story has been shared!');
-    } catch (error) {
-      console.error('Error sharing story:', error);
-    }
+    runWithPostingConsent(async () => {
+      try {
+        const storyData = {
+          event_id: data.event_id,
+          caption: data.content,
+          content: data.content,
+          media_url: data.media_url,
+          media_type: 'image' as const,
+        };
+
+        const created = await storyService.createStory(storyData);
+        if (!created) return;
+
+        queryClient.invalidateQueries({ queryKey: ['eventStories', eventId] });
+        setIsStoryModalOpen(false);
+        toast.success('Your story has been shared!');
+      } catch (error) {
+        if (
+          error instanceof MediaConsentRequiredForPostingError ||
+          error instanceof LegalReconsentRequiredForPostingError
+        ) {
+          throw error;
+        }
+        console.error('Error sharing story:', error);
+      }
+    });
   };
   
   const toggleFavorite = () => {
@@ -282,7 +282,10 @@ const EventDetails: React.FC = () => {
                 <CardTitle>About this Event</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-text-white/70 leading-relaxed">{event.description}</p>
+                <ParagraphizedDescription
+                  text={event.description}
+                  paragraphClassName="text-text-white/70 leading-relaxed"
+                />
               </CardContent>
             </Card>
           </div>

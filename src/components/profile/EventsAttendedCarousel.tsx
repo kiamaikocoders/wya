@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import type { Event } from '@/types/event.types';
@@ -12,7 +12,6 @@ interface EventsAttendedCarouselProps {
   emptyDescription?: string;
   emptyCtaLabel?: string;
   emptyCtaHref?: string;
-  attendeesLabel?: string;
 }
 
 const EventsAttendedCarousel: React.FC<EventsAttendedCarouselProps> = ({
@@ -21,7 +20,6 @@ const EventsAttendedCarousel: React.FC<EventsAttendedCarouselProps> = ({
   emptyDescription,
   emptyCtaLabel = 'Browse Events',
   emptyCtaHref = '/events',
-  attendeesLabel = 'attending',
 }) => {
   const location = useLocation();
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -124,10 +122,6 @@ const EventsAttendedCarousel: React.FC<EventsAttendedCarouselProps> = ({
                   <div className="flex items-center gap-1 text-xs text-white/70 mb-2">
                     <Calendar className="h-3 w-3" />
                     <span>{formattedDate}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-white/70">
-                    <Users className="h-3 w-3" />
-                    <span>25 {attendeesLabel}</span>
                   </div>
                 </div>
               </Link>

@@ -88,7 +88,9 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
             <h3 className="text-lg font-semibold tracking-tight text-white group-hover:text-gradient-orange-accent">
               {event.title}
             </h3>
-            <p className="mt-2 text-sm text-white/70 line-clamp-2">{event.description}</p>
+            <p className="mt-2 text-sm text-white/70 line-clamp-2 whitespace-pre-line">
+              {event.description}
+            </p>
           </div>
           <div className="grid gap-3 text-sm text-white/70 sm:grid-cols-2">
             <div className="flex items-center gap-2">

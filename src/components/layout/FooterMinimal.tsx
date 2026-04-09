@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram } from "lucide-react";
+import { Instagram, MessageSquarePlus } from "lucide-react";
 
 const socialLinks = [
   { 
@@ -33,23 +33,32 @@ const FooterMinimal = () => {
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          {socialLinks.map(({ href, icon: Icon, label, active }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              className={`rounded-full border border-white/10 bg-white/5 p-2 transition ${
-                active 
-                  ? 'text-gradient-orange-accent border-kenya-orange/60 hover:border-kenya-orange hover:text-gradient-orange-accent' 
-                  : 'text-white/30 opacity-50 cursor-not-allowed hover:border-white/10 hover:text-white/30'
-              }`}
-            >
-              {typeof Icon === 'function' ? <Icon /> : <Icon className="h-4 w-4" />}
-            </a>
-          ))}
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
+          <Link
+            to="/feedback"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-orange-500/25 transition hover:from-orange-600 hover:to-amber-600"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+            Send feedback
+          </Link>
+          <div className="flex items-center gap-4">
+            {socialLinks.map(({ href, icon: Icon, label, active }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className={`rounded-full border border-white/10 bg-white/5 p-2 transition ${
+                  active
+                    ? 'text-gradient-orange-accent border-kenya-orange/60 hover:border-kenya-orange hover:text-gradient-orange-accent'
+                    : 'text-white/30 opacity-50 cursor-not-allowed hover:border-white/10 hover:text-white/30'
+                }`}
+              >
+                {typeof Icon === 'function' ? <Icon /> : <Icon className="h-4 w-4" />}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
