@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { ghostService, type GhostActionQueue, type GhostPersonaGroup, type GhostUser } from '@/lib/ghost-service';
 import { eventService } from '@/lib/event-service';
+import { eventLastDayIso } from '@/utils/event-utils';
 import { storyService } from '@/lib/story/story-service';
 import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
@@ -200,15 +201,13 @@ const GhostManagement: React.FC = () => {
 
   const filteredEvents = useMemo(() => {
     const now = new Date();
+    const todayStr = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
     return events.filter(event => {
       const eventDate = new Date(event.date);
+      const lastStr = eventLastDayIso(event);
       if (eventFilter === 'upcoming') return eventDate >= now;
-      if (eventFilter === 'past') return eventDate < now;
-      if (eventFilter === 'ongoing') {
-        const endDate = new Date(eventDate);
-        endDate.setHours(endDate.getHours() + 4);
-        return now >= eventDate && now <= endDate;
-      }
+      if (eventFilter === 'past') return lastStr < todayStr;
+      if (eventFilter === 'ongoing') return eventDate <= now && lastStr >= todayStr;
       return true;
     });
   }, [events, eventFilter]);

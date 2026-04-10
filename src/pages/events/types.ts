@@ -29,6 +29,8 @@ export interface EventQueryOptions extends EventFilterState {
   recommendationTags?: string[];
   savedFilterId?: string | null;
   includePast?: boolean;
+  /** When true, only events that ended before today (Events page Past tab). */
+  pastOnly?: boolean;
   curatedCity?: string | null;
   /** When set with lat/lng, use spatial query for events within radius */
   radiusKm?: number | null;

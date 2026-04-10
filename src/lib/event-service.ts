@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { eventServiceExtensions } from './event-service-extensions';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 import type { EventQueryOptions, EventQueryResponse } from '@/pages/events/types';
 
 // Define event types
@@ -90,7 +90,7 @@ export const eventService = {
       .select(
         'id,title,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
-      .gte('date', startOfToday)
+      .gte('event_last_day', startOfToday)
       .order('date', { ascending: true })
       .limit(limit);
 
@@ -121,13 +121,14 @@ export const eventService = {
         recommendationTags,
         curatedCity,
         includePast,
+        pastOnly,
       } = options;
 
       // Avoid select('*') to reduce payload size; keep fields used across event screens.
       let query = supabase
         .from('events')
         .select(
-          'id,title,description,date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
+          'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
           { count: 'exact' }
         );
 
@@ -156,12 +157,14 @@ export const eventService = {
         query = query.contains('tags', tags);
       }
 
-      if (!includePast) {
-        // If includePast is false, only show events from start of today onward
-        query = query.gte('date', startOfTodayIso);
+      // includePast: no date window (e.g. Discover / Profile need all events).
+      // Otherwise: upcoming + multi-day still running (last calendar day >= today).
+      // pastOnly: Events "Past" tab — last calendar day before today.
+      if (pastOnly) {
+        query = query.lt('event_last_day', startOfTodayIso);
+      } else if (!includePast) {
+        query = query.gte('event_last_day', startOfTodayIso);
       }
-      // If includePast is true, don't filter by date (get all events)
-      // Only apply date filters if explicitly provided via startDate/endDate
 
       if (startDate) {
         query = query.gte('date', startDate);
@@ -218,18 +221,21 @@ export const eventService = {
       const startWeek = startOfWeek(now, { weekStartsOn: 1 });
       const endWeek = endOfWeek(now, { weekStartsOn: 1 });
 
+      const weekStartStr = format(startWeek, 'yyyy-MM-dd');
+      const weekEndStr = format(endWeek, 'yyyy-MM-dd');
+
       const [{ count: thisWeekCount }, curatedResult] = await Promise.all([
         supabase
           .from('events')
           .select('id', { count: 'exact', head: true })
-          .gte('date', startWeek.toISOString())
-          .lte('date', endWeek.toISOString()),
+          .gte('event_last_day', weekStartStr)
+          .lte('event_first_day', weekEndStr),
         curatedCity
           ? supabase
               .from('events')
               .select('id', { count: 'exact', head: true })
               .ilike('location', `%${curatedCity}%`)
-              .gte('date', startOfTodayIso)
+              .gte('event_last_day', startOfTodayIso)
           : Promise.resolve({ count: 0 }),
       ]);
 
