@@ -675,7 +675,13 @@ const EventManagement = () => {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Date</div>
-                  <div>{new Date(selectedEvent.date).toLocaleDateString()}</div>
+                  <div>
+                    {selectedEvent.end_date &&
+                    String(selectedEvent.end_date).slice(0, 10) !==
+                      new Date(selectedEvent.date).toISOString().slice(0, 10)
+                      ? `${new Date(selectedEvent.date).toLocaleDateString()} – ${new Date(selectedEvent.end_date).toLocaleDateString()}`
+                      : new Date(selectedEvent.date).toLocaleDateString()}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Location</div>

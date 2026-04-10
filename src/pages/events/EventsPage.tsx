@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { isWithinInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { useEventFilters } from '@/hooks/use-event-filters';
 import { eventService } from '@/lib/event-service';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,15 +10,19 @@ import EventsFiltersPanel from './EventsFiltersPanel';
 import EventsResults from './EventsResults';
 import type { EventsMetrics } from './types';
 
-const countEventsThisWeek = (events: { date: string }[]) => {
+const countEventsThisWeek = (events: { date: string; end_date?: string | null }[]) => {
   const window = {
     start: startOfWeek(new Date(), { weekStartsOn: 1 }),
     end: endOfWeek(new Date(), { weekStartsOn: 1 }),
   };
+  const startStr = format(window.start, 'yyyy-MM-dd');
+  const endStr = format(window.end, 'yyyy-MM-dd');
 
-  return events.filter(event =>
-    isWithinInterval(new Date(event.date), window)
-  ).length;
+  return events.filter(event => {
+    const firstStr = format(new Date(event.date), 'yyyy-MM-dd');
+    const lastStr = event.end_date?.slice(0, 10) ?? firstStr;
+    return lastStr >= startStr && firstStr <= endStr;
+  }).length;
 };
 
 const EventsPage = () => {
@@ -75,7 +79,8 @@ const EventsPage = () => {
         pageSize,
         recommendationTags,
         curatedCity: contextLocation,
-        includePast: activeTab === 'past',
+               includePast: false,
+        pastOnly: activeTab === 'past',
         radiusKm: filters.radiusKm ?? undefined,
         latitude: userCoordsForRadius?.latitude,
         longitude: userCoordsForRadius?.longitude,

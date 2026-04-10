@@ -13,9 +13,21 @@ export const getFeaturedEvents = (events: Event[]): Event[] => {
   return events.filter(event => event.featured || event.is_featured);
 };
 
+export const eventLastDayIso = (event: { date: string; end_date?: string | null }): string => {
+  const fromEnd = event.end_date && String(event.end_date).slice(0, 10);
+  if (fromEnd) return fromEnd;
+  return new Date(event.date).toISOString().slice(0, 10);
+};
+
 export const getUpcomingEvents = (events: Event[]): Event[] => {
-  const now = new Date();
-  return events.filter(event => new Date(event.date) >= now);
+  const todayStr = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    new Date().getDate()
+  )
+    .toISOString()
+    .slice(0, 10);
+  return events.filter(event => eventLastDayIso(event) >= todayStr);
 };
 
 // Add the missing formatDate function that was referenced in EventDetails.tsx

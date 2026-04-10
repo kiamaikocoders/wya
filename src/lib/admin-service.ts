@@ -612,6 +612,7 @@ export const adminService = {
           title: event.title,
           description: event.description,
           date: event.date,
+          end_date: event.end_date ?? null,
           time: event.time,
           location: event.location,
           location_url: event.location_url ?? null,
