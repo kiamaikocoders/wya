@@ -131,6 +131,7 @@ const ReelItem: React.FC<ReelItemProps> = ({
               loop
               muted
               playsInline
+              preload="none"
             />
           ) : (
             <img

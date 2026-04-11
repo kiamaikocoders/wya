@@ -11,6 +11,10 @@ import { Calendar, Search, Trash2, Check, X, ThumbsUp, ThumbsDown, Mail, Edit2, 
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase'; // Assuming supabase client is exported from here
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+} from '@/lib/media-upload-prepare';
 
 interface EventProposal {
   id: number;
@@ -208,21 +212,17 @@ const ProposalManagement: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to upload images');
 
-      const fileExt = file.name.split('.').pop();
+      const prepared = await prepareMediaForUpload(file, 'proposal');
+      const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const bucket = 'event-images';
       const folder = `proposals/${user.id}`; // Use user-specific folder
       const filePath = `${folder}/${fileName}`;
 
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        throw new Error('File size must be less than 10MB');
-      }
-
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
+        .upload(filePath, prepared, {
+          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
           upsert: false
         });
 

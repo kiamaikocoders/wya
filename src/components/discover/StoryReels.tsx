@@ -100,6 +100,7 @@ const StoryReels: React.FC<StoryReelsProps> = ({ stories, initialIndex = 0, onCl
                     muted={isMuted}
                     loop={false}
                     playsInline
+                    preload="none"
                     onEnded={handleVideoEnd}
                     onClick={togglePlayPause}
                   />
