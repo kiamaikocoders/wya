@@ -20,6 +20,10 @@ import Section from '@/components/ui/Section';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { proposalNotifications } from '@/lib/proposal-notifications';
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+} from '@/lib/media-upload-prepare';
 
 interface EventProposal {
   title: string;
@@ -108,21 +112,17 @@ const RequestEvent: React.FC = () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error('You must be logged in to upload images');
 
-      const fileExt = file.name.split('.').pop();
+      const prepared = await prepareMediaForUpload(file, 'proposal');
+      const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const bucket = 'event-images';
       const folder = `proposals/${authUser.id}`; // Use user-specific folder
       const filePath = `${folder}/${fileName}`;
 
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        throw new Error('File size must be less than 10MB');
-      }
-
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
+        .upload(filePath, prepared, {
+          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
           upsert: false
         });
 

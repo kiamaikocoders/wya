@@ -308,7 +308,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
               muted={isMuted}
               playsInline
               autoPlay={true}
-              preload="metadata"
+              preload="none"
             />
           ) : (
             <img

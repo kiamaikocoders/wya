@@ -1,11 +1,20 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+  type MediaUploadContext,
+} from './media-upload-prepare';
 
 export interface UploadOptions {
   bucket: string;
   folder?: string;
   fileName?: string;
   upsert?: boolean;
+  /** When set, image/video is resized, re-encoded, or validated before upload */
+  mediaContext?: MediaUploadContext;
+  /** Override default long-lived cache (unique object paths only) */
+  cacheControl?: string;
 }
 
 export interface UploadResult {
@@ -69,9 +78,17 @@ export const storageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to upload files');
 
+      const context = options.mediaContext ?? 'generic';
+      const fileToUpload =
+        context === 'generic'
+          ? file
+          : await prepareMediaForUpload(file, context);
+
       // Generate unique filename if not provided
-      const fileExt = file.name.split('.').pop();
-      const fileName = options.fileName || `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName =
+        options.fileName ||
+        `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       
       // Create file path with user folder
       const userFolder = user.id;
@@ -82,9 +99,9 @@ export const storageService = {
       // Upload file
       const { data, error } = await supabase.storage
         .from(options.bucket)
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           upsert: options.upsert || false,
-          cacheControl: '3600'
+          cacheControl: options.cacheControl ?? STORAGE_CACHE_CONTROL_IMMUTABLE,
         });
 
       if (error) throw error;
@@ -212,15 +229,11 @@ export const storageService = {
         throw new Error('Only image files are allowed for avatars');
       }
 
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Avatar file size must be less than 5MB');
-      }
-
       const result = await storageService.uploadFile(file, {
         bucket: 'avatars',
         folder: userId,
-        fileName: `avatar-${Date.now()}.${file.name.split('.').pop()}`
+        fileName: `avatar-${Date.now()}.${file.name.split('.').pop()}`,
+        mediaContext: 'avatar',
       });
 
       toast.success('Avatar uploaded successfully');
@@ -240,15 +253,11 @@ export const storageService = {
         throw new Error('Only image files are allowed for event images');
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Event image file size must be less than 10MB');
-      }
-
       const result = await storageService.uploadFile(file, {
         bucket: 'event-images',
         folder: eventId.toString(),
-        fileName: `event-${Date.now()}.${file.name.split('.').pop()}`
+        fileName: `event-${Date.now()}.${file.name.split('.').pop()}`,
+        mediaContext: 'event-image',
       });
 
       toast.success('Event image uploaded successfully');
@@ -298,15 +307,11 @@ export const storageService = {
         throw new Error('Invalid file type for throwback media');
       }
 
-      // Validate file size (100MB limit)
-      if (file.size > 100 * 1024 * 1024) {
-        throw new Error('Throwback media file size must be less than 100MB');
-      }
-
       const result = await storageService.uploadFile(file, {
         bucket: 'throwbacks',
         folder: userId,
-        fileName: `throwback-${Date.now()}.${file.name.split('.').pop()}`
+        fileName: `throwback-${Date.now()}.${file.name.split('.').pop()}`,
+        mediaContext: 'throwback',
       });
 
       toast.success('Throwback media uploaded successfully');
@@ -327,15 +332,11 @@ export const storageService = {
         throw new Error('Invalid file type for community content');
       }
 
-      // Validate file size (50MB limit)
-      if (file.size > 50 * 1024 * 1024) {
-        throw new Error('Community content file size must be less than 50MB');
-      }
-
       const result = await storageService.uploadFile(file, {
         bucket: 'community-content',
         folder: userId,
-        fileName: `community-${Date.now()}.${file.name.split('.').pop()}`
+        fileName: `community-${Date.now()}.${file.name.split('.').pop()}`,
+        mediaContext: 'community',
       });
 
       toast.success('Community content uploaded successfully');

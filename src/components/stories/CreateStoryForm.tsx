@@ -15,6 +15,10 @@ import {
 } from '@/lib/posting-guard';
 import { toast } from 'sonner';
 import { CreateStoryDto } from '@/lib/story/types';
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+} from '@/lib/media-upload-prepare';
 
 interface CreateStoryFormProps {
   eventId?: number;
@@ -40,15 +44,17 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
   const handleImageUpload = async (file: File): Promise<string> => {
     setIsUploading(true);
     try {
-      // Generate a unique file name
-      const fileExt = file.name.split('.').pop();
+      const prepared = await prepareMediaForUpload(file, 'story');
+      const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const filePath = `stories/${fileName}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('media')
-        .upload(filePath, file);
+        .upload(filePath, prepared, {
+          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 

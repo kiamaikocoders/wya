@@ -15,6 +15,10 @@ import { Badge } from '@/components/ui/badge';
 import LocationPicker from '@/components/maps/LocationPicker';
 import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+} from '@/lib/media-upload-prepare';
 
 interface Category {
   id: number;
@@ -205,21 +209,17 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const prepared = await prepareMediaForUpload(file, 'event-image');
+      const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const bucket = 'event-images';
       const folder = 'event-images';
       const filePath = `${folder}/${fileName}`;
 
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        throw new Error('File size must be less than 10MB');
-      }
-
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
+        .upload(filePath, prepared, {
+          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
           upsert: false
         });
 
@@ -229,8 +229,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
           const fallbackPath = `events/${fileName}`;
           const { error: fallbackError } = await supabase.storage
             .from(fallbackBucket)
-            .upload(fallbackPath, file, {
-              cacheControl: '3600',
+            .upload(fallbackPath, prepared, {
+              cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
               upsert: false
             });
           
