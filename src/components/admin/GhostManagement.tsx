@@ -43,6 +43,10 @@ import { eventLastDayIso } from '@/utils/event-utils';
 import { storyService } from '@/lib/story/story-service';
 import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
+import {
+  prepareMediaForUpload,
+  STORAGE_CACHE_CONTROL_IMMUTABLE,
+} from '@/lib/media-upload-prepare';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -191,14 +195,6 @@ const GhostManagement: React.FC = () => {
     }
   };
 
-  const isEventWithinLastMonth = (eventDate: string) => {
-    const d = new Date(eventDate);
-    const now = new Date();
-    const oneMonthAgo = new Date(now);
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    return d >= oneMonthAgo;
-  };
-
   const filteredEvents = useMemo(() => {
     const now = new Date();
     const todayStr = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().slice(0, 10);
@@ -212,10 +208,10 @@ const GhostManagement: React.FC = () => {
     });
   }, [events, eventFilter]);
 
-  // For "Like Story": use same event list as posting flow (Tagging Event) - last month + search
+  // For "Like Story": all events (search-filtered); no date cutoff for admin
   const eventsForLikeStoryTarget = useMemo(() => {
     const q = (targetSearchQuery || '').trim().toLowerCase();
-    const base = events.filter((e: { date: string }) => isEventWithinLastMonth(e.date));
+    const base = events;
     if (!q) return base.slice(0, 50);
     return base
       .filter((e: { title?: string; location?: string; description?: string }) =>
@@ -276,19 +272,15 @@ const GhostManagement: React.FC = () => {
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const prepared = await prepareMediaForUpload(file, 'ghost');
+      const fileExt = prepared.name.split('.').pop();
       const fileName = `ghost-content/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       const bucket = 'media';
 
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        throw new Error('File size must be less than 10MB');
-      }
-
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
+        .upload(fileName, prepared, {
+          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
           upsert: false
         });
 
@@ -1030,7 +1022,7 @@ const GhostManagement: React.FC = () => {
                           <>
                             {eventsForLikeStoryTarget.length === 0 ? (
                               <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                {targetSearchQuery ? 'No events match your search' : 'Search by title or location (events from last month)'}
+                                {targetSearchQuery ? 'No events match your search' : 'Search by title or location'}
                               </div>
                             ) : (
                               eventsForLikeStoryTarget.map((event) => (
