@@ -31,7 +31,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { runWithPostingConsent } = useMediaConsentPosting();
   const [caption, setCaption] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -105,10 +105,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     return eventDateObj >= oneMonthAgo;
   };
 
-  // Filter events: only show events within the last month and match search query
+  // Filter events: last month for attendees; admins can tag any event
   const filteredEvents = events.filter(event => {
-    // First check if event is within the last month
-    if (!isEventWithinLastMonth(event.date)) {
+    if (!isAdmin && !isEventWithinLastMonth(event.date)) {
       return false;
     }
     
@@ -163,7 +162,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
 
     const selectedEvent = events.find(e => e.id === selectedEventId);
-    if (selectedEvent && !isEventWithinLastMonth(selectedEvent.date)) {
+    if (selectedEvent && !isAdmin && !isEventWithinLastMonth(selectedEvent.date)) {
       toast.error('This event is too old to tag. Only events from the last month can be tagged.');
       setSelectedEventId(null);
       return;
@@ -415,9 +414,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   </select>
                   {filteredEvents.length === 0 && (
                     <p className="text-sm text-white/50">
-                      {eventSearchQuery 
-                        ? 'No events found matching your search' 
-                        : 'No events available. Only events from the last month can be tagged.'}
+                      {eventSearchQuery
+                        ? 'No events found matching your search'
+                        : isAdmin
+                          ? 'No events available.'
+                          : 'No events available. Only events from the last month can be tagged.'}
                     </p>
                   )}
                 </div>
