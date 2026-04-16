@@ -1,69 +1,72 @@
-# Welcome to your Lovable project
+# WYA: Social Discovery Platform for Events in Kenya  
 
-## Project info
+## Project Overview  
+WYA is a social discovery platform connecting people to events across Kenya. It provides a user-friendly interface for discovering local events, engaging with communities, and sharing personal experiences. 
 
-**URL**: https://lovable.dev/projects/d6619d98-a578-4799-8bce-c7138436e028
+## Key Features  
+- **Event Discovery:** Browse and find events based on interests and location.  
+- **Real-Time Engagement System:** Users can engage in discussions and activities related to events as they happen.  
+- **User-Generated Content:** Share personal experiences and create content for others to view.  
+- **Community Features:** Connect with other users, foster community engagement, and participate in discussions.  
+- **Throwback Content:** Revisit past events through shared user memories and photographs.  
+- **Local Recommendations:** Get insights and recommendations for events happening in your community. 
 
-## How can I edit this code?
+## Tech Stack  
+- **Frontend:** React, TypeScript, Tailwind CSS  
+- **Backend:** Supabase  
+- **Mobile:** Capacitor  
+- **Mapping:** Mapbox  
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d6619d98-a578-4799-8bce-c7138436e028) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## Getting Started  
+### Node.js Requirements  
+Ensure you have Node.js installed. 
+- Install Node.js (v14 or later recommended)  
+- Clone the repository  
 ```
+git clone https://github.com/kiamaikocoders/wya.git  
+cd wya  
+```  
+### Installation  
+Install dependencies using npm:  
+```
+npm install  
+```  
+### Environment Setup  
+Create a `.env` file in the root directory and add the necessary environment variables. No additional steps are needed.  
+### Running Locally  
+Start the development server:  
+```
+npm start  
+```  
 
-**Edit a file directly in GitHub**
+## Project Structure  
+The project is organized as follows:  
+- **src/**  
+  - **pages/**: Contains the main application pages.  
+  - **components/**: Reusable components used across the application.  
+  - **services/**: API service handlers and data fetching utilities.  
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Core Features  
+- **Events Discovery:** Users can find events tailored to their interests through an interactive search mechanism.  
+- **Engagement System:** Keep the platform lively with throwback posts, tips from the community, and local recommendations.  
+- **User Authentication:** Secure login and account management for users.  
+- **Mobile-First Design:** Optimized experience on mobile devices for accessibility and usability.  
 
-**Use GitHub Codespaces**
+## Environment Variables  
+Required variables for connectivity and API usage include:  
+- **SUPABASE_URL**: Your Supabase project URL.  
+- **SUPABASE_ANON_KEY**: Your Supabase public anonymous key.  
+- **MAPBOX_TOKEN**: Your Mapbox access token.  
+- **VERCEL_AI_KEY**: Your Vercel AI key for deployments.  
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment  
+Deploy the application to Vercel with Over-The-Air (OTA) updates facilitated by Capacitor.  
 
-## What technologies are used for this project?
+## Design System  
+The application uses the **Inter** and **Plus Jakarta Sans** fonts, and supports both light and dark modes for a flexible user experience.  
 
-This project is built with .
+## Development Workflow  
+Follow Git best practices with feature branching, pull requests, and code reviews to ensure quality and maintainability.  
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/d6619d98-a578-4799-8bce-c7138436e028) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Contributing Guidelines  
+We welcome contributions! Please see our `CONTRIBUTING.md` for guidelines on how to get involved with WYA.
