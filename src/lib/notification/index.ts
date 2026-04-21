@@ -3,7 +3,6 @@
 
 export * from './types';
 export * from './notification-service';
-export * from './websocket';
 
 // Export the service as a single instance
 import { notificationService } from './notification-service';
