@@ -8,7 +8,7 @@ import StoriesGrid from '@/components/stories/StoriesGrid';
 import CreateStoryForm from '@/components/stories/CreateStoryForm';
 import StoryCarousel from '@/components/stories/StoryCarousel';
 import { Plus, X } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Story } from '@/lib/story/types';
 
 const StoriesPage = () => {
