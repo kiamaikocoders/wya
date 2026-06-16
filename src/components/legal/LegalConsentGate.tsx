@@ -175,6 +175,10 @@ export function LegalConsentGate() {
       >
         {showBlockingLoading && (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16">
+            <AlertDialogTitle className="sr-only">Loading your account</AlertDialogTitle>
+            <AlertDialogDescription className="sr-only">
+              Please wait while we load your profile.
+            </AlertDialogDescription>
             <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
             <p className="text-sm text-muted-foreground">Loading your account…</p>
           </div>
