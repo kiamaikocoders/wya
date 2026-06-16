@@ -15,7 +15,9 @@
     "cap:add:android": "cap add android",
     "android:build": "npm run build && cap sync android",
     "android:dev": "cap run android",
-    "functions:deploy:delete-account": "supabase functions deploy delete-my-account"
+    "functions:deploy:delete-account": "supabase functions deploy delete-my-account",
+    "functions:deploy:send-push-notification": "supabase functions deploy send-push-notification",
+    "functions:deploy:dispatch-notification": "supabase functions deploy dispatch-notification"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",

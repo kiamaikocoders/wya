@@ -33,6 +33,8 @@ import { useQuery } from '@tanstack/react-query';
 import { adminService } from '@/lib/admin-service';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { notificationService } from '@/lib/notification';
 import { format, subDays, subWeeks, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -83,6 +85,8 @@ const DashboardHome: React.FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [activeTab, setActiveTab] = useState('overview');
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [testNotifyUserId, setTestNotifyUserId] = useState('34c7d2ce-3b19-4889-8147-9712ff4055e1');
+  const [isSeedingNotifications, setIsSeedingNotifications] = useState(false);
 
   // Calculate date range based on selection
   const getDateRange = (range: TimeRange) => {
@@ -1011,6 +1015,54 @@ const DashboardHome: React.FC = () => {
               <p className="text-xs mt-1">Activity will appear here as it happens</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification testing</CardTitle>
+          <CardDescription>
+            Seed in-app notifications for a user (follow, event, system, message, ticket). Requires the
+            dispatch-notification edge function deployed on project nnlxxbuekqlaqamczwyi.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-1">
+            <label className="text-sm font-medium" htmlFor="test-notify-user">
+              Target user ID
+            </label>
+            <input
+              id="test-notify-user"
+              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              value={testNotifyUserId}
+              onChange={(e) => setTestNotifyUserId(e.target.value)}
+              placeholder="User UUID (e.g. @vlad)"
+            />
+          </div>
+          <Button
+            variant="secondary"
+            disabled={isSeedingNotifications || !testNotifyUserId.trim()}
+            onClick={async () => {
+              setIsSeedingNotifications(true);
+              try {
+                const result = await notificationService.seedTestNotifications(testNotifyUserId.trim());
+                toast.success(`Created ${result.seeded} test notifications`);
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Failed to seed notifications');
+              } finally {
+                setIsSeedingNotifications(false);
+              }
+            }}
+          >
+            {isSeedingNotifications ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Seeding…
+              </>
+            ) : (
+              'Seed test notifications'
+            )}
+          </Button>
         </CardContent>
       </Card>
     </div>

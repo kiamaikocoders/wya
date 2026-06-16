@@ -25,6 +25,7 @@ import {
   MessageSquareText,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { syncPushSubscriptionWithPreference } from '@/lib/onesignal';
 
 type SettingsForm = {
   full_name: string;
@@ -101,6 +102,10 @@ const Settings: React.FC = () => {
         two_factor_auth: settings.two_factor_auth,
         phone: settings.phone.trim() || null,
         date_of_birth: settings.date_of_birth || null,
+      });
+
+      await syncPushSubscriptionWithPreference(settings.push_notifications, {
+        promptIfNeeded: settings.push_notifications,
       });
 
       if (settings.marketing_emails !== (profile.marketing_consent ?? false)) {
@@ -335,9 +340,12 @@ const Settings: React.FC = () => {
                   </div>
                   <Switch
                     checked={settings.push_notifications}
-                    onCheckedChange={(checked) =>
-                      setSettings({ ...settings, push_notifications: checked })
-                    }
+                    onCheckedChange={async (checked) => {
+                      setSettings({ ...settings, push_notifications: checked });
+                      if (checked) {
+                        await syncPushSubscriptionWithPreference(true, { promptIfNeeded: true });
+                      }
+                    }}
                   />
                 </div>
                 <div className="flex items-center justify-between">

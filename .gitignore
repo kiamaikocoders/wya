@@ -11,6 +11,7 @@ node_modules
 dist
 .env
 mcp-config.env
+supabase/.env.secrets.local
 .tmp_mcp_deploy_ghost.json
 .deploy_one_line.json
 mcp-deploy-process-ghost-actions.json
@@ -40,3 +41,4 @@ android/.idea/
 *.aab
 *.keystore
 !debug.keystore
+.archive/
