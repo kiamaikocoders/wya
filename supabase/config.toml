@@ -25,3 +25,9 @@ verify_jwt = false
 
 [functions.public-event-media-gallery]
 verify_jwt = false
+
+[functions.dispatch-notification]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false

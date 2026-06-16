@@ -48,8 +48,7 @@ export const followNotifications = {
       toast.success(`You are now following ${followedName}`);
     } catch (notifError) {
       console.error('Error sending follow notification:', notifError);
-      // Don't fail the follow action if notification fails
-      toast.success('Follow successful');
+      toast.error('Follow saved, but the user was not notified. Check notification setup.');
     }
   }
 };

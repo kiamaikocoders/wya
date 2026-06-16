@@ -3,6 +3,8 @@
  * Place like.wav and notification.mp3 in public/sounds/
  */
 
+import { isOneSignalSupported, requestPushPermission } from '@/lib/onesignal';
+
 const LIKE_SOUND_PATH = '/sounds/like.wav';
 const NOTIFICATION_SOUND_PATH = '/sounds/notification.mp3';
 
@@ -55,8 +57,13 @@ export function playNotificationSound(): void {
   }
 }
 
-/** Request browser notification permission. Call when user opens notifications or on first notification. */
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
+/** Request browser / OneSignal push permission. Call from a user gesture. */
+export async function requestNotificationPermission(): Promise<NotificationPermission | 'default'> {
+  if (isOneSignalSupported()) {
+    const granted = await requestPushPermission();
+    return granted ? 'granted' : Notification.permission === 'denied' ? 'denied' : 'default';
+  }
+
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'denied';
   }
@@ -72,5 +79,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
 /** Whether we can show browser notifications. */
 export function canShowNotifications(): boolean {
-  return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  if (typeof window === 'undefined') return false;
+  if (isOneSignalSupported()) {
+    return 'Notification' in window && Notification.permission === 'granted';
+  }
+  return 'Notification' in window && Notification.permission === 'granted';
 }

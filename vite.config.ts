@@ -24,6 +24,14 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "::",
       port: 8080,
+      watch: {
+        // Capacitor/Android build trees contain thousands of files and exhaust inotify.
+        ignored: [
+          "**/android/**",
+          "**/dist/**",
+          "**/.git/**",
+        ],
+      },
     },
     plugins: [
       {
