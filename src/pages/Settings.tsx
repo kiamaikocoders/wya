@@ -25,7 +25,22 @@ import {
   MessageSquareText,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { syncPushSubscriptionWithPreference } from '@/lib/onesignal';
+import {
+  getPushSubscriptionStatus,
+  isOneSignalSupported,
+  subscribeToPushNotifications,
+  syncPushSubscriptionWithPreference,
+  type PushSubscriptionStatus,
+} from '@/lib/onesignal';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type SettingsForm = {
   full_name: string;
@@ -64,6 +79,74 @@ const Settings: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  const [pushStatus, setPushStatus] = useState<PushSubscriptionStatus | null>(null);
+  const [pushPromptOpen, setPushPromptOpen] = useState(false);
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+
+  const refreshPushStatus = async () => {
+    const status = await getPushSubscriptionStatus();
+    setPushStatus(status);
+    return status;
+  };
+
+  const enablePushOnThisDevice = async () => {
+    if (!user?.id) return false;
+    setIsEnablingPush(true);
+    try {
+      setSettings((prev) => ({ ...prev, push_notifications: true }));
+
+      const result = await subscribeToPushNotifications(user.id);
+
+      if (result.ok) {
+        await userService.updateProfile({ push_notifications: true });
+        queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
+        toast.success('Push notifications enabled on this device');
+        await refreshPushStatus();
+        return true;
+      }
+
+      if (result.reason === 'denied') {
+        toast.error(
+          'Notifications are blocked. In Chrome: click the lock icon in the address bar → Site settings → Notifications → Allow.'
+        );
+      } else if (result.reason === 'dismissed') {
+        toast.message('Click Allow when your browser asks for notification permission.');
+      } else if (result.reason === 'sdk_not_ready') {
+        const initError = pushStatus?.initError ?? (await refreshPushStatus()).initError;
+        if (initError && /not configured for web push/i.test(initError)) {
+          toast.error(
+            'Web push is not set up in OneSignal yet. In the OneSignal dashboard: Settings → Platforms → Web → Custom Code, set Site URL to http://localhost:8080, enable “Treat HTTP localhost as HTTPS”, and set the service worker path to /push/onesignal/.'
+          );
+        } else {
+          toast.error(
+            'OneSignal is still loading or blocked. Disable ad blockers for localhost, refresh, then try again.'
+          );
+        }
+      } else if (result.reason === 'opt_in_failed') {
+        toast.error(
+          'Browser allowed notifications but push setup failed. Check OneSignal dashboard Site URL is http://localhost:8080'
+        );
+      } else {
+        toast.error('Push notifications are not supported in this browser.');
+      }
+
+      await refreshPushStatus();
+      return false;
+    } catch (error) {
+      console.error('Enable push failed:', error);
+      toast.error('Could not enable push notifications');
+      return false;
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
+  /** Run on button click — native prompt must be first await (user gesture). */
+  const handleAllowNotificationsClick = () => {
+    setPushPromptOpen(false);
+    void enablePushOnThisDevice();
+  };
+
   const { data: dsarList = [], refetch: refetchDsar } = useQuery({
     queryKey: ['dataSubjectRequests', user?.id],
     queryFn: () => gdprService.listMyDataSubjectRequests(15),
@@ -87,6 +170,17 @@ const Settings: React.FC = () => {
     });
   }, [profile]);
 
+  useEffect(() => {
+    if (!user?.id || !profile || !isOneSignalSupported()) return;
+
+    void refreshPushStatus().then((status) => {
+      const wantsPush = profile.push_notifications ?? true;
+      if (!status.active && wantsPush) {
+        setPushPromptOpen(true);
+      }
+    });
+  }, [user?.id, profile?.id, profile?.push_notifications]);
+
   const handleSaveSettings = async () => {
     if (!user?.id || !profile) return;
     try {
@@ -106,6 +200,7 @@ const Settings: React.FC = () => {
 
       await syncPushSubscriptionWithPreference(settings.push_notifications, {
         promptIfNeeded: settings.push_notifications,
+        userId: user.id,
       });
 
       if (settings.marketing_emails !== (profile.marketing_consent ?? false)) {
@@ -251,6 +346,29 @@ const Settings: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-promo pb-20">
+      <AlertDialog open={pushPromptOpen} onOpenChange={setPushPromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enable push notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              WYA will ask your browser for permission. Choose <strong>Allow</strong> to get
+              alerts for follows, events, and messages even when this tab is in the background.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not now</AlertDialogCancel>
+            <Button
+              type="button"
+              className="bg-kenya-orange hover:bg-kenya-orange/90 text-white"
+              disabled={isEnablingPush}
+              onClick={handleAllowNotificationsClick}
+            >
+              {isEnablingPush ? 'Enabling…' : 'Allow notifications'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
@@ -336,18 +454,48 @@ const Settings: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Push notifications</Label>
-                    <p className="text-sm text-text-white/70">In-app / device push where supported</p>
+                    <p className="text-sm text-text-white/70">
+                      {pushStatus?.active
+                        ? 'Enabled on this browser'
+                        : 'In-app and device push where supported'}
+                    </p>
                   </div>
                   <Switch
                     checked={settings.push_notifications}
-                    onCheckedChange={async (checked) => {
+                    onCheckedChange={(checked) => {
                       setSettings({ ...settings, push_notifications: checked });
                       if (checked) {
-                        await syncPushSubscriptionWithPreference(true, { promptIfNeeded: true });
+                        setPushPromptOpen(true);
                       }
                     }}
                   />
                 </div>
+                {isOneSignalSupported() && pushStatus && !pushStatus.webPushConfigured && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+                    <p className="text-sm text-white font-medium">Web push needs OneSignal setup</p>
+                    <p className="text-xs text-text-white/70">
+                      In OneSignal: Settings → Platforms → Web → Custom Code. Site URL:{' '}
+                      <code className="text-amber-200">{window.location.origin}</code>. Service worker:{' '}
+                      <code className="text-amber-200">/push/onesignal/OneSignalSDKWorker.js</code>.
+                      Enable “Treat HTTP localhost as HTTPS” for local dev.
+                    </p>
+                  </div>
+                )}
+                {isOneSignalSupported() && !pushStatus?.active && (
+                  <div className="rounded-lg border border-kenya-orange/40 bg-kenya-orange/10 p-4 space-y-3">
+                    <p className="text-sm text-white">
+                      Turn on browser push so you get alerts when WYA is in the background.
+                    </p>
+                    <Button
+                      type="button"
+                      className="bg-kenya-orange hover:bg-kenya-orange/90 text-white"
+                      disabled={isEnablingPush}
+                      onClick={handleAllowNotificationsClick}
+                    >
+                      Enable push on this device
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Marketing</Label>

@@ -67,8 +67,16 @@ const NotificationBell = () => {
   }, [user?.id, queryClient]);
 
   const handleClick = () => {
-    requestNotificationPermission();
     navigate('/notifications');
+
+    // Don't block navigation on OneSignal — it can hang if SDK isn't ready.
+    if (user?.id) {
+      void requestNotificationPermission(user.id).then((result) => {
+        if (result === 'granted') {
+          toast.success('Push notifications enabled');
+        }
+      });
+    }
   };
 
   if (!isAuthenticated) {
@@ -85,7 +93,7 @@ const NotificationBell = () => {
       <Bell size={20} />
       {unreadCount > 0 && (
         <Badge 
-          className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-accent text-white border-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
+          className="pointer-events-none absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-accent text-white border-0 text-xs min-w-[1.25rem] h-5 flex items-center justify-center"
           variant="default"
         >
           {unreadCount > 99 ? '99+' : unreadCount}
