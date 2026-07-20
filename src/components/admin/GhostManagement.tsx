@@ -44,6 +44,12 @@ import { storyService } from '@/lib/story/story-service';
 import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
 import {
+  getSupabaseOfflineMessage,
+  isDevAdminBypassActive,
+  isSupabaseNetworkError,
+  SUPABASE_RESTORE_URL,
+} from '@/lib/dev-admin-bypass';
+import {
   prepareMediaForUpload,
   STORAGE_CACHE_CONTROL_IMMUTABLE,
 } from '@/lib/media-upload-prepare';
@@ -67,6 +73,7 @@ const GhostManagement: React.FC = () => {
   // Ghost content management state
   const [ghostStories, setGhostStories] = useState<AdminStory[]>([]);
   const [loadingStories, setLoadingStories] = useState(false);
+  const [storiesLoadError, setStoriesLoadError] = useState<string | null>(null);
   const [editingStory, setEditingStory] = useState<AdminStory | null>(null);
   const [editContent, setEditContent] = useState('');
   const [editCaption, setEditCaption] = useState('');
@@ -192,6 +199,42 @@ const GhostManagement: React.FC = () => {
       toast.error('Failed to load ghost management data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGhostStories = async () => {
+    if (isDevAdminBypassActive()) {
+      setStoriesLoadError(getSupabaseOfflineMessage());
+      setGhostStories([]);
+      return;
+    }
+
+    setLoadingStories(true);
+    setStoriesLoadError(null);
+    try {
+      const stories = await adminService.getGhostStories();
+      setGhostStories(stories);
+      if (stories.length > 0) {
+        toast.success(`Loaded ${stories.length} ghost stories`);
+      }
+    } catch (error: unknown) {
+      console.error('Error loading ghost stories:', error);
+      setGhostStories([]);
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? String((error as { message?: unknown }).message ?? '')
+            : 'Failed to load ghost stories';
+
+      setStoriesLoadError(
+        isSupabaseNetworkError(error) || /failed to fetch/i.test(message)
+          ? getSupabaseOfflineMessage()
+          : message || 'Failed to load ghost stories'
+      );
+      toast.error('Could not load ghost stories');
+    } finally {
+      setLoadingStories(false);
     }
   };
 
@@ -576,23 +619,8 @@ const GhostManagement: React.FC = () => {
         defaultValue="queue" 
         className="space-y-4"
         onValueChange={(value) => {
-          // Auto-load ghost stories when content tab is opened
-          if (value === 'content' && ghostStories.length === 0 && !loadingStories) {
-            setLoadingStories(true);
-            adminService.getGhostStories()
-              .then(stories => {
-                setGhostStories(stories);
-                if (stories.length > 0) {
-                  toast.success(`Loaded ${stories.length} ghost stories`);
-                }
-              })
-              .catch(error => {
-                console.error('Error loading ghost stories:', error);
-                toast.error('Failed to load ghost stories. Please try again.');
-              })
-              .finally(() => {
-                setLoadingStories(false);
-              });
+          if (value === 'content' && ghostStories.length === 0 && !loadingStories && !storiesLoadError) {
+            void loadGhostStories();
           }
         }}
       >
@@ -814,24 +842,7 @@ const GhostManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={async () => {
-                    setLoadingStories(true);
-                    try {
-                      const stories = await adminService.getGhostStories();
-                      setGhostStories(stories);
-                      if (stories.length > 0) {
-                        toast.success(`Loaded ${stories.length} ghost stories`);
-                      } else {
-                        toast.info('No ghost stories found');
-                      }
-                    } catch (error: any) {
-                      console.error('Error loading ghost stories:', error);
-                      const errorMessage = error?.message || 'Failed to load ghost stories';
-                      toast.error(errorMessage);
-                    } finally {
-                      setLoadingStories(false);
-                    }
-                  }}
+                  onClick={() => void loadGhostStories()}
                   disabled={loadingStories}
                 >
                   <RefreshCw className={cn("h-4 w-4 mr-2", loadingStories && "animate-spin")} />
@@ -843,6 +854,25 @@ const GhostManagement: React.FC = () => {
               {loadingStories ? (
                 <div className="flex items-center justify-center p-8">
                   <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : storiesLoadError ? (
+                <div className="py-8">
+                  <Alert variant="destructive" className="border-amber-500/50 bg-amber-950/30">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="space-y-3">
+                      <p className="font-medium text-foreground">{storiesLoadError}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Ghost stories live in your paused Supabase database. Restore the project,
+                        then return here to delete large uploads and free storage.
+                      </p>
+                      <Button asChild size="sm" variant="outline">
+                        <a href={SUPABASE_RESTORE_URL} target="_blank" rel="noopener noreferrer">
+                          Restore Supabase project
+                          <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
                 </div>
               ) : ghostStories.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">

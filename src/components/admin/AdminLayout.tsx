@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
+import AdminOfflineBanner from './AdminOfflineBanner';
 
 const AdminLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -31,7 +32,8 @@ const AdminLayout: React.FC = () => {
       >
         <AdminHeader onMenuClick={toggleMobileMenu} />
         
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/20">
+          <AdminOfflineBanner />
           <Outlet />
         </main>
       </div>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Share2, Download } from 'lucide-react';
 import { ticketService } from '@/lib/ticket-service';
+import { marketplaceService } from '@/lib/marketplace-service';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import BackButton from '@/components/navigation/BackButton';
@@ -21,6 +22,21 @@ const TicketDetail = () => {
     queryKey: ['ticket', ticketId],
     queryFn: () => ticketId ? ticketService.getTicketById(Number(ticketId)) : Promise.reject('No ticket ID'),
     enabled: !!ticketId,
+  });
+
+  const { data: qrPayload } = useQuery({
+    queryKey: ['ticket-qr', ticketId, ticket?.reference_code],
+    queryFn: async () => {
+      const id = Number(ticketId);
+      try {
+        const token = await marketplaceService.getActiveQrToken(id);
+        if (token) return token;
+      } catch {
+        // Table/RPC may not exist until migration is applied
+      }
+      return ticket ? `TICKET:${ticket.id}:${ticket.reference_code}` : '';
+    },
+    enabled: !!ticket,
   });
   
   const handleShare = async () => {
@@ -111,7 +127,7 @@ const TicketDetail = () => {
             
             <div className="mb-6 p-3 bg-white rounded-lg">
               <QRCodeSVG 
-                value={`TICKET:${ticket.id}:${ticket.reference_code}`}
+                value={qrPayload || `TICKET:${ticket.id}:${ticket.reference_code}`}
                 size={180}
                 level="H"
                 includeMargin={true}

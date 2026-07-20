@@ -4,6 +4,15 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
+import {
+  activateDevAdminBypass,
+  clearDevAdminBypass,
+  getDevAdminUser,
+  isDevAdminBypassActive,
+  isDevAdminBypassEnabled,
+  isSupabaseNetworkError,
+  matchesDevAdminCredentials,
+} from '@/lib/dev-admin-bypass';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
@@ -41,6 +50,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isDevBypass: boolean;
   updateUser: (userData: Partial<User>) => Promise<void>;
   refreshAuth: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -66,9 +76,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
+  const applyDevAdminSession = () => {
+    setUser(getDevAdminUser());
+    setIsAdmin(true);
+  };
+
   // Refresh authentication state from Supabase
   const refreshAuth = async () => {
     try {
+      if (isDevAdminBypassActive()) {
+        applyDevAdminSession();
+        return;
+      }
+
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -181,8 +201,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (error) {
       console.error('Error refreshing auth:', error);
-      setUser(null);
-      setIsAdmin(false);
+      if (isDevAdminBypassActive()) {
+        applyDevAdminSession();
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -243,6 +267,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               console.warn('Background refreshAuth failed:', err);
             });
           }, 100);
+        } else if (isDevAdminBypassActive()) {
+          applyDevAdminSession();
         } else {
           setUser(null);
           setIsAdmin(false);
@@ -361,26 +387,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const adminLogin = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Check if the credentials match our hardcoded admin credentials
-      if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      if (!matchesDevAdminCredentials(email, password)) {
+        throw new Error('Invalid admin credentials');
+      }
+
+      try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          password
+          password,
         });
-        
+
         if (error) throw error;
-        
-        // Update user type to admin
+
         await supabase
           .from('profiles')
           .update({ username: 'admin' })
           .eq('id', data.user.id);
-          
+
+        clearDevAdminBypass();
         setIsAdmin(true);
         toast.success('Admin login successful!');
         navigate('/admin');
-      } else {
-        throw new Error('Invalid admin credentials');
+        return;
+      } catch (error: any) {
+        if (
+          isDevAdminBypassEnabled() &&
+          isSupabaseNetworkError(error)
+        ) {
+          activateDevAdminBypass();
+          applyDevAdminSession();
+          toast.warning(
+            'Supabase is unreachable. Using local dev admin bypass — restore the project for live admin data.'
+          );
+          navigate('/admin');
+          return;
+        }
+        throw error;
       }
     } catch (error: any) {
       console.error('Admin login error:', error);
@@ -455,15 +497,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    const hadDevBypass = isDevAdminBypassActive();
+    clearDevAdminBypass();
+
     try {
-      await supabase.auth.signOut();
+      if (!hadDevBypass) {
+        await supabase.auth.signOut();
+      }
       setUser(null);
       setIsAdmin(false);
       toast.success('Logged out successfully');
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Failed to log out');
+      setUser(null);
+      setIsAdmin(false);
+      toast.success('Logged out successfully');
+      navigate('/');
     }
   };
   
@@ -628,6 +678,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loading,
     isAuthenticated: !!user,
     isAdmin,
+    isDevBypass: isDevAdminBypassActive(),
     updateUser,
     refreshAuth,
     forgotPassword,

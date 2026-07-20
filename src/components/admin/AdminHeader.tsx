@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Bell, User } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ interface AdminHeaderProps {
   onMenuClick: () => void;
 }
 
+/** Slim top bar only — page titles live in AdminPageShell (Agribeta pattern). */
 const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -27,38 +28,21 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="flex h-16 items-center justify-between px-4 lg:px-6">
-        {/* Left side - Menu button and logo */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMenuClick}
-            className="lg:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
-          </div>
-        </div>
+    <header className="sticky top-0 z-30 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 lg:hidden">
+      <div className="flex h-14 items-center justify-between px-4">
+        <Button variant="ghost" size="icon" onClick={onMenuClick} aria-label="Open menu">
+          <Menu className="h-5 w-5" />
+        </Button>
 
-        {/* Right side - Notifications and User */}
-        <div className="flex items-center gap-3">
-          {/* Notifications */}
+        <div className="flex items-center gap-2">
           <NotificationBell />
-
-          {/* Admin Badge */}
-          <Badge variant="outline" className="hidden sm:flex border-primary text-primary">
+          <Badge variant="outline" className="border-primary text-primary">
             Admin
           </Badge>
-
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Avatar className="h-9 w-9">
                   <AvatarImage src={user?.profile_picture} alt={user?.name} />
                   <AvatarFallback>
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
@@ -86,4 +70,3 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
 };
 
 export default AdminHeader;
-

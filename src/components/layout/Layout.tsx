@@ -5,6 +5,7 @@ import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 import FooterMinimal from "./FooterMinimal";
+import MaintenanceBanner from "./MaintenanceBanner";
 import { cn } from "@/lib/utils";
 import { DiscoverUIProvider } from "@/contexts/DiscoverUIContext";
 
@@ -49,6 +50,7 @@ const Layout = () => {
     <DiscoverUIProvider>
       <div className="relative flex min-h-screen flex-col bg-background">
         {!isAuthPage && !isDiscoverPage && <Navbar />}
+        {!isAuthPage && !isAdminPage && <MaintenanceBanner />}
         <main className={cn("flex-1", !isDiscoverPage && !isAuthPage && "pb-20 md:pb-24")}>
           <Outlet />
         </main>
