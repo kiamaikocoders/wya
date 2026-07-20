@@ -2,38 +2,31 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
-import AdminOfflineBanner from './AdminOfflineBanner';
+import { useAdminTheme } from './AdminThemeContext';
+import { cn } from '@/lib/utils';
 
+/**
+ * Theme provider lives in AdminRoute so login + dashboard share the same light/dark preference.
+ */
 const AdminLayout: React.FC = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  const { theme } = useAdminTheme();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div
+      className={cn(
+        'admin-console flex h-screen overflow-hidden bg-background text-foreground',
+        theme === 'dark' && 'admin-console--dark'
+      )}
+    >
       <AdminSidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
         isMobileOpen={isMobileMenuOpen}
-        onMobileToggle={toggleMobileMenu}
+        onMobileToggle={() => setIsMobileMenuOpen((open) => !open)}
       />
-      
-      <div
-        className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-          isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-        }`}
-      >
-        <AdminHeader onMenuClick={toggleMobileMenu} />
-        
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-muted/20">
-          <AdminOfflineBanner />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-[260px]">
+        <AdminHeader onMenuClick={() => setIsMobileMenuOpen((open) => !open)} />
+        <main className="flex-1 overflow-y-auto bg-background">
           <Outlet />
         </main>
       </div>
@@ -42,4 +35,3 @@ const AdminLayout: React.FC = () => {
 };
 
 export default AdminLayout;
-

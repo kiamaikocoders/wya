@@ -59,6 +59,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { Story } from '@/lib/story/types';
+import {
+  AdminKpiRow,
+  AdminKpiTile,
+  AdminListRow,
+  AdminOutlinePill,
+  AdminPrimaryPill,
+  AdminSectionPanel,
+  AdminStatusPill,
+} from '@/components/admin/AdminPageShell';
 
 const GhostManagement: React.FC = () => {
   const queryClient = useQueryClient();
@@ -168,34 +177,54 @@ const GhostManagement: React.FC = () => {
     loadData();
   }, [selectedPersonaGroup]);
 
+  const emptyStats = {
+    total_ghost_users: 0,
+    total_queued_actions: 0,
+    pending_actions: 0,
+    completed_actions: 0,
+    failed_actions: 0,
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [users, groups, actions, stats] = await Promise.all([
-        selectedPersonaGroup === 'all' 
+      const [usersRes, groupsRes, actionsRes, statsRes] = await Promise.allSettled([
+        selectedPersonaGroup === 'all'
           ? ghostService.getGhostUsers()
           : ghostService.getGhostUsersByPersona(selectedPersonaGroup as number),
         ghostService.getPersonaGroups(),
         ghostService.getQueuedActions(),
-        ghostService.getStatistics()
+        ghostService.getStatistics(),
       ]);
+
+      const users = usersRes.status === 'fulfilled' ? usersRes.value : [];
+      const groups = groupsRes.status === 'fulfilled' ? groupsRes.value : [];
+      const actions = actionsRes.status === 'fulfilled' ? actionsRes.value : [];
+      const stats =
+        statsRes.status === 'fulfilled' && statsRes.value
+          ? { ...emptyStats, ...statsRes.value }
+          : { ...emptyStats };
+
+      if (selectedPersonaGroup !== 'all') {
+        (stats as { filtered_ghost_users?: number }).filtered_ghost_users = users.length;
+      }
 
       setGhostUsers(users);
       setPersonaGroups(groups);
       setQueuedActions(actions);
-      
-      // Always use the actual database count from statistics (not filtered list)
-      // The statistics already reflect the total from database
-      // Only override if we're filtering by persona group
-      if (selectedPersonaGroup !== 'all') {
-        // When filtered, show both: filtered count and total
-        stats.total_ghost_users = stats.total_ghost_users; // Keep total
-        stats.filtered_ghost_users = users.length; // Add filtered count
-      }
-      
       setStatistics(stats);
+
+      if (
+        usersRes.status === 'rejected' &&
+        groupsRes.status === 'rejected' &&
+        actionsRes.status === 'rejected' &&
+        statsRes.status === 'rejected'
+      ) {
+        toast.error('Failed to load ghost management data');
+      }
     } catch (error) {
       console.error('Error loading data:', error);
+      setStatistics({ ...emptyStats });
       toast.error('Failed to load ghost management data');
     } finally {
       setLoading(false);
@@ -542,290 +571,214 @@ const GhostManagement: React.FC = () => {
     return targetType;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const stats = statistics ?? emptyStats;
+
+  const queueActionTitle = (action: GhostActionQueue) => {
+    const meta = action.metadata && typeof action.metadata === 'object' ? action.metadata : {};
+    const targetName =
+      (meta as { event_title?: string; target_label?: string; story_label?: string; user_name?: string })
+        .event_title ||
+      (meta as { target_label?: string }).target_label ||
+      (meta as { story_label?: string }).story_label ||
+      (meta as { user_name?: string }).user_name ||
+      (action.target_id != null ? `${action.target_type} #${action.target_id}` : 'target');
+    return `${action.action_type} → ${targetName}`;
+  };
+
+  const queueActionMeta = (action: GhostActionQueue) => {
+    const persona =
+      personaGroups.find((g) => g.id === action.persona_group_id)?.name ||
+      (action.persona_group_id ? `persona #${action.persona_group_id}` : 'persona');
+    const when = action.error_message
+      ? action.error_message
+      : `scheduled ${format(new Date(action.scheduled_at), 'PPp')}`;
+    return `${persona} · ${when}`;
+  };
+
+  const queueStatusTone = (
+    status: GhostActionQueue['status']
+  ): 'success' | 'warning' | 'error' | 'muted' | 'primary' => {
+    if (status === 'pending' || status === 'completed') return 'success';
+    if (status === 'processing') return 'warning';
+    if (status === 'failed') return 'error';
+    return 'muted';
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold">Ghost User Management</h2>
-        <p className="text-muted-foreground">
-          Manage ghost accounts and queue engagement actions
-        </p>
-      </div>
-
-      {/* Statistics */}
-      {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Ghost Users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.total_ghost_users}</div>
-              {selectedPersonaGroup !== 'all' && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Filtered: {ghostUsers.length} of {statistics.total_ghost_users}
-                </p>
-              )}
-              {selectedPersonaGroup === 'all' && ghostUsers.length !== statistics.total_ghost_users && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                  ⚠️ Mismatch: Displayed {ghostUsers.length}, DB has {statistics.total_ghost_users}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Queued Actions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.total_queued_actions}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Pending</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{statistics.pending_actions}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Completed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{statistics.completed_actions}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Failed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{statistics.failed_actions}</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+    <div className="space-y-3.5">
+      <AdminKpiRow className="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <AdminKpiTile
+          label="Ghost users"
+          value={loading ? '—' : (stats.total_ghost_users ?? 0).toLocaleString()}
+          hint="Personas"
+        />
+        <AdminKpiTile
+          label="Queued"
+          value={loading ? '—' : (stats.total_queued_actions ?? 0).toLocaleString()}
+          hint="Actions"
+        />
+        <AdminKpiTile
+          label="Pending"
+          value={loading ? '—' : (stats.pending_actions ?? 0).toLocaleString()}
+          hint="Waiting"
+        />
+        <AdminKpiTile
+          label="Completed"
+          value={loading ? '—' : (stats.completed_actions ?? 0).toLocaleString()}
+          hint="All time"
+        />
+        <AdminKpiTile
+          label="Failed"
+          value={loading ? '—' : (stats.failed_actions ?? 0).toLocaleString()}
+          hint="Needs retry"
+        />
+      </AdminKpiRow>
 
       <Tabs 
         defaultValue="queue" 
-        className="space-y-4"
+        className="space-y-3.5"
         onValueChange={(value) => {
           if (value === 'content' && ghostStories.length === 0 && !loadingStories && !storiesLoadError) {
             void loadGhostStories();
           }
         }}
       >
-        <TabsList>
-          <TabsTrigger value="queue">Action Queue</TabsTrigger>
-          <TabsTrigger value="users">Ghost Users</TabsTrigger>
-          <TabsTrigger value="content">Ghost Content</TabsTrigger>
-          <TabsTrigger value="create">Create Action</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+          {(
+            [
+              ['queue', 'Action Queue'],
+              ['users', 'Ghost Users'],
+              ['content', 'Ghost Content'],
+              ['create', 'Create Action'],
+            ] as const
+          ).map(([value, label]) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="rounded-full border-0 bg-[hsl(var(--admin-surface))] px-3 py-2 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:bg-primary data-[state=active]:font-semibold data-[state=active]:text-primary-foreground"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {/* Action Queue Tab */}
-        <TabsContent value="queue" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Queued Actions</CardTitle>
-                  <CardDescription>
-                    Monitor and manage queued ghost actions
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {statistics?.pending_actions > 0 && (
-                    <Button
-                      onClick={handleProcessActions}
-                      disabled={isProcessing}
-                      className="flex items-center gap-2"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4" />
-                          Process Now
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const result = await ghostService.resetStuckActions();
-                        if (result.reset_count > 0) {
-                          loadData(); // Refresh the queue
-                        }
-                      } catch (error) {
-                        console.error('Error resetting stuck actions:', error);
+        {/* Action Queue Tab — Figma: card with surface rows, outline Delete */}
+        <TabsContent value="queue" className="mt-0 space-y-0">
+          <div className="rounded-[14px] border border-border bg-card p-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-[13px] font-semibold text-foreground">Queued actions</h2>
+              <div className="flex flex-wrap gap-1.5">
+                <AdminOutlinePill
+                  onClick={async () => {
+                    try {
+                      const result = await ghostService.resetStuckActions();
+                      if (result.reset_count > 0) {
+                        loadData();
                       }
-                    }}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    title="Reset actions stuck in processing state (older than 10 minutes)"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Reset Stuck
-                  </Button>
-                </div>
+                    } catch (error) {
+                      console.error('Error resetting stuck actions:', error);
+                    }
+                  }}
+                >
+                  Reset Stuck
+                </AdminOutlinePill>
+                <AdminPrimaryPill onClick={handleProcessActions} disabled={isProcessing}>
+                  {isProcessing ? 'Processing…' : 'Process Now'}
+                </AdminPrimaryPill>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {queuedActions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No actions in queue
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {queuedActions.map((action) => (
-                      <div
-                        key={action.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold">{action.action_type.replace(/_/g, ' ')}</span>
-                            {getStatusBadge(action.status)}
-                            {action.target_id && (
-                              <span className="text-sm text-muted-foreground">
-                                Target: {action.target_type} #{action.target_id}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <div>
-                              Scheduled: {format(new Date(action.scheduled_at), 'PPp')}
-                            </div>
-                            {action.executed_at && (
-                              <div>
-                                Executed: {format(new Date(action.executed_at), 'PPp')}
-                              </div>
-                            )}
-                            {action.error_message && (
-                              <div className="text-red-600">
-                                Error: {action.error_message}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {action.status === 'pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancelAction(action.id)}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Cancel
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteAction(action.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            </CardContent>
-          </Card>
+            ) : queuedActions.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No actions in queue</p>
+            ) : (
+              <div className="space-y-2">
+                {queuedActions.map((action) => (
+                  <AdminListRow
+                    key={action.id}
+                    title={queueActionTitle(action)}
+                    meta={queueActionMeta(action)}
+                    trailing={
+                      <>
+                        <AdminStatusPill tone={queueStatusTone(action.status)}>
+                          {action.status}
+                        </AdminStatusPill>
+                        <AdminOutlinePill onClick={() => handleDeleteAction(action.id)}>
+                          Delete
+                        </AdminOutlinePill>
+                      </>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Ghost Users Tab */}
         <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ghost Users</CardTitle>
-              <CardDescription>
-                View all ghost accounts
-                {statistics && ghostUsers.length !== statistics.total_ghost_users ? (
-                  <span className="text-yellow-600 dark:text-yellow-400">
-                    {' '}(Showing {ghostUsers.length} of {statistics.total_ghost_users} total)
-                  </span>
-                ) : (
-                  <span> ({ghostUsers.length} total)</span>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <Label>Filter by Persona Group</Label>
-                <Select
-                  value={selectedPersonaGroup === 'all' ? 'all' : selectedPersonaGroup.toString()}
-                  onValueChange={(value) => setSelectedPersonaGroup(value === 'all' ? 'all' : parseInt(value))}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Groups</SelectItem>
-                    {personaGroups.map((group) => (
-                      <SelectItem key={group.id} value={group.id.toString()}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+          <AdminSectionPanel
+            title="Ghost users"
+            description={
+              statistics && ghostUsers.length !== statistics.total_ghost_users
+                ? `Showing ${ghostUsers.length} of ${statistics.total_ghost_users} total`
+                : `${ghostUsers.length} accounts`
+            }
+            action={
+              <Select
+                value={selectedPersonaGroup === 'all' ? 'all' : selectedPersonaGroup.toString()}
+                onValueChange={(value) =>
+                  setSelectedPersonaGroup(value === 'all' ? 'all' : parseInt(value))
+                }
+              >
+                <SelectTrigger className="h-9 w-[180px] rounded-full border-border bg-[hsl(var(--admin-surface))] text-xs">
+                  <SelectValue placeholder="Persona group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Groups</SelectItem>
+                  {personaGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          >
+            {ghostUsers.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No ghost users found</p>
+            ) : (
               <div className="space-y-2">
-                {ghostUsers.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    No ghost users found
-                  </p>
-                ) : (
-                  ghostUsers.map((user) => (
-                    <Link
-                      key={user.id}
-                      to={`/users/${user.id}`}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {(user.full_name || user.username || 'U').charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="font-semibold">{user.full_name || user.username}</div>
-                          <div className="text-sm text-muted-foreground">
-                            @{user.username} • {user.location || 'No location'}
-                          </div>
-                          {user.bio && (
-                            <div className="text-sm mt-1 text-muted-foreground">{user.bio}</div>
-                          )}
-                        </div>
+                {ghostUsers.map((user) => (
+                  <Link
+                    key={user.id}
+                    to={`/users/${user.id}`}
+                    className="flex w-full items-center gap-2.5 rounded-xl bg-[hsl(var(--admin-surface))] px-3 py-2.5 transition-colors hover:bg-[hsl(var(--admin-surface-2))]"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback>
+                        {(user.full_name || user.username || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-semibold text-foreground">
+                        {user.full_name || user.username}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">Ghost</Badge>
-                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        @{user.username} · {user.location || 'No location'}
                       </div>
-                    </Link>
-                  ))
-                )}
+                    </div>
+                    <AdminStatusPill tone="muted">Ghost</AdminStatusPill>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  </Link>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </AdminSectionPanel>
         </TabsContent>
 
         {/* Ghost Content Tab */}

@@ -10,6 +10,7 @@ import { MediaConsentPostingProvider } from "@/contexts/MediaConsentPostingConte
 import { LegalConsentGate } from "@/components/legal/LegalConsentGate";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AdminRoute from "./components/auth/AdminRoute";
 import { updateService } from './lib/update-service';
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -29,7 +30,6 @@ const EventDetails = lazy(() => import("./pages/EventDetails"));
 const Categories = lazy(() => import("./pages/Categories"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
-const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
@@ -137,13 +137,13 @@ const App = () => {
                     <Route path="/" element={<Landing />} />
                     <Route path="/download" element={<DownloadApp />} />
                   </Route>
-                  {/* Admin routes - separate layout */}
+                  {/* Admin console — standalone entry (login → dashboard, no consumer site shell) */}
                   <Route
                     path="/admin"
                     element={
-                      <ProtectedRoute adminOnly={true}>
+                      <AdminRoute>
                         <AdminLayout />
-                      </ProtectedRoute>
+                      </AdminRoute>
                     }
                   >
                     <Route index element={<AdminDashboard />} />
@@ -165,6 +165,9 @@ const App = () => {
                     <Route path="audit" element={<AdminAudit />} />
                   </Route>
 
+                  {/* Bookmark alias → same standalone console */}
+                  <Route path="/admin-login" element={<Navigate to="/admin" replace />} />
+
                   <Route element={<Layout />}>
                     <Route path="/home" element={<Home />} />
                     <Route
@@ -181,7 +184,6 @@ const App = () => {
                     <Route path="/categories/:slug" element={<Categories />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
-                    <Route path="/admin-login" element={<AdminLogin />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />

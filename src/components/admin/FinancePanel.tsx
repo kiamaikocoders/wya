@@ -1,30 +1,22 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import {
-  AlertTriangle,
-  Banknote,
-  LayoutDashboard,
-  Loader2,
-  RefreshCw,
-  Ticket,
-  Wallet,
-} from 'lucide-react';
+import { AlertTriangle, Loader2, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AdminKpiTile } from '@/components/admin/AdminPageShell';
 import {
-  AdminPanelHeader,
+  AdminFilterSelect,
+  AdminKpiRow,
+  AdminKpiTile,
+  AdminListRow,
+  AdminOutlinePill,
+  AdminPrimaryPill,
+  AdminRefreshButton,
+  AdminSectionPanel,
+  AdminStatusPill,
+} from '@/components/admin/AdminPageShell';
+import {
   AdminSectionLayout,
   useAdminSectionTab,
   type AdminSubnavItem,
@@ -35,14 +27,19 @@ import {
   type AdminPaymentRow,
   type AdminTicketRow,
 } from '@/lib/admin-platform-service';
+import { adminService } from '@/lib/admin-service';
 
 type FinanceTab = 'overview' | 'payments' | 'tickets';
 
 const FINANCE_NAV: AdminSubnavItem[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'payments', label: 'Payments', icon: Banknote },
-  { id: 'tickets', label: 'Tickets', icon: Ticket },
+  { id: 'overview', label: 'Overview' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'tickets', label: 'Tickets' },
 ];
+
+function formatKes(n?: number | null) {
+  return `KES ${Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
 
 function formatWhen(iso?: string | null) {
   if (!iso) return '—';
@@ -53,16 +50,27 @@ function formatWhen(iso?: string | null) {
   }
 }
 
-function formatKes(n?: number | null) {
-  return `KES ${Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
-
 function isSchemaMissing(err: unknown) {
   const msg = err instanceof Error ? err.message : String(err ?? '');
   return /admin_finance|does not exist|schema cache|Admin only/i.test(msg);
 }
 
+function paymentTone(status: string): 'success' | 'warning' | 'error' | 'muted' {
+  const s = status.toLowerCase();
+  if (s === 'completed' || s === 'success' || s === 'paid') return 'success';
+  if (s === 'pending' || s === 'processing') return 'warning';
+  if (s === 'failed' || s === 'cancelled') return 'error';
+  return 'muted';
+}
+
+function paymentLabel(status: string) {
+  if (/completed|success|paid/i.test(status)) return 'Completed';
+  if (/pending/i.test(status)) return 'Pending';
+  return status;
+}
+
 const FinancePanel: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [active, setActive] = useAdminSectionTab<FinanceTab>(
     FINANCE_NAV as { id: FinanceTab }[],
@@ -74,6 +82,13 @@ const FinancePanel: React.FC = () => {
     queryKey: ['admin-finance-overview'],
     queryFn: () => adminPlatformService.getFinanceOverview(),
     retry: false,
+  });
+
+  const marketplaceStatsQuery = useQuery({
+    queryKey: ['admin-marketplace-stats'],
+    queryFn: () => adminService.getMarketplaceStats(),
+    retry: false,
+    enabled: active === 'overview',
   });
 
   const paymentsQuery = useQuery({
@@ -98,6 +113,7 @@ const FinancePanel: React.FC = () => {
     mutationFn: (ticketId: number) =>
       adminPlatformService.cancelTicket(ticketId, 'Cancelled by admin from Finance'),
     onSuccess: () => {
+      toast.success('Ticket cancelled');
       queryClient.invalidateQueries({ queryKey: ['admin-finance-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['admin-finance-overview'] });
       queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] });
@@ -114,22 +130,23 @@ const FinancePanel: React.FC = () => {
   const payments: AdminPaymentRow[] = paymentsQuery.data ?? [];
   const tickets: AdminTicketRow[] = ticketsQuery.data ?? [];
 
+  const completedPaymentsCount = payments.filter((p) =>
+    /completed|success|paid/i.test(p.status)
+  ).length;
+
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-finance-overview'] });
     queryClient.invalidateQueries({ queryKey: ['admin-finance-payments'] });
     queryClient.invalidateQueries({ queryKey: ['admin-finance-tickets'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-marketplace-stats'] });
   };
 
   return (
     <AdminSectionLayout
       title="Finance & Tickets"
       subtitle="One section at a time — overview, payments, or ticket ops"
-      actions={
-        <Button variant="outline" size="sm" className="gap-2" onClick={refresh}>
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
-      }
+      icon={Wallet}
+      actions={<AdminRefreshButton onClick={refresh} />}
       items={FINANCE_NAV}
       active={active}
       onChange={(id) => setActive(id as FinanceTab)}
@@ -145,193 +162,170 @@ const FinancePanel: React.FC = () => {
       ) : null}
 
       {active === 'overview' && (
-        <>
-          <AdminPanelHeader
-            title="Overview"
-            description="Cash and ticket health at a glance. Open Payments or Tickets for detail."
-          />
+        <div className="space-y-3.5">
           {overviewQuery.isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : overview ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+          ) : (
+            <AdminKpiRow>
               <AdminKpiTile
                 label="Payments completed"
-                value={formatKes(overview.payments.completed_amount)}
-                hint={`${formatKes(overview.payments.pending_amount)} pending`}
+                value={(completedPaymentsCount || 0).toLocaleString()}
+                hint="M-Pesa + card"
               />
               <AdminKpiTile
                 label="Tickets confirmed"
-                value={String(overview.tickets.confirmed)}
-                hint={`${overview.tickets.pending} pending · ${overview.tickets.cancelled} cancelled`}
+                value={(overview?.tickets.confirmed ?? 0).toLocaleString()}
+                hint="Active inventory"
               />
               <AdminKpiTile
                 label="Marketplace fees"
-                value={formatKes(overview.marketplace.fees_collected)}
-                hint="Platform fee collected"
+                value={formatKes(overview?.marketplace.fees_collected)}
+                hint="Seller fee"
               />
               <AdminKpiTile
                 label="Payouts pending"
-                value={formatKes(overview.marketplace.payouts_pending_amount)}
-                hint={`${overview.marketplace.payouts_failed_count} failed · ${formatKes(overview.marketplace.payouts_paid_amount)} paid`}
+                value={String(
+                  marketplaceStatsQuery.data?.pending_payouts ??
+                    overview?.marketplace.payouts_failed_count ??
+                    0
+                )}
+                hint="Needs retry"
               />
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No overview data yet.</p>
+            </AdminKpiRow>
           )}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setActive('payments')}>
-              <Banknote className="mr-2 h-4 w-4" />
-              Open payments
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setActive('tickets')}>
-              <Ticket className="mr-2 h-4 w-4" />
-              Open tickets
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href="/admin/marketplace">
-                <Wallet className="mr-2 h-4 w-4" />
-                Marketplace
-              </a>
-            </Button>
+
+          <div className="flex flex-wrap gap-2">
+            <AdminPrimaryPill onClick={() => setActive('payments')}>Open payments</AdminPrimaryPill>
+            <AdminOutlinePill onClick={() => setActive('tickets')}>Open tickets</AdminOutlinePill>
+            <AdminOutlinePill onClick={() => navigate('/admin/marketplace')}>
+              Marketplace
+            </AdminOutlinePill>
           </div>
-        </>
+
+          <AdminSectionPanel title="Recent payments">
+            {paymentsQuery.isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : payments.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No payments yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {payments.slice(0, 8).map((p) => (
+                  <AdminListRow
+                    key={p.id}
+                    title={formatKes(p.amount)}
+                    meta={`${p.reference_code || `#${p.id}`} · ${p.payment_method || 'Payment'}`}
+                    trailing={
+                      <AdminStatusPill tone={paymentTone(p.status)}>
+                        {paymentLabel(p.status)}
+                      </AdminStatusPill>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
 
       {active === 'payments' && (
-        <>
-          <AdminPanelHeader
-            title="Payments"
-            description="Recent rows from the payments ledger."
-          />
+        <AdminSectionPanel title="Payments">
           {paymentsQuery.isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : payments.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <Banknote className="mx-auto h-10 w-10 text-muted-foreground" />
-                <CardTitle>No payments found</CardTitle>
-                <CardDescription>
-                  When M-Pesa/card payments land in <code>payments</code>, they show here.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <p className="py-8 text-center text-sm text-muted-foreground">No payments found.</p>
           ) : (
-            <ul className="space-y-3">
+            <div className="space-y-2">
               {payments.map((p) => (
-                <li key={p.id}>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <CardTitle className="text-base">{formatKes(p.amount)}</CardTitle>
-                        <Badge variant="outline" className="capitalize">
-                          {p.status}
-                        </Badge>
-                      </div>
-                      <CardDescription className="font-mono text-xs break-all">
-                        #{p.id}
-                        {p.reference_code ? ` · ${p.reference_code}` : ''}
-                        {p.payment_method ? ` · ${p.payment_method}` : ''}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground">
-                      {formatWhen(p.created_at)}
-                      {p.event_id != null ? ` · event #${p.event_id}` : ''}
-                    </CardContent>
-                  </Card>
-                </li>
+                <AdminListRow
+                  key={p.id}
+                  title={formatKes(p.amount)}
+                  meta={`${p.reference_code || `#${p.id}`} · ${p.payment_method || 'Payment'} · ${formatWhen(p.created_at)}`}
+                  trailing={
+                    <AdminStatusPill tone={paymentTone(p.status)}>
+                      {paymentLabel(p.status)}
+                    </AdminStatusPill>
+                  }
+                />
               ))}
-            </ul>
+            </div>
           )}
-        </>
+        </AdminSectionPanel>
       )}
 
       {active === 'tickets' && (
-        <>
-          <AdminPanelHeader
-            title="Tickets"
-            description="Inventory ops — cancel revokes QR and unlists marketplace rows."
-          />
-          <div className="mb-4 flex justify-end gap-2 items-center">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Select value={ticketFilter} onValueChange={setTicketFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-3.5">
+          <div className="flex justify-end">
+            <AdminFilterSelect
+              value={ticketFilter}
+              onChange={setTicketFilter}
+              options={[
+                { value: 'all', label: 'Status: All' },
+                { value: 'confirmed', label: 'Confirmed' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'cancelled', label: 'Cancelled' },
+                { value: 'active', label: 'Active' },
+              ]}
+            />
           </div>
-
-          {ticketsQuery.isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : tickets.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <Ticket className="mx-auto h-10 w-10 text-muted-foreground" />
-                <CardTitle>No tickets</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : (
-            <ul className="space-y-3">
-              {tickets.map((t) => (
-                <li key={t.id}>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <CardTitle className="text-base">
-                            {t.event_title || `Event #${t.event_id}`}
-                          </CardTitle>
-                          <CardDescription>
-                            #{t.id} · {t.ticket_type} · {t.reference_code} · {formatKes(t.price)}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className="capitalize">
-                            {t.status}
-                          </Badge>
-                          {t.status !== 'cancelled' ? (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              disabled={cancelMutation.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Cancel ticket #${t.id}? This revokes QR and unlists marketplace listings.`
-                                  )
-                                ) {
-                                  cancelMutation.mutate(t.id);
-                                }
-                              }}
-                            >
-                              Cancel ticket
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground">
-                      Purchased {formatWhen(t.purchase_date)}
-                      {t.event_date ? ` · event ${formatWhen(t.event_date)}` : ''}
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+          <AdminSectionPanel title="Tickets">
+            {ticketsQuery.isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : tickets.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No tickets.</p>
+            ) : (
+              <div className="space-y-2">
+                {tickets.map((t) => (
+                  <AdminListRow
+                    key={t.id}
+                    title={t.event_title || `Event #${t.event_id}`}
+                    meta={`#${t.id} · ${t.ticket_type} · ${t.reference_code} · ${formatKes(t.price)}`}
+                    trailing={
+                      <>
+                        <AdminStatusPill
+                          tone={
+                            t.status === 'cancelled'
+                              ? 'error'
+                              : t.status === 'pending'
+                                ? 'warning'
+                                : 'success'
+                          }
+                        >
+                          {t.status}
+                        </AdminStatusPill>
+                        {t.status !== 'cancelled' ? (
+                          <button
+                            type="button"
+                            className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
+                            disabled={cancelMutation.isPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Cancel ticket #${t.id}? This revokes QR and unlists marketplace listings.`
+                                )
+                              ) {
+                                cancelMutation.mutate(t.id);
+                              }
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        ) : null}
+                      </>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
     </AdminSectionLayout>
   );

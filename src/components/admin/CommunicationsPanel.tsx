@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import { AlertTriangle, History, Loader2, Megaphone, PenLine, RefreshCw } from 'lucide-react';
+import { AlertTriangle, History, Loader2, Megaphone, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  AdminField,
+  AdminOutlinePill,
+  AdminPrimaryPill,
+  AdminRefreshButton,
+  AdminSectionPanel,
+  AdminTextArea,
+  AdminTextInput,
+} from '@/components/admin/AdminPageShell';
 import {
   AdminPanelHeader,
   AdminSectionLayout,
@@ -109,16 +118,11 @@ const CommunicationsPanel: React.FC = () => {
     <AdminSectionLayout
       title="Communications"
       subtitle="Compose a broadcast or review announcement history"
+      icon={Megaphone}
       actions={
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
+        <AdminRefreshButton
           onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-announcements'] })}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        />
       }
       items={COMMS_NAV}
       active={active}
@@ -135,75 +139,66 @@ const CommunicationsPanel: React.FC = () => {
       ) : null}
 
       {active === 'compose' && (
-        <>
-          <AdminPanelHeader
-            title="Compose"
-            description="Saved as draft first — publish from History when ready."
-          />
-          <div className="max-w-2xl space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ann-title">Title</Label>
-              <Input
-                id="ann-title"
+        <AdminSectionPanel title="Compose broadcast">
+          <div className="max-w-xl space-y-3.5">
+            <AdminField label="Title">
+              <AdminTextInput
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Weekend maintenance"
+                onChange={setTitle}
+                placeholder="Weekend lineup drop"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ann-body">Message</Label>
-              <Textarea
-                id="ann-body"
+            </AdminField>
+            <AdminField label="Message">
+              <AdminTextArea
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={6}
-                placeholder="What should users know?"
+                onChange={setBody}
+                rows={5}
+                placeholder="Afrobeats Night tickets are live — grab yours before Friday."
               />
+            </AdminField>
+            <AdminField label="Audience">
+              <Select
+                value={audience}
+                onValueChange={(v) => setAudience(v as AnnouncementAudience)}
+              >
+                <SelectTrigger className="h-11 rounded-[14px] border-border bg-[hsl(var(--admin-surface))]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Everyone</SelectItem>
+                  <SelectItem value="attendees">Attendees</SelectItem>
+                  <SelectItem value="organizers">Organizers</SelectItem>
+                  <SelectItem value="admins">Admins only</SelectItem>
+                </SelectContent>
+              </Select>
+            </AdminField>
+            <AdminField label="Optional link">
+              <AdminTextInput
+                value={link}
+                onChange={setLink}
+                placeholder="https://wya.app/events/afrobeats"
+              />
+            </AdminField>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <AdminOutlinePill
+                disabled={
+                  schemaMissing || createMutation.isPending || !title.trim() || !body.trim()
+                }
+                onClick={() => createMutation.mutate()}
+              >
+                {createMutation.isPending ? 'Saving…' : 'Save draft'}
+              </AdminOutlinePill>
+              <AdminPrimaryPill
+                disabled={
+                  schemaMissing || createMutation.isPending || !title.trim() || !body.trim()
+                }
+                onClick={() => createMutation.mutate()}
+              >
+                Publish
+              </AdminPrimaryPill>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Audience</Label>
-                <Select
-                  value={audience}
-                  onValueChange={(v) => setAudience(v as AnnouncementAudience)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Everyone</SelectItem>
-                    <SelectItem value="attendees">Attendees</SelectItem>
-                    <SelectItem value="organizers">Organizers</SelectItem>
-                    <SelectItem value="admins">Admins only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ann-link">Optional link</Label>
-                <Input
-                  id="ann-link"
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                  placeholder="/events"
-                />
-              </div>
-            </div>
-            <Button
-              className="gap-2"
-              disabled={
-                schemaMissing || createMutation.isPending || !title.trim() || !body.trim()
-              }
-              onClick={() => createMutation.mutate()}
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Megaphone className="h-4 w-4" />
-              )}
-              Save draft
-            </Button>
           </div>
-        </>
+        </AdminSectionPanel>
       )}
 
       {active === 'history' && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bell, Loader2, RefreshCw, Volume2 } from 'lucide-react';
+import { Bell, Loader2, Volume2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,16 @@ import {
 } from '@/components/ui/select';
 import {
   AdminKpiTile,
+  AdminListRow,
+  AdminOutlinePill,
   AdminPageShell,
+  AdminPrimaryPill,
+  AdminRefreshButton,
   AdminSectionPanel,
+  AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
 import { adminPlatformService } from '@/lib/admin-platform-service';
+import { playNotificationSound } from '@/lib/sounds';
 
 /**
  * Agribeta-style Notifications page: ops inbox + broadcast compose.
@@ -72,41 +78,46 @@ const NotificationsPanel: React.FC = () => {
     <AdminPageShell
       title="Notifications"
       subtitle="Push status · broadcast compose · recent platform notices"
+      icon={Bell}
       actions={
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => {
-            healthQuery.refetch();
-            announcementsQuery.refetch();
-          }}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        <>
+          <AdminOutlinePill
+            onClick={() => {
+              playNotificationSound();
+              toast.success('Playing notification chime');
+            }}
+          >
+            Test chime
+          </AdminOutlinePill>
+          <AdminRefreshButton
+            onClick={() => {
+              healthQuery.refetch();
+              announcementsQuery.refetch();
+            }}
+          />
+        </>
       }
     >
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <AdminKpiTile
           label="Push"
-          value={pushStatus}
-          hint="OneSignal"
+          value={pushStatus === 'Healthy' ? 'Ready' : pushStatus}
+          hint="FCM configured"
           tone={pushStatus === 'Healthy' ? 'green' : 'orange'}
         />
         <AdminKpiTile
           label="Announcements"
           value={String(announcementsQuery.data?.length ?? 0)}
-          hint="Stored"
+          hint="All time"
         />
         <AdminKpiTile
           label="Published"
           value={String(
             (announcementsQuery.data ?? []).filter((a) => a.status === 'published').length
           )}
-          hint="Live"
+          hint="Visible now"
         />
-        <AdminKpiTile label="Channel" value="In-app + push" hint="When configured" />
+        <AdminKpiTile label="Channel" value="In-app + push" hint="Dual delivery" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -147,18 +158,13 @@ const NotificationsPanel: React.FC = () => {
                 placeholder="What should people know?"
               />
             </div>
-            <Button className="gap-2" disabled={sending} onClick={() => void sendBroadcast()}>
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
-              Publish notification
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              For richer announcement history, also use Communications. Templates stay there —
-              same split as Agribeta staging.
-            </p>
+            <AdminPrimaryPill disabled={sending} onClick={() => void sendBroadcast()}>
+              {sending ? 'Publishing…' : 'Publish notification'}
+            </AdminPrimaryPill>
           </div>
         </AdminSectionPanel>
 
-        <AdminSectionPanel title="Recent notices" description="Latest platform announcements.">
+        <AdminSectionPanel title="Recent notices">
           {announcementsQuery.isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -169,17 +175,16 @@ const NotificationsPanel: React.FC = () => {
               No announcements yet.
             </div>
           ) : (
-            <ul className="divide-y divide-border">
+            <div className="space-y-2">
               {recent.map((row) => (
-                <li key={row.id} className="py-3 first:pt-0 last:pb-0">
-                  <p className="text-sm font-medium text-foreground">{row.title}</p>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{row.body}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {row.status} · {row.audience}
-                  </p>
-                </li>
+                <AdminListRow
+                  key={row.id}
+                  title={row.title}
+                  meta={`${row.status} · ${row.audience}`}
+                  trailing={<AdminStatusPill tone="primary">{row.status}</AdminStatusPill>}
+                />
               ))}
-            </ul>
+            </div>
           )}
         </AdminSectionPanel>
       </div>

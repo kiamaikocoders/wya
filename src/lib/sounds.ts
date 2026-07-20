@@ -1,12 +1,13 @@
 /**
  * Sound effects and notification permission.
- * Place like.wav and notification.mp3 in public/sounds/
+ * Place like.wav and notification-chime.mp3 in public/sounds/
  */
 
 import { isOneSignalSupported, subscribeToPushNotifications } from '@/lib/onesignal';
 
 const LIKE_SOUND_PATH = '/sounds/like.wav';
-const NOTIFICATION_SOUND_PATH = '/sounds/notification.mp3';
+/** Short alert chime (also mirrored as notification.mp3). */
+const NOTIFICATION_SOUND_PATH = '/sounds/notification-chime.mp3';
 
 let likeAudio: HTMLAudioElement | null = null;
 let notificationAudio: HTMLAudioElement | null = null;

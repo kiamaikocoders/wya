@@ -42,7 +42,7 @@ const Layout = () => {
 
   // Check if current route is admin or auth page
   const isAdminPage = location.pathname.startsWith("/admin");
-  const isAuthPage = ["/login", "/signup", "/admin-login"].includes(location.pathname);
+  const isAuthPage = ["/login", "/signup"].includes(location.pathname);
   const isLanding = location.pathname === "/";
   const isDiscoverPage = location.pathname === "/discover";
 

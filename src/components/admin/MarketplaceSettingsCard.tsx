@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Settings2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import {
+  AdminPrimaryPill,
+  AdminSectionPanel,
+} from '@/components/admin/AdminPageShell';
 import { adminPlatformService, type SystemSettingsMap } from '@/lib/admin-platform-service';
 
 function unwrapJsonValue(raw: unknown): unknown {
@@ -25,7 +25,7 @@ function isSchemaMissing(err: unknown) {
   return /system_settings|does not exist|schema cache|Admin only/i.test(msg);
 }
 
-/** Marketplace fee / window / kill switch — lives on Marketplace, not System (Agribeta-style split). */
+/** Marketplace fee / window / kill switch — lives on Marketplace, not System. */
 const MarketplaceSettingsCard: React.FC = () => {
   const queryClient = useQueryClient();
   const settingsQuery = useQuery({
@@ -60,6 +60,7 @@ const MarketplaceSettingsCard: React.FC = () => {
     mutationFn: ({ key, value }: { key: string; value: unknown }) =>
       adminPlatformService.upsertSystemSetting(key, value),
     onSuccess: () => {
+      toast.success('Saved');
       queryClient.invalidateQueries({ queryKey: ['admin-system-settings'] });
       queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] });
     },
@@ -68,31 +69,23 @@ const MarketplaceSettingsCard: React.FC = () => {
 
   if (settingsQuery.isLoading) {
     return (
-      <Card>
-        <CardContent className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (schemaMissing) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Settings2 className="h-4 w-4" /> Marketplace settings
-        </CardTitle>
-        <CardDescription>
-          Fee, transfer window, and kill switch for ticket transfers.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-3">
-        <div className="flex items-center justify-between gap-4 md:col-span-3 lg:col-span-1">
-          <div>
-            <Label>Enabled</Label>
-            <p className="text-xs text-muted-foreground">Kill switch for listings & claims</p>
+    <AdminSectionPanel title="Marketplace settings">
+      <div className="space-y-[18px]">
+        <div className="flex items-center gap-4 rounded-[14px] bg-[hsl(var(--admin-surface))] px-4 py-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Marketplace enabled</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Kill switch for listings & claims
+            </p>
           </div>
           <Switch
             checked={marketplaceEnabled}
@@ -100,19 +93,21 @@ const MarketplaceSettingsCard: React.FC = () => {
             onCheckedChange={(v) =>
               saveMutation.mutate({ key: 'marketplace.enabled', value: v })
             }
+            className="data-[state=checked]:bg-primary"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="mkt-fee">Fee per ticket (KES)</Label>
-          <div className="flex gap-2">
-            <Input
-              id="mkt-fee"
+
+        <label className="flex w-full flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Fee per ticket (KES)</span>
+          <div className="flex h-[52px] items-center gap-3 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5">
+            <input
               type="number"
               min={0}
               value={feeDraft}
               onChange={(e) => setFeeDraft(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground focus:outline-none"
             />
-            <Button
+            <AdminPrimaryPill
               disabled={saveMutation.isPending}
               onClick={() =>
                 saveMutation.mutate({
@@ -122,20 +117,23 @@ const MarketplaceSettingsCard: React.FC = () => {
               }
             >
               Save
-            </Button>
+            </AdminPrimaryPill>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="mkt-hours">Close (hours before start)</Label>
-          <div className="flex gap-2">
-            <Input
-              id="mkt-hours"
+        </label>
+
+        <label className="flex w-full flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Close (hours before start)
+          </span>
+          <div className="flex h-[52px] items-center gap-3 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5">
+            <input
               type="number"
               min={1}
               value={hoursDraft}
               onChange={(e) => setHoursDraft(e.target.value)}
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground focus:outline-none"
             />
-            <Button
+            <AdminPrimaryPill
               disabled={saveMutation.isPending}
               onClick={() =>
                 saveMutation.mutate({
@@ -145,11 +143,11 @@ const MarketplaceSettingsCard: React.FC = () => {
               }
             >
               Save
-            </Button>
+            </AdminPrimaryPill>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </label>
+      </div>
+    </AdminSectionPanel>
   );
 };
 

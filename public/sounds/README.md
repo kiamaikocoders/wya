@@ -1,8 +1,7 @@
 # Sound assets
 
-Place these files here (they are not committed):
-
 - **like.wav** – played when a user likes a story or video
-- **notification.mp3** – played when a new notification is received
+- **notification-chime.mp3** – short alert chime when a new notification arrives
+- **notification.mp3** – same chime (legacy path; kept in sync)
 
-Paths used in app: `/sounds/like.wav`, `/sounds/notification.mp3`
+Paths used in app: `/sounds/like.wav`, `/sounds/notification-chime.mp3`
