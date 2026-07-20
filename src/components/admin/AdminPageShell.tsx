@@ -1,13 +1,15 @@
-import React, { type ReactNode } from 'react';
+import React, { type ComponentType, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { AdminThemeToggle } from '@/components/admin/AdminThemeToggle';
+import { AdminNotificationBell } from '@/components/admin/AdminNotificationBell';
 
 /**
- * Agribeta-style admin page chrome: sticky title bar + roomy content.
- * One job per page — do not stack unrelated domains inside this shell.
+ * Figma Admin page chrome: header with icon badge + title/subtitle + actions.
  */
 export function AdminPageShell({
   title,
   subtitle,
+  icon: Icon,
   actions,
   children,
   className,
@@ -15,26 +17,37 @@ export function AdminPageShell({
 }: {
   title: string;
   subtitle?: string;
+  icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
-  /** Override inner content padding (used by AdminSectionLayout). */
   contentClassName?: string;
 }) {
   return (
-    <div className={cn('min-h-full -mx-4 -mt-4 lg:-mx-6 lg:-mt-6', className)}>
-      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-card/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:flex-row sm:items-center sm:gap-4 sm:px-7 sm:py-5">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold leading-tight tracking-tight text-foreground">{title}</h1>
-          {subtitle ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+    <div className={cn('flex min-h-full flex-col bg-background', className)}>
+      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-background px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-7 sm:py-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          {Icon ? (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--admin-surface-2))]">
+              <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} />
+            </div>
           ) : null}
+          <div className="min-w-0">
+            <h1 className="truncate text-[22px] font-bold leading-tight tracking-tight text-foreground">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
+            ) : null}
+          </div>
         </div>
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">{actions}</div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {actions}
+          <AdminNotificationBell />
+          <AdminThemeToggle />
+        </div>
       </header>
-      <div className={cn('space-y-5 px-4 py-5 sm:space-y-6 sm:px-7 sm:py-6', contentClassName)}>
+      <div className={cn('flex-1 space-y-3.5 px-5 py-[18px] sm:px-7 sm:py-5', contentClassName)}>
         {children}
       </div>
     </div>
@@ -57,14 +70,14 @@ export function AdminSectionPanel({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border border-border bg-card shadow-sm',
+        'overflow-hidden rounded-[14px] border border-border bg-card',
         className
       )}
     >
       {(title || action) && (
-        <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-3.5 py-3 sm:px-4">
           <div className="min-w-0">
-            {title ? <h2 className="text-sm font-semibold text-foreground">{title}</h2> : null}
+            {title ? <h2 className="text-[13px] font-semibold text-foreground">{title}</h2> : null}
             {description ? (
               <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
             ) : null}
@@ -72,7 +85,7 @@ export function AdminSectionPanel({
           {action}
         </div>
       )}
-      <div className="p-4 sm:p-5">{children}</div>
+      <div className="p-3.5 sm:p-4">{children}</div>
     </div>
   );
 }
@@ -81,27 +94,304 @@ export function AdminKpiTile({
   label,
   value,
   hint,
-  tone = 'muted',
+  className,
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
+  /** @deprecated kept for call-site compat; Figma KPIs use muted hint text */
   tone?: 'green' | 'orange' | 'red' | 'muted';
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex min-w-0 flex-1 flex-col gap-1 rounded-[14px] border border-border bg-card p-3',
+        className
+      )}
+    >
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <div className="text-[20px] font-bold leading-none text-foreground lg:text-[22px]">
+        {value}
+      </div>
+      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function AdminStatusPill({
+  children,
+  tone = 'muted',
+}: {
+  children: ReactNode;
+  tone?: 'success' | 'warning' | 'primary' | 'muted' | 'error';
 }) {
   const toneClass =
-    tone === 'green'
-      ? 'text-emerald-500'
-      : tone === 'orange'
-        ? 'text-amber-500'
-        : tone === 'red'
-          ? 'text-red-500'
-          : 'text-muted-foreground';
+    tone === 'success'
+      ? 'text-[hsl(var(--admin-success))]'
+      : tone === 'warning'
+        ? 'text-[hsl(var(--admin-warning))]'
+        : tone === 'primary'
+          ? 'text-primary'
+          : tone === 'error'
+            ? 'text-destructive'
+            : 'text-muted-foreground';
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className={cn('mt-1.5 text-lg font-semibold', toneClass)}>{value}</div>
-      {hint ? <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p> : null}
-    </div>
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center rounded-full bg-[hsl(var(--admin-surface-2))] px-2 py-0.5 text-[11px] font-medium',
+        toneClass
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+export function AdminRefreshButton({
+  onClick,
+  disabled,
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-full border border-border bg-[hsl(var(--admin-surface))] px-3.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-[hsl(var(--admin-surface-2))] disabled:opacity-50"
+    >
+      Refresh
+    </button>
+  );
+}
+
+/** Figma list row: surface background, title/meta, trailing status/actions */
+export function AdminListRow({
+  title,
+  meta,
+  trailing,
+  onClick,
+  className,
+}: {
+  title: ReactNode;
+  meta?: ReactNode;
+  trailing?: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) {
+  const Comp = onClick ? 'button' : 'div';
+  return (
+    <Comp
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center gap-2.5 rounded-xl bg-[hsl(var(--admin-surface))] px-3 py-2.5 text-left',
+        onClick && 'transition-colors hover:bg-[hsl(var(--admin-surface-2))]',
+        className
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-semibold text-foreground">{title}</div>
+        {meta ? <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{meta}</div> : null}
+      </div>
+      {trailing ? <div className="flex shrink-0 items-center gap-2">{trailing}</div> : null}
+    </Comp>
+  );
+}
+
+export function AdminKpiRow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid grid-cols-2 gap-3 lg:grid-cols-4', className)}>{children}</div>
+  );
+}
+
+export function AdminPrimaryPill({
+  children,
+  onClick,
+  type = 'button',
+  disabled,
+  className,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'inline-flex items-center justify-center rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50',
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function AdminOutlinePill({
+  children,
+  onClick,
+  active,
+  disabled,
+  className,
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'inline-flex items-center justify-center rounded-full px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50',
+        active
+          ? 'bg-primary font-semibold text-primary-foreground'
+          : 'border border-border bg-[hsl(var(--admin-surface))] text-foreground hover:bg-[hsl(var(--admin-surface-2))]',
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function AdminSearchInput({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  return (
+    <input
+      type="search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cn(
+        'h-10 w-full min-w-0 flex-1 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40',
+        className
+      )}
+    />
+  );
+}
+
+export function AdminFilterSelect({
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  className?: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        'h-10 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40',
+        className
+      )}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function AdminField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex w-full flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+export function AdminTextInput({
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  className?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className={cn(
+        'h-11 w-full rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40',
+        className
+      )}
+    />
+  );
+}
+
+export function AdminTextArea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  className?: string;
+}) {
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      className={cn(
+        'w-full resize-none rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40',
+        className
+      )}
+    />
   );
 }

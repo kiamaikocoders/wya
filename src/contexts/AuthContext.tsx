@@ -332,7 +332,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // Navigate after account status check
-      navigate('/home');
+      const isAdminUser = lockProfile?.username === 'admin';
+      navigate(isAdminUser ? '/admin' : '/home');
       
       // Get user profile for welcome message (non-blocking - run after navigation)
       supabase
@@ -372,7 +373,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTimeout(() => {
         if (window.location.pathname === '/login') {
           console.log('Backup navigation triggered');
-          window.location.href = '/home';
+          window.location.href = isAdminUser ? '/admin' : '/home';
         }
       }, 300);
     } catch (error: any) {

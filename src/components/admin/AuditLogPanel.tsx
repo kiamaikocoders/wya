@@ -1,13 +1,13 @@
 import React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import { AlertTriangle, Loader2, RefreshCw, Shield } from 'lucide-react';
+import { AlertTriangle, Loader2, ScrollText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AdminKpiTile,
   AdminPageShell,
+  AdminRefreshButton,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
 import {
@@ -48,16 +48,11 @@ const AuditLogPanel: React.FC = () => {
     <AdminPageShell
       title="Audit log"
       subtitle="Privileged admin actions across the platform"
+      icon={ScrollText}
       actions={
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
+        <AdminRefreshButton
           onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] })}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        />
       }
     >
       {schemaMissing ? (
@@ -84,7 +79,7 @@ const AuditLogPanel: React.FC = () => {
       ) : audit.length === 0 && !schemaMissing ? (
         <AdminSectionPanel>
           <div className="flex flex-col items-center gap-2 py-12 text-center">
-            <Shield className="h-10 w-10 text-muted-foreground" />
+            <ScrollText className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm font-medium">No audit events yet</p>
             <p className="text-xs text-muted-foreground max-w-sm">
               Setting changes, ticket cancels, email tests, and force actions will appear here.

@@ -1,34 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import {
-  ArrowLeftRight,
-  Loader2,
-  RefreshCw,
-  Ticket,
-  Wallet,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Gift,
-  LayoutDashboard,
-  Settings2,
-} from 'lucide-react';
+import { AlertTriangle, ArrowLeftRight, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AdminKpiTile } from '@/components/admin/AdminPageShell';
 import {
-  AdminPanelHeader,
+  AdminFilterSelect,
+  AdminKpiRow,
+  AdminKpiTile,
+  AdminListRow,
+  AdminOutlinePill,
+  AdminRefreshButton,
+  AdminSectionPanel,
+  AdminStatusPill,
+} from '@/components/admin/AdminPageShell';
+import {
   AdminSectionLayout,
   useAdminSectionTab,
   type AdminSubnavItem,
@@ -46,11 +32,11 @@ import type {
 type MarketplaceTab = 'overview' | 'listings' | 'transfers' | 'payouts' | 'settings';
 
 const MARKETPLACE_NAV: AdminSubnavItem[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'listings', label: 'Listings', icon: Ticket },
-  { id: 'transfers', label: 'Transfers', icon: ArrowLeftRight },
-  { id: 'payouts', label: 'Payouts', icon: Wallet },
-  { id: 'settings', label: 'Settings', icon: Settings2 },
+  { id: 'overview', label: 'Overview' },
+  { id: 'listings', label: 'Listings' },
+  { id: 'transfers', label: 'Transfers' },
+  { id: 'payouts', label: 'Payouts' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 function formatWhen(iso: string | null | undefined): string {
@@ -63,35 +49,18 @@ function formatWhen(iso: string | null | undefined): string {
 }
 
 function formatKes(amount: number | null | undefined): string {
-  const n = Number(amount ?? 0);
-  return `KES ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `KES ${Number(amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-function listingStatusVariant(
-  status: string
-): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (status === 'active') return 'default';
-  if (status === 'sold' || status === 'gifted') return 'secondary';
-  if (status === 'failed') return 'destructive';
-  return 'outline';
+function modeLabel(mode: string) {
+  return mode === 'gift' ? 'Gift' : 'Paid transfer';
 }
 
-function transferStatusVariant(
-  status: string
-): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (status === 'completed') return 'secondary';
-  if (status === 'failed' || status === 'refunded') return 'destructive';
-  if (status === 'pending_payment' || status === 'completing') return 'default';
-  return 'outline';
-}
-
-function payoutStatusVariant(
-  status: string
-): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (status === 'paid') return 'secondary';
-  if (status === 'failed') return 'destructive';
-  if (status === 'pending') return 'default';
-  return 'outline';
+function listingTicketLabel(listing: MarketplaceListing) {
+  const type =
+    listing.items?.[0]?.ticket?.ticket_type ||
+    (listing.ticket_count === 1 ? 'ticket' : 'tickets');
+  return `${listing.ticket_count}× ${type}`;
 }
 
 function isMissingRelationError(err: unknown): boolean {
@@ -123,7 +92,7 @@ const MarketplaceManagement: React.FC = () => {
         limit: 100,
       }),
     retry: false,
-    enabled: active === 'listings',
+    enabled: active === 'listings' || active === 'overview',
   });
 
   const transfersQuery = useQuery({
@@ -151,6 +120,7 @@ const MarketplaceManagement: React.FC = () => {
   const retryMutation = useMutation({
     mutationFn: (payoutId: number) => adminService.retryMarketplacePayout(payoutId),
     onSuccess: () => {
+      toast.success('Payout retry queued');
       queryClient.invalidateQueries({ queryKey: ['admin-marketplace-payouts'] });
       queryClient.invalidateQueries({ queryKey: ['admin-marketplace-stats'] });
     },
@@ -160,6 +130,7 @@ const MarketplaceManagement: React.FC = () => {
   const forceCancelMutation = useMutation({
     mutationFn: (listingId: number) => adminPlatformService.forceCancelListing(listingId),
     onSuccess: () => {
+      toast.success('Listing cancelled');
       queryClient.invalidateQueries({ queryKey: ['admin-marketplace-listings'] });
       queryClient.invalidateQueries({ queryKey: ['admin-marketplace-stats'] });
       queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] });
@@ -201,16 +172,67 @@ const MarketplaceManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-marketplace-payouts'] });
   };
 
+  const renderListingRow = (listing: MarketplaceListing) => {
+    const eventTitle = listing.event?.title ?? `Event #${listing.event_id}`;
+    const mode = modeLabel(listing.mode);
+    return (
+      <AdminListRow
+        key={listing.id}
+        title={`${eventTitle} · ${listingTicketLabel(listing)}`}
+        meta={`${mode} · Gross ${formatKes(listing.gross_amount)}`}
+        trailing={
+          <>
+            <span className="text-[11px] font-medium text-primary">{mode}</span>
+            <AdminStatusPill
+              tone={
+                listing.status === 'active'
+                  ? 'success'
+                  : listing.status === 'failed'
+                    ? 'error'
+                    : 'muted'
+              }
+            >
+              {listing.status === 'active' ? (
+                <span className="inline-flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  Active
+                </span>
+              ) : listing.status === 'sold' ? (
+                'Sold'
+              ) : listing.status === 'gifted' ? (
+                'Gifted'
+              ) : (
+                listing.status
+              )}
+            </AdminStatusPill>
+            {listing.status === 'active' ? (
+              <AdminOutlinePill
+                disabled={forceCancelMutation.isPending}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Force-cancel listing #${listing.id}? Tickets return to the seller.`
+                    )
+                  ) {
+                    forceCancelMutation.mutate(listing.id);
+                  }
+                }}
+              >
+                Force cancel
+              </AdminOutlinePill>
+            ) : null}
+          </>
+        }
+      />
+    );
+  };
+
   return (
     <AdminSectionLayout
       title="Marketplace"
       subtitle="One section at a time — overview, listings, transfers, payouts, settings"
-      actions={
-        <Button variant="outline" size="sm" className="gap-2" onClick={refreshAll}>
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
-      }
+      icon={ArrowLeftRight}
+      actions={<AdminRefreshButton onClick={refreshAll} />}
       items={MARKETPLACE_NAV}
       active={active}
       onChange={(id) => setActive(id as MarketplaceTab)}
@@ -234,381 +256,204 @@ const MarketplaceManagement: React.FC = () => {
       ) : null}
 
       {active === 'overview' && (
-        <>
-          <AdminPanelHeader
-            title="Overview"
-            description="Transfer health at a glance. Open a section for detail."
-          />
+        <div className="space-y-3.5">
           {statsQuery.isLoading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <AdminKpiRow>
               <AdminKpiTile
                 label="Active listings"
                 value={String(stats?.active_listings ?? 0)}
-                hint="Live on marketplace"
+                hint="Paid + gift"
               />
               <AdminKpiTile
                 label="Completed transfers"
-                value={String(stats?.completed_transfers ?? 0)}
-                hint={`${stats?.gifted_listings ?? 0} gifted · ${stats?.sold_listings ?? 0} sold`}
+                value={(stats?.completed_transfers ?? 0).toLocaleString()}
+                hint="All time"
               />
               <AdminKpiTile
                 label="Fees collected"
                 value={formatKes(stats?.fees_collected)}
-                hint="KES 100 per ticket"
+                hint="KES 100 / ticket"
               />
               <AdminKpiTile
                 label="Payout queue"
                 value={String(stats?.pending_payouts ?? 0)}
-                hint={`${stats?.failed_payouts ?? 0} failed · ${formatKes(stats?.paid_payout_amount)} paid`}
+                hint="Pending"
               />
-            </div>
+            </AdminKpiRow>
           )}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setActive('listings')}>
-              <Ticket className="mr-2 h-4 w-4" />
-              Listings
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setActive('transfers')}>
-              <ArrowLeftRight className="mr-2 h-4 w-4" />
-              Transfers
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setActive('payouts')}>
-              <Clock className="mr-2 h-4 w-4" />
-              Payouts
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setActive('settings')}>
-              <Settings2 className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
+
+          <div className="flex flex-wrap gap-2">
+            <AdminOutlinePill onClick={() => setActive('listings')}>Listings</AdminOutlinePill>
+            <AdminOutlinePill onClick={() => setActive('transfers')}>Transfers</AdminOutlinePill>
+            <AdminOutlinePill onClick={() => setActive('payouts')}>Payouts</AdminOutlinePill>
+            <AdminOutlinePill onClick={() => setActive('settings')}>Settings</AdminOutlinePill>
           </div>
-        </>
+
+          <AdminSectionPanel title="Recent listings">
+            {listingsQuery.isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : listings.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No listings yet.</p>
+            ) : (
+              <div className="space-y-2">{listings.slice(0, 8).map(renderListingRow)}</div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
 
       {active === 'listings' && (
-        <>
-          <AdminPanelHeader
-            title="Listings"
-            description="Active and historical transfer / gift listings."
-          />
-          <div className="mb-4 flex items-center gap-2 justify-end">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Select value={listingFilter} onValueChange={setListingFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="sold">Sold</SelectItem>
-                <SelectItem value="gifted">Gifted</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-3.5">
+          <div className="flex justify-end">
+            <AdminFilterSelect
+              value={listingFilter}
+              onChange={setListingFilter}
+              options={[
+                { value: 'all', label: 'Status: All' },
+                { value: 'active', label: 'Active' },
+                { value: 'sold', label: 'Sold' },
+                { value: 'gifted', label: 'Gifted' },
+                { value: 'expired', label: 'Expired' },
+                { value: 'cancelled', label: 'Cancelled' },
+                { value: 'failed', label: 'Failed' },
+              ]}
+            />
           </div>
-
-          {listingsQuery.isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : listings.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <Ticket className="mx-auto h-10 w-10 text-muted-foreground" />
-                <CardTitle>No listings</CardTitle>
-                <CardDescription>
-                  When users list tickets for transfer or gift, they appear here.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          ) : (
-            <ul className="space-y-3">
-              {listings.map((listing) => (
-                <li key={listing.id}>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <CardTitle className="text-base">
-                            {listing.event?.title ?? `Event #${listing.event_id}`}
-                          </CardTitle>
-                          <CardDescription>
-                            Listing #{listing.id} · {listing.ticket_count} ticket
-                            {listing.ticket_count === 1 ? '' : 's'} · created{' '}
-                            {formatWhen(listing.created_at)}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant={listingStatusVariant(listing.status)} className="capitalize">
-                            {listing.status}
-                          </Badge>
-                          <Badge variant="outline" className="gap-1 capitalize">
-                            {listing.mode === 'gift' ? (
-                              <Gift className="h-3 w-3" />
-                            ) : (
-                              <Wallet className="h-3 w-3" />
-                            )}
-                            {listing.mode === 'gift' ? 'Gift' : 'Paid transfer'}
-                          </Badge>
-                          {listing.status === 'active' ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={forceCancelMutation.isPending}
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Force-cancel listing #${listing.id}? Tickets return to the seller.`
-                                  )
-                                ) {
-                                  forceCancelMutation.mutate(listing.id);
-                                }
-                              }}
-                            >
-                              Force cancel
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid gap-2 text-sm sm:grid-cols-3">
-                      <div>
-                        <span className="text-muted-foreground">Gross</span>
-                        <div className="font-medium">{formatKes(listing.gross_amount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Fee</span>
-                        <div className="font-medium">{formatKes(listing.fee_amount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Seller payout</span>
-                        <div className="font-medium">
-                          {formatKes(listing.seller_payout_amount)}
-                        </div>
-                      </div>
-                      <div className="sm:col-span-3 text-muted-foreground text-xs">
-                        Closes / expires {formatWhen(listing.expires_at)}
-                        {listing.closed_at ? ` · closed ${formatWhen(listing.closed_at)}` : ''}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+          <AdminSectionPanel title="Listings">
+            {listingsQuery.isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : listings.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No listings.</p>
+            ) : (
+              <div className="space-y-2">{listings.map(renderListingRow)}</div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
 
       {active === 'transfers' && (
-        <>
-          <AdminPanelHeader
-            title="Transfers"
-            description="Completed buys and gift claims — ownership moves and fees."
-          />
-          <div className="mb-4 flex items-center gap-2 justify-end">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Select value={transferFilter} onValueChange={setTransferFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending_payment">Pending payment</SelectItem>
-                <SelectItem value="completing">Completing</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-3.5">
+          <div className="flex justify-end">
+            <AdminFilterSelect
+              value={transferFilter}
+              onChange={setTransferFilter}
+              options={[
+                { value: 'all', label: 'Status: All' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'pending_payment', label: 'Pending payment' },
+                { value: 'completing', label: 'Completing' },
+                { value: 'failed', label: 'Failed' },
+                { value: 'refunded', label: 'Refunded' },
+              ]}
+            />
           </div>
-
-          {transfersQuery.isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : transfers.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <ArrowLeftRight className="mx-auto h-10 w-10 text-muted-foreground" />
-                <CardTitle>No transfers yet</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : (
-            <ul className="space-y-3">
-              {transfers.map((transfer) => (
-                <li key={transfer.id}>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <CardTitle className="text-base">Transfer #{transfer.id}</CardTitle>
-                          <CardDescription className="font-mono text-xs break-all">
-                            Listing #{transfer.listing_id}
-                            {transfer.payment_reference
-                              ? ` · ${transfer.payment_reference}`
-                              : ''}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge
-                            variant={transferStatusVariant(transfer.status)}
-                            className="capitalize"
-                          >
-                            {transfer.status.replace(/_/g, ' ')}
-                          </Badge>
-                          <Badge variant="outline" className="capitalize">
-                            {transfer.mode === 'gift' ? 'Gift' : 'Paid'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid gap-2 text-sm sm:grid-cols-3">
-                      <div>
-                        <span className="text-muted-foreground">Buyer paid</span>
-                        <div className="font-medium">{formatKes(transfer.gross_amount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Platform fee</span>
-                        <div className="font-medium">{formatKes(transfer.fee_amount)}</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Seller receives</span>
-                        <div className="font-medium">
-                          {formatKes(transfer.seller_payout_amount)}
-                        </div>
-                      </div>
-                      <div className="sm:col-span-3 text-xs text-muted-foreground">
-                        Created {formatWhen(transfer.created_at)}
-                        {transfer.completed_at
-                          ? ` · completed ${formatWhen(transfer.completed_at)}`
-                          : ''}
-                      </div>
-                      {transfer.error_message ? (
-                        <div className="sm:col-span-3 text-sm text-destructive flex gap-2">
-                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                          {transfer.error_message}
-                        </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+          <AdminSectionPanel title="Transfers">
+            {transfersQuery.isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : transfers.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No transfers yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {transfers.map((transfer) => (
+                  <AdminListRow
+                    key={transfer.id}
+                    title={`Transfer #${transfer.id} · ${modeLabel(transfer.mode)}`}
+                    meta={`Listing #${transfer.listing_id}${
+                      transfer.payment_reference ? ` · ${transfer.payment_reference}` : ''
+                    } · ${formatKes(transfer.gross_amount)} · ${formatWhen(transfer.created_at)}`}
+                    trailing={
+                      <AdminStatusPill
+                        tone={
+                          transfer.status === 'completed'
+                            ? 'success'
+                            : transfer.status === 'failed' || transfer.status === 'refunded'
+                              ? 'error'
+                              : 'warning'
+                        }
+                      >
+                        {transfer.status.replace(/_/g, ' ')}
+                      </AdminStatusPill>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
 
       {active === 'payouts' && (
-        <>
-          <AdminPanelHeader
-            title="Payouts"
-            description="Seller payout queue — retry failures from here."
-          />
-          <div className="mb-4 flex items-center gap-2 justify-end">
-            <span className="text-sm text-muted-foreground">Status</span>
-            <Select value={payoutFilter} onValueChange={setPayoutFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="skipped">Skipped</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-3.5">
+          <div className="flex justify-end">
+            <AdminFilterSelect
+              value={payoutFilter}
+              onChange={setPayoutFilter}
+              options={[
+                { value: 'all', label: 'Status: All' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'paid', label: 'Paid' },
+                { value: 'failed', label: 'Failed' },
+                { value: 'skipped', label: 'Skipped' },
+              ]}
+            />
           </div>
-
-          {payoutsQuery.isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : payouts.length === 0 ? (
-            <Card>
-              <CardHeader className="text-center">
-                <Wallet className="mx-auto h-10 w-10 text-muted-foreground" />
-                <CardTitle>No payouts</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : (
-            <ul className="space-y-3">
-              {payouts.map((payout) => (
-                <li key={payout.id}>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <CardTitle className="text-base">{formatKes(payout.amount)}</CardTitle>
-                          <CardDescription>
-                            Payout #{payout.id} · transfer #{payout.transfer_id} · attempts{' '}
-                            {payout.attempt_count}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant={payoutStatusVariant(payout.status)}
-                            className="capitalize gap-1"
+          <AdminSectionPanel title="Payouts">
+            {payoutsQuery.isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : payouts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No payouts.</p>
+            ) : (
+              <div className="space-y-2">
+                {payouts.map((payout) => (
+                  <AdminListRow
+                    key={payout.id}
+                    title={formatKes(payout.amount)}
+                    meta={`Payout #${payout.id} · transfer #${payout.transfer_id} · ${
+                      payout.payout_method || '—'
+                    } · ${formatWhen(payout.created_at)}`}
+                    trailing={
+                      <>
+                        <AdminStatusPill
+                          tone={
+                            payout.status === 'paid'
+                              ? 'success'
+                              : payout.status === 'failed'
+                                ? 'error'
+                                : 'warning'
+                          }
+                        >
+                          {payout.status}
+                        </AdminStatusPill>
+                        {payout.status === 'failed' || payout.status === 'pending' ? (
+                          <AdminOutlinePill
+                            disabled={retryMutation.isPending}
+                            onClick={() => retryMutation.mutate(payout.id)}
                           >
-                            {payout.status === 'paid' ? (
-                              <CheckCircle2 className="h-3 w-3" />
-                            ) : null}
-                            {payout.status}
-                          </Badge>
-                          {(payout.status === 'failed' || payout.status === 'pending') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="gap-1"
-                              disabled={retryMutation.isPending}
-                              onClick={() => retryMutation.mutate(payout.id)}
-                            >
-                              {retryMutation.isPending ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              )}
-                              Retry
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="text-xs text-muted-foreground space-y-1">
-                      <div>
-                        Method {payout.payout_method ?? '—'} · created{' '}
-                        {formatWhen(payout.created_at)}
-                        {payout.paid_at ? ` · paid ${formatWhen(payout.paid_at)}` : ''}
-                      </div>
-                      {payout.last_error ? (
-                        <div className="text-destructive flex gap-2 text-sm">
-                          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                          {payout.last_error}
-                        </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+                            Retry
+                          </AdminOutlinePill>
+                        ) : null}
+                      </>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </AdminSectionPanel>
+        </div>
       )}
 
-      {active === 'settings' && (
-        <>
-          <AdminPanelHeader
-            title="Settings"
-            description="Fee, transfer window, and marketplace kill switch."
-          />
-          <MarketplaceSettingsCard />
-        </>
-      )}
+      {active === 'settings' && <MarketplaceSettingsCard />}
     </AdminSectionLayout>
   );
 };

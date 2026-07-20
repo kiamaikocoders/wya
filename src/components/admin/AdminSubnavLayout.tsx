@@ -6,13 +6,12 @@ import { AdminPageShell } from '@/components/admin/AdminPageShell';
 export type AdminSubnavItem = {
   id: string;
   label: string;
-  icon: ComponentType<{ className?: string }>;
+  icon?: ComponentType<{ className?: string }>;
   danger?: boolean;
 };
 
 /**
- * Agribeta user-settings pattern for admin sections:
- * sticky page title + in-page sidebar (desktop) / pill strip (mobile) + ONE panel at a time.
+ * Figma Admin section pattern: page header + card subnav + one panel.
  * Active section synced to ?tab= for deep links.
  */
 export function useAdminSectionTab<T extends string>(
@@ -54,8 +53,8 @@ export function AdminSubnav({
 }) {
   return (
     <>
-      <nav className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border bg-muted/30 p-3 lg:flex lg:min-h-[calc(100vh-8rem)]">
-        {items.map(({ id, label, icon: Icon, danger }) => {
+      <nav className="hidden w-[200px] shrink-0 flex-col gap-1.5 rounded-[14px] border border-border bg-card p-3 lg:flex">
+        {items.map(({ id, label, danger }) => {
           const isActive = active === id;
           return (
             <button
@@ -63,22 +62,21 @@ export function AdminSubnav({
               type="button"
               onClick={() => onChange(id)}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors',
-                isActive && !danger && 'bg-primary text-primary-foreground shadow-sm',
-                isActive && danger && 'bg-destructive text-destructive-foreground shadow-sm',
-                !isActive && !danger && 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                !isActive && danger && 'text-destructive hover:bg-destructive/10'
+                'w-full rounded-[10px] px-3 py-2.5 text-left text-[13px] transition-colors',
+                isActive && !danger && 'bg-primary font-semibold text-primary-foreground',
+                isActive && danger && 'bg-destructive font-semibold text-destructive-foreground',
+                !isActive && !danger && 'font-medium text-muted-foreground hover:bg-[hsl(var(--admin-surface))] hover:text-foreground',
+                !isActive && danger && 'font-medium text-destructive hover:bg-destructive/10'
               )}
             >
-              <Icon className="h-4 w-4 shrink-0" />
               {label}
             </button>
           );
         })}
       </nav>
 
-      <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-border px-3 py-2 lg:hidden">
-        {items.map(({ id, label, icon: Icon, danger }) => {
+      <div className="scrollbar-hide flex gap-1.5 overflow-x-auto px-1 pb-1 lg:hidden">
+        {items.map(({ id, label, danger }) => {
           const isActive = active === id;
           return (
             <button
@@ -86,14 +84,13 @@ export function AdminSubnav({
               type="button"
               onClick={() => onChange(id)}
               className={cn(
-                'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+                'flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-medium transition-colors',
                 isActive && !danger && 'bg-primary text-primary-foreground',
                 isActive && danger && 'bg-destructive text-destructive-foreground',
-                !isActive && !danger && 'bg-muted text-muted-foreground',
+                !isActive && !danger && 'border border-border bg-[hsl(var(--admin-surface))] text-foreground',
                 !isActive && danger && 'bg-destructive/10 text-destructive'
               )}
             >
-              <Icon className="h-3.5 w-3.5" />
               {label}
             </button>
           );
@@ -106,6 +103,7 @@ export function AdminSubnav({
 export function AdminSectionLayout({
   title,
   subtitle,
+  icon,
   actions,
   items,
   active,
@@ -114,6 +112,7 @@ export function AdminSectionLayout({
 }: {
   title: string;
   subtitle?: string;
+  icon?: ComponentType<{ className?: string }>;
   actions?: ReactNode;
   items: AdminSubnavItem[];
   active: string;
@@ -124,12 +123,13 @@ export function AdminSectionLayout({
     <AdminPageShell
       title={title}
       subtitle={subtitle}
+      icon={icon}
       actions={actions}
-      contentClassName="!space-y-0 !p-0"
+      contentClassName="!space-y-0 !p-5 sm:!px-7 sm:!py-5"
     >
-      <div className="flex min-h-0 w-full flex-1 flex-col border-t border-border lg:flex-row">
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-4 lg:flex-row lg:gap-4">
         <AdminSubnav items={items} active={active} onChange={onChange} />
-        <div className="min-w-0 flex-1 space-y-5 p-5 sm:p-7 lg:px-8 lg:py-7">{children}</div>
+        <div className="min-w-0 flex-1 space-y-3.5">{children}</div>
       </div>
     </AdminPageShell>
   );
@@ -137,9 +137,9 @@ export function AdminSectionLayout({
 
 export function AdminPanelHeader({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="mb-6">
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
-      {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+    <div className="mb-1">
+      <h2 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h2>
+      {description ? <p className="mt-0.5 text-xs text-muted-foreground">{description}</p> : null}
     </div>
   );
 }

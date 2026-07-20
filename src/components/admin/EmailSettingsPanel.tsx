@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Database, Loader2, Mail, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AdminPageShell, AdminSectionPanel } from '@/components/admin/AdminPageShell';
+import {
+  AdminPageShell,
+  AdminPrimaryPill,
+  AdminRefreshButton,
+  AdminStatusPill,
+} from '@/components/admin/AdminPageShell';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   adminPlatformService,
@@ -16,6 +17,7 @@ import {
   type AdminSystemHealth,
   type SystemSettingsMap,
 } from '@/lib/admin-platform-service';
+import { cn } from '@/lib/utils';
 
 function unwrapJsonValue(raw: unknown): unknown {
   if (typeof raw === 'string') {
@@ -31,6 +33,45 @@ function unwrapJsonValue(raw: unknown): unknown {
 function isSchemaMissing(err: unknown) {
   const msg = err instanceof Error ? err.message : String(err ?? '');
   return /system_settings|does not exist|schema cache|Admin only/i.test(msg);
+}
+
+function InlineActionField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  actionLabel,
+  onAction,
+  disabled,
+  pending,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  actionLabel: string;
+  onAction: () => void;
+  disabled?: boolean;
+  pending?: boolean;
+}) {
+  return (
+    <label className="flex w-full flex-col gap-2">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="flex h-[52px] items-center gap-3 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+        />
+        <AdminPrimaryPill onClick={onAction} disabled={disabled || pending}>
+          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : actionLabel}
+        </AdminPrimaryPill>
+      </div>
+    </label>
+  );
 }
 
 const EmailSettingsPanel: React.FC = () => {
@@ -93,6 +134,7 @@ const EmailSettingsPanel: React.FC = () => {
     mutationFn: ({ key, value }: { key: string; value: unknown }) =>
       adminPlatformService.upsertSystemSetting(key, value),
     onSuccess: () => {
+      toast.success('Saved');
       queryClient.invalidateQueries({ queryKey: ['admin-system-settings'] });
       queryClient.invalidateQueries({ queryKey: ['admin-email-status'] });
       queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] });
@@ -102,31 +144,32 @@ const EmailSettingsPanel: React.FC = () => {
 
   const testEmailMutation = useMutation({
     mutationFn: () => adminPlatformService.sendTestEmail(testToDraft.trim() || undefined),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] }),
+    onSuccess: () => {
+      toast.success('Test email sent');
+      queryClient.invalidateQueries({ queryKey: ['admin-audit-log'] });
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
   const health: AdminSystemHealth | undefined = healthQuery.data;
   const emailStatus: AdminEmailStatus | undefined = emailStatusQuery.data;
+  const keyReady =
+    emailStatus?.smtpPassSource === 'env' || Boolean(health?.resendConfigured);
+  const smtpConfigured = Boolean(smtpHost && smtpPort && smtpUser);
 
   return (
     <AdminPageShell
       title="Email"
       subtitle="Resend provider · from-address · test delivery"
+      icon={Mail}
       actions={
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
+        <AdminRefreshButton
           onClick={() => {
             emailStatusQuery.refetch();
             healthQuery.refetch();
             settingsQuery.refetch();
           }}
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        />
       }
     >
       {schemaMissing ? (
@@ -139,126 +182,98 @@ const EmailSettingsPanel: React.FC = () => {
         </Alert>
       ) : null}
 
-      <AdminSectionPanel
-        title="Email configuration (Resend)"
-        description="API key lives in secrets (RESEND_API_KEY). Domain DNS is verified in the Resend dashboard."
-      >
-        <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">
-              Key:{' '}
-              {emailStatus?.smtpPassSource === 'env' || health?.resendConfigured
-                ? 'env (RESEND_API_KEY)'
-                : 'missing'}
-            </Badge>
-            <Badge variant="outline">Provider: {emailStatus?.provider ?? 'resend'}</Badge>
-            <Badge variant="outline">
-              SMTP: {smtpHost}:{smtpPort} · user {smtpUser}
-            </Badge>
-          </div>
+      <div className="w-full rounded-2xl border border-border bg-card p-6">
+        <h2 className="text-base font-semibold text-foreground">
+          Email configuration (Resend)
+        </h2>
 
-          <Alert>
-            <Database className="h-4 w-4" />
-            <AlertTitle>Connection status</AlertTitle>
-            <AlertDescription className="space-y-2">
-              <p>
-                <strong>Auth SMTP:</strong> Connected — <code>smtp.resend.com</code>, admin{' '}
-                <code>team@wya254.com</code>.
-              </p>
-              <p>
-                <strong>Platform API key:</strong>{' '}
-                {health?.resendConfigured || emailStatus?.smtpPassSource === 'env'
-                  ? 'RESEND_API_KEY is set — test send available.'
-                  : 'Add RESEND_API_KEY as a Supabase secret, then redeploy admin-system.'}
-              </p>
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
-            <div>
-              <Label>Email notifications enabled</Label>
-              <p className="text-xs text-muted-foreground">Master switch for platform sends</p>
-            </div>
-            <Switch
-              checked={emailNotifications}
-              disabled={saveMutation.isPending || schemaMissing}
-              onCheckedChange={(v) =>
-                saveMutation.mutate({ key: 'email.notifications_enabled', value: v })
-              }
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="fromName">From name</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="fromName"
-                  value={fromNameDraft}
-                  onChange={(e) => setFromNameDraft(e.target.value)}
-                />
-                <Button
-                  disabled={saveMutation.isPending || schemaMissing}
-                  onClick={() =>
-                    saveMutation.mutate({
-                      key: 'email.from_name',
-                      value: fromNameDraft.trim() || 'WYA',
-                    })
-                  }
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fromEmail">From email</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="fromEmail"
-                  value={fromEmailDraft}
-                  onChange={(e) => setFromEmailDraft(e.target.value)}
-                />
-                <Button
-                  disabled={saveMutation.isPending || schemaMissing}
-                  onClick={() =>
-                    saveMutation.mutate({
-                      key: 'email.from_email',
-                      value: fromEmailDraft.trim(),
-                    })
-                  }
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 border-t border-border pt-4">
-            <Label htmlFor="testTo">Send test email</Label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="testTo"
-                type="email"
-                placeholder="you@example.com"
-                value={testToDraft}
-                onChange={(e) => setTestToDraft(e.target.value)}
-              />
-              <Button
-                disabled={testEmailMutation.isPending}
-                onClick={() => testEmailMutation.mutate()}
-                className="gap-2"
-              >
-                {testEmailMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Mail className="h-4 w-4" />
-                )}
-                Send test
-              </Button>
-            </div>
-          </div>
+        <div className="mt-[18px] flex flex-wrap gap-2">
+          <AdminStatusPill tone={keyReady ? 'success' : 'error'}>
+            Key: {keyReady ? 'env (RESEND_API_KEY)' : 'missing'}
+          </AdminStatusPill>
+          <AdminStatusPill tone="primary">
+            Provider: {emailStatus?.provider ?? 'Resend'}
+          </AdminStatusPill>
+          <AdminStatusPill tone="muted">
+            SMTP: {smtpConfigured ? 'configured' : 'incomplete'}
+          </AdminStatusPill>
         </div>
-      </AdminSectionPanel>
+
+        <div
+          className={cn(
+            'mt-[18px] flex items-center gap-2.5 rounded-xl border border-border bg-[hsl(var(--admin-surface))] px-3.5 py-3'
+          )}
+        >
+          <span
+            className={cn(
+              'h-2 w-2 shrink-0 rounded-full',
+              keyReady ? 'bg-[hsl(var(--admin-success))]' : 'bg-destructive'
+            )}
+          />
+          <p className="text-[13px] text-foreground">
+            {keyReady
+              ? 'Connected — Resend API key loaded from environment'
+              : 'Not connected — add RESEND_API_KEY as a Supabase secret, then redeploy admin-system'}
+          </p>
+        </div>
+
+        <div className="mt-[18px] flex items-center gap-4 rounded-[14px] bg-[hsl(var(--admin-surface))] px-4 py-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Email notifications enabled</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Send transactional + broadcast email
+            </p>
+          </div>
+          <Switch
+            checked={emailNotifications}
+            disabled={saveMutation.isPending || schemaMissing}
+            onCheckedChange={(v) =>
+              saveMutation.mutate({ key: 'email.notifications_enabled', value: v })
+            }
+            className="data-[state=checked]:bg-primary"
+          />
+        </div>
+
+        <div className="mt-[18px] space-y-[18px]">
+          <InlineActionField
+            label="From name"
+            value={fromNameDraft}
+            onChange={setFromNameDraft}
+            actionLabel="Save"
+            disabled={schemaMissing}
+            pending={saveMutation.isPending}
+            onAction={() =>
+              saveMutation.mutate({
+                key: 'email.from_name',
+                value: fromNameDraft.trim() || 'WYA',
+              })
+            }
+          />
+          <InlineActionField
+            label="From email"
+            value={fromEmailDraft}
+            onChange={setFromEmailDraft}
+            actionLabel="Save"
+            disabled={schemaMissing}
+            pending={saveMutation.isPending}
+            onAction={() =>
+              saveMutation.mutate({
+                key: 'email.from_email',
+                value: fromEmailDraft.trim(),
+              })
+            }
+          />
+          <InlineActionField
+            label="Test delivery"
+            value={testToDraft}
+            onChange={setTestToDraft}
+            placeholder="admin@wya.com"
+            actionLabel="Send test"
+            pending={testEmailMutation.isPending}
+            onAction={() => testEmailMutation.mutate()}
+          />
+        </div>
+      </div>
     </AdminPageShell>
   );
 };

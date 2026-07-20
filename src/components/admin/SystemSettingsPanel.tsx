@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Activity, AlertTriangle, HardDrive, Loader2, Mail, RefreshCw, Settings2 } from 'lucide-react';
+import { Activity, AlertTriangle, HardDrive, Loader2, Mail, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AdminKpiTile,
   AdminPageShell,
+  AdminRefreshButton,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
 import {
@@ -116,12 +117,13 @@ const SystemSettingsPanel: React.FC = () => {
     <AdminPageShell
       title="System"
       subtitle="Configure settings · monitor health · manage risk"
+      icon={Settings2}
       actions={
         <>
           <Button
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="gap-2 rounded-full"
             onClick={() => healthQuery.refetch()}
             disabled={healthQuery.isFetching}
           >
@@ -132,18 +134,12 @@ const SystemSettingsPanel: React.FC = () => {
             )}
             Run checks
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
+          <AdminRefreshButton
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ['admin-system-settings'] });
               queryClient.invalidateQueries({ queryKey: ['admin-system-health'] });
             }}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
+          />
         </>
       }
     >
@@ -172,7 +168,11 @@ const SystemSettingsPanel: React.FC = () => {
         <AdminKpiTile
           label="Database"
           value={health?.health.database ?? (healthQuery.isError ? 'Error' : '—')}
-          hint={health ? `${health.metrics.dbLatencyMs} ms` : undefined}
+          hint={
+            health?.metrics?.dbLatencyMs != null
+              ? `Latency ${health.metrics.dbLatencyMs}ms`
+              : 'Latency —'
+          }
           tone={toneFor(health?.health.database ?? '—')}
         />
         <AdminKpiTile
@@ -184,13 +184,13 @@ const SystemSettingsPanel: React.FC = () => {
         <AdminKpiTile
           label="Storage"
           value={health?.health.storage ?? (healthQuery.isError ? 'Error' : '—')}
-          hint="Buckets"
+          hint="Buckets ok"
           tone={toneFor(health?.health.storage ?? '—')}
         />
         <AdminKpiTile
           label="Email"
           value={health?.health.email ?? (healthQuery.isError ? 'Error' : '—')}
-          hint="Resend"
+          hint="Check Resend"
           tone={toneFor(health?.health.email ?? '—')}
         />
       </div>

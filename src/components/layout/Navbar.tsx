@@ -18,7 +18,6 @@ import {
   LogIn,
   UserPlus,
   LogOut,
-  ShieldAlert,
   Settings,
   MessageCircle,
   MessageSquarePlus,
@@ -209,14 +208,6 @@ const Navbar = () => {
                     <Link to="/analytics" className="flex w-full items-center gap-2">
                       <BarChart3 className="h-4 w-4" />
                       <span>Analytics</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="flex w-full items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-primary" />
-                      <span>Admin Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
                 )}

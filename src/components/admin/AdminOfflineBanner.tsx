@@ -12,10 +12,10 @@ const AdminOfflineBanner: React.FC = () => {
   if (!isDevAdminBypassActive()) return null;
 
   return (
-    <Alert variant="destructive" className="mb-6 border-amber-500/50 bg-amber-950/40 text-amber-50">
-      <AlertTriangle className="h-4 w-4 text-amber-400" />
-      <AlertTitle className="text-amber-100">Supabase offline — admin data unavailable</AlertTitle>
-      <AlertDescription className="space-y-3 text-amber-100/90">
+    <Alert className="mx-5 mt-4 border-amber-300 bg-amber-50 text-amber-950 sm:mx-7">
+      <AlertTriangle className="h-4 w-4 text-amber-600" />
+      <AlertTitle className="text-amber-950">Supabase offline — admin data unavailable</AlertTitle>
+      <AlertDescription className="space-y-3 text-amber-900/90">
         <p>{getSupabaseOfflineMessage()}</p>
         <p className="text-sm">
           You are signed in with a local dev bypass. To view users, events, or delete ghost
@@ -26,7 +26,7 @@ const AdminOfflineBanner: React.FC = () => {
           asChild
           size="sm"
           variant="outline"
-          className="border-amber-400/40 bg-transparent text-amber-50 hover:bg-amber-900/40"
+          className="border-amber-400/60 bg-white text-amber-950 hover:bg-amber-100"
         >
           <a href={SUPABASE_RESTORE_URL} target="_blank" rel="noopener noreferrer">
             Open Supabase billing

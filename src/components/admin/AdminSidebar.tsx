@@ -9,7 +9,6 @@ import {
   ActivitySquare,
   BarChart3,
   Ghost,
-  ChevronLeft,
   X,
   Images,
   Inbox,
@@ -20,12 +19,10 @@ import {
   ScrollText,
   Bell,
   Mail,
-  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import NotificationBell from '@/components/notifications/NotificationBell';
 
 interface SidebarItem {
   label: string;
@@ -89,18 +86,11 @@ const sidebarSections: SidebarSection[] = [
 ];
 
 interface AdminSidebarProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
   isMobileOpen: boolean;
   onMobileToggle: () => void;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({
-  isCollapsed,
-  onToggleCollapse,
-  isMobileOpen,
-  onMobileToggle,
-}) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, onMobileToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -112,7 +102,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const handleLogout = async () => {
     await logout();
-    navigate('/admin-login');
+    navigate('/admin');
   };
 
   return (
@@ -127,47 +117,30 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 flex h-full flex-col border-r border-border bg-card transition-all duration-300',
-          isCollapsed ? 'w-[72px]' : 'w-64',
+          'fixed left-0 top-0 z-50 flex h-full w-[260px] flex-col border-r border-border bg-card transition-transform duration-300',
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b border-border px-3">
-          {!isCollapsed && (
-            <Link to="/admin" className="font-semibold tracking-tight text-foreground">
-              WYA Admin
-            </Link>
-          )}
-          <div className="flex items-center gap-1">
-            <div className="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden lg:flex"
-              onClick={onToggleCollapse}
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <ChevronLeft className={cn('h-4 w-4 transition-transform', isCollapsed && 'rotate-180')} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={onMobileToggle}
-              aria-label="Close menu"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex h-[52px] items-center justify-between border-b border-border px-4">
+          <Link to="/admin" className="text-[15px] font-semibold text-foreground">
+            WYA Admin
+          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={onMobileToggle}
+            aria-label="Close menu"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2 space-y-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-2 pt-2.5">
           {sidebarSections.map((section, idx) => (
-            <div key={section.title ?? `section-${idx}`} className="space-y-1">
-              {section.title && !isCollapsed ? (
-                <div className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div key={section.title ?? `section-${idx}`} className="pb-1.5">
+              {section.title ? (
+                <div className="px-3.5 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {section.title}
                 </div>
               ) : null}
@@ -182,16 +155,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       if (isMobileOpen) onMobileToggle();
                     }}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+                      'mb-0.5 flex items-center gap-3 rounded-[10px] px-3.5 py-2.5 text-xs transition-colors',
                       active
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                      isCollapsed && 'justify-center px-2'
+                        ? 'border border-primary bg-[hsl(var(--admin-surface-2))] font-semibold text-primary'
+                        : 'border border-transparent font-medium text-muted-foreground hover:bg-[hsl(var(--admin-surface))] hover:text-foreground'
                     )}
-                    title={isCollapsed ? item.label : undefined}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && <span>{item.label}</span>}
+                    <Icon
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        active ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                      strokeWidth={1.75}
+                    />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}
@@ -199,26 +176,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           ))}
         </nav>
 
-        <div className="border-t border-border p-3">
-          {!isCollapsed ? (
-            <div className="mb-2 rounded-lg bg-muted/50 px-3 py-2.5">
-              <p className="truncate text-sm font-semibold text-foreground">
-                {user?.name || 'Admin'}
-              </p>
-              <p className="text-xs text-muted-foreground">Super Admin</p>
-            </div>
-          ) : null}
-          <Button
-            variant="ghost"
-            className={cn(
-              'w-full justify-start gap-2 text-destructive hover:text-destructive',
-              isCollapsed && 'justify-center px-0'
-            )}
+        <div className="space-y-2 border-t border-border px-3 pb-1 pt-2.5">
+          <div className="rounded-[10px] bg-[hsl(var(--admin-surface))] px-2.5 py-2">
+            <p className="truncate text-xs font-semibold text-foreground">
+              {user?.name || 'Admin'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Super Admin</p>
+          </div>
+          <button
+            type="button"
             onClick={() => void handleLogout()}
+            className="w-full rounded-[10px] px-2.5 py-1.5 text-left text-xs font-medium text-[hsl(var(--admin-error))] hover:bg-destructive/5"
           >
-            <LogOut className="h-4 w-4" />
-            {!isCollapsed && <span>Log out</span>}
-          </Button>
+            Log out
+          </button>
         </div>
       </aside>
     </>
