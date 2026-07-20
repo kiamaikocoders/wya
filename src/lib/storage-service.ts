@@ -31,6 +31,31 @@ export interface StorageBucket {
   allowed_mime_types: string[];
 }
 
+/** Parse a Supabase public storage URL into bucket + object path. */
+export function parseSupabaseStoragePublicUrl(
+  url: string
+): { bucket: string; path: string } | null {
+  try {
+    const parsed = new URL(url);
+    const marker = '/storage/v1/object/public/';
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex === -1) return null;
+
+    const remainder = decodeURIComponent(
+      parsed.pathname.slice(markerIndex + marker.length)
+    );
+    const slashIndex = remainder.indexOf('/');
+    if (slashIndex <= 0) return null;
+
+    return {
+      bucket: remainder.slice(0, slashIndex),
+      path: remainder.slice(slashIndex + 1),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const storageService = {
   // ==============================================
   // BUCKET MANAGEMENT

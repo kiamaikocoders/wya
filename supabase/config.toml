@@ -31,3 +31,12 @@ verify_jwt = false
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.marketplace-worker]
+verify_jwt = false
+
+[functions.marketplace-confirm-payment]
+verify_jwt = false
+
+[functions.admin-system]
+verify_jwt = false

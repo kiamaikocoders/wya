@@ -1,6 +1,13 @@
 import { supabase } from './supabase';
 import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
 import { isUndefinedColumnError } from './supabase-schema-compat';
+import { parseSupabaseStoragePublicUrl } from './storage-service';
+import type {
+  AdminMarketplaceStats,
+  MarketplaceListing,
+  MarketplacePayout,
+  MarketplaceTransfer,
+} from './marketplace-service';
 import { toast } from 'sonner';
 
 export type ProfileAccountStatus = 'active' | 'suspended' | 'banned' | 'deleted';
@@ -738,6 +745,13 @@ export const adminService = {
         .eq('id', eventId);
 
       if (error) throw error;
+
+      const { error: listingError } = await supabase.rpc('marketplace_cancel_listings_for_event', {
+        p_event_id: eventId,
+      });
+      if (listingError) {
+        console.warn('Event rejected but marketplace listing cleanup failed:', listingError);
+      }
     } catch (error) {
       console.error('Error rejecting event:', error);
       throw error;
@@ -1194,7 +1208,6 @@ export const adminService = {
    */
   deleteGhostStory: async (storyId: number): Promise<boolean> => {
     try {
-      // Verify admin status
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('You must be logged in to delete stories');
@@ -1210,30 +1223,127 @@ export const adminService = {
         throw new Error('Only admins can delete ghost stories');
       }
 
-      // Delete the story
-      const { data, error } = await supabase
-        .from('stories')
-        .delete()
-        .eq('id', storyId)
-        .select();
+      const { data, error } = await supabase.rpc('admin_delete_ghost_story', {
+        p_story_id: storyId,
+      });
 
       if (error) {
         console.error('Supabase delete error:', error);
         throw error;
       }
 
-      // Check if any rows were deleted
-      if (!data || data.length === 0) {
+      if (!data) {
         throw new Error('Story not found or you do not have permission to delete it');
       }
 
-      console.log(`Successfully deleted story ${storyId}`);
+      const mediaUrl =
+        typeof data === 'object' && data !== null && 'media_url' in data
+          ? String((data as { media_url?: string | null }).media_url || '').trim()
+          : '';
+
+      if (mediaUrl) {
+        const storageRef = parseSupabaseStoragePublicUrl(mediaUrl);
+        if (storageRef) {
+          const { error: storageError } = await supabase.storage
+            .from(storageRef.bucket)
+            .remove([storageRef.path]);
+
+          if (storageError) {
+            console.warn('Ghost story deleted from DB but media cleanup failed:', storageError);
+          }
+        }
+      }
+
+      console.log(`Successfully deleted ghost story ${storyId}`);
       return true;
     } catch (error: any) {
       console.error('Error deleting ghost story:', error);
       const errorMessage = error?.message || 'Failed to delete story';
       throw new Error(errorMessage);
     }
+  },
+
+  /** Marketplace observability — fees, transfers, payout health (no approve step). */
+  getMarketplaceStats: async (): Promise<AdminMarketplaceStats> => {
+    const { data, error } = await supabase.rpc('admin_marketplace_stats');
+    if (error) throw error;
+    return data as AdminMarketplaceStats;
+  },
+
+  getMarketplaceListings: async (options?: {
+    status?: string;
+    limit?: number;
+  }): Promise<MarketplaceListing[]> => {
+    let query = supabase
+      .from('marketplace_listings')
+      .select(
+        `
+        *,
+        event:events!marketplace_listings_event_id_fkey (id, title, date, location, image_url),
+        items:marketplace_listing_items (id, listing_id, ticket_id, locked_price)
+      `
+      )
+      .order('created_at', { ascending: false })
+      .limit(options?.limit ?? 100);
+
+    if (options?.status) query = query.eq('status', options.status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []) as MarketplaceListing[];
+  },
+
+  getMarketplaceTransfers: async (options?: {
+    status?: string;
+    limit?: number;
+  }): Promise<MarketplaceTransfer[]> => {
+    let query = supabase
+      .from('marketplace_transfers')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(options?.limit ?? 100);
+
+    if (options?.status) query = query.eq('status', options.status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []) as MarketplaceTransfer[];
+  },
+
+  getMarketplacePayouts: async (options?: {
+    status?: string;
+    limit?: number;
+  }): Promise<MarketplacePayout[]> => {
+    let query = supabase
+      .from('marketplace_payouts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(options?.limit ?? 100);
+
+    if (options?.status) query = query.eq('status', options.status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data ?? []) as MarketplacePayout[];
+  },
+
+  retryMarketplacePayout: async (payoutId: number): Promise<{ payout_id: number; status: string }> => {
+    const { data, error } = await supabase.rpc('marketplace_retry_payout', {
+      p_payout_id: payoutId,
+    });
+    if (error) throw error;
+    toast.success('Payout retried');
+    return data as { payout_id: number; status: string };
+  },
+
+  cancelMarketplaceListingsForEvent: async (
+    eventId: number
+  ): Promise<{ event_id: number; cancelled_count: number }> => {
+    const { data, error } = await supabase.rpc('marketplace_cancel_listings_for_event', {
+      p_event_id: eventId,
+    });
+    if (error) throw error;
+    return data as { event_id: number; cancelled_count: number };
   },
 };
 

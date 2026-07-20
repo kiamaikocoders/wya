@@ -40,11 +40,10 @@ const AdminLogin = () => {
     try {
       setIsSubmitting(true);
       await adminLogin(email, password);
-      toast.success('Admin login successful!');
       navigate('/admin');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Admin login failed:', error);
-      toast.error('Admin login failed. Please check your credentials.');
+      toast.error(error?.message || 'Admin login failed. Please check your credentials.');
     } finally {
       setIsSubmitting(false);
     }

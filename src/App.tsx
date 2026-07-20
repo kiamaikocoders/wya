@@ -46,6 +46,13 @@ const AdminSponsorAnalytics = lazy(() => import("./pages/AdminSponsorAnalytics")
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
 const AdminMediaGallery = lazy(() => import("./pages/AdminMediaGallery"));
 const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
+const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
+const AdminFinance = lazy(() => import("./pages/AdminFinance"));
+const AdminCommunications = lazy(() => import("./pages/AdminCommunications"));
+const AdminSystem = lazy(() => import("./pages/AdminSystem"));
+const AdminAudit = lazy(() => import("./pages/AdminAudit"));
+const AdminEmail = lazy(() => import("./pages/AdminEmail"));
+const AdminNotifications = lazy(() => import("./pages/AdminNotifications"));
 const PublicEventMediaGallery = lazy(() => import("./pages/PublicEventMediaGallery"));
 
 const RequestEvent = lazy(() => import("./pages/RequestEvent"));
@@ -149,6 +156,13 @@ const App = () => {
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
                     <Route path="ghost" element={<AdminGhost />} />
+                    <Route path="marketplace" element={<AdminMarketplace />} />
+                    <Route path="finance" element={<AdminFinance />} />
+                    <Route path="communications" element={<AdminCommunications />} />
+                    <Route path="system" element={<AdminSystem />} />
+                    <Route path="email" element={<AdminEmail />} />
+                    <Route path="notifications" element={<AdminNotifications />} />
+                    <Route path="audit" element={<AdminAudit />} />
                   </Route>
 
                   <Route element={<Layout />}>

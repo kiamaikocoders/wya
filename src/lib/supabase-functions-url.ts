@@ -47,3 +47,21 @@ export function getPublicEventMediaGalleryUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();
   return base ? `${base}/functions/v1/public-event-media-gallery` : "";
 }
+
+/** Cron/service: expire marketplace listings + process seller payouts. */
+export function getMarketplaceWorkerUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/marketplace-worker` : "";
+}
+
+/** Service webhook: confirm marketplace payment and complete transfer. */
+export function getMarketplaceConfirmPaymentUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/marketplace-confirm-payment` : "";
+}
+
+/** Superadmin: system health + Resend test email. */
+export function getAdminSystemUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/admin-system` : "";
+}

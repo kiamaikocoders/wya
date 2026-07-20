@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { validateSignupConsents, type AttendeeSignupConsents } from '@/lib/signup-consent';
+import { getPublicPlatformFlags } from '@/lib/platform-flags';
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
@@ -38,6 +39,16 @@ const Signup = () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
       toast.error('Please fill in all required fields');
       return;
+    }
+
+    try {
+      const flags = await getPublicPlatformFlags();
+      if (!flags.registration_open) {
+        toast.error('New registrations are temporarily closed. Please try again later.');
+        return;
+      }
+    } catch {
+      // fail open if flags unavailable
     }
 
     if (!mediaConsentChoice) {

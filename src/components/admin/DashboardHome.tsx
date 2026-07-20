@@ -640,40 +640,40 @@ const DashboardHome: React.FC = () => {
           </div>
 
           <div
-            onClick={() => navigate('/admin/proposals')}
+            onClick={() => navigate('/admin/finance')}
             className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
           >
             <div className="flex flex-col gap-2">
-              <RotateCw className="h-5 w-5 text-primary mb-1" />
-              <h3 className="text-base font-medium text-foreground">Review Proposals</h3>
+              <CreditCard className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">Finance & Tickets</h3>
               <p className="text-sm text-muted-foreground">
-                Review and approve event proposals
+                Payments, ticket ops, marketplace fees
               </p>
             </div>
           </div>
 
           <div
-            onClick={() => navigate('/admin/moderation')}
+            onClick={() => navigate('/admin/marketplace')}
             className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
           >
             <div className="flex flex-col gap-2">
-              <MessageSquare className="h-5 w-5 text-primary mb-1" />
-              <h3 className="text-base font-medium text-foreground">Content Review</h3>
+              <Ticket className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">Marketplace</h3>
               <p className="text-sm text-muted-foreground">
-                Moderate user-generated content
+                Listings, transfers, payout retries
               </p>
             </div>
           </div>
 
           <div
-            onClick={() => navigate('/admin/analytics')}
+            onClick={() => navigate('/admin/system')}
             className="bg-[rgb(29,33,42)] dark:bg-[rgb(29,33,42)] rounded-lg p-4 cursor-pointer transition-all hover:bg-[rgb(35,40,50)] hover:border-primary/50 border border-border/50"
           >
             <div className="flex flex-col gap-2">
-              <TrendingUp className="h-5 w-5 text-primary mb-1" />
-              <h3 className="text-base font-medium text-foreground">View Analytics</h3>
+              <Activity className="h-5 w-5 text-primary mb-1" />
+              <h3 className="text-base font-medium text-foreground">System</h3>
               <p className="text-sm text-muted-foreground">
-                View detailed analytics and insights
+                Fees, flags, maintenance, audit log
               </p>
             </div>
           </div>

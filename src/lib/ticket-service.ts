@@ -12,11 +12,12 @@ export interface Ticket {
   event_date: string;
   purchase_date: string;
   reference_code: string;
-  status: 'confirmed' | 'pending' | 'cancelled';
+  status: 'confirmed' | 'pending' | 'cancelled' | 'active';
   ticket_type: string;
   price: number;
   payment_method?: string;
   payment_id?: string;
+  transfer_version?: number;
 }
 
 export interface PurchaseTicketPayload {

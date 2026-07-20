@@ -43,7 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={adminOnly ? '/admin-login' : '/login'} state={{ from: location }} replace />;
   }
   
   // Redirect to home if authenticated but not admin and route requires admin
