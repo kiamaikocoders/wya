@@ -10,6 +10,10 @@ export interface AttendeeSignupConsents {
   mediaRecordingPromotionalConsent: boolean;
   acceptTerms: boolean;
   acceptPrivacy: boolean;
+  /** Required home / discovery location */
+  location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export function validateSignupConsents(consents: AttendeeSignupConsents): string | null {
@@ -20,6 +24,15 @@ export function validateSignupConsents(consents: AttendeeSignupConsents): string
   }
   if (!isVerifiedAdultFromDob(consents.dateOfBirth)) {
     return 'You must be at least 18 years old to use WYA.';
+  }
+  if (
+    !consents.location?.trim() ||
+    consents.latitude == null ||
+    consents.longitude == null ||
+    !Number.isFinite(consents.latitude) ||
+    !Number.isFinite(consents.longitude)
+  ) {
+    return 'Please set your location so we can show events near you.';
   }
   return null;
 }

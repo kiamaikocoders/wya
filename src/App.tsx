@@ -26,8 +26,8 @@ const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 const Home = lazy(() => import("./pages/Home"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Events = lazy(() => import("./pages/Events"));
-const EventDetails = lazy(() => import("./pages/EventDetails"));
 const Categories = lazy(() => import("./pages/Categories"));
+const AuthWelcome = lazy(() => import("./pages/AuthWelcome"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -75,6 +75,8 @@ const AIAssistance = lazy(() => import("./pages/AIAssistance"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const MediaConsentPolicy = lazy(() => import("./pages/MediaConsentPolicy"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const ContactSupport = lazy(() => import("./pages/ContactSupport"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent"));
 const UsersDirectory = lazy(() => import("./pages/UsersDirectory"));
 const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
@@ -136,6 +138,7 @@ const App = () => {
                   <Route element={<MarketingLayout />}>
                     <Route path="/" element={<Landing />} />
                     <Route path="/download" element={<DownloadApp />} />
+                    <Route path="/events/:eventId?" element={<Events />} />
                   </Route>
                   {/* Admin console — standalone entry (login → dashboard, no consumer site shell) */}
                   <Route
@@ -178,10 +181,9 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route path="/events" element={<Events />} />
-                    <Route path="/events/:eventId" element={<EventDetails />} />
                     <Route path="/share/event-media/:token" element={<PublicEventMediaGallery />} />
                     <Route path="/categories/:slug" element={<Categories />} />
+                    <Route path="/welcome" element={<AuthWelcome />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -205,6 +207,9 @@ const App = () => {
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/media-consent" element={<MediaConsentPolicy />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/contact" element={<ContactSupport />} />
+                    <Route path="/feedback" element={<FeedbackPage />} />
                     <Route
                       path="/favorites"
                       element={
@@ -232,14 +237,6 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <Settings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/feedback"
-                      element={
-                        <ProtectedRoute>
-                          <FeedbackPage />
                         </ProtectedRoute>
                       }
                     />

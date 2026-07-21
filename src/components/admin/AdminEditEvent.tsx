@@ -13,6 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import LocationPicker from '@/components/maps/LocationPicker';
+import { googleMapsDirectionsUrl } from '@/lib/location-service';
 import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
 import {
@@ -493,6 +494,16 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                       location: loc.address,
                       latitude: loc.latitude,
                       longitude: loc.longitude,
+                      location_url:
+                        prev.location_url.trim() ||
+                        googleMapsDirectionsUrl(loc.latitude, loc.longitude, loc.address),
+                    }));
+                  }}
+                  onLocationClear={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      latitude: null,
+                      longitude: null,
                     }));
                   }}
                   initialLocation={
@@ -502,6 +513,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   }
                   height={280}
                   mode="event"
+                  compact
                 />
 
                 <div className="pt-2">

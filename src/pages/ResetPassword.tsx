@@ -1,201 +1,174 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import Logo from '@/components/ui/Logo';
+import { WebAuthOverlayShell } from '@/components/auth/WebAuthOverlayShell';
+import { useWebAuthTheme } from '@/components/auth/webAuthTheme';
+import { cn } from '@/lib/utils';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const t = useWebAuthTheme();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [hasSession, setHasSession] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check if we have a session (Supabase creates one when user clicks reset link)
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         setHasSession(true);
       } else {
-        // No session means invalid/expired link
         toast.error('Invalid or expired reset link. Please request a new password reset.');
-        setTimeout(() => {
-          navigate('/forgot-password');
-        }, 2000);
+        setTimeout(() => navigate('/forgot-password'), 2000);
       }
+      setChecking(false);
     };
     checkSession();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
-    
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters long');
       return;
     }
-    
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-    
     try {
       setIsSubmitting(true);
-      // When user clicks reset link, Supabase creates a session
-      // We just need to update the password
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
-      
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      
       setIsSuccess(true);
       toast.success('Password reset successfully!');
-      
-      // Sign out and redirect to login after 2 seconds
       await supabase.auth.signOut();
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } catch (error: any) {
+      setTimeout(() => navigate('/login'), 2000);
+    } catch (error: unknown) {
       console.error('Reset password failed:', error);
-      toast.error(error.message || 'Failed to reset password. The link may have expired.');
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to reset password. The link may have expired.';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (checking) {
+    return (
+      <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
+        <div className="flex flex-col items-center gap-3 py-8">
+          <Loader2 className="size-8 animate-spin text-[#ff6b35]" />
+          <p className={cn('text-sm', t.muted)}>Verifying reset link…</p>
+        </div>
+      </WebAuthOverlayShell>
+    );
+  }
+
   if (isSuccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
-        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
-          <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-white">Password Reset Successful</CardTitle>
-            <CardDescription className="text-text-white/70">
-              Your password has been reset successfully
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/50 rounded-lg">
-              <p className="text-sm text-text-white/70 text-center">
-                You can now sign in with your new password.
-              </p>
-            </div>
-          </CardContent>
-          
-          <CardFooter className="flex flex-col space-y-4">
-            <Button
-              onClick={() => navigate('/login')}
-              className="w-full bg-gradient-accent hover:bg-opacity-90"
-            >
-              Go to Login
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
+        <div className="flex flex-col items-center gap-3.5 text-center">
+          <Logo href="/" size="sm" className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0" />
+          <div className="flex size-[46px] items-center justify-center rounded-full bg-emerald-500/15">
+            <CheckCircle2 className="size-6 text-emerald-500" />
+          </div>
+          <h1 className={cn('text-[26px] font-bold', t.heading)}>Password Reset Successful</h1>
+          <p className={cn('text-sm', t.muted)}>You can now sign in with your new password.</p>
+          <button type="button" onClick={() => navigate('/login')} className={t.primaryBtn}>
+            Go to Login
+          </button>
+        </div>
+      </WebAuthOverlayShell>
     );
   }
 
   if (!hasSession) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
-        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
-          <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold text-white">Invalid Reset Link</CardTitle>
-            <CardDescription className="text-text-white/70">
-              Redirecting to forgot password page...
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <h1 className={cn('text-[26px] font-bold', t.heading)}>Invalid Reset Link</h1>
+          <p className={cn('text-sm', t.muted)}>Redirecting to forgot password…</p>
+        </div>
+      </WebAuthOverlayShell>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
-      <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-white">Reset Password</CardTitle>
-          <CardDescription className="text-text-white/70">
-            Enter your new password below
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-white">
-                New Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
-                required
-                minLength={6}
-              />
-              <p className="text-xs text-text-white/70">Must be at least 6 characters</p>
-            </div>
-            
-            <div className="space-y-2">
-              <label htmlFor="confirm-password" className="text-sm font-medium text-white">
-                Confirm New Password
-              </label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-gradient-purple-medium/30 focus:border-kenya-orange"
-                required
-                minLength={6}
-              />
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-accent hover:bg-opacity-90"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Resetting...
-                </div>
-              ) : 'Reset Password'}
-            </Button>
-          </form>
-        </CardContent>
-        
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-text-white/70">
-            Remember your password?{' '}
-            <Link to="/login" className="text-gradient-orange-accent hover:underline">
-              Sign in
-            </Link>
+    <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
+      <div className="flex flex-col items-start gap-3.5">
+        <Logo href="/" size="sm" className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0" />
+        <h1 className={cn('text-[26px] font-bold', t.heading)}>Reset Password</h1>
+        <p className={cn('text-sm leading-[22px]', t.muted)}>Enter your new password below.</p>
+
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3.5">
+          <div className="space-y-2">
+            <label htmlFor="password" className={t.label}>
+              New Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={t.input}
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+            <p className={cn('text-xs', t.muted)}>Must be at least 6 characters</p>
           </div>
-        </CardFooter>
-      </Card>
-    </div>
+          <div className="space-y-2">
+            <label htmlFor="confirm-password" className={t.label}>
+              Confirm New Password
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={t.input}
+              required
+              minLength={6}
+              autoComplete="new-password"
+            />
+          </div>
+          <button type="submit" disabled={isSubmitting} className={t.primaryBtn}>
+            {isSubmitting ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                Resetting…
+              </span>
+            ) : (
+              'Reset Password'
+            )}
+          </button>
+        </form>
+
+        <Link
+          to="/login"
+          className="w-full text-center text-[13px] font-semibold text-[#ff6b35] hover:underline"
+        >
+          ← Back to login
+        </Link>
+      </div>
+    </WebAuthOverlayShell>
   );
 };
 

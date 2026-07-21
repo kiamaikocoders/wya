@@ -42,22 +42,42 @@ const Layout = () => {
 
   // Check if current route is admin or auth page
   const isAdminPage = location.pathname.startsWith("/admin");
-  const isAuthPage = ["/login", "/signup"].includes(location.pathname);
+  const isAuthPage = [
+    "/login",
+    "/signup",
+    "/welcome",
+    "/forgot-password",
+    "/reset-password",
+    "/email-confirmation-pending",
+    "/auth/callback",
+    "/auth/confirm",
+  ].includes(location.pathname);
   const isLanding = location.pathname === "/";
   const isDiscoverPage = location.pathname === "/discover";
+  const isEventsBrowse =
+    location.pathname === "/events" || /^\/events\/[^/]+$/.test(location.pathname);
+  const isLegalPage = [
+    "/privacy-policy",
+    "/terms-of-service",
+    "/media-consent",
+    "/faq",
+    "/contact",
+    "/feedback",
+  ].includes(location.pathname);
+  const hideChrome = isAuthPage || isDiscoverPage || isLegalPage || isEventsBrowse;
 
   return (
     <DiscoverUIProvider>
       <div className="relative flex min-h-screen flex-col bg-background">
-        {!isAuthPage && !isDiscoverPage && <Navbar />}
-        {!isAuthPage && !isAdminPage && <MaintenanceBanner />}
-        <main className={cn("flex-1", !isDiscoverPage && !isAuthPage && "pb-20 md:pb-24")}>
+        {!hideChrome && <Navbar />}
+        {!isAuthPage && !isAdminPage && !isLegalPage && <MaintenanceBanner />}
+        <main className={cn("flex-1", !hideChrome && "pb-20 md:pb-24")}>
           <Outlet />
         </main>
-        {!isAuthPage && <BottomNav />}
-        {!isAuthPage && !isDiscoverPage && (isLanding ? <Footer /> : <FooterMinimal />)}
+        {!hideChrome && <BottomNav />}
+        {!hideChrome && (isLanding ? <Footer /> : <FooterMinimal />)}
         
-        {scrollToTop && (
+        {scrollToTop && !isLegalPage && !isEventsBrowse && (
           <button
             onClick={scrollTop}
             className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"

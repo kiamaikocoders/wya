@@ -122,7 +122,28 @@ export const eventService = {
         curatedCity,
         includePast,
         pastOnly,
+        radiusKm,
+        latitude,
+        longitude,
       } = options;
+
+      // Near-me: use spatial RPC when coords + radius are provided
+      if (
+        latitude != null &&
+        longitude != null &&
+        Number.isFinite(latitude) &&
+        Number.isFinite(longitude) &&
+        radiusKm != null &&
+        radiusKm > 0
+      ) {
+        return eventService.queryEventsNearby({
+          ...options,
+          latitude,
+          longitude,
+          radiusKm,
+          dateFrom: pastOnly ? undefined : startOfTodayIso,
+        });
+      }
 
       // Avoid select('*') to reduce payload size; keep fields used across event screens.
       let query = supabase
@@ -269,6 +290,109 @@ export const eventService = {
           thisWeekCount: 0,
           curatedCount: 0,
           curatedCity: options.curatedCity ?? null,
+        },
+      };
+    }
+  },
+
+  /** Spatial nearby events via Postgres Haversine RPC */
+  queryEventsNearby: async (
+    options: EventQueryOptions & {
+      latitude: number;
+      longitude: number;
+      radiusKm: number;
+      dateFrom?: string;
+    },
+  ): Promise<EventQueryResponse> => {
+    try {
+      const {
+        latitude,
+        longitude,
+        radiusKm,
+        page,
+        pageSize,
+        search,
+        category,
+        sort,
+        dateFrom,
+      } = options;
+      const safePage = Math.max(page, 1);
+      const offset = (safePage - 1) * pageSize;
+
+      const { data, error } = await supabase.rpc('events_within_radius', {
+        p_lat: latitude,
+        p_lng: longitude,
+        p_radius_km: radiusKm,
+        p_limit: Math.min(Math.max(pageSize * 3, 50), 200),
+        p_offset: 0,
+        p_date_from: dateFrom ?? null,
+      });
+
+      if (error) throw error;
+
+      let rows = (data || []) as Event[];
+
+      if (search?.trim()) {
+        const q = search.trim().toLowerCase();
+        rows = rows.filter(
+          (e) =>
+            e.title?.toLowerCase().includes(q) ||
+            e.location?.toLowerCase().includes(q) ||
+            e.category?.toLowerCase().includes(q) ||
+            e.description?.toLowerCase().includes(q),
+        );
+      }
+      if (category) {
+        rows = rows.filter((e) => e.category?.toLowerCase() === category.toLowerCase());
+      }
+
+      switch (sort) {
+        case 'price-low':
+          rows = [...rows].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+          break;
+        case 'price-high':
+          rows = [...rows].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+          break;
+        case 'latest':
+          rows = [...rows].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+          break;
+        case 'soonest':
+        default:
+          rows = [...rows].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+          break;
+      }
+
+      const totalCount = rows.length;
+      const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
+      const pageRows = rows.slice(offset, offset + pageSize);
+
+      return {
+        events: pageRows,
+        totalCount,
+        totalPages,
+        page: safePage,
+        pageSize,
+        stats: {
+          featuredCount: rows.filter((e) => e.featured).length,
+          thisWeekCount: totalCount,
+          curatedCount: 0,
+          curatedCity: null,
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching nearby events:', error);
+      toast.error('Failed to fetch nearby events');
+      return {
+        events: [],
+        totalCount: 0,
+        totalPages: 1,
+        page: options.page,
+        pageSize: options.pageSize,
+        stats: {
+          featuredCount: 0,
+          thisWeekCount: 0,
+          curatedCount: 0,
+          curatedCity: null,
         },
       };
     }

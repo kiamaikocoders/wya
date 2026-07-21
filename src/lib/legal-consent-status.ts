@@ -40,6 +40,7 @@ export function profileNeedsLegalReconsent(profile: Profile | null | undefined):
 }
 
 const SKIP_PREFIXES = [
+  '/welcome',
   '/login',
   '/signup',
   '/admin-login',
@@ -47,6 +48,7 @@ const SKIP_PREFIXES = [
   '/reset-password',
   '/email-confirmation-pending',
   '/auth/',
+  '/events',
 ] as const;
 
 export function shouldSkipLegalConsentGate(pathname: string): boolean {

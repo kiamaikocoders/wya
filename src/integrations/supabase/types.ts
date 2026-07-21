@@ -156,13 +156,20 @@ export type Database = {
           created_at: string | null
           date: string
           description: string | null
+          end_date: string | null
           featured: boolean | null
           id: number
           image_url: string | null
+          latitude: number | null
           location: string
+          location_url: string | null
+          longitude: number | null
           organizer_id: string | null
+          performing_artists: string[] | null
           price: number | null
           tags: string[] | null
+          ticket_link: string | null
+          time: string | null
           title: string
           updated_at: string | null
         }
@@ -172,13 +179,20 @@ export type Database = {
           created_at?: string | null
           date: string
           description?: string | null
+          end_date?: string | null
           featured?: boolean | null
           id?: number
           image_url?: string | null
+          latitude?: number | null
           location: string
+          location_url?: string | null
+          longitude?: number | null
           organizer_id?: string | null
+          performing_artists?: string[] | null
           price?: number | null
           tags?: string[] | null
+          ticket_link?: string | null
+          time?: string | null
           title: string
           updated_at?: string | null
         }
@@ -188,13 +202,20 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string | null
+          end_date?: string | null
           featured?: boolean | null
           id?: number
           image_url?: string | null
+          latitude?: number | null
           location?: string
+          location_url?: string | null
+          longitude?: number | null
           organizer_id?: string | null
+          performing_artists?: string[] | null
           price?: number | null
           tags?: string[] | null
+          ticket_link?: string | null
+          time?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -1099,6 +1120,47 @@ export type Database = {
           p_reason?: string | null
         }
         Returns: undefined
+      }
+      events_within_radius: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_radius_km?: number
+          p_limit?: number
+          p_offset?: number
+          p_date_from?: string | null
+        }
+        Returns: {
+          id: number
+          title: string
+          description: string | null
+          date: string
+          end_date: string | null
+          time: string | null
+          location: string
+          image_url: string | null
+          capacity: number | null
+          price: number | null
+          category: string | null
+          organizer_id: string | null
+          featured: boolean | null
+          created_at: string | null
+          updated_at: string | null
+          tags: string[] | null
+          latitude: number | null
+          longitude: number | null
+          performing_artists: string[] | null
+          distance_km: number
+        }[]
+      }
+      events_within_radius_count: {
+        Args: {
+          p_lat: number
+          p_lng: number
+          p_radius_km?: number
+          p_date_from?: string | null
+        }
+        Returns: number
       }
     }
     Enums: {

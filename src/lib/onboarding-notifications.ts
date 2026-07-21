@@ -242,51 +242,95 @@ class OnboardingNotifications {
    * Send nearby events notification
    */
   async sendNearbyEventsNotification(userId: string): Promise<void> {
-    // Check permission first
-    const permissionStatus = await locationService.checkPermissionStatus();
-    
-    // If permission is not granted, don't request automatically
-    if (!permissionStatus.granted) {
-      return; // Exit silently - don't show prompts
+    // Prefer saved profile location when user consented
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('latitude, longitude, location_consent')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (profile && profile.location_consent === false) {
+      return;
     }
 
-    // Permission is granted - get location silently
-    let userLocation = locationService.getCachedLocation();
-    if (!userLocation) {
-      // Try to get fresh location silently
-      userLocation = await locationService.getCurrentLocation(false, true); // Silent mode
-      if (!userLocation) {
-        return; // Can't proceed without location
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    if (
+      profile?.location_consent &&
+      profile.latitude != null &&
+      profile.longitude != null &&
+      Number.isFinite(Number(profile.latitude)) &&
+      Number.isFinite(Number(profile.longitude))
+    ) {
+      lat = Number(profile.latitude);
+      lng = Number(profile.longitude);
+    } else {
+      const permissionStatus = await locationService.checkPermissionStatus();
+      if (!permissionStatus.granted) {
+        return;
       }
+      let userLocation = locationService.getCachedLocation();
+      if (!userLocation) {
+        userLocation = await locationService.getCurrentLocation(false, true);
+      }
+      if (!userLocation) return;
+      lat = userLocation.latitude;
+      lng = userLocation.longitude;
     }
 
-    // Get events from start of today (so events on the current day are included)
+    if (lat == null || lng == null) return;
+
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayStr = startOfToday.toISOString().slice(0, 10);
 
-    const { data: events } = await supabase
-      .from('events')
-      .select('id, title, latitude, longitude, date, location')
-      .gte('date', startOfTodayStr);
+    // Prefer RPC; fall back to client Haversine
+    let nearbyEvents: { id: number; title: string }[] = [];
+    try {
+      const { data, error } = await supabase.rpc('events_within_radius', {
+        p_lat: lat,
+        p_lng: lng,
+        p_radius_km: 50,
+        p_limit: 3,
+        p_offset: 0,
+        p_date_from: startOfTodayStr,
+      });
+      if (!error && data?.length) {
+        nearbyEvents = data.map((e: { id: number; title: string }) => ({
+          id: e.id,
+          title: e.title,
+        }));
+      }
+    } catch {
+      // fall through
+    }
 
-    if (!events || events.length === 0) return;
+    if (nearbyEvents.length === 0) {
+      const { data: events } = await supabase
+        .from('events')
+        .select('id, title, latitude, longitude, date, location')
+        .gte('date', startOfTodayStr);
 
-    const nearbyEvents = events
-      .filter((event) => {
-        if (!event.latitude || !event.longitude) return false;
-        const distance = locationService.calculateDistance(
-          userLocation.latitude,
-          userLocation.longitude,
-          event.latitude,
-          event.longitude
-        );
-        return distance <= 50; // Within 50km
-      })
-      .slice(0, 3); // Top 3 nearby events
+      if (!events || events.length === 0) return;
+
+      nearbyEvents = events
+        .filter((event) => {
+          if (!event.latitude || !event.longitude) return false;
+          const distance = locationService.calculateDistance(
+            lat!,
+            lng!,
+            event.latitude,
+            event.longitude,
+          );
+          return distance <= 50;
+        })
+        .slice(0, 3)
+        .map((e) => ({ id: e.id, title: e.title }));
+    }
 
     if (nearbyEvents.length > 0) {
-      const eventTitles = nearbyEvents.map(e => e.title).join(', ');
+      const eventTitles = nearbyEvents.map((e) => e.title).join(', ');
       await notificationService.createNotification({
         user_id: userId,
         title: 'Events Near You 📍',
@@ -299,7 +343,7 @@ class OnboardingNotifications {
         description: `${nearbyEvents.length} event${nearbyEvents.length > 1 ? 's' : ''} happening near your location.`,
         action: {
           label: 'View',
-          onClick: () => window.location.href = '/events',
+          onClick: () => (window.location.href = '/events'),
         },
       });
     }
