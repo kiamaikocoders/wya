@@ -101,7 +101,9 @@ type LegalHeroFormShellProps = {
   className?: string;
 };
 
-/** Full-bleed hero with left copy panel + right form card (Contact / Feedback). */
+/** Full-bleed hero with left copy panel + right form card (Contact / Feedback).
+ * Hero fills the first viewport; footer only after scroll.
+ */
 export function LegalHeroFormShell({
   heroSrc,
   heroAlt = '',
@@ -119,12 +121,12 @@ export function LegalHeroFormShell({
   return (
     <div
       className={cn(
-        'relative flex min-h-screen flex-col',
+        'relative flex flex-col',
         isDark ? 'bg-[#0d1117]' : 'bg-[#f6f8fa]',
         className
       )}
     >
-      <div className="absolute inset-0 min-h-[720px]">
+      <section className="relative flex min-h-[100dvh] flex-col overflow-hidden">
         <img
           src={heroSrc}
           alt={heroAlt}
@@ -139,25 +141,23 @@ export function LegalHeroFormShell({
               'linear-gradient(90deg, rgba(5, 8, 13, 0.72) 0%, rgba(5, 8, 13, 0.45) 42%, rgba(5, 8, 13, 0.2) 70%, rgba(5, 8, 13, 0.35) 100%)',
           }}
         />
-      </div>
 
-      <div className="relative z-10 flex min-h-screen flex-col">
-        <div className="flex h-20 items-center justify-between px-5 py-6 sm:px-8 md:px-12">
+        <div className="relative z-10 flex h-20 shrink-0 items-center justify-between px-5 py-6 sm:px-8 md:px-12">
           <Logo href="/" size="sm" className="[&_img]:!h-10 sm:[&_img]:!h-12" />
           <ModeToggle className="border-white/20 bg-black/40 text-white hover:bg-black/55" />
         </div>
 
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-8 px-5 pb-16 pt-4 lg:flex-row lg:items-start lg:justify-between lg:gap-10 lg:px-12 lg:pt-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-1 flex-col justify-center gap-8 px-5 pb-12 pt-2 lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:px-12 lg:pb-16">
           <div className="w-full max-w-[516px] rounded-3xl border border-white/10 bg-[rgba(10,13,18,0.55)] p-7 backdrop-blur-sm">
             {left}
           </div>
-          <div className="w-full max-w-[560px] rounded-[28px] bg-white px-6 py-8 text-[#1a1f24] shadow-2xl sm:px-9 lg:mt-0">
+          <div className="w-full max-w-[560px] rounded-[28px] bg-white px-6 py-8 text-[#1a1f24] shadow-2xl sm:px-9">
             {children}
           </div>
         </div>
+      </section>
 
-        <SiteFooter className="relative z-10 mt-auto" />
-      </div>
+      <SiteFooter className="relative z-10 shrink-0" />
     </div>
   );
 }

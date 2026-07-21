@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, MapPin, Ticket, Users, X, Loader2, ExternalLink, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -35,11 +36,14 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
     };
   }, [open, onClose]);
 
@@ -158,262 +162,295 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
     toast.info('Ticket purchase coming soon');
   };
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto py-6 sm:items-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[90]">
+      {/* Full-viewport scrim — never scrolls with modal content */}
       <button
         type="button"
-        className="absolute inset-0 bg-[rgba(13,17,23,0.72)]"
+        className="absolute inset-0 bg-[rgba(13,17,23,0.72)] backdrop-blur-[2px]"
         aria-label="Close event details"
         onClick={onClose}
       />
 
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="event-detail-title"
-        className={cn(
-          'relative z-10 mx-4 flex w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border shadow-[0px_28px_56px_0px_rgba(0,0,0,0.5)]',
-          modalBg,
-        )}
-      >
-        {loading || !view ? (
-          <div className="flex min-h-[320px] items-center justify-center">
-            <Loader2 className="size-8 animate-spin text-[#ff6b35]" />
-          </div>
-        ) : (
-          <>
-            <div className="relative h-[200px] w-full shrink-0 overflow-hidden sm:h-[240px]">
-              <img src={view.cover} alt="" className="absolute inset-0 size-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(13,18,23,0.55)]" />
-              <div className="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-4">
-                <div className="flex gap-2">
-                  {view.featured && (
-                    <span className="rounded-full bg-[#ff6b35] px-2.5 py-1 text-[11px] font-semibold text-white">
-                      Featured
-                    </span>
-                  )}
-                  {view.category && (
-                    <span
-                      className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-medium',
-                        isDark
-                          ? 'border-[#21262d] bg-[#1c2333] text-[#8b949e]'
-                          : 'border-[#d0d7de] bg-white/90 text-[#5c6570]',
-                      )}
-                    >
-                      {view.category}
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex size-9 items-center justify-center rounded-full bg-black/45 text-white"
-                  aria-label="Close"
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
+      <div className="pointer-events-none relative flex h-full items-center justify-center p-4 sm:p-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-detail-title"
+          className={cn(
+            'pointer-events-auto relative flex max-h-[calc(100vh-2rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-[20px] border shadow-[0px_28px_56px_0px_rgba(0,0,0,0.5)] sm:max-h-[calc(100vh-3rem)]',
+            modalBg,
+          )}
+        >
+          {loading || !view ? (
+            <div className="flex min-h-[320px] items-center justify-center">
+              <Loader2 className="size-8 animate-spin text-[#ff6b35]" />
             </div>
-
-            <div className="flex flex-col gap-4 px-5 pb-[22px] pt-5 sm:px-7">
-              <div className="space-y-1.5">
-                <h2 id="event-detail-title" className={cn('text-[26px] font-extrabold', heading)}>
-                  {view.title}
-                </h2>
-                <p className={cn('text-[13px]', muted)}>{view.subtitle}</p>
-              </div>
-
-              <div className={cn('space-y-2.5 rounded-[14px] border px-3.5 py-3', card)}>
-                <MetaRow
-                  icon={<Calendar className="size-3.5 text-[#ff6b35]" />}
-                  label="Date & time"
-                  value={view.dateTime}
-                  inset={inset}
-                  heading={heading}
-                  muted={muted}
-                />
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-3 text-left"
-                  onClick={() => {
-                    if (hasCoords || mapsHref) setShowMap((v) => !v);
-                    else toast.message('No map pin for this venue yet');
-                  }}
-                >
-                  <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-lg', inset)}>
-                    <MapPin className="size-3.5 text-[#ff6b35]" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className={cn('block text-[10px] font-semibold uppercase tracking-wider', muted)}>
-                      Venue
-                    </span>
-                    <span className={cn('block text-sm font-medium', heading)}>{view.venue}</span>
-                    {(hasCoords || mapsHref) && (
-                      <span className="mt-0.5 flex items-center gap-1 text-[11px] text-[#ff6b35]">
-                        {showMap ? 'Hide map' : 'Show map'}
-                        <ChevronDown
-                          className={cn('size-3 transition-transform', showMap && 'rotate-180')}
-                        />
+          ) : (
+            <>
+              <div className="relative h-[180px] w-full shrink-0 overflow-hidden sm:h-[220px]">
+                <img src={view.cover} alt="" className="absolute inset-0 size-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(13,18,23,0.55)]" />
+                <div className="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-4">
+                  <div className="flex gap-2">
+                    {view.featured && (
+                      <span className="rounded-full bg-[#ff6b35] px-2.5 py-1 text-[11px] font-semibold text-white">
+                        Featured
                       </span>
                     )}
-                  </span>
-                </button>
-                {showMap && hasCoords && (
-                  <div className="overflow-hidden rounded-xl">
-                    <MapView
-                      latitude={view.latitude!}
-                      longitude={view.longitude!}
-                      location={view.venue}
+                    {view.category && (
+                      <span
+                        className={cn(
+                          'rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                          isDark
+                            ? 'border-[#21262d] bg-[#1c2333] text-[#8b949e]'
+                            : 'border-[#d0d7de] bg-white/90 text-[#5c6570]',
+                        )}
+                      >
+                        {view.category}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex size-9 items-center justify-center rounded-full bg-black/45 text-white"
+                    aria-label="Close"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 sm:px-7">
+                <div className="flex flex-col gap-4 pb-4">
+                  <div className="space-y-1.5">
+                    <h2 id="event-detail-title" className={cn('text-[26px] font-extrabold', heading)}>
+                      {view.title}
+                    </h2>
+                    <p className={cn('text-[13px]', muted)}>{view.subtitle}</p>
+                  </div>
+
+                  <div className={cn('space-y-2.5 rounded-[14px] border px-3.5 py-3', card)}>
+                    <MetaRow
+                      icon={<Calendar className="size-3.5 text-[#ff6b35]" />}
+                      label="Date & time"
+                      value={view.dateTime}
+                      inset={inset}
+                      heading={heading}
+                      muted={muted}
                     />
-                    <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 text-left"
+                      onClick={() => {
+                        if (hasCoords || mapsHref) setShowMap((v) => !v);
+                        else toast.message('No map pin for this venue yet');
+                      }}
+                    >
+                      <span
+                        className={cn(
+                          'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                          inset,
+                        )}
+                      >
+                        <MapPin className="size-3.5 text-[#ff6b35]" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={cn(
+                            'block text-[10px] font-semibold uppercase tracking-wider',
+                            muted,
+                          )}
+                        >
+                          Venue
+                        </span>
+                        <span className={cn('block text-sm font-medium', heading)}>{view.venue}</span>
+                        {(hasCoords || mapsHref) && (
+                          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-[#ff6b35]">
+                            {showMap ? 'Hide map' : 'Show map'}
+                            <ChevronDown
+                              className={cn('size-3 transition-transform', showMap && 'rotate-180')}
+                            />
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                    {showMap && hasCoords && (
+                      <div className="overflow-hidden rounded-xl">
+                        <MapView
+                          latitude={view.latitude!}
+                          longitude={view.longitude!}
+                          location={view.venue}
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <a
+                            href={mapsHref || googleMapsSearchUrl(view.latitude!, view.longitude!)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#ff6b35]"
+                          >
+                            Open in Maps <ExternalLink className="size-3" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    {showMap && !hasCoords && mapsHref && (
                       <a
-                        href={mapsHref || googleMapsSearchUrl(view.latitude!, view.longitude!)}
+                        href={mapsHref}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#ff6b35]"
                       >
-                        Open in Maps <ExternalLink className="size-3" />
+                        Open venue link <ExternalLink className="size-3" />
                       </a>
-                    </div>
-                  </div>
-                )}
-                {showMap && !hasCoords && mapsHref && (
-                  <a
-                    href={mapsHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#ff6b35]"
-                  >
-                    Open venue link <ExternalLink className="size-3" />
-                  </a>
-                )}
-                <MetaRow
-                  icon={<Ticket className="size-3.5 text-[#ff6b35]" />}
-                  label="Tickets"
-                  value={view.tickets}
-                  inset={inset}
-                  heading={heading}
-                  muted={muted}
-                />
-                <MetaRow
-                  icon={<Users className="size-3.5 text-[#ff6b35]" />}
-                  label="Attendance"
-                  value={view.attendance}
-                  inset={inset}
-                  heading={heading}
-                  muted={muted}
-                />
-              </div>
-
-              {view.about && (
-                <div className="space-y-2">
-                  <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>
-                    ABOUT THIS EVENT
-                  </p>
-                  <p className={cn('text-[13px] leading-5', heading)}>{view.about}</p>
-                </div>
-              )}
-
-              {view.expect.length > 0 && (
-                <div className="space-y-2">
-                  <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>
-                    WHAT TO EXPECT
-                  </p>
-                  <div
-                    className={cn(
-                      'space-y-1 rounded-xl border px-3.5 py-2.5 text-xs leading-[18px]',
-                      card,
-                      heading,
                     )}
-                  >
-                    {view.expect.map((item) => (
-                      <p key={item}>• {item}</p>
-                    ))}
+                    <MetaRow
+                      icon={<Ticket className="size-3.5 text-[#ff6b35]" />}
+                      label="Tickets"
+                      value={view.tickets}
+                      inset={inset}
+                      heading={heading}
+                      muted={muted}
+                    />
+                    <MetaRow
+                      icon={<Users className="size-3.5 text-[#ff6b35]" />}
+                      label="Attendance"
+                      value={view.attendance}
+                      inset={inset}
+                      heading={heading}
+                      muted={muted}
+                    />
                   </div>
-                </div>
-              )}
 
-              <div className={cn('flex items-center gap-3 rounded-xl border px-3.5 py-3', card)}>
-                <div
-                  className={cn(
-                    'flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-[#ff6b35]',
-                    inset,
+                  {view.about && (
+                    <div className="space-y-2">
+                      <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>
+                        ABOUT THIS EVENT
+                      </p>
+                      <p className={cn('text-[13px] leading-5', heading)}>{view.about}</p>
+                    </div>
                   )}
-                >
-                  {view.organizerAvatar ? (
-                    <img src={view.organizerAvatar} alt="" className="size-full object-cover" />
-                  ) : (
-                    view.organizerName.charAt(0).toUpperCase()
+
+                  {view.expect.length > 0 && (
+                    <div className="space-y-2">
+                      <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>
+                        WHAT TO EXPECT
+                      </p>
+                      <div
+                        className={cn(
+                          'space-y-1 rounded-xl border px-3.5 py-2.5 text-xs leading-[18px]',
+                          card,
+                          heading,
+                        )}
+                      >
+                        {view.expect.map((item) => (
+                          <p key={item}>• {item}</p>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={cn('text-[10px] font-semibold tracking-[1px]', muted)}>ORGANIZED BY</p>
-                  <p className={cn('truncate text-sm font-semibold', heading)}>{view.organizerName}</p>
-                  <p className={cn('text-[11px]', muted)}>{view.organizerMeta}</p>
-                </div>
-              </div>
 
-              {view.sponsors.length > 0 && (
-                <div className="space-y-2.5">
-                  <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>SPONSORS</p>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {view.sponsors.map((s) => {
-                      const branded = Boolean(s.cardClass);
-                      return (
-                        <div
-                          key={s.name}
-                          className={cn(
-                            'flex min-h-[124px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl px-2 py-3',
-                            branded ? s.cardClass : cn('border', card),
-                          )}
-                        >
-                          {s.logo ? (
-                            <img
-                              src={s.logo}
-                              alt={s.name}
-                              className={s.logoClass || 'size-[52px] rounded-xl object-contain'}
-                            />
-                          ) : (
-                            <div
-                              className={cn(
-                                'flex size-[52px] items-center justify-center rounded-xl text-lg font-bold text-[#ff6b35]',
-                                inset,
-                              )}
-                            >
-                              {s.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <p className={cn('text-center text-xs font-semibold', s.nameClass || heading)}>
-                            {s.name}
-                          </p>
-                          <p className={cn('text-center text-[10px]', s.typeClass || muted)}>{s.type}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {view.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {view.tags.slice(0, 6).map((tag) => (
-                    <span
-                      key={tag}
+                  <div className={cn('flex items-center gap-3 rounded-xl border px-3.5 py-3', card)}>
+                    <div
                       className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-medium',
-                        isDark
-                          ? 'border-[#21262d] bg-[#1c2333] text-[#8b949e]'
-                          : 'border-[#d0d7de] bg-[#eef1f4] text-[#5c6570]',
+                        'flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-[#ff6b35]',
+                        inset,
                       )}
                     >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+                      {view.organizerAvatar ? (
+                        <img src={view.organizerAvatar} alt="" className="size-full object-cover" />
+                      ) : (
+                        view.organizerName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn('text-[10px] font-semibold tracking-[1px]', muted)}>
+                        ORGANIZED BY
+                      </p>
+                      <p className={cn('truncate text-sm font-semibold', heading)}>
+                        {view.organizerName}
+                      </p>
+                      <p className={cn('text-[11px]', muted)}>{view.organizerMeta}</p>
+                    </div>
+                  </div>
 
-              <div className="flex gap-2.5">
+                  {view.sponsors.length > 0 && (
+                    <div className="space-y-2.5">
+                      <p className={cn('text-[11px] font-semibold tracking-[1.2px]', muted)}>
+                        SPONSORS
+                      </p>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {view.sponsors.map((s) => {
+                          const branded = Boolean(s.cardClass);
+                          return (
+                            <div
+                              key={s.name}
+                              className={cn(
+                                'flex min-h-[124px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl px-2 py-3',
+                                branded ? s.cardClass : cn('border', card),
+                              )}
+                            >
+                              {s.logo ? (
+                                <img
+                                  src={s.logo}
+                                  alt={s.name}
+                                  className={s.logoClass || 'size-[52px] rounded-xl object-contain'}
+                                />
+                              ) : (
+                                <div
+                                  className={cn(
+                                    'flex size-[52px] items-center justify-center rounded-xl text-lg font-bold text-[#ff6b35]',
+                                    inset,
+                                  )}
+                                >
+                                  {s.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <p
+                                className={cn(
+                                  'text-center text-xs font-semibold',
+                                  s.nameClass || heading,
+                                )}
+                              >
+                                {s.name}
+                              </p>
+                              <p className={cn('text-center text-[10px]', s.typeClass || muted)}>
+                                {s.type}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {view.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {view.tags.slice(0, 6).map((tag) => (
+                        <span
+                          key={tag}
+                          className={cn(
+                            'rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                            isDark
+                              ? 'border-[#21262d] bg-[#1c2333] text-[#8b949e]'
+                              : 'border-[#d0d7de] bg-[#eef1f4] text-[#5c6570]',
+                          )}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                className={cn(
+                  'flex shrink-0 gap-2.5 border-t px-5 py-4 sm:px-7',
+                  isDark ? 'border-[#21262d]' : 'border-[#e8ecf0]',
+                )}
+              >
                 <button
                   type="button"
                   onClick={() => {
@@ -439,11 +476,12 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
                   Get tickets
                 </button>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
