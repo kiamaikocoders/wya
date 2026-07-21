@@ -1,72 +1,133 @@
-# WYA: Social Discovery Platform for Events in Kenya  
+# WYA — Where You At
 
-## Project Overview  
-WYA is a social discovery platform connecting people to events across Kenya. It provides a user-friendly interface for discovering local events, engaging with communities, and sharing personal experiences. 
+Social discovery for events in Kenya. Find what’s on tonight, pin your place, request experiences, and show up with your people.
 
-## Key Features  
-- **Event Discovery:** Browse and find events based on interests and location.  
-- **Real-Time Engagement System:** Users can engage in discussions and activities related to events as they happen.  
-- **User-Generated Content:** Share personal experiences and create content for others to view.  
-- **Community Features:** Connect with other users, foster community engagement, and participate in discussions.  
-- **Throwback Content:** Revisit past events through shared user memories and photographs.  
-- **Local Recommendations:** Get insights and recommendations for events happening in your community. 
+## Features
 
-## Tech Stack  
-- **Frontend:** React, TypeScript, Tailwind CSS  
-- **Backend:** Supabase  
-- **Mobile:** Capacitor  
-- **Mapping:** Mapbox  
+- **Marketing site** — Concept D landing, Get the App modal (QR + App Store / Google Play), FAQ, Contact, Feedback, Privacy, Attendee Terms, Media consent
+- **Events** — Browse by vibe, grid + Mapbox map, event detail popup, tickets/save flows
+- **Location** — Search / typeahead + My Location at signup & settings; Mapbox maps for events (Photon / Nominatim fallbacks when needed)
+- **Auth** — Email signup/login, consent gates, password reset, profile settings
+- **Community** — Discover, favorites, feedback, push notifications (OneSignal)
+- **Admin console** — Events, users, marketplace, ghost users, moderation, analytics, notifications
+- **Mobile** — Capacitor Android shell with OTA-ready live updates
 
-## Getting Started  
-### Node.js Requirements  
-Ensure you have Node.js installed. 
-- Install Node.js (v14 or later recommended)  
-- Clone the repository  
+## Tech stack
+
+| Layer | Stack |
+|--------|--------|
+| App | React 18, TypeScript, Vite 8, React Router |
+| UI | Tailwind CSS, shadcn/ui, Framer Motion |
+| Design | Figma (WYA design system · Concept D and related screens) |
+| Data | Supabase (Auth, Postgres, RLS, Edge Functions) |
+| Maps | Mapbox GL (`react-map-gl`) |
+| Push | OneSignal |
+| Mobile | Capacitor 7 (Android) |
+
+## Getting started
+
+### Requirements
+
+- **Node.js 18+** (20+ recommended)
+- npm
+
+### Clone & install
+
+```bash
+git clone https://github.com/kiamaikocoders/wya.git
+cd wya
+npm install
 ```
-git clone https://github.com/kiamaikocoders/wya.git  
-cd wya  
-```  
-### Installation  
-Install dependencies using npm:  
+
+### Environment
+
+Copy the example env and fill in what you need:
+
+```bash
+cp .env.example .env
 ```
-npm install  
-```  
-### Environment Setup  
-Create a `.env` file in the root directory and add the necessary environment variables. No additional steps are needed.  
-### Running Locally  
-Start the development server:  
+
+Key client variables (see `.env.example` for the full list):
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_SUPABASE_URL` | Supabase project URL (also used for functions / redirects) |
+| `VITE_MAPBOX_ACCESS_TOKEN` | **Public** Mapbox token (`pk.…`) for search & maps — never put a secret `sk.` token in Vite |
+| `VITE_ONESIGNAL_APP_ID` | Web push App ID |
+| `VITE_ONESIGNAL_SAFARI_WEB_ID` | Safari web push ID |
+| `VITE_ALLOWED_REDIRECT_ORIGINS` | Allowed auth redirect origins |
+| `VITE_AI_PROXY_BASE_URL` | Optional origin for `/api/ai` if not same-host |
+
+Server-only (Vercel / Edge Functions — **not** `VITE_`):
+
+- `VERCEL_AI_API_KEY` — AI gateway
+- `ONESIGNAL_REST_API_KEY`, `ALLOWED_ORIGINS`, etc. — set in Supabase / Vercel dashboards
+
+> The generated Supabase client under `src/integrations/supabase/client.ts` may already embed project URL/anon key for this repo. Prefer env-driven config for forks and new environments.
+
+### Run locally
+
+```bash
+npm run dev
 ```
-npm start  
-```  
 
-## Project Structure  
-The project is organized as follows:  
-- **src/**  
-  - **pages/**: Contains the main application pages.  
-  - **components/**: Reusable components used across the application.  
-  - **services/**: API service handlers and data fetching utilities.  
+Vite serves the app (default `http://localhost:8080` or the port shown in the terminal).
 
-## Core Features  
-- **Events Discovery:** Users can find events tailored to their interests through an interactive search mechanism.  
-- **Engagement System:** Keep the platform lively with throwback posts, tips from the community, and local recommendations.  
-- **User Authentication:** Secure login and account management for users.  
-- **Mobile-First Design:** Optimized experience on mobile devices for accessibility and usability.  
+Other useful scripts:
 
-## Environment Variables  
-Required variables for connectivity and API usage include:  
-- **SUPABASE_URL**: Your Supabase project URL.  
-- **SUPABASE_ANON_KEY**: Your Supabase public anonymous key.  
-- **MAPBOX_TOKEN**: Your Mapbox access token.  
-- **VERCEL_AI_KEY**: Your Vercel AI key for deployments.  
+```bash
+npm run build          # production build
+npm run preview        # preview production build
+npm run lint           # ESLint
+npm run optimize:images
+npm run android:build  # web build + Capacitor sync
+```
 
-## Deployment  
-Deploy the application to Vercel with Over-The-Air (OTA) updates facilitated by Capacitor.  
+## Project structure
 
-## Design System  
-The application uses the **Inter** and **Plus Jakarta Sans** fonts, and supports both light and dark modes for a flexible user experience.  
+```
+src/
+  pages/           # Routes (Landing, Events, Auth, Admin, Legal, …)
+  components/      # UI, maps, marketing, admin, events
+  lib/             # Services (events, location, auth, admin, …)
+  contexts/        # Auth, theme
+  integrations/    # Supabase client & types
+  legal/           # Legal page copy helpers
+supabase/
+  migrations/      # SQL migrations
+  functions/       # Edge Functions
+public/            # Static assets (landing, auth, events, legal)
+docs/              # Product & engineering notes
+```
 
-## Development Workflow  
-Follow Git best practices with feature branching, pull requests, and code reviews to ensure quality and maintainability.  
+## Location notes
 
-## Contributing Guidelines  
-We welcome contributions! Please see our `CONTRIBUTING.md` for guidelines on how to get involved with WYA.
+- Signup / Settings: search-only picker (typeahead, Search, My Location) — no map
+- Admin create/edit events: LocationPicker with map pin; lat/lng required; `location_url` can auto-fill
+- Events map: theme-aware Mapbox style (light streets / dark); pin hover cards open the event popup
+- Details: [`docs/LOCATION_USAGE.md`](docs/LOCATION_USAGE.md)
+
+Apply DB migrations that touch profiles/events (e.g. `handle_new_user` location metadata) via your Supabase workflow before relying on signup location persistence.
+
+## Design
+
+UI is designed in **Figma** (WYA design system) and implemented in this repo. Screens that track Figma closely include landing (Concept D), events browse + detail popup, auth shells, admin console, and legal/help pages (FAQ, Privacy, Terms, Media consent, Contact, Feedback).
+
+- Coral accent `#FF6B35` on dark-first Concept D surfaces; light mode supported site-wide
+- Theme toggle persisted (`wya-theme`)
+- Marketing and legal pages share `SiteFooter` + hero shells
+- Visual / content notes: [`docs/landing-visual-direction.md`](docs/landing-visual-direction.md), [`docs/stitch-design-brief.md`](docs/stitch-design-brief.md)
+
+## Deployment
+
+- **Web:** Vercel (or any static host for the Vite build). Set env vars in the host dashboard.
+- **Supabase:** Migrations + Edge Function secrets in the Supabase project.
+- **Android:** `npm run android:build` then open/run with Capacitor / Android Studio.
+
+## Docs
+
+See [`docs/`](docs/) for PRDs, auth, notifications, ghost users, landing direction, and security notes.
+
+## Contributing
+
+Use feature branches and pull requests against `main`. Keep changes focused; match existing patterns in `src/` before inventing new ones.
