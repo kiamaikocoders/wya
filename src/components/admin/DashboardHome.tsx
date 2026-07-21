@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { LayoutDashboard, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {
+import { 
   AdminKpiTile,
   AdminPageShell,
   AdminRefreshButton,
@@ -180,8 +180,8 @@ const DashboardHome: React.FC = () => {
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : (
-        <>
+                ) : (
+                  <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {kpis.map((kpi) => (
               <AdminKpiTile
@@ -203,7 +203,7 @@ const DashboardHome: React.FC = () => {
                 No recent activity yet.
               </p>
             ) : (
-              <div className="space-y-2">
+            <div className="space-y-2">
                 {activityQuery.data.map((row) => (
                   <button
                     key={row.id}
@@ -220,8 +220,8 @@ const DashboardHome: React.FC = () => {
                     <AdminStatusPill tone={row.tone}>{row.pill}</AdminStatusPill>
                   </button>
                 ))}
-              </div>
-            )}
+            </div>
+          )}
           </AdminSectionPanel>
         </>
       )}

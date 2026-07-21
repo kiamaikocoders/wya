@@ -1,23 +1,31 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Map, { Marker, Popup, NavigationControl, ViewState } from 'react-map-gl/mapbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Search, Navigation, Check } from 'lucide-react';
-import { locationService, generateSessionToken, getSuggestionCountryCode } from '@/lib/location-service';
+import { MapPin, Search, Navigation, Check, Loader2 } from 'lucide-react';
+import {
+  locationService,
+  generateSessionToken,
+  type PlaceSuggestion,
+} from '@/lib/location-service';
 import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = locationService.getMapboxToken();
 
+type PickedLocation = {
+  address: string;
+  latitude: number;
+  longitude: number;
+  city?: string;
+  country?: string;
+};
+
 interface LocationPickerProps {
-  onLocationSelect: (location: {
-    address: string;
-    latitude: number;
-    longitude: number;
-    city?: string;
-    country?: string;
-  }) => void;
+  onLocationSelect: (location: PickedLocation) => void;
+  /** Called when the user clears the search text so parents can null out stale coords. */
+  onLocationClear?: () => void;
   initialLocation?: {
     address: string;
     latitude: number;
@@ -26,457 +34,483 @@ interface LocationPickerProps {
   height?: number;
   title?: string;
   description?: string;
-  mode?: 'event' | 'user'; // 'event' for event creation, 'user' for user profile
+  mode?: 'event' | 'user';
+  /** Compact layout without card chrome (settings / signup). */
+  compact?: boolean;
+  /**
+   * When false: search typeahead + Search + My Location only (no map).
+   * Default true for event pinning; signup/settings should pass false.
+   */
+  showMap?: boolean;
+  className?: string;
 }
 
 const LocationPicker: React.FC<LocationPickerProps> = ({
   onLocationSelect,
+  onLocationClear,
   initialLocation,
   height = 400,
   title,
   description,
   mode = 'event',
+  compact = false,
+  showMap = true,
+  className,
 }) => {
-  const defaultTitle = mode === 'event' 
-    ? 'Select Event Location' 
-    : 'Set Your Location';
-  const defaultDescription = mode === 'event'
-    ? 'Click on the map or search to set the event location. This will be used to pin the event on the map.'
-    : 'Set your location to receive personalized event recommendations near you. Your location helps us show you events happening in your area.';
-  
-  const displayTitle = title || defaultTitle;
-  const displayDescription = description || defaultDescription;
+  const defaultTitle = mode === 'event' ? 'Select Event Location' : 'Set Your Location';
+  const defaultDescription = showMap
+    ? mode === 'event'
+      ? 'Click on the map or search to set the event location.'
+      : 'Set your location to receive personalized event recommendations near you.'
+    : 'Search for your area, pick a suggestion, or use My Location.';
+
+  const displayTitle = title ?? defaultTitle;
+  const displayDescription = description ?? defaultDescription;
+
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: initialLocation?.longitude || 36.8219,
     latitude: initialLocation?.latitude || -1.2921,
     zoom: initialLocation ? 14 : 6,
   });
 
-  const [selectedLocation, setSelectedLocation] = useState<{
-    latitude: number;
-    longitude: number;
-    address: string;
-    city?: string;
-    country?: string;
-  } | null>(
+  const [selectedLocation, setSelectedLocation] = useState<PickedLocation | null>(
     initialLocation
       ? {
           latitude: initialLocation.latitude,
           longitude: initialLocation.longitude,
           address: initialLocation.address,
         }
-      : null
+      : null,
   );
 
   const [searchQuery, setSearchQuery] = useState(initialLocation?.address || '');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<PlaceSuggestion[]>([]);
   const [sessionToken, setSessionToken] = useState<string>(generateSessionToken());
+  const [locating, setLocating] = useState(false);
+  const suggestRequestId = useRef(0);
 
-  // Search using Mapbox Search Box API
-  const handleSearch = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    if (!searchQuery.trim()) {
-      toast.error('Please enter a location');
-      return;
-    }
+  useEffect(() => {
+    if (!initialLocation) return;
+    setSelectedLocation({
+      latitude: initialLocation.latitude,
+      longitude: initialLocation.longitude,
+      address: initialLocation.address,
+    });
+    setSearchQuery(initialLocation.address || '');
+    setViewState((prev) => ({
+      ...prev,
+      longitude: initialLocation.longitude,
+      latitude: initialLocation.latitude,
+      zoom: 14,
+    }));
+  }, [initialLocation?.address, initialLocation?.latitude, initialLocation?.longitude]);
 
-    setIsSearching(true);
-    try {
-      // Generate new session token for each new search
-      const currentSessionToken = sessionToken || generateSessionToken();
-      if (!sessionToken) {
-        setSessionToken(currentSessionToken);
-      }
-      
-      // Use Search Box API suggest endpoint
-      // Note: Search Box API has a maximum limit of 10
-      const suggestions = await locationService.searchLocationsSuggest(searchQuery, currentSessionToken, {
-        country: 'ke',
-        proximity: '36.8219,-1.2921', // Nairobi coordinates
-        limit: 10
+  const applyPick = useCallback(
+    (pick: PickedLocation, commit: boolean) => {
+      setSelectedLocation(pick);
+      setSearchQuery(pick.address);
+      setViewState({
+        longitude: pick.longitude,
+        latitude: pick.latitude,
+        zoom: 14,
       });
-      
-      // Filter to Kenyan results (Search Box API: context.country.country_code)
-      let kenyanSuggestions = suggestions.filter((suggestion: any) => {
-        const code = getSuggestionCountryCode(suggestion);
-        return code === 'KE' || code === 'ke';
-      });
-      if (kenyanSuggestions.length === 0 && suggestions.length > 0) {
-        kenyanSuggestions = suggestions;
+      setSearchResults([]);
+      if (commit || !showMap) {
+        onLocationSelect(pick);
       }
+    },
+    [onLocationSelect, showMap],
+  );
 
-      if (kenyanSuggestions.length === 0) {
-        toast.error('No locations found in Kenya. Try a different search term.');
+  const runSearch = useCallback(
+    async (query: string, opts?: { autoSelectFirst?: boolean }) => {
+      const trimmed = query.trim();
+      if (trimmed.length < 2) {
         setSearchResults([]);
         return;
       }
-      
-      // Sort by type priority (feature_type is string in Search Box API) and distance
-      const typePriority: Record<string, number> = {
-        address: 1, poi: 2, locality: 3, neighborhood: 4, place: 5, city: 6,
-      };
-      const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
-        const aType = Array.isArray(a.feature_type) ? a.feature_type[0] : a.feature_type;
-        const bType = Array.isArray(b.feature_type) ? b.feature_type[0] : b.feature_type;
-        const aPriority = typePriority[aType] ?? 99;
-        const bPriority = typePriority[bType] ?? 99;
-        if (aPriority !== bPriority) return aPriority - bPriority;
-        return (a.distance ?? Infinity) - (b.distance ?? Infinity);
-      });
-      
-      setSearchResults(sortedSuggestions);
 
-      // Auto-select first result and retrieve full details
-      if (sortedSuggestions.length > 0) {
-        const firstSuggestion = sortedSuggestions[0];
-        
-        // Retrieve full details for auto-selection
-        const feature = await locationService.retrieveLocationDetails(
-          firstSuggestion.mapbox_id,
-          currentSessionToken
-        );
-        
-        if (feature) {
-          const [lng, lat] = feature.geometry?.coordinates || [];
-          if (lat && lng) {
-            setViewState({
-              longitude: lng,
-              latitude: lat,
-              zoom: 14,
-            });
-            
-            const address = feature.properties?.full_address || 
-                           feature.properties?.name || 
-                           firstSuggestion.name || 
-                           '';
-            
-            setSelectedLocation({
-              latitude: lat,
-              longitude: lng,
-              address: address,
-            });
-            
-            toast.success(`Found ${sortedSuggestions.length} location(s) in Kenya`);
+      const idAtStart = ++suggestRequestId.current;
+      setIsSearching(true);
+      try {
+        const currentSessionToken = sessionToken || generateSessionToken();
+        if (!sessionToken) setSessionToken(currentSessionToken);
+
+        const suggestions = await locationService.searchPlaces(trimmed, currentSessionToken, {
+          limit: 8,
+        });
+
+        if (idAtStart !== suggestRequestId.current) return;
+
+        if (suggestions.length === 0) {
+          setSearchResults([]);
+          if (opts?.autoSelectFirst) {
+            toast.error('No locations found. Try a different search term.');
           }
+          return;
         }
+
+        setSearchResults(suggestions);
+
+        if (opts?.autoSelectFirst && !showMap) {
+          // Search button on search-only: keep list open so user can pick
+          toast.success(`${suggestions.length} place${suggestions.length === 1 ? '' : 's'} found`);
+        }
+      } catch (error) {
+        if (idAtStart !== suggestRequestId.current) return;
+        console.error('Search error:', error);
+        toast.error('Failed to search location. Please try again.');
+        setSearchResults([]);
+      } finally {
+        if (idAtStart === suggestRequestId.current) setIsSearching(false);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      toast.error('Failed to search location. Please check your connection and try again.');
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+    },
+    [sessionToken, showMap],
+  );
+
+  // Typeahead while typing (search-only and map modes)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      if (!trimmed) setSearchResults([]);
+      return;
     }
-  }, [searchQuery, sessionToken]);
-
-  // Handle map click
-  const handleMapClick = useCallback(async (event: any) => {
-    const { lng, lat } = event.lngLat;
-
-    try {
-      // Reverse geocode to get address
-      const address = await locationService.reverseGeocode(lat, lng);
-      
-      const location = {
-        latitude: lat,
-        longitude: lng,
-        address: address.address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-        city: address.city,
-        country: address.country,
-      };
-
-      setSelectedLocation(location);
-      setSearchQuery(location.address);
-    } catch (error) {
-      console.error('Reverse geocode error:', error);
-      const location = {
-        latitude: lat,
-        longitude: lng,
-        address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-      };
-      setSelectedLocation(location);
-      setSearchQuery(location.address);
-    }
-  }, []);
-
-  // Confirm selection
-  const handleConfirm = useCallback((e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    if (!selectedLocation) {
-      toast.error('Please select a location on the map');
+    // Don't re-suggest when query already matches a confirmed selection
+    if (selectedLocation && trimmed === selectedLocation.address.trim()) {
       return;
     }
 
-    onLocationSelect(selectedLocation);
-    toast.success('Location selected!');
-  }, [selectedLocation, onLocationSelect]);
+    const timer = setTimeout(() => {
+      void runSearch(searchQuery);
+    }, 280);
 
-  // Use current location
-  const handleUseCurrentLocation = useCallback(async (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    try {
-      // Force fresh location (don't use cache)
-      const location = await locationService.getCurrentLocation(true);
-      if (location) {
-        // Validate coordinates before using them
-        const lat = location.latitude;
-        const lng = location.longitude;
-        
-        // Check if coordinates are valid and not suspiciously round
-        if (lat === 0 && lng === 0) {
-          toast.error('Invalid location received. Please try again or search manually.');
-          return;
-        }
-        
-        setSelectedLocation({
-          latitude: lat,
-          longitude: lng,
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedLocation, runSearch]);
+
+  const handleSearchClick = useCallback(
+    (e?: React.MouseEvent | React.KeyboardEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (!searchQuery.trim()) {
+        toast.error('Please enter a location');
+        return;
+      }
+      void runSearch(searchQuery, { autoSelectFirst: true });
+    },
+    [searchQuery, runSearch],
+  );
+
+  const handleMapClick = useCallback(
+    async (event: any) => {
+      const { lng, lat } = event.lngLat;
+      try {
+        const address = await locationService.reverseGeocode(lat, lng);
+        applyPick(
+          {
+            latitude: lat,
+            longitude: lng,
+            address: address.address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            city: address.city,
+            country: address.country,
+          },
+          false,
+        );
+      } catch {
+        applyPick(
+          {
+            latitude: lat,
+            longitude: lng,
+            address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          },
+          false,
+        );
+      }
+    },
+    [applyPick],
+  );
+
+  const handleConfirm = useCallback(
+    (e?: React.MouseEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (!selectedLocation) {
+        toast.error('Please select a location');
+        return;
+      }
+      onLocationSelect(selectedLocation);
+      toast.success('Location selected!');
+    },
+    [selectedLocation, onLocationSelect],
+  );
+
+  const handleUseCurrentLocation = useCallback(
+    async (e?: React.MouseEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      setLocating(true);
+      try {
+        const location = await locationService.getCurrentLocation(true);
+        if (!location) return;
+
+        const pick: PickedLocation = {
+          latitude: location.latitude,
+          longitude: location.longitude,
           address: location.address || location.city || 'Current Location',
           city: location.city,
           country: location.country,
-        });
-        setViewState({
-          longitude: lng,
-          latitude: lat,
-          zoom: 14,
-        });
-        setSearchQuery(location.address || location.city || 'Current Location');
-        toast.success(`Location set to ${location.address || location.city || 'your current position'}`);
-        // DON'T auto-call onLocationSelect - user must click Confirm button
+        };
+        applyPick(pick, true);
+        toast.success(`Location set to ${pick.address}`);
+      } catch (error) {
+        console.error('Current location error:', error);
+        toast.error('Failed to get your location. Please try again or search manually.');
+      } finally {
+        setLocating(false);
       }
-    } catch (error) {
-      console.error('Current location error:', error);
-      toast.error('Failed to get your location. Please try again or search manually.');
+    },
+    [applyPick],
+  );
+
+  const handleQueryChange = (value: string) => {
+    setSearchQuery(value);
+    if (!value.trim()) {
+      setSelectedLocation(null);
+      setSearchResults([]);
+      onLocationClear?.();
+    } else if (selectedLocation && value.trim() !== selectedLocation.address.trim()) {
+      // Editing after a pick — clear stale coords until they pick again
+      setSelectedLocation(null);
+      onLocationClear?.();
     }
-  }, []);
+  };
+
+  const pickSuggestion = async (suggestion: PlaceSuggestion) => {
+    try {
+      const currentSessionToken = sessionToken || generateSessionToken();
+      if (!sessionToken) setSessionToken(currentSessionToken);
+
+      const pick = await locationService.resolveSuggestion(suggestion, currentSessionToken);
+      if (!pick) {
+        toast.error('Failed to retrieve location details');
+        return;
+      }
+      applyPick(
+        {
+          latitude: pick.latitude,
+          longitude: pick.longitude,
+          address: pick.label,
+          city: pick.city,
+          country: pick.country,
+        },
+        !showMap,
+      );
+      toast.success(`Selected: ${pick.label}`);
+    } catch (error) {
+      console.error('Error retrieving location:', error);
+      toast.error('Failed to retrieve location details');
+    }
+  };
+
+  const searchBlock = (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search town, area, or venue…"
+            value={searchQuery}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSearchClick(e);
+              }
+            }}
+            className="h-11 pl-10"
+            autoComplete="off"
+          />
+          {isSearching ? (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          ) : null}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={(e) => handleSearchClick(e)}
+            disabled={isSearching || !searchQuery.trim()}
+            className="h-11"
+          >
+            Search
+          </Button>
+          <Button
+            type="button"
+            onClick={(e) => void handleUseCurrentLocation(e)}
+            variant="outline"
+            disabled={locating}
+            className="h-11"
+          >
+            {locating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Navigation className="mr-2 h-4 w-4" />
+            )}
+            My Location
+          </Button>
+        </div>
+      </div>
+
+      {searchResults.length > 0 && (
+        <ul className="max-h-56 overflow-y-auto rounded-xl border border-border bg-background py-1 shadow-sm">
+          {searchResults.map((suggestion) => (
+            <li key={suggestion.id}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => void pickSuggestion(suggestion)}
+                className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted/60"
+              >
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="leading-snug">{suggestion.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {selectedLocation && (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+          <span>
+            Selected: <span className="font-medium text-foreground">{selectedLocation.address}</span>
+          </span>
+        </p>
+      )}
+    </>
+  );
+
+  const mapBlock = showMap ? (
+    <>
+      {MAPBOX_TOKEN ? (
+        <div
+          className="relative overflow-hidden rounded-lg border border-border"
+          style={{ height }}
+        >
+          <Map
+            {...viewState}
+            onMove={(evt) => setViewState(evt.viewState)}
+            onClick={handleMapClick}
+            mapboxAccessToken={MAPBOX_TOKEN}
+            style={{ width: '100%', height: '100%' }}
+            mapStyle="mapbox://styles/mapbox/streets-v12"
+            attributionControl={true}
+          >
+            <NavigationControl position="bottom-right" />
+            {selectedLocation && (
+              <Marker
+                longitude={selectedLocation.longitude}
+                latitude={selectedLocation.latitude}
+                anchor="bottom"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary shadow-lg">
+                  <MapPin className="h-5 w-5 text-primary-foreground" />
+                </div>
+              </Marker>
+            )}
+            {selectedLocation && (
+              <Popup
+                longitude={selectedLocation.longitude}
+                latitude={selectedLocation.latitude}
+                anchor="bottom"
+                closeButton={false}
+                closeOnClick={false}
+              >
+                <div className="p-2">
+                  <p className="text-sm font-semibold">{selectedLocation.address}</p>
+                </div>
+              </Popup>
+            )}
+          </Map>
+        </div>
+      ) : (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Map preview needs <code>VITE_MAPBOX_ACCESS_TOKEN</code>. Search still works.
+        </p>
+      )}
+
+      {selectedLocation && (
+        <div className="rounded-lg border border-border bg-muted/40 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="mb-2 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <p className="font-medium">Selected Location</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{selectedLocation.address}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
+              </p>
+            </div>
+            <Button type="button" onClick={(e) => handleConfirm(e)} size="sm">
+              <Check className="mr-1 h-4 w-4" />
+              Confirm
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
+  ) : null;
+
+  const body = (
+    <div className="space-y-3">
+      {searchBlock}
+      {mapBlock}
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div
+        className={`space-y-3 ${className || ''}`}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        {(displayTitle || displayDescription) && (title !== '' || description !== '') && (
+          <div>
+            {displayTitle ? <p className="text-sm font-medium">{displayTitle}</p> : null}
+            {displayDescription ? (
+              <p className="text-xs text-muted-foreground">{displayDescription}</p>
+            ) : null}
+          </div>
+        )}
+        {body}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-white/20-dark">
+    <div
+      className={`space-y-4 ${className || ''}`}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">{displayTitle}</CardTitle>
-          <CardDescription className="text-text-white/70">
-            {displayDescription}
-          </CardDescription>
+          <CardTitle>{displayTitle}</CardTitle>
+          <CardDescription>{displayDescription}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Bar */}
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-white/70" />
-              <Input
-                type="text"
-                placeholder="Search for a location (e.g., Nairobi, Mombasa)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleSearch(e);
-                  }
-                }}
-                className="pl-10 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark text-white border-white/20-dark focus:border-gradient-orange-accent"
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSearch(e);
-              }}
-              disabled={isSearching || !searchQuery.trim()}
-              className="bg-gradient-accent hover:bg-opacity-90"
-            >
-              {isSearching ? 'Searching...' : 'Search'}
-            </Button>
-            <Button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleUseCurrentLocation(e);
-              }}
-              variant="outline"
-              className="border-white/20-dark text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
-            >
-              <Navigation className="h-4 w-4 mr-2" />
-              My Location
-            </Button>
-          </div>
-
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {searchResults.map((suggestion, index) => {
-                const displayName = suggestion.name || suggestion.full_address || 'Unknown location';
-                
-                return (
-                  <button
-                    key={suggestion.mapbox_id || index}
-                    type="button"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      
-                      try {
-                        const currentSessionToken = sessionToken || generateSessionToken();
-                        if (!sessionToken) {
-                          setSessionToken(currentSessionToken);
-                        }
-                        
-                        // Retrieve full details for the selected suggestion
-                        const feature = await locationService.retrieveLocationDetails(
-                          suggestion.mapbox_id,
-                          currentSessionToken
-                        );
-                        
-                        if (feature) {
-                          const [lng, lat] = feature.geometry?.coordinates || [];
-                          if (lat && lng) {
-                            setViewState({
-                              longitude: lng,
-                              latitude: lat,
-                              zoom: 14,
-                            });
-                            
-                            const address = feature.properties?.full_address || 
-                                           feature.properties?.name || 
-                                           suggestion.name || 
-                                           '';
-                            
-                            setSelectedLocation({
-                              latitude: lat,
-                              longitude: lng,
-                              address: address,
-                            });
-                            setSearchQuery(address);
-                            setSearchResults([]);
-                            toast.success(`Selected: ${address}`);
-                          } else {
-                            toast.error('Invalid location coordinates');
-                          }
-                        } else {
-                          toast.error('Failed to retrieve location details');
-                        }
-                      } catch (error) {
-                        console.error('Error retrieving location:', error);
-                        toast.error('Failed to retrieve location details');
-                      }
-                    }}
-                    className="w-full text-left p-2 rounded bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark/80 text-white text-sm transition-colors"
-                  >
-                    {displayName}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Map */}
-          <div className="relative overflow-hidden rounded-lg border border-white/10" style={{ height }}>
-            <Map
-              {...viewState}
-              onMove={evt => setViewState(evt.viewState)}
-              onClick={handleMapClick}
-              mapboxAccessToken={MAPBOX_TOKEN}
-              style={{ width: '100%', height: '100%' }}
-              mapStyle="mapbox://styles/mapbox/dark-v11"
-              attributionControl={true}
-            >
-              <NavigationControl position="bottom-right" />
-
-              {/* Selected Location Marker */}
-              {selectedLocation && (
-                <Marker
-                  longitude={selectedLocation.longitude}
-                  latitude={selectedLocation.latitude}
-                  anchor="bottom"
-                >
-                  <div className="relative">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br bg-gradient-accent shadow-[0_0_30px_rgba(255,128,0,0.6)]">
-                      <MapPin className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="absolute inset-0 rounded-full bg-gradient-accent animate-ping opacity-20" />
-                  </div>
-                </Marker>
-              )}
-
-              {/* Popup for selected location */}
-              {selectedLocation && (
-                <Popup
-                  longitude={selectedLocation.longitude}
-                  latitude={selectedLocation.latitude}
-                  anchor="bottom"
-                  closeButton={false}
-                  closeOnClick={false}
-                >
-                  <div className="p-2">
-                    <p className="text-sm font-semibold">{selectedLocation.address}</p>
-                    {selectedLocation.city && (
-                      <p className="text-xs text-gray-600">{selectedLocation.city}</p>
-                    )}
-                  </div>
-                </Popup>
-              )}
-            </Map>
-          </div>
-
-          {/* Selected Location Info */}
-          {selectedLocation && (
-            <div className="p-4 bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark rounded-lg border border-kenya-orange/30">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-gradient-orange-accent" />
-                    <p className="text-white font-medium">Selected Location</p>
-                  </div>
-                  <p className="text-sm text-text-white/70">{selectedLocation.address}</p>
-                  {selectedLocation.city && (
-                    <p className="text-xs text-text-white/70 mt-1">
-                      {selectedLocation.city}
-                      {selectedLocation.country && `, ${selectedLocation.country}`}
-                    </p>
-                  )}
-                  <p className="text-xs text-text-white/70 mt-1">
-                    Coordinates: {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleConfirm(e);
-                  }}
-                  size="sm"
-                  className="bg-gradient-accent hover:bg-opacity-90 text-white"
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  Confirm
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
+        <CardContent>{body}</CardContent>
       </Card>
     </div>
   );
 };
 
 export default LocationPicker;
-

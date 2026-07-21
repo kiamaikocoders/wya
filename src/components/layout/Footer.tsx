@@ -90,7 +90,7 @@ const Footer = () => {
                   <Link to="/ai-assistance" className="text-kenya-brown-light hover:text-white transition-colors">AI Assistance</Link>
                 </li>
                 <li>
-                  <a href="mailto:support@wyakenya.com" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</a>
+                  <Link to="/contact" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</Link>
                 </li>
                 <li>
                   <Link to="/feedback" className="text-kenya-brown-light hover:text-white transition-colors">Send feedback</Link>
@@ -105,7 +105,7 @@ const Footer = () => {
                   <Link to="/media-consent" className="text-kenya-brown-light hover:text-white transition-colors">Media consent</Link>
                 </li>
                 <li>
-                  <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>
+                  <Link to="/faq" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</Link>
                 </li>
               </ul>
             )}
@@ -222,7 +222,7 @@ const Footer = () => {
                 <Link to="/ai-assistance" className="text-kenya-brown-light hover:text-white transition-colors">AI Assistance</Link>
               </li>
               <li>
-                <a href="mailto:support@wyakenya.com" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</a>
+                <Link to="/contact" className="text-kenya-brown-light hover:text-white transition-colors">Contact Support</Link>
               </li>
               <li>
                 <Link to="/feedback" className="text-kenya-brown-light hover:text-white transition-colors">Send feedback</Link>
@@ -237,7 +237,7 @@ const Footer = () => {
                 <Link to="/media-consent" className="text-kenya-brown-light hover:text-white transition-colors">Media consent</Link>
               </li>
               <li>
-                <a href="#" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</a>
+                <Link to="/faq" className="text-kenya-brown-light hover:text-white transition-colors">FAQ</Link>
               </li>
             </ul>
             )}

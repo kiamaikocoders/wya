@@ -6,6 +6,8 @@ interface LogoProps {
   className?: string;
   showTagline?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  /** Compact mark for tight UI (cards, headers) — no 150px min-width */
+  compact?: boolean;
   href?: string;
   onClick?: () => void;
 }
@@ -14,6 +16,7 @@ const Logo: React.FC<LogoProps> = ({
   className, 
   showTagline = false, 
   size = 'md',
+  compact = false,
   href,
   onClick 
 }) => {
@@ -35,6 +38,14 @@ const Logo: React.FC<LogoProps> = ({
     lg: 'text-4xl',
   };
 
+  const heightPx = compact
+    ? 40
+    : size === 'sm'
+      ? 48
+      : size === 'md'
+        ? 72
+        : 96;
+
   const [imageError, setImageError] = useState(false);
 
   const content = (
@@ -42,44 +53,40 @@ const Logo: React.FC<LogoProps> = ({
       className={cn('flex flex-col items-start gap-1', className)}
       onClick={onClick}
     >
-      <div className="relative flex items-center min-w-[150px]">
+      <div className={cn('relative flex items-center', !compact && 'min-w-[150px]')}>
         {!imageError ? (
           /* Logo Image - Primary (responsive WebP/AVIF) */
           <picture>
             <source
               type="image/avif"
               srcSet="/WYA_LOGO_2-180.avif 180w, /WYA_LOGO_2-300.avif 300w, /WYA_LOGO_2-612.avif 612w"
-              sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+              sizes={compact ? '72px' : '(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px'}
             />
             <source
               type="image/webp"
               srcSet="/WYA_LOGO_2-180.webp 180w, /WYA_LOGO_2-300.webp 300w, /WYA_LOGO_2-612.webp 612w"
-              sizes="(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px"
+              sizes={compact ? '72px' : '(max-width: 640px) 180px, (max-width: 1024px) 300px, 300px'}
             />
             <img
-              src="/WYA_LOGO_2-300.webp"
+              src={compact ? '/WYA_LOGO_2-180.webp' : '/WYA_LOGO_2-300.webp'}
               alt="WYA - Where You At"
-              width={612}
-              height={408}
+              width={compact ? 180 : 612}
+              height={compact ? 120 : 408}
               className={cn(
-                sizeClasses[size],
-                'w-auto min-w-[150px] drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)]',
-                'transition-transform hover:scale-105',
-                'object-contain',
-                'max-w-none',
-                'block',
-                'z-10',
-                'relative',
-                'bg-transparent'
+                !compact && sizeClasses[size],
+                'w-auto object-contain block relative z-10 bg-transparent',
+                compact
+                  ? 'h-10 max-h-10 max-w-[72px] min-w-0 drop-shadow-none'
+                  : 'min-w-[150px] max-w-none drop-shadow-[0_4px_12px_rgba(255,128,0,0.45)] transition-transform hover:scale-105'
               )}
               style={{
-                height: size === 'sm' ? '48px' : size === 'md' ? '72px' : '96px',
+                height: `${heightPx}px`,
                 width: 'auto',
+                maxWidth: compact ? '72px' : 'none',
                 display: 'block',
                 visibility: 'visible',
                 opacity: 1,
-                maxWidth: 'none',
-                backgroundColor: 'transparent'
+                backgroundColor: 'transparent',
               }}
               loading="eager"
               decoding="async"

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, X, Check, ChevronRight, ChevronLeft, Search, MapPin } from 'lucide-react';
+import { Loader2, Upload, X, Check, ChevronRight, ChevronLeft, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
-import { locationService, generateSessionToken, getSuggestionCountryCode } from '@/lib/location-service';
+import { googleMapsDirectionsUrl } from '@/lib/location-service';
+import LocationPicker from '@/components/maps/LocationPicker';
 import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
 import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
@@ -72,167 +73,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     status: 'approved' as 'pending' | 'approved' | 'rejected',
   });
   
-  // Location search state
-  const [locationSearchQuery, setLocationSearchQuery] = useState('');
-  const [locationSearchResults, setLocationSearchResults] = useState<any[]>([]);
-  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
-  const [showLocationResults, setShowLocationResults] = useState(false);
-  const locationSearchRef = useRef<HTMLDivElement>(null);
-  const [sessionToken, setSessionToken] = useState<string>(generateSessionToken());
-  
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
   
-  // Close location results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (locationSearchRef.current && !locationSearchRef.current.contains(event.target as Node)) {
-        setShowLocationResults(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-  
-  // Search locations using Mapbox Search Box API - Kenya only
-  // Uses tryCorrectLocationTypo in location-service for common typos (e.g. nairoi -> Nairobi)
-  const searchLocations = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setLocationSearchResults([]);
-      return;
-    }
-
-    setIsSearchingLocation(true);
-    try {
-      const currentSessionToken = sessionToken || generateSessionToken();
-      if (!sessionToken) {
-        setSessionToken(currentSessionToken);
-      }
-
-      const suggestions = await locationService.searchLocationsSuggest(query.trim(), currentSessionToken, {
-        country: 'ke',
-        proximity: '36.8219,-1.2921',
-        limit: 10
-      });
-
-      if (suggestions.length === 0) {
-        toast.error('No locations found in Kenya. Try a different search term.');
-        setLocationSearchResults([]);
-        setShowLocationResults(false);
-        return;
-      }
-      
-      // Filter to Kenyan results (Search Box API: context.country.country_code)
-      let kenyanSuggestions = suggestions.filter((suggestion: any) => {
-        const code = getSuggestionCountryCode(suggestion);
-        return code === 'KE' || code === 'ke';
-      });
-      // Fallback: if filter removes all but we have results, trust API (country=ke was passed)
-      if (kenyanSuggestions.length === 0 && suggestions.length > 0) {
-        kenyanSuggestions = suggestions;
-      }
-
-      if (kenyanSuggestions.length === 0) {
-        toast.error('No locations found in Kenya. Try a different search term.');
-        setLocationSearchResults([]);
-        setShowLocationResults(false);
-        return;
-      }
-      
-      // Sort by type priority (feature_type is string in Search Box API) and distance
-      const typePriority: Record<string, number> = {
-        address: 1, poi: 2, locality: 3, neighborhood: 4, place: 5, city: 6,
-      };
-      const sortedSuggestions = kenyanSuggestions.sort((a: any, b: any) => {
-        const aType = Array.isArray(a.feature_type) ? a.feature_type[0] : a.feature_type;
-        const bType = Array.isArray(b.feature_type) ? b.feature_type[0] : b.feature_type;
-        const aPriority = typePriority[aType] ?? 99;
-        const bPriority = typePriority[bType] ?? 99;
-        if (aPriority !== bPriority) return aPriority - bPriority;
-        return (a.distance ?? Infinity) - (b.distance ?? Infinity);
-      });
-      
-      setLocationSearchResults(sortedSuggestions);
-      setShowLocationResults(true);
-    } catch (error) {
-      console.error('Location search error:', error);
-      toast.error('Failed to search locations. Please try again.');
-      setLocationSearchResults([]);
-    } finally {
-      setIsSearchingLocation(false);
-    }
-  }, []);
-  
-  // Sync locationSearchQuery with formData.location when it's set externally (but not if user is typing)
-  useEffect(() => {
-    if (formData.location && locationSearchQuery !== formData.location && !showLocationResults) {
-      setLocationSearchQuery(formData.location);
-    }
-  }, [formData.location]);
-  
-  // Handle location search input change with debounce
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (locationSearchQuery.trim()) {
-        // Generate new session token for each search session and pass it directly
-        const newSessionToken = generateSessionToken();
-        setSessionToken(newSessionToken);
-        searchLocations(locationSearchQuery);
-      } else {
-        setLocationSearchResults([]);
-        setShowLocationResults(false);
-      }
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [locationSearchQuery, searchLocations]);
-  
-  // Handle location selection - retrieve full details from Search Box API
-  const handleLocationSelect = useCallback(async (suggestion: any) => {
-    try {
-      const currentSessionToken = sessionToken || generateSessionToken();
-      if (!sessionToken) {
-        setSessionToken(currentSessionToken);
-      }
-      
-      // Retrieve full details for the selected suggestion
-      const feature = await locationService.retrieveLocationDetails(
-        suggestion.mapbox_id,
-        currentSessionToken
-      );
-      
-      if (!feature) {
-        toast.error('Failed to retrieve location details. Please try again.');
-        return;
-      }
-      
-      // Extract coordinates and address from retrieved feature
-      const [lng, lat] = feature.geometry?.coordinates || [];
-      const address = feature.properties?.full_address || 
-                     feature.properties?.name || 
-                     suggestion.name || 
-                     '';
-      
-      if (!lat || !lng) {
-        toast.error('Invalid location coordinates. Please try another location.');
-        return;
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        location: address,
-        latitude: lat,
-        longitude: lng,
-      }));
-      setLocationSearchQuery(address);
-      setShowLocationResults(false);
-      toast.success(`Location set: ${address}`);
-    } catch (error) {
-      console.error('Error retrieving location details:', error);
-      toast.error('Failed to retrieve location details. Please try again.');
-    }
-  }, [sessionToken]);
-
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
@@ -467,6 +310,16 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please set an event date');
           return false;
         }
+        if (
+          !formData.location.trim() ||
+          formData.latitude == null ||
+          formData.longitude == null ||
+          !Number.isFinite(formData.latitude) ||
+          !Number.isFinite(formData.longitude)
+        ) {
+          toast.error('Please set and confirm the event location on the map');
+          return false;
+        }
         return true;
       case 2:
         // Access step is optional, no validation needed
@@ -617,6 +470,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
       latitude: formData.latitude,
       longitude: formData.longitude,
+      location_url:
+        formData.location_url.trim() ||
+        (formData.latitude != null && formData.longitude != null
+          ? googleMapsDirectionsUrl(formData.latitude, formData.longitude, formData.location)
+          : ''),
     };
     
     createEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
@@ -738,103 +596,54 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 </Accordion>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <div className="relative" ref={locationSearchRef}>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="location"
-                      type="text"
-                      value={locationSearchQuery}
-                      onChange={(e) => setLocationSearchQuery(e.target.value)}
-                      onFocus={() => {
-                        if (locationSearchResults.length > 0) {
-                          setShowLocationResults(true);
-                        }
-                      }}
-                      placeholder="Search for a location (e.g., Nairobi, Mombasa, specific address)"
-                      className="pl-10"
-                    />
-                    {isSearchingLocation && (
-                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
-                  
-                  {/* Location search results dropdown */}
-                  {showLocationResults && locationSearchResults.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {locationSearchResults.map((result, index) => {
-                        const ft = result.feature_type;
-                        const primaryType = Array.isArray(ft) ? ft[0] : ft;
-                        const typeLabels: Record<string, string> = {
-                          address: 'Address',
-                          poi: 'Landmark',
-                          locality: 'Area',
-                          neighborhood: 'Neighborhood',
-                          place: 'Place',
-                          city: 'City',
-                        };
-                        const typeLabel = typeLabels[primaryType] || 'Location';
-                        const displayName = result.name || result.full_address || result.place_formatted || 'Location';
-                        const subText = result.place_formatted || result.full_address || '';
-
-                        return (
-                          <button
-                            key={result.mapbox_id || index}
-                            type="button"
-                            onClick={() => handleLocationSelect(result)}
-                            className="w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b last:border-b-0"
-                          >
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium truncate">{displayName}</p>
-                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                    {typeLabel}
-                                  </Badge>
-                                </div>
-                                {subText && subText !== displayName && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{subText}</p>
-                                )}
-                              </div>
-                              <Badge variant="outline" className="text-xs flex-shrink-0">KE</Badge>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  
-                  {/* Selected location display */}
-                  {formData.location && formData.latitude !== null && formData.longitude !== null && (
-                    <div className="mt-2 p-2 bg-accent/50 rounded-md flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{formData.location}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, location: '', latitude: null, longitude: null }));
-                          setLocationSearchQuery('');
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Optional. Search for any location worldwide. The location will be pinned on the map if provided.
+              <div className="space-y-2 md:col-span-2">
+                <Label>Location *</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Search, use GPS, or tap the map — then Confirm. Required to pin the event.
                 </p>
+                <LocationPicker
+                  mode="event"
+                  compact
+                  height={280}
+                  title=""
+                  description=""
+                  onLocationSelect={(loc) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      location: loc.address,
+                      latitude: loc.latitude,
+                      longitude: loc.longitude,
+                      location_url:
+                        prev.location_url.trim() ||
+                        googleMapsDirectionsUrl(loc.latitude, loc.longitude, loc.address),
+                    }));
+                  }}
+                  onLocationClear={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      location: '',
+                      latitude: null,
+                      longitude: null,
+                    }));
+                  }}
+                  initialLocation={
+                    formData.latitude != null && formData.longitude != null && formData.location
+                      ? {
+                          address: formData.location,
+                          latitude: formData.latitude,
+                          longitude: formData.longitude,
+                        }
+                      : undefined
+                  }
+                />
+                {formData.location && formData.latitude != null && formData.longitude != null ? (
+                  <p className="text-xs text-primary">
+                    Confirmed: {formData.location} ({formData.latitude.toFixed(5)},{' '}
+                    {formData.longitude.toFixed(5)})
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Confirm a pin before continuing.</p>
+                )}
 
                 <div className="space-y-2 pt-3">
                   <Label htmlFor="location_url">Manual location link (optional)</Label>
@@ -847,7 +656,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                     inputMode="url"
                   />
                   <p className="text-xs text-muted-foreground">
-                    If search can’t find the exact venue, paste a maps link here so users can get directions.
+                    Auto-filled from the pin if left blank. Override with a custom maps link if needed.
                   </p>
                 </div>
               </div>

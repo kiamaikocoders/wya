@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useAdminTheme } from '@/components/admin/AdminThemeContext';
 import { AdminThemeToggle } from '@/components/admin/AdminThemeToggle';
+import Logo from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 
 /**
@@ -101,7 +102,7 @@ const AdminLogin = () => {
         <div className="mb-10 max-w-xl lg:mb-0">
           <p className="text-[13px] font-semibold tracking-wide text-[#ff6b35]">( ADMIN )</p>
           <h1 className="mt-3 font-sans text-4xl font-bold leading-tight text-white sm:text-[44px]">
-            Where the night
+            Where the event
             <br />
             gets managed
           </h1>
@@ -119,15 +120,17 @@ const AdminLogin = () => {
             isDark ? 'border border-[#21262d] bg-[#161b22]' : 'bg-white'
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff6b35]">
-              <span className="text-lg font-bold text-white">W</span>
-            </div>
-            <div>
-              <p className={cn('text-base font-bold', isDark ? 'text-[#e6edf3]' : 'text-[#1f2328]')}>
+          <div className="flex min-w-0 items-center gap-3">
+            <Logo
+              href="/"
+              compact
+              className="shrink-0"
+            />
+            <div className="min-w-0">
+              <p className={cn('truncate text-base font-bold', isDark ? 'text-[#e6edf3]' : 'text-[#1f2328]')}>
                 WYA Admin
               </p>
-              <p className={cn('text-xs', isDark ? 'text-[#8b949e]' : 'text-[#656d76]')}>
+              <p className={cn('truncate text-xs', isDark ? 'text-[#8b949e]' : 'text-[#656d76]')}>
                 Superadmin console
               </p>
             </div>

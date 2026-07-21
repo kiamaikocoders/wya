@@ -23,8 +23,10 @@ import {
   UserX,
   Database,
   MessageSquareText,
+  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import LocationPicker from '@/components/maps/LocationPicker';
 import {
   getPushSubscriptionStatus,
   isOneSignalSupported,
@@ -54,6 +56,9 @@ type SettingsForm = {
   media_recording_promotional_consent: boolean;
   phone: string;
   date_of_birth: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 const Settings: React.FC = () => {
@@ -71,6 +76,9 @@ const Settings: React.FC = () => {
     media_recording_promotional_consent: false,
     phone: '',
     date_of_birth: '',
+    location: '',
+    latitude: null,
+    longitude: null,
   });
 
   const { data: profile, isLoading } = useQuery({
@@ -167,6 +175,9 @@ const Settings: React.FC = () => {
       media_recording_promotional_consent: profile.media_consent ?? false,
       phone: profile.phone ?? '',
       date_of_birth: profile.date_of_birth ?? '',
+      location: profile.location ?? '',
+      latitude: profile.latitude ?? null,
+      longitude: profile.longitude ?? null,
     });
   }, [profile]);
 
@@ -196,6 +207,9 @@ const Settings: React.FC = () => {
         two_factor_auth: settings.two_factor_auth,
         phone: settings.phone.trim() || null,
         date_of_birth: settings.date_of_birth || null,
+        location: settings.location.trim() || undefined,
+        latitude: settings.latitude ?? undefined,
+        longitude: settings.longitude ?? undefined,
       });
 
       await syncPushSubscriptionWithPreference(settings.push_notifications, {
@@ -520,6 +534,55 @@ const Settings: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-kenya-orange" />
+                    <Label className="text-white">Your location</Label>
+                  </div>
+                  <p className="text-sm text-text-white/70">
+                    Used for nearby events and recommendations. Confirm a pin after searching or using
+                    GPS.
+                  </p>
+                  <LocationPicker
+                    mode="user"
+                    compact
+                    showMap={false}
+                    title=""
+                    description=""
+                    initialLocation={
+                      settings.latitude != null &&
+                      settings.longitude != null &&
+                      settings.location
+                        ? {
+                            address: settings.location,
+                            latitude: settings.latitude,
+                            longitude: settings.longitude,
+                          }
+                        : undefined
+                    }
+                    onLocationSelect={(loc) => {
+                      setSettings((prev) => ({
+                        ...prev,
+                        location: loc.address,
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        location_consent: true,
+                      }));
+                    }}
+                    onLocationClear={() => {
+                      setSettings((prev) => ({
+                        ...prev,
+                        location: '',
+                        latitude: null,
+                        longitude: null,
+                      }));
+                    }}
+                  />
+                  <p className="text-sm text-text-white/70">
+                    Start typing to see places, tap Search, or use My Location.
+                  </p>
+                </div>
+                <Separator className="bg-white/10" />
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-white">Location-based features</Label>
