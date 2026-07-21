@@ -4,19 +4,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Event } from '@/types/event.types';
-import { MapPin, Navigation, ExternalLink, Calendar, Clock } from 'lucide-react';
+import { MapPin, Navigation, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { locationService } from '@/lib/location-service';
+import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/lib/utils';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = locationService.getMapboxToken();
+const MAP_STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
+const MAP_STYLE_DARK = 'mapbox://styles/mapbox/dark-v11';
 
 type MapboxMapProps = {
   events: Event[];
   contextLocation?: string | null;
-  height?: number;
+  /** Pixel height, CSS length, or omit for a tall viewport-based default. */
+  height?: number | string;
   onEventClick?: (event: Event) => void;
   interactive?: boolean;
+  className?: string;
 };
 
 const cityCoordinates: Record<string, { longitude: number; latitude: number }> = {
@@ -48,10 +54,15 @@ const getCoordinates = (event: Event) => {
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
   events, 
   contextLocation, 
-  height = 520,
+  height = 'min(72vh, 820px)',
   onEventClick,
-  interactive = true
+  interactive = true,
+  className,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const mapStyle = isDark ? MAP_STYLE_DARK : MAP_STYLE_LIGHT;
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
   const [viewState, setViewState] = useState<Partial<ViewState>>({
@@ -115,10 +126,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
 
   const handleMarkerClick = useCallback((event: Event & { longitude: number; latitude: number }) => {
     setSelectedEvent(event);
-    if (onEventClick) {
-      onEventClick(event);
-    }
-  }, [onEventClick]);
+  }, []);
 
   const handleDirections = useCallback((event: Event & { longitude: number; latitude: number }) => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`;
@@ -126,17 +134,30 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   }, []);
 
   const handleViewEvent = useCallback((event: Event) => {
+    setHoveredEvent(null);
+    setSelectedEvent(null);
+    if (onEventClick) {
+      onEventClick(event);
+      return;
+    }
     window.location.href = `/events/${event.id}`;
-  }, []);
+  }, [onEventClick]);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl" style={{ height }}>
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-3xl border shadow-2xl',
+        isDark ? 'border-white/10' : 'border-black/10',
+        className
+      )}
+      style={{ height }}
+    >
       <Map
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         mapboxAccessToken={MAPBOX_TOKEN}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="mapbox://styles/mapbox/dark-v11"
+        mapStyle={mapStyle}
         attributionControl={true}
         interactive={interactive}
       >
@@ -158,71 +179,88 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
               anchor="bottom"
             >
               <div
-                className="relative cursor-pointer group"
+                className="group relative cursor-pointer"
                 onMouseEnter={() => setHoveredEvent(event)}
                 onMouseLeave={() => setHoveredEvent(null)}
                 onClick={() => handleMarkerClick(event)}
               >
                 {/* Pin Icon */}
-                <div className={`
-                  relative flex h-12 w-12 items-center justify-center 
-                  rounded-full transition-all duration-300
-                  ${isSelected 
-                    ? 'bg-gradient-to-br bg-gradient-accent scale-125' 
-                    : 'bg-gradient-to-br bg-gradient-accent'
-                  }
-                  ${isHovered ? 'scale-110 shadow-[0_0_30px_rgba(255,128,0,0.6)]' : 'shadow-[0_0_20px_rgba(255,128,0,0.4)]'}
-                `}>
-                  <MapPin className={`h-6 w-6 ${isSelected ? 'text-white' : 'text-kenya-dark'}`} />
-                  
-                  {/* Pulse Animation */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-accent animate-ping opacity-20" />
+                <div
+                  className={cn(
+                    'relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-accent transition-all duration-300',
+                    isSelected ? 'scale-125' : '',
+                    isHovered
+                      ? 'scale-110 shadow-[0_0_30px_rgba(255,128,0,0.6)]'
+                      : 'shadow-[0_0_20px_rgba(255,128,0,0.4)]'
+                  )}
+                >
+                  <MapPin className={cn('h-6 w-6', isSelected ? 'text-white' : 'text-kenya-dark')} />
+                  <div className="absolute inset-0 animate-ping rounded-full bg-gradient-accent opacity-20" />
                 </div>
 
                 {/* Hover Banner */}
                 {isHovered && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 z-50">
-                    <Card className="bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-kenya-orange/30 shadow-xl">
+                  <div className="absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 transform">
+                    <Card
+                      className={cn(
+                        'overflow-hidden border shadow-xl',
+                        isDark
+                          ? 'border-white/15 bg-zinc-950/95 text-white'
+                          : 'border-black/10 bg-white text-zinc-900'
+                      )}
+                    >
                       <CardContent className="p-3">
-                        {/* Event Image */}
                         {event.image_url && (
-                          <div className="relative w-full h-32 mb-2 rounded-lg overflow-hidden">
+                          <div className="relative mb-2 h-32 w-full overflow-hidden rounded-lg">
                             <img
                               src={event.image_url}
                               alt={event.title}
-                              className="w-full h-full object-cover"
+                              className="h-full w-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                           </div>
                         )}
-                        
-                        {/* Event Info */}
+
                         <div className="space-y-2">
-                          <h3 className="font-bold text-white text-sm line-clamp-1">
+                          <h3
+                            className={cn(
+                              'line-clamp-1 text-sm font-bold',
+                              isDark ? 'text-white' : 'text-zinc-900'
+                            )}
+                          >
                             {event.title}
                           </h3>
-                          
-                          <div className="flex items-center gap-2 text-xs text-text-white/70">
-                            <Calendar className="h-3 w-3" />
+
+                          <div
+                            className={cn(
+                              'flex items-center gap-2 text-xs',
+                              isDark ? 'text-white/70' : 'text-zinc-600'
+                            )}
+                          >
+                            <Calendar className="h-3 w-3 shrink-0" />
                             <span>{format(new Date(event.date), 'MMM dd, yyyy')}</span>
                             {event.time && (
                               <>
-                                <Clock className="h-3 w-3 ml-2" />
+                                <Clock className="ml-2 h-3 w-3 shrink-0" />
                                 <span>{event.time.substring(0, 5)}</span>
                               </>
                             )}
                           </div>
-                          
-                          <div className="flex items-center gap-1 text-xs text-text-white/70">
-                            <MapPin className="h-3 w-3" />
+
+                          <div
+                            className={cn(
+                              'flex items-center gap-1 text-xs',
+                              isDark ? 'text-white/70' : 'text-zinc-600'
+                            )}
+                          >
+                            <MapPin className="h-3 w-3 shrink-0" />
                             <span className="line-clamp-1">{event.location}</span>
                           </div>
 
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 mt-3">
+                          <div className="mt-3 flex gap-2">
                             <Button
                               size="sm"
-                              className="flex-1 bg-gradient-accent hover:bg-opacity-90 text-white text-xs h-7"
+                              className="h-7 flex-1 bg-[#ff6b35] text-xs text-white hover:bg-[#ff6b35]/90"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleViewEvent(event);
@@ -233,7 +271,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-kenya-orange/50 text-gradient-orange-accent hover:bg-gradient-accent/10 text-xs h-7 px-2"
+                              className={cn(
+                                'h-7 px-2 text-xs',
+                                isDark
+                                  ? 'border-orange-400/50 text-orange-300 hover:bg-orange-500/10'
+                                  : 'border-orange-500/40 text-orange-700 hover:bg-orange-50'
+                              )}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDirections(event);
@@ -263,20 +306,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             closeOnClick={false}
             className="mapbox-popup"
           >
-            <div className="w-64">
+            <div className={cn('w-64', isDark ? 'text-white' : 'text-zinc-900')}>
               {selectedEvent.image_url && (
                 <img
                   src={selectedEvent.image_url}
                   alt={selectedEvent.title}
-                  className="w-full h-32 object-cover rounded-t-lg mb-2"
+                  className="mb-2 h-32 w-full rounded-t-lg object-cover"
                 />
               )}
-              <h3 className="font-bold text-sm mb-1">{selectedEvent.title}</h3>
-              <p className="text-xs text-gray-600 mb-2">{selectedEvent.location}</p>
+              <h3 className="mb-1 text-sm font-bold">{selectedEvent.title}</h3>
+              <p className={cn('mb-2 text-xs', isDark ? 'text-white/70' : 'text-zinc-600')}>
+                {selectedEvent.location}
+              </p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1 bg-gradient-accent hover:bg-opacity-90 text-white text-xs"
+                  className="flex-1 bg-[#ff6b35] text-xs text-white hover:bg-[#ff6b35]/90"
                   onClick={() => handleViewEvent(selectedEvent)}
                 >
                   View Details
@@ -287,7 +332,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                   className="text-xs"
                   onClick={() => handleDirections(selectedEvent)}
                 >
-                  <Navigation className="h-3 w-3 mr-1" />
+                  <Navigation className="mr-1 h-3 w-3" />
                   Directions
                 </Button>
               </div>
@@ -297,12 +342,26 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       </Map>
 
       {/* Info Badge */}
-      <div className="absolute left-4 top-4 flex flex-wrap gap-2 z-10">
-        <Badge className="rounded-full bg-black/80 text-white backdrop-blur border-white/20">
+      <div className="absolute left-4 top-4 z-10 flex flex-wrap gap-2">
+        <Badge
+          className={cn(
+            'rounded-full backdrop-blur',
+            isDark
+              ? 'border-white/20 bg-black/80 text-white'
+              : 'border-black/10 bg-white/90 text-zinc-900'
+          )}
+        >
           {plottedEvents.length} event{plottedEvents.length !== 1 ? 's' : ''} pinned
         </Badge>
         {contextLocation && (
-          <Badge className="rounded-full bg-black/80 text-white backdrop-blur border-white/20">
+          <Badge
+            className={cn(
+              'rounded-full backdrop-blur',
+              isDark
+                ? 'border-white/20 bg-black/80 text-white'
+                : 'border-black/10 bg-white/90 text-zinc-900'
+            )}
+          >
             {contextLocation}
           </Badge>
         )}

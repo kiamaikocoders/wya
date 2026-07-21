@@ -83,6 +83,11 @@ export function SiteFooter({ className }: SiteFooterProps) {
           <p className={cn('text-sm font-semibold', heading)}>Quick Links</p>
           <ul className={cn('mt-3.5 space-y-3 text-[13px]', muted)}>
             <li>
+              <Link to="/" className="hover:text-[#ff6b35]">
+                Home
+              </Link>
+            </li>
+            <li>
               <Link to="/faq" className="hover:text-[#ff6b35]">
                 FAQ
               </Link>

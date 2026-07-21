@@ -327,11 +327,12 @@ const EventsPage = () => {
                     Number.isFinite(e.latitude) &&
                     Number.isFinite(e.longitude)
                 )}
-                height={480}
+                height="min(78vh, 900px)"
+                className="rounded-[20px] shadow-none"
                 onEventClick={(ev) => openEvent(ev.id)}
               />
             ) : (
-              <div className={cn('flex h-[360px] items-center justify-center text-sm', muted)}>
+              <div className={cn('flex min-h-[480px] items-center justify-center text-sm', muted)}>
                 No mapped venues in this filter set.
               </div>
             )}
