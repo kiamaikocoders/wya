@@ -51,7 +51,6 @@ const AdminFinance = lazy(() => import("./pages/AdminFinance"));
 const AdminCommunications = lazy(() => import("./pages/AdminCommunications"));
 const AdminSystem = lazy(() => import("./pages/AdminSystem"));
 const AdminAudit = lazy(() => import("./pages/AdminAudit"));
-const AdminEmail = lazy(() => import("./pages/AdminEmail"));
 const AdminNotifications = lazy(() => import("./pages/AdminNotifications"));
 const PublicEventMediaGallery = lazy(() => import("./pages/PublicEventMediaGallery"));
 
@@ -163,7 +162,7 @@ const App = () => {
                     <Route path="finance" element={<AdminFinance />} />
                     <Route path="communications" element={<AdminCommunications />} />
                     <Route path="system" element={<AdminSystem />} />
-                    <Route path="email" element={<AdminEmail />} />
+                    <Route path="email" element={<Navigate to="/admin/communications" replace />} />
                     <Route path="notifications" element={<AdminNotifications />} />
                     <Route path="audit" element={<AdminAudit />} />
                   </Route>

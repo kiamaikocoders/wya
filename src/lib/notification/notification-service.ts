@@ -13,7 +13,11 @@ async function dispatchViaEdgeFunction(
   sendPush = true
 ): Promise<number | null> {
   const { data, error } = await supabase.functions.invoke('dispatch-notification', {
-    body: { ...notification, send_push: sendPush },
+    body: {
+      ...notification,
+      send_push: notification.send_push ?? sendPush,
+      send_email: notification.send_email,
+    },
   });
 
   if (error) {
@@ -197,36 +201,75 @@ export const notificationService = {
   
   // Get notification settings for the current user
   getNotificationSettings: async (): Promise<NotificationSettings> => {
-    try {
-      // In a real app, you would fetch this from the database
-      // For now, return default settings
-      return {
-        email_notifications: true,
-        push_notifications: true,
-        in_app_notifications: true,
-        notification_types: {
-          event_updates: true,
-          messages: true,
-          announcements: true,
-          system: true,
-          reviews: true
-        }
-      };
-    } catch (error) {
-      console.error('Error fetching notification settings:', error);
-      throw error;
-    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email_notifications, push_notifications, marketing_consent, notification_email_prefs')
+      .eq('id', user.id)
+      .single();
+
+    if (error) throw error;
+
+    const prefs = (data?.notification_email_prefs as Record<string, boolean>) ?? {};
+
+    return {
+      email_notifications: data?.email_notifications !== false,
+      push_notifications: data?.push_notifications !== false,
+      in_app_notifications: true,
+      marketing_consent: data?.marketing_consent === true,
+      notification_types: {
+        event_updates: prefs.event_update !== false,
+        messages: prefs.message !== false,
+        announcements: prefs.announcement !== false && prefs.system !== false,
+        system: prefs.system !== false,
+        reviews: prefs.reviews !== false,
+        proposals: prefs.proposal_approved !== false,
+        new_events: prefs.new_event !== false,
+        follow: prefs.follow === true,
+        story_like: prefs.story_like === true,
+        tickets: prefs.ticket !== false,
+      },
+    };
   },
-  
+
   // Update notification settings for the current user
   updateNotificationSettings: async (settings: NotificationSettings): Promise<void> => {
-    try {
-      // In a real app, you would update this in the database
-      // For now, just simulate success
-      console.log('Updating notification settings:', settings);
-    } catch (error) {
-      console.error('Error updating notification settings:', error);
-      throw error;
-    }
-  }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const notification_email_prefs = {
+      event_update: settings.notification_types.event_updates,
+      event_cancelled: settings.notification_types.event_updates,
+      message: settings.notification_types.messages,
+      announcement: settings.notification_types.announcements,
+      system: settings.notification_types.system,
+      reviews: settings.notification_types.reviews,
+      proposal_submitted: settings.notification_types.proposals,
+      proposal_approved: settings.notification_types.proposals,
+      proposal_rejected: settings.notification_types.proposals,
+      new_event: settings.notification_types.new_events,
+      follow: settings.notification_types.follow,
+      story_like: settings.notification_types.story_like,
+      ticket: settings.notification_types.tickets,
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        email_notifications: settings.email_notifications,
+        push_notifications: settings.push_notifications,
+        marketing_consent: settings.marketing_consent,
+        marketing_consent_at: settings.marketing_consent ? new Date().toISOString() : null,
+        notification_email_prefs,
+      })
+      .eq('id', user.id);
+
+    if (error) throw error;
+  },
 };

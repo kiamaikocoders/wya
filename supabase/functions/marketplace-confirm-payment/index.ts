@@ -10,6 +10,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendTransactionalToUser } from "../_shared/resend.ts";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
@@ -87,6 +88,54 @@ serve(async (req) => {
     });
 
     if (error) throw error;
+
+    // Notify buyer + seller when transfer row is available
+    try {
+      const { data: transfer } = await admin
+        .from("marketplace_transfers")
+        .select("id, buyer_id, seller_id, listing_id, status")
+        .eq("id", transferId)
+        .maybeSingle();
+
+      if (transfer?.buyer_id) {
+        await admin.from("notifications").insert({
+          user_id: transfer.buyer_id,
+          type: "marketplace_buyer",
+          title: "Purchase confirmed",
+          message: "Your marketplace ticket transfer is complete.",
+          link: "/tickets",
+          read: false,
+          data: { transfer_id: transferId },
+        });
+        await sendTransactionalToUser({
+          admin,
+          userId: transfer.buyer_id,
+          templateId: "marketplace-buyer-receipt",
+          notificationType: "marketplace_buyer",
+          vars: { message: "Your marketplace ticket transfer is complete.", link: "/tickets" },
+        });
+      }
+      if (transfer?.seller_id) {
+        await admin.from("notifications").insert({
+          user_id: transfer.seller_id,
+          type: "marketplace_seller",
+          title: "Listing sold",
+          message: "Your marketplace listing sold successfully.",
+          link: "/marketplace",
+          read: false,
+          data: { transfer_id: transferId },
+        });
+        await sendTransactionalToUser({
+          admin,
+          userId: transfer.seller_id,
+          templateId: "marketplace-seller-sold",
+          notificationType: "marketplace_seller",
+          vars: { message: "Your marketplace listing sold successfully.", link: "/marketplace" },
+        });
+      }
+    } catch (notifyErr) {
+      console.warn("marketplace notify failed", notifyErr);
+    }
 
     return new Response(JSON.stringify({ ok: true, result: data }), {
       status: 200,

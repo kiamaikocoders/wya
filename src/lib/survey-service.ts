@@ -332,5 +332,37 @@ export const surveyService = {
       toast.error('Failed to delete survey response');
       throw error;
     }
-  }
+  },
+
+  /** Email/in-app invite ticket holders to take a survey */
+  inviteTicketHolders: async (surveyId: number, eventId: number, eventTitle: string): Promise<number> => {
+    const { notificationService } = await import('@/lib/notification/notification-service');
+    const { data: tickets } = await supabase
+      .from('tickets')
+      .select('user_id')
+      .eq('event_id', eventId)
+      .in('status', ['confirmed', 'active'])
+      .limit(200);
+
+    const userIds = [...new Set((tickets ?? []).map((t) => t.user_id))];
+    let sent = 0;
+    for (const userId of userIds) {
+      try {
+        await notificationService.createNotification({
+          user_id: userId,
+          type: 'survey_invite',
+          title: 'Survey invite',
+          message: `Please share feedback about "${eventTitle}".`,
+          resource_id: surveyId,
+          resource_type: 'survey',
+          link: `/survey/${surveyId}`,
+          data: { eventTitle, survey_id: surveyId },
+        });
+        sent += 1;
+      } catch (e) {
+        console.warn('survey invite failed', userId, e);
+      }
+    }
+    return sent;
+  },
 };

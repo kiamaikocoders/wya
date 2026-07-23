@@ -18,7 +18,6 @@ import {
   Megaphone,
   ScrollText,
   Bell,
-  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -79,7 +78,6 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { label: 'Notifications', path: '/admin/notifications', icon: Bell },
       { label: 'System', path: '/admin/system', icon: Settings2 },
-      { label: 'Email', path: '/admin/email', icon: Mail },
       { label: 'Audit log', path: '/admin/audit', icon: ScrollText },
     ],
   },

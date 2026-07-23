@@ -55,13 +55,34 @@ const ProposalManagement: React.FC = () => {
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ id, next }: { id: number; next: 'approved' | 'rejected' }) => {
+    mutationFn: async ({ id, next, row }: { id: number; next: 'approved' | 'rejected'; row: ProposalRow }) => {
       const { error } = await supabase.from('proposals').update({ status: next }).eq('id', id);
       if (error) throw error;
+      return { next, row };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: async (_d, vars) => {
       toast.success(vars.next === 'approved' ? 'Proposal approved' : 'Proposal rejected');
       queryClient.invalidateQueries({ queryKey: ['admin-proposals-figma'] });
+      if (vars.row.submitted_by) {
+        try {
+          const { proposalNotifications } = await import('@/lib/proposal-notifications');
+          if (vars.next === 'approved') {
+            await proposalNotifications.notifyProposalApproved(
+              vars.row.submitted_by,
+              vars.row.title,
+              vars.row.id
+            );
+          } else {
+            await proposalNotifications.notifyProposalRejected(
+              vars.row.submitted_by,
+              vars.row.title,
+              vars.row.id
+            );
+          }
+        } catch (e) {
+          console.warn('Proposal email/notify failed', e);
+        }
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -132,14 +153,14 @@ const ProposalManagement: React.FC = () => {
                         <button
                           type="button"
                           className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
-                          onClick={() => statusMutation.mutate({ id: p.id, next: 'approved' })}
+                          onClick={() => statusMutation.mutate({ id: p.id, next: 'approved', row: p })}
                         >
                           Approve
                         </button>
                         <button
                           type="button"
                           className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                          onClick={() => statusMutation.mutate({ id: p.id, next: 'rejected' })}
+                          onClick={() => statusMutation.mutate({ id: p.id, next: 'rejected', row: p })}
                         >
                           Reject
                         </button>

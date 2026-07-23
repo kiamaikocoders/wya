@@ -46,6 +46,25 @@ export const gdprService = {
 
       if (error) throw error;
 
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const uid = userId || user?.id;
+        if (uid) {
+          const { notificationService } = await import('@/lib/notification/notification-service');
+          await notificationService.createNotification({
+            user_id: uid,
+            type: 'dsar_export',
+            title: 'Data export ready',
+            message: 'Your WYA data export completed. Download it from Settings if you saved it.',
+            link: '/settings',
+          });
+        }
+      } catch (e) {
+        console.warn('DSAR export notify failed', e);
+      }
+
       if (!opts?.silent) toast.success('Data export completed successfully');
       return data;
     } catch (error) {

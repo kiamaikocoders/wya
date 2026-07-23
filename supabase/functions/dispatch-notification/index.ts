@@ -10,6 +10,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendNotificationEmail } from "../_shared/resend.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -28,6 +29,8 @@ interface NotificationPayload {
   link?: string;
   data?: Record<string, unknown> | null;
   send_push?: boolean;
+  /** Default true for transactional types; social types need prefs opt-in or explicit true */
+  send_email?: boolean;
   seed_test?: boolean;
   target_user_id?: string;
 }
@@ -193,6 +196,7 @@ serve(async (req) => {
   const body = (await req.json().catch(() => ({}))) as NotificationPayload;
   const siteOrigin = req.headers.get("Origin");
   const sendPush = body.send_push !== false;
+  const sendEmail = body.send_email !== false;
 
   try {
     if (body.seed_test) {
@@ -296,10 +300,26 @@ serve(async (req) => {
       pushResult = result;
     }
 
+    let emailResult: Record<string, unknown> | null = null;
+    if (sendEmail && inserted?.id != null) {
+      const result = await sendNotificationEmail({
+        admin: serviceClient,
+        userId: user_id,
+        type,
+        title,
+        message,
+        link,
+        data,
+        sendEmail: body.send_email,
+      });
+      emailResult = result;
+    }
+
     return jsonResponse({
       success: true,
       notification_id: inserted?.id ?? null,
       push: pushResult,
+      email: emailResult,
     });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error("Unknown error");

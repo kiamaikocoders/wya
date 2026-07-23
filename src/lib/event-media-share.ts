@@ -27,8 +27,9 @@ async function parseFunctionErrorBody(error: unknown): Promise<{ error?: string;
 
 export async function createEventMediaShareLink(
   eventId: number,
-  expiresInDays = 30
-): Promise<{ token: string; expiresAt: string }> {
+  expiresInDays = 30,
+  recipientEmail?: string
+): Promise<{ token: string; expiresAt: string; emailed?: boolean }> {
   // Edge Functions with verify_jwt validate the access_token at the gateway. Stale or
   // near-expired tokens from getSession() often fail with 401 before our function runs.
   const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
@@ -47,6 +48,7 @@ export async function createEventMediaShareLink(
     body: {
       event_id: eventId,
       expires_in_days: expiresInDays,
+      ...(recipientEmail ? { recipient_email: recipientEmail } : {}),
     },
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -68,13 +70,13 @@ export async function createEventMediaShareLink(
     throw new Error(hint ? `${base}: ${hint}` : base);
   }
 
-  const payload = data as { token?: string; expires_at?: string } | null;
+  const payload = data as { token?: string; expires_at?: string; emailed?: boolean } | null;
   const token = payload?.token;
   const expiresAt = payload?.expires_at;
   if (!token || !expiresAt) {
     throw new Error('Invalid response from server');
   }
-  return { token, expiresAt };
+  return { token, expiresAt, emailed: payload?.emailed };
 }
 
 /** Build the in-app URL for recipients (same origin as the web app). */

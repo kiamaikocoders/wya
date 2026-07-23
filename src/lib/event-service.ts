@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { eventServiceExtensions } from './event-service-extensions';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import type { EventQueryOptions, EventQueryResponse } from '@/pages/events/types';
+import { notifyEventTicketHolders } from './email/product-email';
+import { notificationService } from './notification/notification-service';
 
 // Define event types
 export interface Event {
@@ -540,9 +542,40 @@ export const eventService = {
       if (!data || data.length === 0) {
         throw new Error('No rows were updated. You may not have permission to update this event, or the event may not exist.');
       }
+
+      const updated = data[0] as Event;
+
+      try {
+        await notifyEventTicketHolders({
+          eventId: updated.id,
+          eventTitle: updated.title,
+          type: 'event_update',
+          title: 'Event updated',
+          message: `Details for "${updated.title}" have changed. Tap to review.`,
+        });
+      } catch (e) {
+        console.warn('Event update notify failed', e);
+      }
+
+      if (updates.organizer_id) {
+        try {
+          await notificationService.createNotification({
+            user_id: updates.organizer_id,
+            type: 'organizer_assigned',
+            title: "You're the organizer",
+            message: `You've been assigned as organizer for "${updated.title}".`,
+            resource_id: updated.id,
+            resource_type: 'event',
+            link: `/events/${updated.id}`,
+            data: { eventTitle: updated.title },
+          });
+        } catch (e) {
+          console.warn('Organizer assigned notify failed', e);
+        }
+      }
       
       toast.success('Event updated successfully');
-      return data[0]; // Return the first (and should be only) updated row
+      return updated;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update event';
       toast.error(errorMessage);
@@ -553,6 +586,26 @@ export const eventService = {
   // Delete event
   deleteEvent: async (id: number): Promise<void> => {
     try {
+      const { data: existing } = await supabase
+        .from('events')
+        .select('id, title')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (existing) {
+        try {
+          await notifyEventTicketHolders({
+            eventId: existing.id,
+            eventTitle: existing.title,
+            type: 'event_cancelled',
+            title: 'Event cancelled',
+            message: `"${existing.title}" has been cancelled.`,
+          });
+        } catch (e) {
+          console.warn('Event cancel notify failed', e);
+        }
+      }
+
       const { error } = await supabase
         .from('events')
         .delete()

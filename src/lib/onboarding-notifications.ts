@@ -191,9 +191,9 @@ class OnboardingNotifications {
   async sendWelcomeNotification(userId: string, userName: string): Promise<void> {
     await notificationService.createNotification({
       user_id: userId,
-      title: `Welcome to WYA, ${userName}! 🎉`,
+      title: `Welcome to WYA, ${userName}!`,
       message: 'Start discovering amazing events across Kenya. Complete your profile to get personalized recommendations.',
-      type: 'system',
+      type: 'welcome',
       link: '/profile',
     });
 

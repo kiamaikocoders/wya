@@ -2,6 +2,7 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
+import { notificationService } from './notification/notification-service';
 
 // Ticket type definitions
 export interface Ticket {
@@ -125,10 +126,26 @@ export const ticketService = {
       // For M-Pesa payments, we would use an Edge Function
       if (purchaseData.payment_method === 'mpesa' && purchaseData.phone_number) {
         // In a real implementation, we would call the M-Pesa Edge Function
+        // Confirmation email should fire from M-Pesa callback when status → confirmed
         toast.success('Payment initiated! Check your phone to complete the transaction.');
         return data as Ticket;
       }
-      
+
+      try {
+        await notificationService.createNotification({
+          user_id: user.id,
+          type: 'ticket',
+          title: 'Ticket confirmed',
+          message: `Your ticket for "${eventData.title}" is confirmed. Reference: ${data.reference_code}`,
+          resource_id: data.id,
+          resource_type: 'ticket',
+          link: '/tickets',
+          data: { eventTitle: eventData.title, event_id: purchaseData.event_id },
+        });
+      } catch (notifyErr) {
+        console.warn('Ticket confirmation notification failed', notifyErr);
+      }
+
       toast.success('Ticket purchased successfully!');
       return data as Ticket;
     } catch (error) {
