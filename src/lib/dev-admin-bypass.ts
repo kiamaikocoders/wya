@@ -13,8 +13,23 @@ export interface DevAdminUser {
   created_at: string;
 }
 
+/**
+ * Local/admin UI bypass for when Supabase Auth is unreachable or missing an admin user.
+ *
+ * - Always on in Vite DEV.
+ * - On production only when `VITE_ENABLE_DEV_ADMIN_BYPASS=true` (set in Vercel, then redeploy).
+ * Turn the flag off after testing — anyone with the hardcoded admin credentials can enter admin UI.
+ */
 export function isDevAdminBypassEnabled(): boolean {
-  return import.meta.env.DEV;
+  return (
+    import.meta.env.DEV === true ||
+    import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === 'true'
+  );
+}
+
+/** Production testing flag (not DEV). Wider fallback: activate bypass on any admin sign-in failure. */
+export function isProdAdminBypassFlagOn(): boolean {
+  return import.meta.env.VITE_ENABLE_DEV_ADMIN_BYPASS === 'true';
 }
 
 export function isDevAdminBypassActive(): boolean {

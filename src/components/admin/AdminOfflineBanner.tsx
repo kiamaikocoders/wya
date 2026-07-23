@@ -18,9 +18,10 @@ const AdminOfflineBanner: React.FC = () => {
       <AlertDescription className="space-y-3 text-amber-900/90">
         <p>{getSupabaseOfflineMessage()}</p>
         <p className="text-sm">
-          You are signed in with a local dev bypass. To view users, events, or delete ghost
-          content from the database, restore the project first (upgrade to Pro if needed), then
-          log in again with real Supabase auth.
+          You are signed in with a temporary admin bypass (not a live Supabase session). Live
+          users/events data needs a real admin Auth user. After testing, set{' '}
+          <code className="text-xs">VITE_ENABLE_DEV_ADMIN_BYPASS</code> back to{' '}
+          <code className="text-xs">false</code> and redeploy.
         </p>
         <Button
           asChild

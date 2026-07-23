@@ -10,6 +10,7 @@ import {
   getDevAdminUser,
   isDevAdminBypassActive,
   isDevAdminBypassEnabled,
+  isProdAdminBypassFlagOn,
   isSupabaseNetworkError,
   matchesDevAdminCredentials,
 } from '@/lib/dev-admin-bypass';
@@ -411,14 +412,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         navigate('/admin');
         return;
       } catch (error: any) {
-        if (
+        const allowBypass =
           isDevAdminBypassEnabled() &&
-          isSupabaseNetworkError(error)
-        ) {
+          (isSupabaseNetworkError(error) || isProdAdminBypassFlagOn());
+
+        if (allowBypass) {
           activateDevAdminBypass();
           applyDevAdminSession();
           toast.warning(
-            'Supabase is unreachable. Using local dev admin bypass — restore the project for live admin data.'
+            isProdAdminBypassFlagOn()
+              ? 'Using temporary admin bypass for production testing. Live admin data may be limited — turn VITE_ENABLE_DEV_ADMIN_BYPASS off after tests.'
+              : 'Supabase is unreachable. Using local dev admin bypass — restore the project for live admin data.'
           );
           navigate('/admin');
           return;
