@@ -74,7 +74,7 @@ function InlineActionField({
   );
 }
 
-const EmailSettingsPanel: React.FC = () => {
+const EmailSettingsPanel: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -115,6 +115,7 @@ const EmailSettingsPanel: React.FC = () => {
   const [fromEmailDraft, setFromEmailDraft] = useState('');
   const [fromNameDraft, setFromNameDraft] = useState('');
   const [testToDraft, setTestToDraft] = useState('');
+  const [inviteEmailDraft, setInviteEmailDraft] = useState('');
 
   useEffect(() => {
     setFromEmailDraft(fromEmail);
@@ -151,27 +152,33 @@ const EmailSettingsPanel: React.FC = () => {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: async () => {
+      const email = inviteEmailDraft.trim().toLowerCase();
+      if (!email.includes('@')) throw new Error('Enter a valid email');
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('admin-invite-user', {
+        body: { email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Invite email sent (Auth invite template)');
+      setInviteEmailDraft('');
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
   const health: AdminSystemHealth | undefined = healthQuery.data;
   const emailStatus: AdminEmailStatus | undefined = emailStatusQuery.data;
   const keyReady =
     emailStatus?.smtpPassSource === 'env' || Boolean(health?.resendConfigured);
   const smtpConfigured = Boolean(smtpHost && smtpPort && smtpUser);
 
-  return (
-    <AdminPageShell
-      title="Email"
-      subtitle="Resend provider · from-address · test delivery"
-      icon={Mail}
-      actions={
-        <AdminRefreshButton
-          onClick={() => {
-            emailStatusQuery.refetch();
-            healthQuery.refetch();
-            settingsQuery.refetch();
-          }}
-        />
-      }
-    >
+  const body = (
+    <>
       {schemaMissing ? (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
@@ -183,9 +190,20 @@ const EmailSettingsPanel: React.FC = () => {
       ) : null}
 
       <div className="w-full rounded-2xl border border-border bg-card p-6">
-        <h2 className="text-base font-semibold text-foreground">
-          Email configuration (Resend)
-        </h2>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h2 className="text-base font-semibold text-foreground">
+            Email configuration (Resend)
+          </h2>
+          {embedded ? (
+            <AdminRefreshButton
+              onClick={() => {
+                emailStatusQuery.refetch();
+                healthQuery.refetch();
+                settingsQuery.refetch();
+              }}
+            />
+          ) : null}
+        </div>
 
         <div className="mt-[18px] flex flex-wrap gap-2">
           <AdminStatusPill tone={keyReady ? 'success' : 'error'}>
@@ -272,8 +290,38 @@ const EmailSettingsPanel: React.FC = () => {
             pending={testEmailMutation.isPending}
             onAction={() => testEmailMutation.mutate()}
           />
+          <InlineActionField
+            label="Invite user by email"
+            value={inviteEmailDraft}
+            onChange={setInviteEmailDraft}
+            placeholder="newuser@example.com"
+            actionLabel="Send invite"
+            pending={inviteMutation.isPending}
+            onAction={() => inviteMutation.mutate()}
+          />
         </div>
       </div>
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <AdminPageShell
+      title="Email"
+      subtitle="Resend provider · from-address · test delivery"
+      icon={Mail}
+      actions={
+        <AdminRefreshButton
+          onClick={() => {
+            emailStatusQuery.refetch();
+            healthQuery.refetch();
+            settingsQuery.refetch();
+          }}
+        />
+      }
+    >
+      {body}
     </AdminPageShell>
   );
 };

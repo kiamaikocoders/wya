@@ -11,6 +11,8 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getResendApiKey, loadEmailSettings as loadSharedEmailSettings, sendRawEmail, logEmailSend } from "../_shared/resend.ts";
+import { renderTransactionalTemplate } from "../_shared/email-templates.ts";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
@@ -234,16 +236,15 @@ serve(async (req) => {
     }
 
     if (action === "test_email") {
-      const settings = await loadEmailSettings(admin);
-      if (settings["email.notifications_enabled"] === false) {
+      const shared = await loadSharedEmailSettings(admin);
+      if (!shared.notificationsEnabled) {
         return new Response(
           JSON.stringify({ error: "Email notifications are disabled in System settings" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
         );
       }
 
-      const resendKey = (Deno.env.get("RESEND_API_KEY") ?? Deno.env.get("EMAIL_API_KEY") ?? "").trim();
-      if (!resendKey) {
+      if (!getResendApiKey()) {
         return new Response(
           JSON.stringify({
             error:
@@ -261,50 +262,46 @@ serve(async (req) => {
         });
       }
 
-      const fromEmail = String(
-        Deno.env.get("EMAIL_FROM")?.trim() ||
-          settings["email.from_email"] ||
-          "team@wya254.com"
-      );
-      const fromName = String(
-        Deno.env.get("EMAIL_FROM_NAME")?.trim() ||
-          settings["email.from_name"] ||
-          settings["platform.site_name"] ||
-          "WYA"
-      );
-
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: `${fromName} <${fromEmail}>`,
-          to: [to],
-          subject: `${fromName} — System test email`,
-          html: `<p>This is a test email from the <strong>${fromName}</strong> admin System page via Resend.</p><p>From: ${fromEmail}<br/>Sent at ${new Date().toISOString()}</p>`,
-          text: `This is a test email from ${fromName} admin System page via Resend.\nFrom: ${fromEmail}\nSent at ${new Date().toISOString()}`,
-        }),
+      const rendered = renderTransactionalTemplate("admin-system-test", {
+        siteUrl: shared.siteUrl,
+        link: `${shared.siteUrl}/admin/communications`,
+        title: `${shared.fromName} — System test email`,
+        message: `This is a test email from ${shared.fromName}. If you received it, email delivery is working. Sent at ${new Date().toISOString()}.`,
+        userName: "there",
       });
 
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const result = await sendRawEmail({
+        to,
+        subject: rendered.subject,
+        html: rendered.html,
+        text: `This is a test email from ${shared.fromName} admin System page via Resend.\nFrom: ${shared.fromEmail}\nSent at ${new Date().toISOString()}`,
+        fromEmail: shared.fromEmail,
+        fromName: shared.fromName,
+        tags: [{ name: "template", value: "admin-system-test" }],
+      });
+
+      if (!result.sent) {
         return new Response(
-          JSON.stringify({
-            error: payload?.message || payload?.error || `Resend error (${res.status})`,
-            details: payload,
-          }),
+          JSON.stringify({ error: result.error || result.skipped || "Send failed" }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 }
         );
       }
+
+      await logEmailSend(admin, {
+        user_id: user.id,
+        to_email: to,
+        template_id: "admin-system-test",
+        subject: rendered.subject,
+        status: "sent",
+        provider_id: result.messageId,
+      });
 
       try {
         await admin.rpc("admin_audit", {
           p_action: "system.email.test",
           p_entity_type: "email",
           p_entity_id: to,
-          p_metadata: { from: fromEmail, provider: "resend", messageId: payload?.id },
+          p_metadata: { from: shared.fromEmail, provider: "resend", messageId: result.messageId },
         });
       } catch {
         // audit optional if RPC missing
@@ -313,10 +310,165 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          messageId: payload?.id ?? null,
-          from: fromEmail,
+          messageId: result.messageId ?? null,
+          from: shared.fromEmail,
           to,
         }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    if (action === "announce_email_fanout") {
+      const title = String(body?.title ?? "Announcement");
+      const message = String(body?.message ?? "");
+      const link = String(body?.link ?? "/home");
+      const limit = Math.min(Number(body?.limit ?? 500), 2000);
+
+      const { data: profiles, error: profErr } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("email_notifications", true)
+        .or("is_ghost.is.null,is_ghost.eq.false")
+        .limit(limit);
+
+      if (profErr) throw profErr;
+
+      const { sendTransactionalToUser } = await import("../_shared/resend.ts");
+      let sent = 0;
+      let skipped = 0;
+      for (const row of profiles ?? []) {
+        const result = await sendTransactionalToUser({
+          admin,
+          userId: row.id,
+          templateId: "announcement",
+          notificationType: "announcement",
+          vars: { title, message, link },
+        });
+        if (result.sent) sent += 1;
+        else skipped += 1;
+      }
+
+      return new Response(JSON.stringify({ success: true, sent, skipped }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    if (action === "test_template") {
+      const templateId = String(body?.template_id ?? "").trim();
+      const to = String(body?.to || user.email || "").trim();
+      if (!templateId) {
+        return new Response(JSON.stringify({ error: "template_id required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      if (!to.includes("@")) {
+        return new Response(JSON.stringify({ error: "Valid recipient email required" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      const { data: tpl, error: tplErr } = await admin
+        .from("communication_templates")
+        .select("id, subject, html, name")
+        .eq("id", templateId)
+        .maybeSingle();
+
+      if (tplErr || !tpl) {
+        return new Response(JSON.stringify({ error: "Template not found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+
+      const shared = await loadSharedEmailSettings(admin);
+      if (!shared.notificationsEnabled) {
+        return new Response(JSON.stringify({ error: "Email notifications disabled" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      if (!getResendApiKey()) {
+        return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
+      const site = shared.siteUrl;
+      const sampleUrl = `${site}/auth/confirm?token=preview`;
+      let html = String(tpl.html);
+      const replacements: Array<[RegExp, string]> = [
+        [/\{\{\s*\.ConfirmationURL\s*\}\}/g, sampleUrl],
+        [/\{\{\s*\.SiteURL\s*\}\}/g, site],
+        [/\{\{\s*\.Email\s*\}\}/g, to],
+        [/\{\{\s*siteUrl\s*\}\}/g, site],
+        [/\{\{\s*link\s*\}\}/g, `${site}/events`],
+        [/\{\{\s*eventTitle\s*\}\}/g, "Sample Event"],
+        [/\{\{\s*userName\s*\}\}/g, "there"],
+        [/\{\{\s*whenLabel\s*\}\}/g, "is tomorrow"],
+        [/\{\{\s*eventWhen\s*\}\}/g, "Sat · 9:00 PM"],
+        [/\{\{\s*eventWhere\s*\}\}/g, "Nairobi"],
+        [/\{\{\s*eventArea\s*\}\}/g, "Westlands"],
+        [/\{\{\s*ticketSummary\s*\}\}/g, "2 × General Admission"],
+        [/\{\{\s*amountPaid\s*\}\}/g, "KES 3,000"],
+        [/\{\{\s*orderId\s*\}\}/g, "WYA-TEST"],
+        [/\{\{\s*title\s*\}\}/g, String(tpl.subject)],
+        [/\{\{\s*message\s*\}\}/g, "This is a WYA template test send."],
+        [/\{\{\s*topicLabel\s*\}\}/g, "Platform update"],
+        [/\{\{\s*wasLabel\s*\}\}/g, "Fri 8:00 PM"],
+        [/\{\{\s*nowLabel\s*\}\}/g, "Sat 7:30 PM"],
+        [/\{\{\s*refundLabel\s*\}\}/g, "M-Pesa · 3–5 business days"],
+        [/\{\{\s*reasonLabel\s*\}\}/g, "Needs more detail"],
+        [/\{\{\s*transferType\s*\}\}/g, "Gift claim"],
+        [/\{\{\s*listingLabel\s*\}\}/g, "2× GA"],
+        [/\{\{\s*payoutLabel\s*\}\}/g, "Pending · M-Pesa"],
+        [/\{\{\s*unreadLabel\s*\}\}/g, "3 conversations"],
+        [/\{\{\s*latestLabel\s*\}\}/g, "New message"],
+        [/\{\{\s*mediaSummary\s*\}\}/g, "24 photos"],
+        [/\{\{\s*requestId\s*\}\}/g, "DSAR-TEST"],
+        [/\{\{\s*expiresLabel\s*\}\}/g, "7 days"],
+        [/\{\{\s*completedAt\s*\}\}/g, new Date().toISOString()],
+        [/\{\{\s*nearbyLabel\s*\}\}/g, "3 events this weekend"],
+        [/\{\{\s*trendingLabel\s*\}\}/g, "Rooftop parties"],
+        [/\{\{\s*hotLabel\s*\}\}/g, "Club Lights Saturday"],
+        [/\{\{\s*newLabel\s*\}\}/g, "Food Night Market"],
+      ];
+      html = replacements.reduce((acc, [re, v]) => acc.replace(re, v), html);
+
+      const result = await sendRawEmail({
+        to,
+        subject: `[TEST] ${tpl.subject}`,
+        html,
+        fromEmail: shared.fromEmail,
+        fromName: shared.fromName,
+        tags: [
+          { name: "template", value: templateId.slice(0, 40) },
+          { name: "type", value: "template-test" },
+        ],
+      });
+
+      if (!result.sent) {
+        return new Response(
+          JSON.stringify({ error: result.error || result.skipped || "Send failed" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 }
+        );
+      }
+
+      await logEmailSend(admin, {
+        user_id: user.id,
+        to_email: to,
+        template_id: templateId,
+        subject: `[TEST] ${tpl.subject}`,
+        status: "sent",
+        provider_id: result.messageId,
+        metadata: { test: true },
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, messageId: result.messageId, to }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }

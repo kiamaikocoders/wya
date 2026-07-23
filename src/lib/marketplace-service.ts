@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { getPublicPlatformFlags } from './platform-flags';
+import { notificationService } from './notification/notification-service';
 
 export type MarketplaceMode = 'paid_transfer' | 'gift';
 export type MarketplaceListingStatus =
@@ -98,6 +99,46 @@ export interface MarketplaceTransferResult {
   payment_reference?: string;
   buyer_paid?: number;
   idempotent?: boolean;
+  buyer_id?: string;
+  seller_id?: string;
+}
+
+async function notifyMarketplaceParties(result: MarketplaceTransferResult): Promise<void> {
+  try {
+    let buyerId = result.buyer_id;
+    let sellerId = result.seller_id;
+    if ((!buyerId || !sellerId) && result.transfer_id) {
+      const { data: transfer } = await supabase
+        .from('marketplace_transfers')
+        .select('buyer_id, seller_id')
+        .eq('id', result.transfer_id)
+        .maybeSingle();
+      buyerId = buyerId || transfer?.buyer_id;
+      sellerId = sellerId || transfer?.seller_id;
+    }
+    if (buyerId) {
+      await notificationService.createNotification({
+        user_id: buyerId,
+        type: 'marketplace_buyer',
+        title: 'Purchase confirmed',
+        message: 'Your marketplace ticket transfer is complete.',
+        link: '/tickets',
+        data: { transfer_id: result.transfer_id },
+      });
+    }
+    if (sellerId) {
+      await notificationService.createNotification({
+        user_id: sellerId,
+        type: 'marketplace_seller',
+        title: 'Listing sold',
+        message: 'Your marketplace listing sold successfully.',
+        link: '/marketplace',
+        data: { transfer_id: result.transfer_id },
+      });
+    }
+  } catch (e) {
+    console.warn('marketplace notify failed', e);
+  }
 }
 
 export interface MarketplaceListingResult {
@@ -185,8 +226,10 @@ export const marketplaceService = {
         p_payment_reference: paymentReference ?? null,
       });
       if (error) throw error;
+      const result = data as MarketplaceTransferResult;
+      await notifyMarketplaceParties(result);
       toast.success('Transfer complete — tickets are now yours');
-      return data as MarketplaceTransferResult;
+      return result;
     } catch (error) {
       const message = asErrorMessage(error, 'Failed to purchase listing');
       toast.error(message);
@@ -205,8 +248,10 @@ export const marketplaceService = {
         p_listing_id: listingId,
       });
       if (error) throw error;
+      const result = data as MarketplaceTransferResult;
+      await notifyMarketplaceParties(result);
       toast.success('Gift claimed — tickets are now yours');
-      return data as MarketplaceTransferResult;
+      return result;
     } catch (error) {
       const message = asErrorMessage(error, 'Failed to claim gift listing');
       toast.error(message);

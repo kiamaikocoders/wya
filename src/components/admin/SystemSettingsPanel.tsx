@@ -335,7 +335,7 @@ const SystemSettingsPanel: React.FC = () => {
           >
             <div className="grid gap-3 sm:grid-cols-3">
               <Button asChild variant="outline" className="h-auto justify-start gap-3 px-4 py-3">
-                <Link to="/admin/email">
+                <Link to="/admin/communications">
                   <Mail className="h-4 w-4 shrink-0" />
                   <span className="text-left">
                     <span className="block text-sm font-medium">Email / Resend</span>

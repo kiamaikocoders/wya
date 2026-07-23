@@ -261,6 +261,13 @@ export const userService = {
     } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not signed in');
 
+    // Trigger Auth reauthentication email (emails/reauthentication.html) before delete
+    try {
+      await supabase.auth.reauthenticate();
+    } catch (e) {
+      console.warn('reauthenticate before deactivate', e);
+    }
+
     const url = getDeleteMyAccountUrl();
     if (!url) {
       throw new Error(
@@ -274,6 +281,7 @@ export const userService = {
         Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ require_reauth: false }),
     });
 
     const body = await res.json().catch(() => ({}));

@@ -40,3 +40,24 @@ verify_jwt = false
 
 [functions.admin-system]
 verify_jwt = false
+
+[functions.send-transactional-email]
+verify_jwt = false
+
+[functions.subscribe-newsletter]
+verify_jwt = false
+
+[functions.send-event-reminders]
+verify_jwt = false
+
+[functions.send-message-digests]
+verify_jwt = false
+
+[functions.send-ai-digests]
+verify_jwt = false
+
+[functions.send-newsletter]
+verify_jwt = false
+
+[functions.admin-invite-user]
+verify_jwt = false

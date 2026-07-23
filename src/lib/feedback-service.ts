@@ -80,8 +80,32 @@ export const feedbackService = {
     if (!FEEDBACK_STATUSES.includes(status)) {
       throw new Error('Invalid status');
     }
+
+    const { data: row, error: fetchErr } = await supabase
+      .from('app_feedback')
+      .select('id, user_id, category, status')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchErr) throw new Error(fetchErr.message);
+
     const { error } = await supabase.from('app_feedback').update({ status }).eq('id', id);
     if (error) throw new Error(error.message);
+
+    if (row?.user_id && row.status !== status) {
+      try {
+        const { notificationService } = await import('@/lib/notification/notification-service');
+        await notificationService.createNotification({
+          user_id: row.user_id,
+          type: 'feedback_reply',
+          title: 'Feedback update',
+          message: `Your feedback (${row.category}) is now marked as "${status}".`,
+          link: '/feedback',
+          data: { feedback_id: id, status },
+        });
+      } catch (e) {
+        console.warn('Feedback status notify failed', e);
+      }
+    }
   },
 
   async remove(id: string): Promise<void> {

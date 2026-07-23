@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
-import { Heart, Instagram, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, Instagram, Mail, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { subscribeNewsletter } from '@/lib/email/product-email';
 
 const Footer = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -10,12 +12,32 @@ const Footer = () => {
     quickLinks: false,
     support: false,
   });
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubmitting, setNewsletterSubmitting] = useState(false);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleNewsletterSubscribe = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!newsletterEmail.trim()) {
+      toast.error('Enter your email address');
+      return;
+    }
+    setNewsletterSubmitting(true);
+    try {
+      await subscribeNewsletter(newsletterEmail, 'footer');
+      toast.success("You're subscribed — check your inbox");
+      setNewsletterEmail('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Subscription failed');
+    } finally {
+      setNewsletterSubmitting(false);
+    }
   };
 
   return (
@@ -125,20 +147,23 @@ const Footer = () => {
                 <p className="text-kenya-brown-light text-sm leading-relaxed">
                   Subscribe to our newsletter for the latest events and updates.
                 </p>
-                <div className="flex">
+                <form className="flex" onSubmit={handleNewsletterSubscribe}>
                   <input 
                     type="email" 
-                    placeholder="Your email address" 
+                    placeholder="Your email address"
+                    value={newsletterEmail}
+                    onChange={(e) => setNewsletterEmail(e.target.value)}
                     className="bg-kenya-dark/50 border border-kenya-brown text-white placeholder:text-kenya-brown-light rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange w-full"
                   />
                   <button
-                    type="button"
+                    type="submit"
+                    disabled={newsletterSubmitting}
                     aria-label="Subscribe to newsletter"
-                    className="bg-kenya-orange hover:bg-kenya-orange/90 text-white rounded-r-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange"
+                    className="bg-kenya-orange hover:bg-kenya-orange/90 text-white rounded-r-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange disabled:opacity-60"
                   >
-                    <Mail size={20} />
+                    {newsletterSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Mail size={20} />}
                   </button>
-                </div>
+                </form>
               </div>
             )}
           </div>
@@ -248,18 +273,22 @@ const Footer = () => {
             <p className="text-kenya-brown-light text-sm leading-relaxed">
               Subscribe to our newsletter for the latest events and updates.
             </p>
-            <div className="flex">
+            <form className="flex" onSubmit={handleNewsletterSubscribe}>
               <input 
                 type="email" 
-                placeholder="Your email address" 
+                placeholder="Your email address"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 className="bg-kenya-dark/50 border border-kenya-brown text-white placeholder:text-kenya-brown-light rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange w-full"
               />
               <button 
-                className="bg-kenya-orange hover:bg-kenya-orange/90 text-white rounded-r-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange"
+                type="submit"
+                disabled={newsletterSubmitting}
+                className="bg-kenya-orange hover:bg-kenya-orange/90 text-white rounded-r-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-kenya-orange disabled:opacity-60"
               >
-                <Mail size={20} />
+                {newsletterSubmitting ? <Loader2 size={20} className="animate-spin" /> : <Mail size={20} />}
               </button>
-            </div>
+            </form>
           </div>
         </div>
         

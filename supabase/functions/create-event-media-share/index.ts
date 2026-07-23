@@ -7,6 +7,8 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { loadEmailSettings, sendRawEmail, logEmailSend, getResendApiKey } from "../_shared/resend.ts";
+import { renderTransactionalTemplate } from "../_shared/email-templates.ts";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
@@ -112,7 +114,7 @@ serve(async (req) => {
 
     const { data: eventRow, error: eventErr } = await supabaseAdmin
       .from("events")
-      .select("id")
+      .select("id, title")
       .eq("id", eventId)
       .maybeSingle();
     if (eventErr || !eventRow) {
@@ -121,6 +123,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const recipientEmail = String(body?.recipient_email ?? "").trim().toLowerCase();
+    const siteOrigin =
+      requestOrigin ||
+      Deno.env.get("PUBLIC_SITE_URL") ||
+      "https://whereyouat.ke";
 
     const token = randomTokenUrlSafe();
     const tokenHash = await sha256Hex(token);
@@ -168,10 +176,46 @@ serve(async (req) => {
       );
     }
 
+    const galleryUrl = `${String(siteOrigin).replace(/\/$/, "")}/media-gallery/${token}`;
+
+    if (recipientEmail.includes("@") && !recipientEmail.endsWith("@wya.local") && getResendApiKey()) {
+      try {
+        const settings = await loadEmailSettings(supabaseAdmin);
+        if (settings.notificationsEnabled) {
+          const rendered = renderTransactionalTemplate("media-share", {
+            siteUrl: settings.siteUrl,
+            eventTitle: (eventRow as { title?: string }).title ?? "Event",
+            link: galleryUrl,
+            message: `A media gallery was shared with you. Link expires ${expiresAt.toISOString().slice(0, 10)}.`,
+          });
+          const result = await sendRawEmail({
+            to: recipientEmail,
+            subject: rendered.subject,
+            html: rendered.html,
+            fromEmail: settings.fromEmail,
+            fromName: settings.fromName,
+            tags: [{ name: "template", value: "media-share" }],
+          });
+          await logEmailSend(supabaseAdmin, {
+            to_email: recipientEmail,
+            template_id: "media-share",
+            subject: rendered.subject,
+            status: result.sent ? "sent" : "error",
+            provider_id: result.messageId,
+            error: result.error ?? null,
+            metadata: { event_id: eventId },
+          });
+        }
+      } catch (mailErr) {
+        console.warn("media share email failed", mailErr);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         token,
         expires_at: expiresAt.toISOString(),
+        emailed: Boolean(recipientEmail.includes("@")),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

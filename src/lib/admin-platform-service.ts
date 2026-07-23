@@ -2,8 +2,54 @@ import { supabase } from './supabase';
 import { toast } from 'sonner';
 import { getAdminSystemUrl } from './supabase-functions-url';
 
+/** True when the last templates fetch used the bundled Figma catalog (DB table missing). */
+export function getCommunicationTemplatesFromBundle(): boolean {
+  return communicationTemplatesFromBundle;
+}
+
+let communicationTemplatesFromBundle = false;
+
 export type AnnouncementAudience = 'all' | 'attendees' | 'organizers' | 'admins';
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
+export type AnnouncementChannel = 'email' | 'in_app' | 'both';
+
+export interface PlatformAnnouncement {
+  id: number;
+  title: string;
+  body: string;
+  audience: AnnouncementAudience;
+  channel?: AnnouncementChannel;
+  status: AnnouncementStatus;
+  link?: string | null;
+  recipient_count?: number;
+  created_by?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommunicationTemplate {
+  id: string;
+  category: 'auth' | 'transactional' | 'marketing' | string;
+  name: string;
+  subject: string;
+  html: string;
+  description?: string | null;
+  updated_at?: string;
+}
+
+export interface EmailSendLogRow {
+  id: number;
+  user_id: string | null;
+  to_email: string;
+  template_id: string;
+  subject: string;
+  status: string;
+  provider_id: string | null;
+  error: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
 
 export interface SystemSettingEntry {
   value: unknown;
@@ -12,19 +58,6 @@ export interface SystemSettingEntry {
 }
 
 export type SystemSettingsMap = Record<string, SystemSettingEntry>;
-
-export interface PlatformAnnouncement {
-  id: number;
-  title: string;
-  body: string;
-  audience: AnnouncementAudience;
-  status: AnnouncementStatus;
-  link?: string | null;
-  created_by?: string | null;
-  published_at?: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface AdminAuditEntry {
   id: number;
@@ -279,6 +312,7 @@ export const adminPlatformService = {
     title: string;
     body: string;
     audience: AnnouncementAudience;
+    channel?: AnnouncementChannel;
     link?: string;
   }): Promise<PlatformAnnouncement> => {
     const { data: auth } = await supabase.auth.getUser();
@@ -288,6 +322,7 @@ export const adminPlatformService = {
         title: payload.title,
         body: payload.body,
         audience: payload.audience,
+        channel: payload.channel ?? 'both',
         link: payload.link || null,
         status: 'draft',
         created_by: auth.user?.id ?? null,
@@ -299,13 +334,66 @@ export const adminPlatformService = {
     return data as PlatformAnnouncement;
   },
 
+  updateAnnouncement: async (
+    id: number,
+    payload: {
+      title: string;
+      body: string;
+      audience: AnnouncementAudience;
+      channel: AnnouncementChannel;
+      link?: string;
+    }
+  ): Promise<void> => {
+    const { error } = await supabase
+      .from('platform_announcements')
+      .update({
+        title: payload.title,
+        body: payload.body,
+        audience: payload.audience,
+        channel: payload.channel,
+        link: payload.link || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    if (error) throw error;
+    toast.success('Draft updated');
+  },
+
   publishAnnouncement: async (id: number): Promise<{ notified_count: number }> => {
+    const { data: announcement } = await supabase
+      .from('platform_announcements')
+      .select('id, title, body, link, channel')
+      .eq('id', id)
+      .maybeSingle();
+
+    const channel = (announcement?.channel as AnnouncementChannel) || 'both';
+
     const { data, error } = await supabase.rpc('admin_publish_announcement', {
       p_announcement_id: id,
     });
     if (error) throw error;
     const notified = Number((data as { notified_count?: number })?.notified_count ?? 0);
-    toast.success(`Published · notified ${notified} users`);
+
+    if (channel === 'email' || channel === 'both') {
+      try {
+        await supabase.functions.invoke('admin-system', {
+          body: {
+            action: 'announce_email_fanout',
+            title: announcement?.title ?? 'Announcement',
+            message: announcement?.body ?? '',
+            link: announcement?.link || '/home',
+          },
+        });
+      } catch (e) {
+        console.warn('Announcement email fan-out failed', e);
+      }
+    }
+
+    toast.success(
+      channel === 'email'
+        ? 'Published · email fan-out started'
+        : `Published · notified ${notified} users`
+    );
     return { notified_count: notified };
   },
 
@@ -316,6 +404,74 @@ export const adminPlatformService = {
       .eq('id', id);
     if (error) throw error;
     toast.success('Announcement archived');
+  },
+
+  listCommunicationTemplates: async (): Promise<CommunicationTemplate[]> => {
+    const { data, error } = await supabase
+      .from('communication_templates')
+      .select('*')
+      .order('category')
+      .order('name');
+    if (error) {
+      const msg = error.message || '';
+      // Table not migrated yet — show bundled Figma catalog so admin UI still works.
+      if (/communication_templates|does not exist|schema cache/i.test(msg)) {
+        const { BUNDLED_COMMUNICATION_TEMPLATES } = await import(
+          '@/lib/communication-templates-catalog'
+        );
+        communicationTemplatesFromBundle = true;
+        return BUNDLED_COMMUNICATION_TEMPLATES;
+      }
+      communicationTemplatesFromBundle = false;
+      throw error;
+    }
+    communicationTemplatesFromBundle = false;
+    return (data ?? []) as CommunicationTemplate[];
+  },
+
+  saveCommunicationTemplate: async (payload: {
+    id: string;
+    subject: string;
+    html: string;
+  }): Promise<void> => {
+    const { data: auth } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('communication_templates')
+      .update({
+        subject: payload.subject,
+        html: payload.html,
+        updated_at: new Date().toISOString(),
+        updated_by: auth.user?.id ?? null,
+      })
+      .eq('id', payload.id);
+    if (error) throw error;
+    toast.success('Template saved');
+  },
+
+  testCommunicationTemplate: async (opts: {
+    templateId: string;
+    to: string;
+  }): Promise<void> => {
+    const { data, error } = await supabase.functions.invoke('admin-system', {
+      body: {
+        action: 'test_template',
+        template_id: opts.templateId,
+        to: opts.to,
+      },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(String(data.error));
+    toast.success(`Test sent to ${opts.to}`);
+  },
+
+  listEmailSendLog: async (limit = 80): Promise<EmailSendLogRow[]> => {
+    const { data, error } = await supabase
+      .from('email_send_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data ?? []) as EmailSendLogRow[];
   },
 
   readSettingValue: (settings: SystemSettingsMap, key: string, fallback: unknown) => {

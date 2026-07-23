@@ -24,12 +24,18 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
     email_notifications: true,
     push_notifications: true,
     in_app_notifications: true,
+    marketing_consent: false,
     notification_types: {
       event_updates: true,
       messages: true,
       announcements: true,
       system: true,
-      reviews: true
+      reviews: true,
+      proposals: true,
+      new_events: true,
+      follow: false,
+      story_like: false,
+      tickets: true,
     }
   });
   
@@ -193,6 +199,60 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onClose }) 
                   id="reviews"
                   checked={settings.notification_types.reviews}
                   onCheckedChange={(value) => handleToggleSetting('notification_types.reviews', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="tickets">Tickets & transfers</Label>
+                <Switch
+                  id="tickets"
+                  checked={settings.notification_types.tickets}
+                  onCheckedChange={(value) => handleToggleSetting('notification_types.tickets', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="proposals">Proposals</Label>
+                <Switch
+                  id="proposals"
+                  checked={settings.notification_types.proposals}
+                  onCheckedChange={(value) => handleToggleSetting('notification_types.proposals', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="new-events">New events</Label>
+                <Switch
+                  id="new-events"
+                  checked={settings.notification_types.new_events}
+                  onCheckedChange={(value) => handleToggleSetting('notification_types.new_events', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="follow-email">New followers (email)</Label>
+                <Switch
+                  id="follow-email"
+                  checked={settings.notification_types.follow}
+                  onCheckedChange={(value) => handleToggleSetting('notification_types.follow', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="story-like-email">Story likes (email)</Label>
+                <Switch
+                  id="story-like-email"
+                  checked={settings.notification_types.story_like}
+                  onCheckedChange={(value) => handleToggleSetting('notification_types.story_like', value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="marketing-consent">Marketing & newsletter</Label>
+                <Switch
+                  id="marketing-consent"
+                  checked={settings.marketing_consent}
+                  onCheckedChange={(value) => handleToggleSetting('marketing_consent', value)}
                 />
               </div>
             </div>
