@@ -115,6 +115,7 @@ const AdminLogin = () => {
       <div className="relative z-10 flex w-full items-center justify-center px-4 pb-10 lg:absolute lg:inset-y-0 lg:right-0 lg:w-auto lg:items-center lg:justify-end lg:px-[100px] lg:pb-0">
         <form
           onSubmit={handleSubmit}
+          autoComplete="off"
           className={cn(
             'flex w-full max-w-[440px] flex-col gap-[18px] rounded-[28px] p-9 shadow-[0px_18px_40px_0px_rgba(0,0,0,0.35)]',
             isDark ? 'border border-[#21262d] bg-[#161b22]' : 'bg-white'
@@ -160,8 +161,9 @@ const AdminLogin = () => {
             <Input
               id="admin-email"
               type="email"
-              autoComplete="username"
-              placeholder="admin@wya.com"
+              name="admin-email"
+              autoComplete="off"
+              placeholder=""
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={cn(
@@ -184,8 +186,9 @@ const AdminLogin = () => {
             <Input
               id="admin-password"
               type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
+              name="admin-password"
+              autoComplete="new-password"
+              placeholder=""
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={cn(
