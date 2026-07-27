@@ -3,7 +3,7 @@
 
 INSERT INTO public.system_settings (key, value, description) VALUES
   ('platform.site_name', '"WYA"'::jsonb, 'Product / brand name used in emails and admin'),
-  ('platform.site_url', '"https://whereyouat.ke"'::jsonb, 'Canonical public site URL'),
+  ('platform.site_url', '"https://www.wya254.com"'::jsonb, 'Canonical public site URL'),
   ('email.provider', '"resend"'::jsonb, 'Email provider id (resend)'),
   ('email.smtp_host', '"smtp.resend.com"'::jsonb, 'SMTP host (Resend)'),
   ('email.smtp_port', '465'::jsonb, 'SMTP port'),

@@ -43,6 +43,13 @@ export type FigmaEmailOpts = {
   authCtaHref?: string;
 };
 
+/** Join site origin + path into an absolute asset URL. */
+function asset(siteUrl: string, path: string): string {
+  const base = (siteUrl || "https://www.wya254.com").replace(/\/$/, "");
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${normalized}`;
+}
+
 /** Per-template Figma hero under /emails/heroes/{id}.jpg */
 export function emailHeroPath(templateId: string): string {
   return `/emails/heroes/${templateId}.jpg`;

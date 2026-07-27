@@ -319,12 +319,25 @@ const CommunicationsPanel: React.FC = () => {
   const withPreviewVars = (html: string) => {
     const site = typeof window !== 'undefined' ? window.location.origin : 'https://www.wya254.com';
     const email = user?.email || 'you@example.com';
-    let out = html;
+    // Dead / wrong production hosts baked into older templates — rewrite so
+    // logo + hero images load from the app origin during admin preview.
+    let out = html
+      .replace(/https?:\/\/(?:www\.)?whereyouat\.ke/gi, site)
+      .replace(/https?:\/\/(?:www\.)?wya254\.com/gi, site);
     const pairs: Array<[RegExp, string]> = [
       [/\{\{\s*\.ConfirmationURL\s*\}\}/g, `${site}/auth/confirm?token=preview`],
       [/\{\{\s*\.SiteURL\s*\}\}/g, site],
       [/\{\{\s*\.Email\s*\}\}/g, email],
       [/\{\{\s*eventTitle\s*\}\}/g, 'Afrobeats Night'],
+      [/\{\{\s*eventWhen\s*\}\}/g, 'Sat 8:00 PM'],
+      [/\{\{\s*eventWhere\s*\}\}/g, 'Nairobi'],
+      [/\{\{\s*ticketSummary\s*\}\}/g, '2× General'],
+      [/\{\{\s*amountPaid\s*\}\}/g, 'KES 2,000'],
+      [/\{\{\s*orderId\s*\}\}/g, 'ORD-PREVIEW'],
+      [/\{\{\s*wasLabel\s*\}\}/g, 'Fri 7:00 PM'],
+      [/\{\{\s*nowLabel\s*\}\}/g, 'Sat 8:00 PM'],
+      [/\{\{\s*refundLabel\s*\}\}/g, 'Full refund · 3–5 days'],
+      [/\{\{\s*link\s*\}\}/g, `${site}/events`],
       [/\{\{\s*userName\s*\}\}/g, 'there'],
       [/\{\{\s*whenLabel\s*\}\}/g, 'is tomorrow'],
       [/\{\{\s*title\s*\}\}/g, 'Announcement'],
