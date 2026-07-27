@@ -57,7 +57,7 @@ INSERT INTO public.system_settings (key, value, description) VALUES
   ('marketplace.enabled', 'true'::jsonb, 'Feature flag: ticket marketplace'),
   ('platform.maintenance_mode', 'false'::jsonb, 'When true, show maintenance banner / block non-admin writes'),
   ('platform.registration_open', 'true'::jsonb, 'Allow new user signups'),
-  ('platform.support_email', '"support@wya.app"'::jsonb, 'Public support contact'),
+  ('platform.support_email', '"support@wyakenya.com"'::jsonb, 'Public support contact'),
   ('tickets.refunds_enabled', 'true'::jsonb, 'Allow admin-initiated refund marking')
 ON CONFLICT (key) DO NOTHING;
 

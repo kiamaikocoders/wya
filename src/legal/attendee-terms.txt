@@ -41,7 +41,7 @@ To access the full features of WYA, you are required to create an account. By re
 • Provide accurate, current, and complete information during registration.
 • Keep your account information updated at all times.
 • Maintain the confidentiality of your login credentials and not share them with any third party.
-• Notify WYA immediately at hello@wya.com if you suspect unauthorized access to your account.
+• Notify WYA immediately at support@wyakenya.com if you suspect unauthorized access to your account.
 
 You are solely responsible for all activity that occurs under your account. Eventsphere Ltd will not be liable for any loss arising from unauthorized use of your account where you have failed to safeguard your credentials.
 
@@ -97,7 +97,7 @@ WYA is committed to protecting your personal data. We collect, process, and stor
 • The processing of usage data to personalize your experience on the Platform.
 • The receipt of marketing communications related to WYA and partner events, subject to your communication preferences.
 
-Your rights under the KDPA include the right to access, correct, and request deletion of your personal data. To exercise these rights, please contact us at hello@wya.com. For full details on how we collect, use, and protect your data, please refer to our Privacy Policy available on the Platform.
+Your rights under the KDPA include the right to access, correct, and request deletion of your personal data. To exercise these rights, please contact us at support@wyakenya.com. For full details on how we collect, use, and protect your data, please refer to our Privacy Policy available on the Platform.
 
 8. Branded Content & Advertising
 
@@ -108,7 +108,7 @@ WYA partners with brands, including alcohol, fashion, and telecommunications com
 
 WYA does not endorse any brand or product featured on the Platform. Your interactions with branded content are voluntary.
 
-If you believe any sponsored content is inaccurate, misleading, or inappropriate, please report it to hello@wya.com.
+If you believe any sponsored content is inaccurate, misleading, or inappropriate, please report it to support@wyakenya.com.
 
 9. User-Generated Content
 
@@ -130,7 +130,7 @@ All intellectual property rights in the WYA Platform, including its design, bran
 
 11. Notifications & Communications
 
-By registering on WYA, you agree to receive service-related communications including account notifications, event updates, and safety alerts. You may opt out of promotional and marketing communications at any time through your account settings or by contacting us at hello@wya.com.
+By registering on WYA, you agree to receive service-related communications including account notifications, event updates, and safety alerts. You may opt out of promotional and marketing communications at any time through your account settings or by contacting us at support@wyakenya.com.
 
 Push notifications may be enabled or disabled through your device settings. Please note that disabling push notifications may mean you miss time-sensitive event updates.
 
@@ -165,14 +165,14 @@ You agree to indemnify, defend, and hold harmless WYA and its affiliates, office
 
 15. Governing Law & Dispute Resolution
 
-These Terms shall be governed by and construed in accordance with the laws of the Republic of Kenya. In the event of any dispute arising out of or in connection with these Terms or your use of the Platform, WYA encourages you to first contact us directly at hello@wya.com to seek an informal resolution. If a dispute cannot be resolved informally within 30 days, it shall be referred to mediation administered by the Nairobi Centre for International Arbitration (NCIA) in accordance with its Mediation Rules. The seat of mediation shall be Nairobi, Kenya, and the language of proceedings shall be English.
+These Terms shall be governed by and construed in accordance with the laws of the Republic of Kenya. In the event of any dispute arising out of or in connection with these Terms or your use of the Platform, WYA encourages you to first contact us directly at support@wyakenya.com to seek an informal resolution. If a dispute cannot be resolved informally within 30 days, it shall be referred to mediation administered by the Nairobi Centre for International Arbitration (NCIA) in accordance with its Mediation Rules. The seat of mediation shall be Nairobi, Kenya, and the language of proceedings shall be English.
 
 16. Contact Us
 
 If you have any questions, concerns, or complaints regarding these Terms or your use of the WYA Platform, please contact us at:
 
 Eventsphere Ltd (trading as WYA — Where You At)
-Email: hello@wya.com
+Email: support@wyakenya.com
 Location: Nairobi, Kenya
 
 These Terms were last updated on 26 March 2026. WYA recommends that you retain a copy of these Terms for your records.

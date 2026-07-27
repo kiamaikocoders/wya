@@ -22,13 +22,28 @@ http://localhost:8080/signup
 ## 🟢 Production (wya254.com)
 
 ```
-https://wya254.com/auth/callback
-https://wya254.com/auth/confirm
-https://wya254.com/reset-password
-https://wya254.com/forgot-password
-https://wya254.com/login
-https://wya254.com/signup
+https://www.wya254.com/auth/callback
+https://www.wya254.com/auth/confirm
+https://www.wya254.com/reset-password
+https://www.wya254.com/forgot-password
+https://www.wya254.com/login
+https://www.wya254.com/signup
 ```
+
+---
+
+## 🟠 Preview (Vercel)
+
+```
+https://wya-alpha.vercel.app/auth/callback
+https://wya-alpha.vercel.app/auth/confirm
+https://wya-alpha.vercel.app/reset-password
+https://wya-alpha.vercel.app/login
+https://wya-alpha.vercel.app/signup
+```
+
+Signup uses `emailRedirectTo` based on the current origin so the confirmation
+link returns to the same host that stored the pending profile photo.
 
 ---
 
@@ -36,28 +51,28 @@ https://wya254.com/signup
 
 ### 1. Email Confirmation (Signup)
 - **Development**: `http://localhost:8080/auth/callback`
-- **Production**: `https://wya254.com/auth/callback`
+- **Production**: `https://www.wya254.com/auth/callback`
 - **Alternative**: `http://localhost:8080/auth/confirm` (also works)
 
 ### 2. Password Reset
 - **Development**: `http://localhost:8080/reset-password`
-- **Production**: `https://wya254.com/reset-password`
+- **Production**: `https://www.wya254.com/reset-password`
 
 ### 3. Magic Link (Passwordless Login)
 - **Development**: `http://localhost:8080/auth/callback`
-- **Production**: `https://wya254.com/auth/callback`
+- **Production**: `https://www.wya254.com/auth/callback`
 
 ### 4. Email Change Confirmation
 - **Development**: `http://localhost:8080/auth/callback`
-- **Production**: `https://wya254.com/auth/callback`
+- **Production**: `https://www.wya254.com/auth/callback`
 
 ### 5. User Invitation
 - **Development**: `http://localhost:8080/auth/callback`
-- **Production**: `https://wya254.com/auth/callback`
+- **Production**: `https://www.wya254.com/auth/callback`
 
 ### 6. Reauthentication
 - **Development**: `http://localhost:8080/auth/callback`
-- **Production**: `https://wya254.com/auth/callback`
+- **Production**: `https://www.wya254.com/auth/callback`
 
 ---
 
@@ -76,7 +91,7 @@ https://wya254.com/signup
 Also set the **Site URL** in Supabase:
 
 - **Development**: `http://localhost:8080`
-- **Production**: `https://wya254.com`
+- **Production**: `https://www.wya254.com`
 
 **Note**: You can only set one Site URL at a time. Use production for production, and switch to localhost when developing locally.
 
@@ -98,12 +113,12 @@ http://localhost:8080/signup
 
 **Production:**
 ```
-https://wya254.com/auth/callback
-https://wya254.com/auth/confirm
-https://wya254.com/reset-password
-https://wya254.com/forgot-password
-https://wya254.com/login
-https://wya254.com/signup
+https://www.wya254.com/auth/callback
+https://www.wya254.com/auth/confirm
+https://www.wya254.com/reset-password
+https://www.wya254.com/forgot-password
+https://www.wya254.com/login
+https://www.wya254.com/signup
 ```
 
 ---

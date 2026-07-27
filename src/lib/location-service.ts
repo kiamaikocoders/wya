@@ -347,7 +347,7 @@ class LocationService {
       const res = await fetch(url.toString(), {
         headers: {
           Accept: 'application/json',
-          'User-Agent': 'WYA/1.0 (whereyouat.app)',
+          'User-Agent': 'WYA/1.0 (www.wya254.com)',
         },
       });
       if (!res.ok) return { city: '', country: '', address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
@@ -567,7 +567,7 @@ class LocationService {
     const res = await fetch(url.toString(), {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'WYA/1.0 (whereyouat.app)',
+        'User-Agent': 'WYA/1.0 (www.wya254.com)',
       },
     });
     if (!res.ok) return [];
