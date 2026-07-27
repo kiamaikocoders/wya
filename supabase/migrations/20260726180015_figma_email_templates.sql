@@ -525,12 +525,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -579,11 +579,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -613,12 +613,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="180" style="display:block;width:100%;max-width:520px;height:180px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="180" style="display:block;width:100%;max-width:520px;height:180px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -664,11 +664,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -698,12 +698,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -763,11 +763,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -797,12 +797,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -862,11 +862,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -896,12 +896,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -961,11 +961,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -995,12 +995,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1060,11 +1060,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1094,12 +1094,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1157,11 +1157,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1191,12 +1191,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1260,11 +1260,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1294,12 +1294,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1357,11 +1357,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1391,12 +1391,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1454,11 +1454,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1488,12 +1488,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1547,11 +1547,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1581,12 +1581,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1646,11 +1646,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1680,12 +1680,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1743,11 +1743,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1777,12 +1777,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1842,11 +1842,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1876,12 +1876,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -1935,11 +1935,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -1969,12 +1969,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -2028,11 +2028,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -2062,12 +2062,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -2127,11 +2127,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -2161,12 +2161,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -2220,11 +2220,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -2254,12 +2254,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="220" style="display:block;width:100%;max-width:520px;height:220px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -2331,11 +2331,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
@@ -2365,12 +2365,12 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
           <tr>
             <td align="center" style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
+              <img src="https://www.wya254.com/emails/wya-logo.png" alt="WYA" width="96" height="64" style="display:block;border:0;height:64px;width:auto;" />
             </td>
           </tr>
           <tr>
             <td style="padding:0 0 14px 0;">
-              <img src="https://whereyouat.ke/emails/hero-welcome.jpg" alt="" width="520" height="180" style="display:block;width:100%;max-width:520px;height:180px;object-fit:cover;border-radius:12px;border:0;" />
+              <img src="https://www.wya254.com/emails/hero-welcome.jpg" alt="" width="520" height="180" style="display:block;width:100%;max-width:520px;height:180px;object-fit:cover;border-radius:12px;border:0;" />
             </td>
           </tr>
           <tr>
@@ -2410,11 +2410,11 @@ INSERT INTO public.communication_templates (id, category, name, subject, html, d
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eff2f5;border-radius:12px;">
                 <tr><td style="padding:16px;text-align:center;">
                   <p style="margin:0 0 6px 0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">
-                    <a href="https://whereyouat.ke/faq" style="color:#656d76;text-decoration:none;">Support</a>
+                    <a href="https://www.wya254.com/faq" style="color:#656d76;text-decoration:none;">Support</a>
                     ·
-                    <a href="https://whereyouat.ke/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
+                    <a href="https://www.wya254.com/privacy-policy" style="color:#656d76;text-decoration:none;">Privacy</a>
                     ·
-                    <a href="https://whereyouat.ke/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
+                    <a href="https://www.wya254.com/terms-of-service" style="color:#656d76;text-decoration:none;">Terms</a>
                   </p>
                   <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:11px;color:#656d76;">© 2026 WYA Kenya. All rights reserved.</p>
                 </td></tr>
