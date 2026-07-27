@@ -23,6 +23,8 @@ export async function callAiChat(options: {
   system?: string;
   user: string;
   maxTokens?: number;
+  /** Skip plain-text formatting (e.g. when the model must return JSON). */
+  preserveRaw?: boolean;
 }): Promise<string> {
   const messages: { role: string; content: string }[] = [];
   if (options.system?.trim()) {

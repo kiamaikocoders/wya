@@ -21,6 +21,8 @@ type ActivityRow = {
   pill: string;
   at: string;
   href?: string;
+  /** Event / proposal banner when available */
+  imageUrl?: string | null;
 };
 
 function formatKesCompact(amount: number): string {
@@ -63,7 +65,7 @@ const DashboardHome: React.FC = () => {
 
       const { data: events } = await supabase
         .from('events')
-        .select('id, title, status, updated_at, created_at')
+        .select('id, title, status, updated_at, created_at, image_url')
         .order('updated_at', { ascending: false })
         .limit(5);
 
@@ -83,12 +85,13 @@ const DashboardHome: React.FC = () => {
           pill: approved ? '✓ Event' : pending ? 'Pending' : event.status || 'Event',
           at,
           href: '/admin/events',
+          imageUrl: event.image_url,
         });
       });
 
       const { data: proposals } = await supabase
         .from('proposals')
-        .select('id, title, status, created_at')
+        .select('id, title, status, created_at, image_url')
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
         .limit(3);
@@ -102,21 +105,74 @@ const DashboardHome: React.FC = () => {
           pill: 'Pending',
           at: p.created_at,
           href: '/admin/proposals',
+          imageUrl: p.image_url,
         });
       });
 
       const { data: transfers, error: transferErr } = await supabase
         .from('marketplace_transfers')
-        .select('id, platform_fee_kes, status, created_at')
+        .select(
+          `
+          id,
+          platform_fee_kes,
+          fee_amount,
+          status,
+          created_at,
+          listing:marketplace_listings!marketplace_transfers_listing_id_fkey(
+            event:events!marketplace_listings_event_id_fkey(id, title, image_url)
+          )
+        `
+        )
         .order('created_at', { ascending: false })
         .limit(3);
 
       if (!transferErr) {
         transfers?.forEach((t) => {
+          const listing = Array.isArray(t.listing) ? t.listing[0] : t.listing;
+          const eventRaw =
+            listing && typeof listing === 'object' && 'event' in listing
+              ? (listing as { event?: unknown }).event
+              : null;
+          const event = Array.isArray(eventRaw) ? eventRaw[0] : eventRaw;
+          const eventObj =
+            event && typeof event === 'object'
+              ? (event as { title?: string; image_url?: string | null })
+              : null;
+          const fee = Number(
+            (t as { platform_fee_kes?: number }).platform_fee_kes ??
+              (t as { fee_amount?: number }).fee_amount ??
+              0
+          );
+          rows.push({
+            id: `xfer-${t.id}`,
+            title: eventObj?.title
+              ? `Marketplace fee · ${eventObj.title}`
+              : 'Marketplace fee collected',
+            meta: `KES ${fee.toLocaleString()} · ${formatDistanceToNow(parseISO(t.created_at), { addSuffix: true })}`,
+            tone: 'primary',
+            pill: t.status === 'completed' ? 'Paid' : t.status,
+            at: t.created_at,
+            href: '/admin/marketplace?tab=transfers',
+            imageUrl: eventObj?.image_url ?? null,
+          });
+        });
+      } else {
+        // Fallback without nested event join (schema / RLS variance)
+        const { data: plainTransfers } = await supabase
+          .from('marketplace_transfers')
+          .select('id, platform_fee_kes, fee_amount, status, created_at')
+          .order('created_at', { ascending: false })
+          .limit(3);
+        plainTransfers?.forEach((t) => {
+          const fee = Number(
+            (t as { platform_fee_kes?: number }).platform_fee_kes ??
+              (t as { fee_amount?: number }).fee_amount ??
+              0
+          );
           rows.push({
             id: `xfer-${t.id}`,
             title: 'Marketplace fee collected',
-            meta: `KES ${Number(t.platform_fee_kes || 0).toLocaleString()} · ${formatDistanceToNow(parseISO(t.created_at), { addSuffix: true })}`,
+            meta: `KES ${fee.toLocaleString()} · ${formatDistanceToNow(parseISO(t.created_at), { addSuffix: true })}`,
             tone: 'primary',
             pill: t.status === 'completed' ? 'Paid' : t.status,
             at: t.created_at,
@@ -211,6 +267,19 @@ const DashboardHome: React.FC = () => {
                     onClick={() => row.href && navigate(row.href)}
                     className="flex w-full items-center gap-2.5 rounded-xl bg-[hsl(var(--admin-surface))] px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--admin-surface-2))]"
                   >
+                    <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-[hsl(var(--admin-surface-2))] sm:h-14 sm:w-[88px]">
+                      {row.imageUrl ? (
+                        <img
+                          src={row.imageUrl}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
+                          —
+                        </div>
+                      )}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-semibold text-foreground">
                         {row.title}

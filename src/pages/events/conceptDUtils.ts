@@ -1,6 +1,6 @@
 import { format, parseISO, isValid, nextSaturday, nextSunday, startOfDay, endOfDay } from 'date-fns';
 import type { Event } from '@/types/event.types';
-import { FIGMA_VIBE_COUNTS } from './figmaSeededEvents';
+import { FIGMA_VIBE_COUNTS, type SeededEvent } from './figmaSeededEvents';
 
 export const VIBE_CATEGORIES = FIGMA_VIBE_COUNTS.map((v) => ({
   key: v.key,
@@ -12,16 +12,52 @@ export function formatEventPrice(price?: number | null): string {
   return `KES ${Number(price).toLocaleString('en-KE')}`;
 }
 
-export function formatEventMeta(event: Event): string {
-  const raw = event.date?.includes('T') ? event.date : `${event.date}T12:00:00`;
+export function formatEventDateLabel(date?: string | null): string {
+  if (!date) return 'Date TBA';
+  const raw = date.includes('T') ? date : `${date.slice(0, 10)}T12:00:00`;
   const d = parseISO(raw);
-  const datePart = isValid(d) ? format(d, 'EEE · d MMM') : event.date;
+  return isValid(d) ? format(d, 'EEE · d MMM') : date.slice(0, 10);
+}
+
+export function formatEventMeta(event: Event): string {
+  const datePart = formatEventDateLabel(event.date);
   const place = event.location?.split(',')[0]?.trim() || event.location || 'Kenya';
   return `${datePart}  ·  ${place}`;
 }
 
 export function formatFeaturedMeta(event: Event): string {
   return `${formatEventMeta(event)}  ·  ${formatEventPrice(event.price)}`;
+}
+
+/** Normalize a live DB event into the Concept D card / browse shape. */
+export function toBrowseEvent(event: Event): SeededEvent {
+  const dateIso = event.date?.includes('T')
+    ? event.date.slice(0, 10)
+    : (event.date || '').slice(0, 10);
+
+  return {
+    id: event.id,
+    title: event.title,
+    description: event.description || '',
+    category: event.category || 'Event',
+    date: dateIso || event.date,
+    end_date: event.end_date,
+    time: event.time,
+    location: event.location || 'Kenya',
+    location_url: event.location_url,
+    image_url: event.image_url || resolveCategoryImage(event.category),
+    organizer_id: event.organizer_id,
+    created_at: event.created_at,
+    price: event.price,
+    featured: event.featured ?? event.is_featured ?? false,
+    tags: event.tags || [],
+    capacity: event.capacity,
+    latitude: event.latitude,
+    longitude: event.longitude,
+    performing_artists: event.performing_artists,
+    dateLabel: formatEventDateLabel(event.date),
+    ticketLabel: formatEventPrice(event.price),
+  };
 }
 
 export function resolveCategoryImage(category?: string | null): string {
@@ -52,4 +88,25 @@ export function thisWeekendRange(): { start: string; end: string } {
     return { start: startOfDay(now).toISOString(), end: endOfDay(now).toISOString() };
   }
   return { start: sat.toISOString(), end: sun.toISOString() };
+}
+
+/** Count events per vibe chip for the Concept D rail. */
+export function countEventsByVibe(
+  events: Array<{ category?: string | null; title?: string; tags?: string[] }>
+) {
+  return FIGMA_VIBE_COUNTS.map((v) => {
+    const key = v.key.toLowerCase();
+    const count = events.filter((e) => {
+      const cat = (e.category || '').toLowerCase();
+      if (key === 'jazz') {
+        return (
+          cat === 'music' &&
+          ((e.title || '').toLowerCase().includes('jazz') ||
+            (e.tags || []).some((t) => /jazz/i.test(t)))
+        );
+      }
+      return cat === key || cat.includes(key);
+    }).length;
+    return { ...v, count };
+  });
 }

@@ -6,14 +6,18 @@ import { toast } from 'sonner';
 import {
   AdminListRow,
   AdminOutlinePill,
+  AdminPagination,
   AdminSectionPanel,
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
+import { AdminAiInsightPanel, AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
+import { clusterFeedbackThemes, draftFeedbackReply } from '@/lib/admin-ai-analysis';
 import {
   feedbackService,
   FEEDBACK_STATUSES,
   type FeedbackStatus,
 } from '@/lib/feedback-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
   const queryClient = useQueryClient();
@@ -23,6 +27,15 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
     queryKey: ['admin-app-feedback', filter],
     queryFn: () => feedbackService.listForAdmin(filter),
   });
+
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+    total,
+    pageSize,
+  } = useListPagination(items, { resetKey: filter });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: FeedbackStatus }) =>
@@ -56,6 +69,27 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
         ))}
       </div>
 
+      <AdminAiInsightPanel
+        title="Feedback themes"
+        description="Cluster current messages into themes and suggested actions."
+        buttonLabel="Analyze themes"
+        emptyHint={
+          items.length
+            ? 'Generate themes from the feedback in this filter.'
+            : 'No feedback to analyze yet.'
+        }
+        run={async () => {
+          if (!items.length) throw new Error('No feedback to analyze yet');
+          return clusterFeedbackThemes(
+            items.map((item) => ({
+              category: item.category,
+              message: item.message,
+              status: item.status,
+            }))
+          );
+        }}
+      />
+
       <AdminSectionPanel title="Messages">
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -65,7 +99,7 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
           <p className="py-8 text-center text-sm text-muted-foreground">No feedback yet.</p>
         ) : (
           <div className="space-y-2">
-            {items.map((item) => {
+            {pageItems.map((item) => {
               const name =
                 item.profiles?.full_name?.trim() ||
                 item.profiles?.username?.trim() ||
@@ -77,45 +111,65 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
                 // ignore
               }
               return (
-                <AdminListRow
-                  key={item.id}
-                  title={name}
-                  meta={`${item.message.slice(0, 120)}${item.message.length > 120 ? '…' : ''} · ${item.page_path || '/'} · ${when}`}
-                  trailing={
-                    <>
-                      <AdminStatusPill
-                        tone={
-                          item.status === 'new'
-                            ? 'primary'
-                            : item.status === 'read'
-                              ? 'muted'
-                              : 'success'
-                        }
-                      >
-                        {item.status}
-                      </AdminStatusPill>
-                      <AdminStatusPill tone="muted">{item.category}</AdminStatusPill>
-                      {item.status === 'new' ? (
+                <div key={item.id} className="space-y-1.5">
+                  <AdminListRow
+                    title={name}
+                    meta={`${item.message.slice(0, 120)}${item.message.length > 120 ? '…' : ''} · ${item.page_path || '/'} · ${when}`}
+                    trailing={
+                      <>
+                        <AdminStatusPill
+                          tone={
+                            item.status === 'new'
+                              ? 'primary'
+                              : item.status === 'read'
+                                ? 'muted'
+                                : 'success'
+                          }
+                        >
+                          {item.status}
+                        </AdminStatusPill>
+                        <AdminStatusPill tone="muted">{item.category}</AdminStatusPill>
+                        {item.status === 'new' ? (
+                          <button
+                            type="button"
+                            className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium"
+                            onClick={() => updateMutation.mutate({ id: item.id, status: 'read' })}
+                          >
+                            Mark read
+                          </button>
+                        ) : null}
                         <button
                           type="button"
-                          className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium"
-                          onClick={() => updateMutation.mutate({ id: item.id, status: 'read' })}
+                          className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
+                          onClick={() => deleteMutation.mutate(item.id)}
                         >
-                          Mark read
+                          Delete
                         </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                        onClick={() => deleteMutation.mutate(item.id)}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  }
-                />
+                      </>
+                    }
+                  />
+                  <div className="px-1">
+                    <AdminAiInlineNote
+                      label="Draft reply"
+                      run={() =>
+                        draftFeedbackReply({
+                          message: item.message,
+                          category: item.category,
+                          name,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
               );
             })}
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </AdminSectionPanel>

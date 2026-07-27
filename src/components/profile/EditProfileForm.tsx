@@ -10,6 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { User } from "@/lib/auth-service";
 import { Loader2, Upload, Camera } from "lucide-react";
+import { storageService } from "@/lib/storage-service";
+import { resolveAvatarUrl } from "@/lib/avatar-url";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EditProfileFormProps {
   user: User;
@@ -24,22 +27,25 @@ type FormValues = {
 };
 
 const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCancel }) => {
+  const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(user.profile_picture || null);
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    resolveAvatarUrl(user.profile_picture) || null
+  );
   const [isUploading, setIsUploading] = useState(false);
   
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormValues>({
     defaultValues: {
       name: user.name,
       bio: user.bio || "",
-      profile_picture: user.profile_picture || "",
+      profile_picture: resolveAvatarUrl(user.profile_picture) || "",
     },
   });
   
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
-      data.profile_picture = previewImage || "";
+      data.profile_picture = resolveAvatarUrl(previewImage) || "";
       await onUpdate(data);
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -65,18 +71,29 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onUpdate, onCan
         toast.error('Image must be less than 5MB');
         return;
       }
+
+      const userId = authUser?.id || user.id;
+      if (!userId) {
+        toast.error('You must be signed in to upload a photo');
+        return;
+      }
       
       setIsUploading(true);
+      const localPreview = URL.createObjectURL(file);
+      setPreviewImage(localPreview);
       try {
-        const objectUrl = URL.createObjectURL(file);
-        setPreviewImage(objectUrl);
-        setValue("profile_picture", objectUrl);
-        toast.success('Image selected successfully');
+        const uploaded = await storageService.uploadAvatar(file, userId);
+        URL.revokeObjectURL(localPreview);
+        setPreviewImage(uploaded.publicUrl);
+        setValue("profile_picture", uploaded.publicUrl);
       } catch (error) {
-        console.error('Error handling image:', error);
-        toast.error('Failed to process image');
+        console.error('Error uploading avatar:', error);
+        URL.revokeObjectURL(localPreview);
+        setPreviewImage(resolveAvatarUrl(user.profile_picture) || null);
+        toast.error('Failed to upload photo');
       } finally {
         setIsUploading(false);
+        e.target.value = '';
       }
     }
   };

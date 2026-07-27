@@ -11,6 +11,8 @@ import {
   AdminOutlinePill,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
+import { AdminAiInsightPanel } from '@/components/admin/AdminAiAssist';
+import { summarizeSponsorAnalytics } from '@/lib/admin-ai-analysis';
 
 function getPeriodStart(period: 'day' | 'week' | 'month' | 'year'): string {
   const now = new Date();
@@ -191,6 +193,26 @@ const SponsorAnalytics: React.FC = () => {
               </div>
             )}
           </AdminSectionPanel>
+
+          <AdminAiInsightPanel
+            title="AI sponsor summary"
+            description="Plain-language read of impressions, interactions, and zone activity."
+            buttonLabel="Summarize performance"
+            run={() =>
+              summarizeSponsorAnalytics({
+                period,
+                impressions: aggregateStats?.totalImpressions ?? 0,
+                interactions: aggregateStats?.totalInteractions ?? 0,
+                storyMentions: aggregateStats?.storyMentions ?? 0,
+                zoneCheckins: aggregateStats?.zoneCheckins ?? 0,
+                activity: (sponsorActivity || []).map((row) => ({
+                  sponsor: row.sponsor,
+                  visitors: row.visitors,
+                  interactions: row.interactions,
+                })),
+              })
+            }
+          />
         </>
       )}
     </div>

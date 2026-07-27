@@ -4,10 +4,10 @@ import { Loader2 } from 'lucide-react';
 import {
   AdminKpiRow,
   AdminKpiTile,
-  AdminListRow,
   AdminSectionPanel,
-  AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
+import { AdminAiInsightPanel } from '@/components/admin/AdminAiAssist';
+import { summarizePlatformAnalytics } from '@/lib/admin-ai-analysis';
 import { adminService } from '@/lib/admin-service';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -49,20 +49,9 @@ const Analytics: React.FC = () => {
 
   const loading = eventStats.isLoading || userStats.isLoading || ticketsQuery.isLoading;
 
-  const insights = [
-    {
-      title: 'Growth opportunity',
-      meta: 'Nightlife converts 2.1× better on weekends',
-    },
-    {
-      title: 'Marketplace momentum',
-      meta: `${(transfersQuery.data ?? 0).toLocaleString()} face-value transfers closed (completed)`,
-    },
-    {
-      title: 'User base',
-      meta: `${(userStats.data?.active_users ?? 0).toLocaleString()} active · ${(userStats.data?.organizers ?? 0).toLocaleString()} organizers`,
-    },
-  ];
+  const revenue = eventStats.data?.total_revenue ?? 0;
+  const tickets = ticketsQuery.data ?? 0;
+  const transfers = transfersQuery.data ?? 0;
 
   return (
     <div className="space-y-3.5">
@@ -81,27 +70,27 @@ const Analytics: React.FC = () => {
               label="Active users"
               value={(userStats.data?.active_users ?? 0).toLocaleString()}
             />
-            <AdminKpiTile
-              label="Revenue"
-              value={formatKesCompact(eventStats.data?.total_revenue ?? 0)}
-            />
-            <AdminKpiTile
-              label="Tickets"
-              value={(ticketsQuery.data ?? 0).toLocaleString()}
-            />
+            <AdminKpiTile label="Revenue" value={formatKesCompact(revenue)} />
+            <AdminKpiTile label="Tickets" value={tickets.toLocaleString()} />
           </AdminKpiRow>
 
           <AdminSectionPanel title="Insights">
-            <div className="space-y-2">
-              {insights.map((row) => (
-                <AdminListRow
-                  key={row.title}
-                  title={row.title}
-                  meta={row.meta}
-                  trailing={<AdminStatusPill tone="primary">Insight</AdminStatusPill>}
-                />
-              ))}
-            </div>
+            <AdminAiInsightPanel
+              title="AI insights"
+              description="Plain-language summary from the KPIs above (Vercel AI Gateway)."
+              buttonLabel="Generate insights"
+              emptyHint="Generate live insights from current platform metrics."
+              run={() =>
+                summarizePlatformAnalytics({
+                  totalEvents: eventStats.data?.total_events ?? 0,
+                  activeUsers: userStats.data?.active_users ?? 0,
+                  revenueKes: revenue,
+                  tickets,
+                  transfersCompleted: transfers,
+                  organizers: userStats.data?.organizers ?? 0,
+                })
+              }
+            />
           </AdminSectionPanel>
         </>
       )}

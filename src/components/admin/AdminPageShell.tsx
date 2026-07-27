@@ -1,7 +1,9 @@
 import React, { type ComponentType, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AdminThemeToggle } from '@/components/admin/AdminThemeToggle';
 import { AdminNotificationBell } from '@/components/admin/AdminNotificationBell';
+import { getPageWindow } from '@/hooks/use-list-pagination';
 
 /**
  * Figma Admin page chrome: header with icon badge + title/subtitle + actions.
@@ -393,5 +395,110 @@ export function AdminTextArea({
         className
       )}
     />
+  );
+}
+
+/**
+ * Compact pagination for admin list panels. Hidden when totalPages <= 1.
+ */
+export function AdminPagination({
+  page,
+  totalPages,
+  total,
+  pageSize,
+  onPageChange,
+  className,
+}: {
+  page: number;
+  totalPages: number;
+  total?: number;
+  pageSize?: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}) {
+  if (totalPages <= 1) return null;
+
+  const from =
+    total != null && pageSize != null ? (page - 1) * pageSize + 1 : null;
+  const to =
+    total != null && pageSize != null
+      ? Math.min(page * pageSize, total)
+      : null;
+
+  const window = getPageWindow(page, totalPages);
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between',
+        className
+      )}
+    >
+      {from != null && to != null && total != null ? (
+        <p className="text-[11px] text-muted-foreground">
+          Showing {from.toLocaleString()}–{to.toLocaleString()} of{' '}
+          {total.toLocaleString()}
+        </p>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          Page {page} of {totalPages}
+        </p>
+      )}
+
+      <nav
+        aria-label="Pagination"
+        className="flex flex-wrap items-center gap-1"
+      >
+        <button
+          type="button"
+          aria-label="Previous page"
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          className="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-[hsl(var(--admin-surface))] px-2 text-[11px] font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          Prev
+        </button>
+
+        {window.map((entry, idx) =>
+          entry === 'ellipsis' ? (
+            <span
+              key={`e-${idx}`}
+              className="px-1 text-[11px] text-muted-foreground"
+              aria-hidden
+            >
+              …
+            </span>
+          ) : (
+            <button
+              key={entry}
+              type="button"
+              aria-label={`Page ${entry}`}
+              aria-current={entry === page ? 'page' : undefined}
+              onClick={() => onPageChange(entry)}
+              className={cn(
+                'inline-flex h-8 min-w-8 items-center justify-center rounded-lg border px-2 text-[11px] font-semibold',
+                entry === page
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-[hsl(var(--admin-surface))] text-foreground hover:bg-[hsl(var(--admin-surface-2))]'
+              )}
+            >
+              {entry}
+            </button>
+          )
+        )}
+
+        <button
+          type="button"
+          aria-label="Next page"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          className="inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-[hsl(var(--admin-surface))] px-2 text-[11px] font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Next
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </nav>
+    </div>
   );
 }

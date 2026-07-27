@@ -10,6 +10,7 @@ import {
   AdminKpiTile,
   AdminListRow,
   AdminOutlinePill,
+  AdminPagination,
   AdminRefreshButton,
   AdminSectionPanel,
   AdminStatusPill,
@@ -28,6 +29,7 @@ import type {
   MarketplacePayout,
   MarketplaceTransfer,
 } from '@/lib/marketplace-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 type MarketplaceTab = 'overview' | 'listings' | 'transfers' | 'payouts' | 'settings';
 
@@ -164,6 +166,10 @@ const MarketplaceManagement: React.FC = () => {
   const listings: MarketplaceListing[] = listingsQuery.data ?? [];
   const transfers: MarketplaceTransfer[] = transfersQuery.data ?? [];
   const payouts: MarketplacePayout[] = payoutsQuery.data ?? [];
+
+  const listingsPaging = useListPagination(listings, { resetKey: listingFilter });
+  const transfersPaging = useListPagination(transfers, { resetKey: transferFilter });
+  const payoutsPaging = useListPagination(payouts, { resetKey: payoutFilter });
 
   const refreshAll = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-marketplace-stats'] });
@@ -332,7 +338,16 @@ const MarketplaceManagement: React.FC = () => {
             ) : listings.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">No listings.</p>
             ) : (
-              <div className="space-y-2">{listings.map(renderListingRow)}</div>
+              <div className="space-y-2">
+                {listingsPaging.pageItems.map(renderListingRow)}
+                <AdminPagination
+                  page={listingsPaging.page}
+                  totalPages={listingsPaging.totalPages}
+                  total={listingsPaging.total}
+                  pageSize={listingsPaging.pageSize}
+                  onPageChange={listingsPaging.setPage}
+                />
+              </div>
             )}
           </AdminSectionPanel>
         </div>
@@ -363,7 +378,7 @@ const MarketplaceManagement: React.FC = () => {
               <p className="py-8 text-center text-sm text-muted-foreground">No transfers yet.</p>
             ) : (
               <div className="space-y-2">
-                {transfers.map((transfer) => (
+                {transfersPaging.pageItems.map((transfer) => (
                   <AdminListRow
                     key={transfer.id}
                     title={`Transfer #${transfer.id} · ${modeLabel(transfer.mode)}`}
@@ -385,6 +400,13 @@ const MarketplaceManagement: React.FC = () => {
                     }
                   />
                 ))}
+                <AdminPagination
+                  page={transfersPaging.page}
+                  totalPages={transfersPaging.totalPages}
+                  total={transfersPaging.total}
+                  pageSize={transfersPaging.pageSize}
+                  onPageChange={transfersPaging.setPage}
+                />
               </div>
             )}
           </AdminSectionPanel>
@@ -415,7 +437,7 @@ const MarketplaceManagement: React.FC = () => {
               <p className="py-8 text-center text-sm text-muted-foreground">No payouts.</p>
             ) : (
               <div className="space-y-2">
-                {payouts.map((payout) => (
+                {payoutsPaging.pageItems.map((payout) => (
                   <AdminListRow
                     key={payout.id}
                     title={formatKes(payout.amount)}
@@ -447,6 +469,13 @@ const MarketplaceManagement: React.FC = () => {
                     }
                   />
                 ))}
+                <AdminPagination
+                  page={payoutsPaging.page}
+                  totalPages={payoutsPaging.totalPages}
+                  total={payoutsPaging.total}
+                  pageSize={payoutsPaging.pageSize}
+                  onPageChange={payoutsPaging.setPage}
+                />
               </div>
             )}
           </AdminSectionPanel>

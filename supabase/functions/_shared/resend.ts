@@ -70,7 +70,7 @@ export async function loadEmailSettings(admin: ServiceClient): Promise<EmailSett
         map["platform.site_name"] ||
         "WYA"
     ),
-    siteUrl: String(map["platform.site_url"] || "https://whereyouat.ke"),
+    siteUrl: String(map["platform.site_url"] || "https://www.wya254.com"),
     siteName: String(map["platform.site_name"] || "WYA"),
   };
 }

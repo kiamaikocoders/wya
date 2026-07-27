@@ -44,12 +44,6 @@ import { storyService } from '@/lib/story/story-service';
 import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
 import {
-  getSupabaseOfflineMessage,
-  isDevAdminBypassActive,
-  isSupabaseNetworkError,
-  SUPABASE_RESTORE_URL,
-} from '@/lib/dev-admin-bypass';
-import {
   prepareMediaForUpload,
   STORAGE_CACHE_CONTROL_IMMUTABLE,
 } from '@/lib/media-upload-prepare';
@@ -64,10 +58,14 @@ import {
   AdminKpiTile,
   AdminListRow,
   AdminOutlinePill,
+  AdminPagination,
   AdminPrimaryPill,
   AdminSectionPanel,
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
+import { useListPagination } from '@/hooks/use-list-pagination';
+import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import { draftGhostStoryCaption } from '@/lib/admin-ai-analysis';
 
 const GhostManagement: React.FC = () => {
   const queryClient = useQueryClient();
@@ -114,6 +112,8 @@ const GhostManagement: React.FC = () => {
   const [likeTotalTarget, setLikeTotalTarget] = useState(30);
   const [preferMediaFirstLikes, setPreferMediaFirstLikes] = useState(false);
   const [selectedStoryIdsForLike, setSelectedStoryIdsForLike] = useState<number[]>([]);
+  const [contentSearch, setContentSearch] = useState('');
+  const [contentEventFilter, setContentEventFilter] = useState<'all' | string>('all');
 
   // Fetch events, stories, posts for target selection
   const { data: events = [] } = useQuery({
@@ -232,12 +232,6 @@ const GhostManagement: React.FC = () => {
   };
 
   const loadGhostStories = async () => {
-    if (isDevAdminBypassActive()) {
-      setStoriesLoadError(getSupabaseOfflineMessage());
-      setGhostStories([]);
-      return;
-    }
-
     setLoadingStories(true);
     setStoriesLoadError(null);
     try {
@@ -255,12 +249,7 @@ const GhostManagement: React.FC = () => {
           : typeof error === 'object' && error !== null && 'message' in error
             ? String((error as { message?: unknown }).message ?? '')
             : 'Failed to load ghost stories';
-
-      setStoriesLoadError(
-        isSupabaseNetworkError(error) || /failed to fetch/i.test(message)
-          ? getSupabaseOfflineMessage()
-          : message || 'Failed to load ghost stories'
-      );
+      setStoriesLoadError(message || 'Failed to load ghost stories');
       toast.error('Could not load ghost stories');
     } finally {
       setLoadingStories(false);
@@ -573,6 +562,54 @@ const GhostManagement: React.FC = () => {
 
   const stats = statistics ?? emptyStats;
 
+  const filteredGhostStories = useMemo(() => {
+    const q = contentSearch.trim().toLowerCase();
+    return ghostStories.filter((story) => {
+      if (contentEventFilter !== 'all' && String(story.event_id ?? '') !== contentEventFilter) {
+        return false;
+      }
+      if (!q) return true;
+      return (
+        (story.user_name || '').toLowerCase().includes(q) ||
+        (story.event_title || '').toLowerCase().includes(q) ||
+        (story.caption || '').toLowerCase().includes(q) ||
+        (story.content || '').toLowerCase().includes(q)
+      );
+    });
+  }, [ghostStories, contentSearch, contentEventFilter]);
+
+  const queuePaging = useListPagination(queuedActions);
+  const usersPaging = useListPagination(ghostUsers, {
+    resetKey: selectedPersonaGroup === 'all' ? 'all' : selectedPersonaGroup,
+  });
+  const storiesPaging = useListPagination(filteredGhostStories, {
+    resetKey: `${contentSearch}|${contentEventFilter}`,
+  });
+
+  const contentEventOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of ghostStories) {
+      if (s.event_id != null && s.event_title) {
+        map.set(String(s.event_id), s.event_title);
+      }
+    }
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
+  }, [ghostStories]);
+
+  const resetCreateActionForm = () => {
+    setTargetId('');
+    setContentTitle('');
+    setContentText('');
+    setMediaUrl('');
+    setMediaPreview(null);
+    setSelectedEventId('');
+    setLikeTotalTarget(30);
+    setPreferMediaFirstLikes(false);
+    setSelectedStoryIdsForLike([]);
+    setTargetSearchQuery('');
+    setEventSearchQuery('');
+  };
+
   const queueActionTitle = (action: GhostActionQueue) => {
     const meta = action.metadata && typeof action.metadata === 'object' ? action.metadata : {};
     const targetName =
@@ -696,7 +733,7 @@ const GhostManagement: React.FC = () => {
               <p className="py-8 text-center text-sm text-muted-foreground">No actions in queue</p>
             ) : (
               <div className="space-y-2">
-                {queuedActions.map((action) => (
+                {queuePaging.pageItems.map((action) => (
                   <AdminListRow
                     key={action.id}
                     title={queueActionTitle(action)}
@@ -713,6 +750,13 @@ const GhostManagement: React.FC = () => {
                     }
                   />
                 ))}
+                <AdminPagination
+                  page={queuePaging.page}
+                  totalPages={queuePaging.totalPages}
+                  total={queuePaging.total}
+                  pageSize={queuePaging.pageSize}
+                  onPageChange={queuePaging.setPage}
+                />
               </div>
             )}
           </div>
@@ -752,7 +796,7 @@ const GhostManagement: React.FC = () => {
               <p className="py-8 text-center text-sm text-muted-foreground">No ghost users found</p>
             ) : (
               <div className="space-y-2">
-                {ghostUsers.map((user) => (
+                {usersPaging.pageItems.map((user) => (
                   <Link
                     key={user.id}
                     to={`/users/${user.id}`}
@@ -776,229 +820,221 @@ const GhostManagement: React.FC = () => {
                     <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   </Link>
                 ))}
+                <AdminPagination
+                  page={usersPaging.page}
+                  totalPages={usersPaging.totalPages}
+                  total={usersPaging.total}
+                  pageSize={usersPaging.pageSize}
+                  onPageChange={usersPaging.setPage}
+                />
               </div>
             )}
           </AdminSectionPanel>
         </TabsContent>
 
-        {/* Ghost Content Tab */}
-        <TabsContent value="content" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Ghost Content Management</CardTitle>
-                  <CardDescription>
-                    View, edit, and delete stories created by ghost accounts
-                  </CardDescription>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
+        {/* Ghost Content Tab — Figma 465:2 */}
+        <TabsContent value="content" className="mt-0 space-y-0">
+          <div className="rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] p-4">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-foreground">Ghost content</h2>
+                <p className="text-xs text-muted-foreground">
+                  Stories created by ghost accounts · edit or remove
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={contentEventFilter}
+                  onChange={(e) => setContentEventFilter(e.target.value)}
+                  className="h-10 rounded-[10px] border border-border bg-background px-3 text-[13px] font-semibold text-foreground"
+                >
+                  <option value="all">All events</option>
+                  {contentEventOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  value={contentSearch}
+                  onChange={(e) => setContentSearch(e.target.value)}
+                  placeholder="Search…"
+                  className="h-10 w-[160px] rounded-[10px] border-border bg-background text-[13px]"
+                />
+                <AdminOutlinePill
                   onClick={() => void loadGhostStories()}
                   disabled={loadingStories}
+                  className="rounded-[10px]"
                 >
-                  <RefreshCw className={cn("h-4 w-4 mr-2", loadingStories && "animate-spin")} />
-                  Refresh
-                </Button>
+                  {loadingStories ? 'Loading…' : 'Refresh'}
+                </AdminOutlinePill>
               </div>
-            </CardHeader>
-            <CardContent>
-              {loadingStories ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+
+            {loadingStories ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : storiesLoadError ? (
+              <div className="py-8 text-center text-sm text-destructive">
+                <p className="mb-2">{storiesLoadError}</p>
+                <p className="text-muted-foreground">Click Refresh to try again.</p>
+              </div>
+            ) : filteredGhostStories.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No ghost stories found.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_72px_140px] gap-3 rounded-lg bg-[hsl(var(--admin-surface-2))] px-3 py-2 text-[11px] font-semibold text-muted-foreground md:grid">
+                  <span>Story</span>
+                  <span>Event</span>
+                  <span>Engagement</span>
+                  <span>Posted</span>
+                  <span className="text-right">Actions</span>
                 </div>
-              ) : storiesLoadError ? (
-                <div className="py-8">
-                  <Alert variant="destructive" className="border-amber-500/50 bg-amber-950/30">
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="space-y-3">
-                      <p className="font-medium text-foreground">{storiesLoadError}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Ghost stories live in your paused Supabase database. Restore the project,
-                        then return here to delete large uploads and free storage.
-                      </p>
-                      <Button asChild size="sm" variant="outline">
-                        <a href={SUPABASE_RESTORE_URL} target="_blank" rel="noopener noreferrer">
-                          Restore Supabase project
-                          <ExternalLink className="ml-2 h-3.5 w-3.5" />
-                        </a>
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              ) : ghostStories.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="mb-2">No ghost stories found.</p>
-                  <p className="text-sm">Click Refresh to load stories, or check if ghost accounts have created any stories.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {ghostStories.map((story) => (
-                    <Card key={story.id} className="relative">
-                      <CardContent className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex gap-4">
-                          {/* Media Preview */}
-                          {story.media_url && (
-                            <div className="flex-shrink-0">
-                              {story.media_type === 'video' ? (
-                                <video
-                                  src={story.media_url}
-                                  className="w-24 h-24 object-cover rounded-lg"
-                                  controls={false}
-                                />
-                              ) : (
-                                <img
-                                  src={story.media_url}
-                                  alt={story.caption}
-                                  className="w-24 h-24 object-cover rounded-lg"
-                                />
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Story Details */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={story.user_image || undefined} />
-                                    <AvatarFallback>{story.user_name?.charAt(0) || 'G'}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="font-semibold text-sm">{story.user_name}</span>
-                                  {story.event_title && (
-                                    <>
-                                      <span className="text-muted-foreground">•</span>
-                                      <span className="text-sm text-muted-foreground">{story.event_title}</span>
-                                    </>
-                                  )}
-                                </div>
-                                <p className="text-sm font-medium mb-1 line-clamp-2">{story.caption}</p>
-                                <p className="text-xs text-muted-foreground line-clamp-2">{story.content}</p>
-                                <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                                  <span>❤️ {story.likes_count}</span>
-                                  <span>💬 {story.comments_count}</span>
-                                  <span>{format(new Date(story.created_at), 'MMM d, yyyy')}</span>
-                                </div>
-                              </div>
-                              
-                              {/* Action Buttons */}
-                              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    setEditingStory(story);
-                                    setEditContent(story.content);
-                                    setEditCaption(story.caption);
-                                    setEditMediaUrl(story.media_url || '');
-                                    setEditMediaType(story.media_type);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  type="button"
-                                  disabled={deletingStoryId === story.id}
-                                  className="cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    setStoryToDelete(story);
-                                  }}
-                                >
-                                  {deletingStoryId === story.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
+                {storiesPaging.pageItems.map((story) => (
+                  <div
+                    key={story.id}
+                    className="grid grid-cols-1 items-center gap-3 rounded-[10px] border border-border p-3 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_72px_140px]"
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-[hsl(var(--admin-surface-2))]">
+                        {story.media_url ? (
+                          story.media_type === 'video' ? (
+                            <video src={story.media_url} className="size-full object-cover" muted />
+                          ) : (
+                            <img
+                              src={story.media_url}
+                              alt=""
+                              className="size-full object-cover"
+                            />
+                          )
+                        ) : (
+                          <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                            —
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-foreground">
+                          @{story.user_name || 'ghost'}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">Story · ghost persona</p>
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold text-foreground">
+                        {story.event_title || '—'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">Event</p>
+                    </div>
+                    <p className="whitespace-pre text-xs text-muted-foreground">
+                      ♥ {story.likes_count}  💬 {story.comments_count}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(story.created_at), 'MMM d')}
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="rounded-[10px] border border-border px-3.5 py-2.5 text-[13px] font-semibold text-foreground hover:bg-[hsl(var(--admin-surface-2))]"
+                        onClick={() => {
+                          setEditingStory(story);
+                          setEditContent(story.content);
+                          setEditCaption(story.caption);
+                          setEditMediaUrl(story.media_url || '');
+                          setEditMediaType(story.media_type);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deletingStoryId === story.id}
+                        className="rounded-[10px] bg-[hsl(var(--admin-error))] px-3.5 py-2.5 text-[13px] font-bold text-white disabled:opacity-50"
+                        onClick={() => setStoryToDelete(story)}
+                      >
+                        {deletingStoryId === story.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Delete'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <AdminPagination
+                  page={storiesPaging.page}
+                  totalPages={storiesPaging.totalPages}
+                  total={storiesPaging.total}
+                  pageSize={storiesPaging.pageSize}
+                  onPageChange={storiesPaging.setPage}
+                />
+              </div>
+            )}
+          </div>
         </TabsContent>
 
-        {/* Create Action Tab */}
-        <TabsContent value="create" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create Ghost Action</CardTitle>
-              <CardDescription>
-                Queue an action to be performed by ghost accounts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Action Type</Label>
-                <Select
-                  value={actionType}
-                  onValueChange={(value) => {
-                    setActionType(value as GhostActionQueue['action_type']);
-                    // Reset form when action type changes
-                    setTargetId('');
-                    setContentTitle('');
-                    setContentText('');
-                    setMediaUrl('');
-                    setMediaPreview(null);
-                    setSelectedEventId('');
-                    setLikeTotalTarget(30);
-                    setPreferMediaFirstLikes(false);
-                    setSelectedStoryIdsForLike([]);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="like_story">Like Story</SelectItem>
-                    <SelectItem value="create_story">Create Story</SelectItem>
-                    <SelectItem value="follow_user">Follow User</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Create Action Tab — Figma 465:296 */}
+        <TabsContent value="create" className="mt-0">
+          <div className="flex w-full justify-center">
+            <div className="w-full max-w-[640px] rounded-2xl border border-border bg-[hsl(var(--admin-surface))] px-7 py-6">
+              <h2 className="text-xl font-bold text-foreground">Create ghost action</h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Pick an action type, choose a target, and select which personas should run it.
+              </p>
+
+              <p className="mb-2 mt-4 text-xs font-semibold text-foreground">Action type</p>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {(
+                  [
+                    ['like_story', 'Like story'],
+                    ['create_story', 'Create story'],
+                    ['follow_user', 'Follow user'],
+                  ] as const
+                ).map(([value, label]) => {
+                  const active = actionType === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        setActionType(value);
+                        resetCreateActionForm();
+                      }}
+                      className={cn(
+                        'rounded-[10px] px-3.5 py-2.5 text-[13px] transition-colors',
+                        active
+                          ? 'border-[1.5px] border-primary bg-primary/15 font-semibold text-primary'
+                          : 'border border-border bg-[hsl(var(--admin-surface-2))] font-medium text-muted-foreground',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Target ID Selection - Dropdowns for existing content */}
-              {needsTargetId && (
-                <div className="space-y-2">
-                  <Label>Select Target</Label>
-                  <div className="space-y-2">
+              <div className="space-y-4">
+                {needsTargetId && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">
+                      {getTargetTypeForAction() === 'event' ? 'Target event' : 'Target user'}
+                    </Label>
                     <Input
                       placeholder={
-                        getTargetTypeForAction() === 'event' 
-                          ? "Search events by title, location, or description..."
-                          : getTargetTypeForAction() === 'user'
-                          ? "Search users by name or username..."
-                          : "Search by title or content..."
+                        getTargetTypeForAction() === 'event'
+                          ? 'Search events by title, location…'
+                          : 'Search users by name or username…'
                       }
                       value={targetSearchQuery}
-                      onChange={(e) => {
-                        try {
-                          setTargetSearchQuery(e.target.value);
-                        } catch (error) {
-                          console.error('Error updating search query:', error);
-                        }
-                      }}
-                      className="mb-2"
+                      onChange={(e) => setTargetSearchQuery(e.target.value)}
+                      className="h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]"
                     />
-                    <Select
-                      value={targetId}
-                      onValueChange={setTargetId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select target..." />
+                    <Select value={targetId} onValueChange={setTargetId}>
+                      <SelectTrigger className="h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]">
+                        <SelectValue placeholder="Select target…" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px]">
                         {getTargetTypeForAction() === 'event' && (
@@ -1020,12 +1056,13 @@ const GhostManagement: React.FC = () => {
                           <>
                             {filteredUsers.length === 0 ? (
                               <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                {targetSearchQuery ? 'No users found' : 'Start typing to search users...'}
+                                {targetSearchQuery ? 'No users found' : 'Start typing to search users…'}
                               </div>
                             ) : (
                               filteredUsers.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.full_name || user.username || 'Unknown User'} {user.username && `(@${user.username})`}
+                                  {user.full_name || user.username || 'Unknown User'}{' '}
+                                  {user.username && `(@${user.username})`}
                                 </SelectItem>
                               ))
                             )}
@@ -1033,329 +1070,264 @@ const GhostManagement: React.FC = () => {
                         )}
                       </SelectContent>
                     </Select>
-                    {targetId && (
-                      <p className="text-xs text-muted-foreground">
-                        Selected: {getTargetTypeForAction()} #{targetId}
-                      </p>
-                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {actionType === 'like_story' && targetId && (
-                <div className="space-y-4 rounded-lg border bg-muted/40 p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="like-total">Total ghost likes to add</Label>
-                    <Input
-                      id="like-total"
-                      type="number"
-                      min={1}
-                      max={100000}
-                      value={likeTotalTarget}
-                      onChange={(e) => setLikeTotalTarget(parseInt(e.target.value, 10) || 1)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      One action distributes up to this many new likes across unique ghost×story pairs. Capped by
-                      (ghosts × stories) minus likes that already exist.
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="prefer-media-likes"
-                      checked={preferMediaFirstLikes}
-                      onCheckedChange={(v) => setPreferMediaFirstLikes(v === true)}
-                    />
-                    <label htmlFor="prefer-media-likes" className="text-sm font-medium leading-none cursor-pointer">
-                      Prioritize stories with photo/video when assigning likes
-                    </label>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <Label>Stories to include (optional)</Label>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setSelectedStoryIdsForLike(storiesInSelectedLikeEvent.map((s) => s.id))
-                          }
-                          disabled={storiesInSelectedLikeEvent.length === 0}
-                        >
-                          Select all
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedStoryIdsForLike([])}
-                        >
-                          Clear
-                        </Button>
-                      </div>
+                {actionType === 'like_story' && targetId && (
+                  <div className="space-y-3 rounded-[10px] border border-border bg-[hsl(var(--admin-surface-2))] p-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="like-total" className="text-xs font-semibold">
+                        Max personas / total likes
+                      </Label>
+                      <Input
+                        id="like-total"
+                        type="number"
+                        min={1}
+                        max={100000}
+                        value={likeTotalTarget}
+                        onChange={(e) => setLikeTotalTarget(parseInt(e.target.value, 10) || 1)}
+                        className="h-11 rounded-[10px] border-border bg-background text-[13px]"
+                      />
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Leave none selected to use every story on this event (including items not listed here).
-                      Listed: verified stories ({storiesInSelectedLikeEvent.length}).
-                    </p>
-                    {storiesInSelectedLikeEvent.length > 0 ? (
-                      <div className="max-h-52 overflow-y-auto rounded-md border bg-background p-3 space-y-2">
-                        {storiesInSelectedLikeEvent.map((s) => (
-                          <label
-                            key={s.id}
-                            className="flex cursor-pointer items-start gap-2 rounded-sm p-1 text-sm hover:bg-muted/80"
-                          >
-                            <Checkbox
-                              checked={selectedStoryIdsForLike.includes(s.id)}
-                              onCheckedChange={(checked) =>
-                                setSelectedStoryIdsForLike((prev) =>
-                                  checked === true
-                                    ? [...prev, s.id]
-                                    : prev.filter((id) => id !== s.id)
-                                )
-                              }
-                            />
-                            <span className="line-clamp-2 text-muted-foreground">
-                              <span className="font-mono text-foreground">#{s.id}</span>{' '}
-                              {(s.caption || s.content || '').slice(0, 80)}
-                              {s.media_url ? ' · media' : ''}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        No verified stories in this feed for this event ID. The job will still use all DB stories for
-                        the event when nothing is checked above.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Content Creation Form Fields (replaces JSON) */}
-              {actionType === 'create_story' && (
-                <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-base font-semibold">Content Details</Label>
-                  </div>
-
-                  {/* Content */}
-                  <div className="space-y-2">
-                    <Label>Content (Optional)</Label>
-                    <Textarea
-                      placeholder="Enter content..."
-                      value={contentText}
-                      onChange={(e) => setContentText(e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-
-                  {/* Event ID (for stories) */}
-                  <div className="space-y-2">
-                    <Label>Link to Event (Optional)</Label>
-                    <div className="space-y-2">
-                      <Select value={eventFilter} onValueChange={(v) => setEventFilter(v as typeof eventFilter)}>
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Events</SelectItem>
-                          <SelectItem value="upcoming">Upcoming</SelectItem>
-                          <SelectItem value="ongoing">Ongoing</SelectItem>
-                          <SelectItem value="past">Past</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="relative">
-                        <Input
-                          placeholder="Search events by title, location, or description..."
-                          value={eventSearchQuery}
-                          onChange={(e) => setEventSearchQuery(e.target.value)}
-                          className="mb-2"
-                        />
-                        {/* Show filtered events list only when there's a search query */}
-                        {eventSearchQuery && (
-                          <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
-                            {filteredEventsForStory.length > 0 ? (
-                              <>
-                                <div className="p-2 border-b text-xs text-muted-foreground">
-                                  {filteredEventsForStory.length} event{filteredEventsForStory.length !== 1 ? 's' : ''} found
-                                  {eventSearchQuery && ` matching "${eventSearchQuery}"`}
-                                </div>
-                                <div className="p-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedEventId('');
-                                      setEventSearchQuery('');
-                                    }}
-                                    className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors ${
-                                      !selectedEventId ? 'bg-accent' : ''
-                                    }`}
-                                  >
-                                    None
-                                  </button>
-                                  {filteredEventsForStory.map((event) => (
-                                    <button
-                                      key={event.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedEventId(event.id.toString());
-                                        setEventSearchQuery('');
-                                      }}
-                                      className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent transition-colors ${
-                                        selectedEventId === event.id.toString() ? 'bg-accent' : ''
-                                      }`}
-                                    >
-                                      <div className="font-medium">{event.title}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
-                                      </div>
-                                    </button>
-                                  ))}
-                                </div>
-                              </>
-                            ) : (
-                              <div className="p-4 text-center text-sm text-muted-foreground">
-                                {eventSearchQuery ? `No events match "${eventSearchQuery}"` : 'No events found'}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {/* Show selected event */}
-                      {selectedEventId && selectedEventId !== 'none' && (() => {
-                        const selectedEvent = events.find(e => e.id.toString() === selectedEventId);
-                        return selectedEvent ? (
-                          <div className="p-3 border rounded-md bg-muted/50">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">{selectedEvent.title}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {format(new Date(selectedEvent.date), 'MMM d, yyyy')} • {selectedEvent.location}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedEventId('')}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="prefer-media-likes"
+                        checked={preferMediaFirstLikes}
+                        onCheckedChange={(v) => setPreferMediaFirstLikes(v === true)}
+                      />
+                      <label htmlFor="prefer-media-likes" className="cursor-pointer text-sm">
+                        Prioritize stories with photo/video
+                      </label>
                     </div>
-                  </div>
-
-                  {/* Media Upload */}
-                  <div className="space-y-2">
-                    <Label>Media (Optional)</Label>
                     <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Or enter media URL"
-                          value={mediaUrl}
-                          onChange={(e) => setMediaUrl(e.target.value)}
-                          className="flex-1"
-                        />
-                        <div className="relative">
-                          <Input
-                            type="file"
-                            accept="image/*,video/*"
-                            onChange={handleFileChange}
-                            className="hidden"
-                            id="media-upload"
-                            disabled={isUploading}
-                          />
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Label className="text-xs font-semibold">Stories to include (optional)</Label>
+                        <div className="flex gap-2">
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => document.getElementById('media-upload')?.click()}
-                            disabled={isUploading}
+                            size="sm"
+                            onClick={() =>
+                              setSelectedStoryIdsForLike(storiesInSelectedLikeEvent.map((s) => s.id))
+                            }
                           >
-                            {isUploading ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Uploading...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload
-                              </>
-                            )}
+                            Select all
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedStoryIdsForLike([])}
+                          >
+                            Clear
                           </Button>
                         </div>
                       </div>
-                      {mediaPreview && (
-                        <div className="relative">
-                          <img
-                            src={mediaPreview}
-                            alt="Preview"
-                            className="max-w-full h-48 object-cover rounded-lg"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute top-2 right-2"
-                            onClick={() => {
-                              setMediaPreview(null);
-                              setMediaUrl('');
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Upload an image or video, or enter a URL. Max file size: 10MB
-                      </p>
+                      <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                        {storiesInSelectedLikeEvent.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No stories for this event</p>
+                        ) : (
+                          storiesInSelectedLikeEvent.map((s) => (
+                            <label key={s.id} className="flex cursor-pointer items-center gap-2 text-xs">
+                              <Checkbox
+                                checked={selectedStoryIdsForLike.includes(s.id)}
+                                onCheckedChange={(checked) => {
+                                  setSelectedStoryIdsForLike((prev) =>
+                                    checked === true
+                                      ? [...prev, s.id]
+                                      : prev.filter((id) => id !== s.id),
+                                  );
+                                }}
+                              />
+                              <span className="truncate">{s.caption || s.content || `Story #${s.id}`}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="space-y-2">
-                <Label>Persona Group</Label>
-                <Select
-                  value={selectedPersonaForAction === 'all' ? 'all' : selectedPersonaForAction === 'random' ? 'random' : selectedPersonaForAction.toString()}
-                  onValueChange={(value) => {
-                    if (value === 'all') {
-                      setSelectedPersonaForAction('all');
-                    } else if (value === 'random') {
-                      setSelectedPersonaForAction('random');
-                    } else {
-                      setSelectedPersonaForAction(parseInt(value));
+                {actionType === 'create_story' && (
+                  <div className="space-y-3 rounded-[10px] border border-border bg-[hsl(var(--admin-surface-2))] p-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label className="text-xs font-semibold">Content (optional)</Label>
+                        <AdminAiWriteButton
+                          label="Write with AI"
+                          run={() =>
+                            draftGhostStoryCaption({
+                              hint: contentTitle || contentText || undefined,
+                              eventTitle: events.find((e) => String(e.id) === selectedEventId)?.title,
+                              existing: contentText,
+                            })
+                          }
+                          onResult={setContentText}
+                        />
+                      </div>
+                      <Textarea
+                        placeholder="Enter content… or Write with AI"
+                        value={contentText}
+                        onChange={(e) => setContentText(e.target.value)}
+                        rows={3}
+                        className="rounded-[10px] border-border bg-background text-[13px]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Link to event (optional)</Label>
+                      <Input
+                        placeholder="Search events by title, location…"
+                        value={eventSearchQuery}
+                        onChange={(e) => setEventSearchQuery(e.target.value)}
+                        className="h-11 rounded-[10px] border-border bg-background text-[13px]"
+                      />
+                      {eventSearchQuery ? (
+                        <div className="max-h-40 overflow-y-auto rounded-[10px] border border-border bg-background">
+                          {filteredEventsForStory.length === 0 ? (
+                            <p className="p-3 text-xs text-muted-foreground">No events found</p>
+                          ) : (
+                            filteredEventsForStory.map((event) => (
+                              <button
+                                key={event.id}
+                                type="button"
+                                className={cn(
+                                  'block w-full px-3 py-2 text-left text-sm hover:bg-[hsl(var(--admin-surface-2))]',
+                                  selectedEventId === event.id.toString() && 'bg-[hsl(var(--admin-surface-2))]',
+                                )}
+                                onClick={() => {
+                                  setSelectedEventId(event.id.toString());
+                                  setEventSearchQuery('');
+                                }}
+                              >
+                                <div className="font-medium">{event.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(event.date), 'MMM d, yyyy')} • {event.location}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      ) : null}
+                      {selectedEventId ? (
+                        <p className="text-xs text-muted-foreground">
+                          Selected event #{selectedEventId}{' '}
+                          <button
+                            type="button"
+                            className="text-primary"
+                            onClick={() => setSelectedEventId('')}
+                          >
+                            Clear
+                          </button>
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Media (optional)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Media URL"
+                          value={mediaUrl}
+                          onChange={(e) => setMediaUrl(e.target.value)}
+                          className="h-11 flex-1 rounded-[10px] border-border bg-background text-[13px]"
+                        />
+                        <Input
+                          type="file"
+                          accept="image/*,video/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          id="media-upload"
+                          disabled={isUploading}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-[10px]"
+                          onClick={() => document.getElementById('media-upload')?.click()}
+                          disabled={isUploading}
+                        >
+                          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {mediaPreview ? (
+                        <img src={mediaPreview} alt="Preview" className="h-32 rounded-lg object-cover" />
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Persona group</Label>
+                  <Select
+                    value={
+                      selectedPersonaForAction === 'all'
+                        ? 'all'
+                        : selectedPersonaForAction === 'random'
+                          ? 'random'
+                          : selectedPersonaForAction.toString()
                     }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Ghost Users</SelectItem>
-                    <SelectItem value="random">One Random User</SelectItem>
-                    {personaGroups.map((group) => (
-                      <SelectItem key={group.id} value={group.id.toString()}>
-                        {group.name} ({group.description})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    onValueChange={(value) => {
+                      if (value === 'all') setSelectedPersonaForAction('all');
+                      else if (value === 'random') setSelectedPersonaForAction('random');
+                      else setSelectedPersonaForAction(parseInt(value, 10));
+                    }}
+                  >
+                    <SelectTrigger className="h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All ghost users</SelectItem>
+                      <SelectItem value="random">One random user</SelectItem>
+                      {personaGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <Button onClick={handleCreateAction} className="w-full" size="lg">
-                <Plus className="h-4 w-4 mr-2" />
-                Queue Action
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Run at</Label>
+                    <Input
+                      value="Immediately"
+                      readOnly
+                      className="h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Max personas</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={likeTotalTarget}
+                      onChange={(e) => setLikeTotalTarget(parseInt(e.target.value, 10) || 1)}
+                      className="h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]"
+                      disabled={actionType !== 'like_story'}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={resetCreateActionForm}
+                    className="rounded-[10px] border border-border px-3.5 py-2.5 text-[13px] font-semibold text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateAction()}
+                    className="rounded-[10px] bg-primary px-3.5 py-2.5 text-[13px] font-bold text-primary-foreground"
+                  >
+                    + Queue action
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -1371,7 +1343,21 @@ const GhostManagement: React.FC = () => {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-caption">Caption</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="edit-caption">Caption</Label>
+                <AdminAiWriteButton
+                  label="Write with AI"
+                  run={() =>
+                    draftGhostStoryCaption({
+                      existing: editCaption || editContent,
+                      hint: editingStory?.event_id
+                        ? events.find((e) => e.id === editingStory.event_id)?.title
+                        : undefined,
+                    })
+                  }
+                  onResult={setEditCaption}
+                />
+              </div>
               <Input
                 id="edit-caption"
                 value={editCaption}
@@ -1381,7 +1367,19 @@ const GhostManagement: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="edit-content">Content</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="edit-content">Content</Label>
+                <AdminAiWriteButton
+                  label="Write with AI"
+                  run={() =>
+                    draftGhostStoryCaption({
+                      existing: editContent || editCaption,
+                      hint: 'Slightly longer story body for a ghost post',
+                    })
+                  }
+                  onResult={setEditContent}
+                />
+              </div>
               <Textarea
                 id="edit-content"
                 value={editContent}

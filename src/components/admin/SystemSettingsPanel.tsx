@@ -83,7 +83,7 @@ const SystemSettingsPanel: React.FC = () => {
     unwrapJsonValue(settings['platform.site_name']?.value) ?? 'WYA'
   ).replace(/^"|"$/g, '');
   const siteUrl = String(
-    unwrapJsonValue(settings['platform.site_url']?.value) ?? 'https://whereyouat.ke'
+    unwrapJsonValue(settings['platform.site_url']?.value) ?? 'https://www.wya254.com'
   ).replace(/^"|"$/g, '');
 
   const [emailDraft, setEmailDraft] = useState('');
@@ -330,7 +330,7 @@ const SystemSettingsPanel: React.FC = () => {
 
           <AdminSectionPanel
             title="Related"
-            description="Sibling System pages — same split as Agribeta staging."
+            description="Email, notifications, and audit live on sibling admin pages."
             className="lg:col-span-2"
           >
             <div className="grid gap-3 sm:grid-cols-3">

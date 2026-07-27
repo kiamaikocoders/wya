@@ -16,6 +16,9 @@ import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Analytics } from "@vercel/analytics/react";
 import { OneSignalProvider } from "@/components/onesignal/OneSignalProvider";
+import { AppErrorBoundary } from "@/components/status/AppErrorBoundary";
+import { OfflineGate } from "@/components/status/OfflineGate";
+import { MaintenanceGate } from "@/components/status/MaintenanceGate";
 
 const Layout = lazy(() => import("./components/layout/Layout"));
 const MarketingLayout = lazy(() => import("./components/layout/MarketingLayout"));
@@ -125,6 +128,9 @@ const App = () => {
             <AuthProvider>
               <OneSignalProvider>
               <MediaConsentPostingProvider>
+              <AppErrorBoundary>
+              <OfflineGate>
+              <MaintenanceGate>
               <Suspense
                 fallback={
                   <div className="flex items-center justify-center min-h-screen bg-gradient-promo">
@@ -343,6 +349,9 @@ const App = () => {
                   </Route>
                 </Routes>
               </Suspense>
+              </MaintenanceGate>
+              </OfflineGate>
+              </AppErrorBoundary>
               </MediaConsentPostingProvider>
               </OneSignalProvider>
             </AuthProvider>

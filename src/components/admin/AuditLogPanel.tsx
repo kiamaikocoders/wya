@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AdminKpiTile,
   AdminPageShell,
+  AdminPagination,
   AdminRefreshButton,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
@@ -14,6 +15,7 @@ import {
   adminPlatformService,
   type AdminAuditEntry,
 } from '@/lib/admin-platform-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 function formatWhen(iso?: string | null) {
   if (!iso) return '—';
@@ -38,6 +40,14 @@ const AuditLogPanel: React.FC = () => {
   });
 
   const audit: AdminAuditEntry[] = auditQuery.data ?? [];
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+    total,
+    pageSize,
+  } = useListPagination(audit);
   const schemaMissing = isSchemaMissing(auditQuery.error);
   const settingsCount = audit.filter((r) => /setting|system/i.test(r.action)).length;
   const securityCount = audit.filter((r) =>
@@ -89,7 +99,7 @@ const AuditLogPanel: React.FC = () => {
       ) : (
         <AdminSectionPanel title="Activity" description="Newest first.">
           <ul className="divide-y divide-border">
-            {audit.map((row) => (
+            {pageItems.map((row) => (
               <li key={row.id} className="py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-foreground">{row.action}</p>
@@ -107,6 +117,14 @@ const AuditLogPanel: React.FC = () => {
               </li>
             ))}
           </ul>
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            className="mt-3"
+          />
         </AdminSectionPanel>
       )}
     </AdminPageShell>

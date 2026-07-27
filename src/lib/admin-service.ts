@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
 import { isUndefinedColumnError } from './supabase-schema-compat';
 import { parseSupabaseStoragePublicUrl } from './storage-service';
+import { resolveAvatarUrl } from './avatar-url';
 import type {
   AdminMarketplaceStats,
   MarketplaceListing,
@@ -309,7 +310,7 @@ export const adminService = {
           status: uiStatus,
           account_status: acct,
           account_status_reason: (profile as { account_status_reason?: string | null }).account_status_reason ?? null,
-          profile_picture: profile.avatar_url,
+          profile_picture: resolveAvatarUrl(profile.avatar_url),
           bio: profile.bio,
           location: profile.location,
           events_attended: eventsAttendedMap.get(profile.id) || 0,
@@ -317,6 +318,9 @@ export const adminService = {
           followers_count: followersMap.get(profile.id) || 0,
           following_count: followingMap.get(profile.id) || 0,
           created_at: profile.created_at || new Date().toISOString(),
+          last_active:
+            (profile as { last_login?: string | null }).last_login ||
+            undefined,
         };
       });
 
@@ -475,20 +479,81 @@ export const adminService = {
   },
 
   updateUserRole: async (userId: string, role: 'attendee' | 'organizer' | 'admin'): Promise<void> => {
-    try {
-      // For admin role, update username to 'admin'
-      // For others, we'd need a roles table in production
-      if (role === 'admin') {
-        const { error } = await supabase
+    /**
+     * Platform admin is keyed off profiles.username = 'admin' (unique).
+     * Organizer is derived from hosting events — not a persisted role flag.
+     */
+    if (role === 'organizer') {
+      throw new Error(
+        'Organizer is based on events this person hosts — create an event as them, or keep them as Member / Admin.'
+      );
+    }
+
+    const slugify = (raw: string) =>
+      raw
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 24) || 'user';
+
+    const uniqueUsername = async (seed: string, excludeId: string): Promise<string> => {
+      const base = slugify(seed);
+      for (let i = 0; i < 12; i++) {
+        const candidate = i === 0 ? base : `${base}-${i + 1}`;
+        const { data } = await supabase
           .from('profiles')
-          .update({ username: 'admin' })
-          .eq('id', userId);
-        
-        if (error) throw error;
+          .select('id')
+          .eq('username', candidate)
+          .maybeSingle();
+        if (!data || data.id === excludeId) return candidate;
       }
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      throw error;
+      return `${base}-${Date.now().toString(36).slice(-4)}`;
+    };
+
+    const { data: target, error: targetError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name')
+      .eq('id', userId)
+      .single();
+    if (targetError) throw targetError;
+
+    if (role === 'admin') {
+      if (target.username === 'admin') return;
+
+      const { data: currentAdmin } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .eq('username', 'admin')
+        .maybeSingle();
+
+      if (currentAdmin && currentAdmin.id !== userId) {
+        const demoted = await uniqueUsername(
+          currentAdmin.full_name || 'former-admin',
+          currentAdmin.id
+        );
+        const { error: demoteError } = await supabase
+          .from('profiles')
+          .update({ username: demoted })
+          .eq('id', currentAdmin.id);
+        if (demoteError) throw demoteError;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: 'admin' })
+        .eq('id', userId);
+      if (error) throw error;
+      return;
+    }
+
+    // attendee / member — revoke admin if needed
+    if (target.username === 'admin') {
+      const demoted = await uniqueUsername(target.full_name || 'user', userId);
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: demoted })
+        .eq('id', userId);
+      if (error) throw error;
     }
   },
 

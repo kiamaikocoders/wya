@@ -37,6 +37,7 @@ import {
   AdminKpiTile,
   AdminOutlinePill,
   AdminPageShell,
+  AdminPagination,
   AdminPrimaryPill,
   AdminRefreshButton,
   AdminSectionPanel,
@@ -44,6 +45,11 @@ import {
   AdminTextInput,
 } from '@/components/admin/AdminPageShell';
 import EmailSettingsPanel from '@/components/admin/EmailSettingsPanel';
+import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import {
+  draftAnnouncementBody,
+  improveEmailTemplateSubject,
+} from '@/lib/admin-ai-analysis';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   adminPlatformService,
@@ -53,6 +59,7 @@ import {
   type CommunicationTemplate,
   type PlatformAnnouncement,
 } from '@/lib/admin-platform-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 import { cn } from '@/lib/utils';
 
 type CommsTab = 'broadcast' | 'templates' | 'delivery' | 'provider';
@@ -142,6 +149,12 @@ const CommunicationsPanel: React.FC = () => {
     if (templateCategory === 'all') return templates;
     return templates.filter((t) => t.category === templateCategory);
   }, [templates, templateCategory]);
+
+  const announcementsPaging = useListPagination(items);
+  const templatesPaging = useListPagination(filteredTemplates, {
+    resetKey: templateCategory,
+  });
+  const logsPaging = useListPagination(logs);
 
   const kpis = useMemo(() => {
     const sent = items.filter((r) => r.status === 'published').length;
@@ -304,7 +317,7 @@ const CommunicationsPanel: React.FC = () => {
   };
 
   const withPreviewVars = (html: string) => {
-    const site = typeof window !== 'undefined' ? window.location.origin : 'https://whereyouat.ke';
+    const site = typeof window !== 'undefined' ? window.location.origin : 'https://www.wya254.com';
     const email = user?.email || 'you@example.com';
     let out = html;
     const pairs: Array<[RegExp, string]> = [
@@ -449,19 +462,35 @@ const CommunicationsPanel: React.FC = () => {
                   placeholder="Weekend lineup drop"
                 />
               </AdminField>
-              <AdminField label="Body">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">Body</span>
+                  <AdminAiWriteButton
+                    disabled={!title.trim()}
+                    needHint="Enter a subject first"
+                    run={() =>
+                      draftAnnouncementBody({
+                        subject: title.trim(),
+                        audience,
+                        channel,
+                        link: link.trim() || undefined,
+                      })
+                    }
+                    onResult={setBody}
+                  />
+                </div>
                 <AdminTextArea
                   value={body}
                   onChange={setBody}
                   rows={5}
-                  placeholder="Short message body for email + in-app…"
+                  placeholder="Short message body for email + in-app… or Write with AI"
                 />
-              </AdminField>
+              </div>
               <AdminField label="Optional link">
                 <AdminTextInput
                   value={link}
                   onChange={setLink}
-                  placeholder="https://whereyouat.ke/events/…"
+                  placeholder="https://www.wya254.com/events/…"
                 />
               </AdminField>
               {editingId ? (
@@ -495,7 +524,7 @@ const CommunicationsPanel: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((r) => (
+                    {announcementsPaging.pageItems.map((r) => (
                       <tr key={r.id} className="border-b border-border">
                         <td className="px-3 py-3 font-semibold">ANN-{String(r.id).padStart(2, '0')}</td>
                         <td className="px-3 py-3">
@@ -556,6 +585,14 @@ const CommunicationsPanel: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+                <AdminPagination
+                  page={announcementsPaging.page}
+                  totalPages={announcementsPaging.totalPages}
+                  total={announcementsPaging.total}
+                  pageSize={announcementsPaging.pageSize}
+                  onPageChange={announcementsPaging.setPage}
+                  className="mt-3 px-1"
+                />
               </div>
             )}
           </AdminSectionPanel>
@@ -615,26 +652,32 @@ const CommunicationsPanel: React.FC = () => {
             <p className="py-8 text-center text-sm text-muted-foreground">No templates in this category.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+              <table className="w-full table-fixed text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50 text-left text-[11px] font-semibold text-muted-foreground">
-                    <th className="px-3 py-2.5">Name</th>
-                    <th className="px-3 py-2.5">Category</th>
+                    <th className="w-[24%] px-3 py-2.5">Name</th>
+                    <th className="w-[14%] px-3 py-2.5">Category</th>
                     <th className="px-3 py-2.5">Subject</th>
-                    <th className="px-3 py-2.5">Actions</th>
+                    <th className="w-[280px] px-3 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTemplates.map((tpl) => (
+                  {templatesPaging.pageItems.map((tpl) => (
                     <tr key={tpl.id} className="border-b border-border">
-                      <td className="px-3 py-3">
-                        <div className="font-medium">{tpl.name}</div>
-                        <div className="font-mono text-[10px] text-muted-foreground">{tpl.id}</div>
+                      <td className="px-3 py-3 align-middle">
+                        <div className="truncate font-medium">{tpl.name}</div>
+                        <div className="truncate font-mono text-[10px] text-muted-foreground">
+                          {tpl.id}
+                        </div>
                       </td>
-                      <td className="px-3 py-3 capitalize text-muted-foreground">{tpl.category}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{tpl.subject}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-wrap gap-1.5">
+                      <td className="px-3 py-3 align-middle capitalize text-muted-foreground">
+                        {tpl.category}
+                      </td>
+                      <td className="px-3 py-3 align-middle text-muted-foreground">
+                        <div className="truncate">{tpl.subject}</div>
+                      </td>
+                      <td className="px-3 py-3 align-middle">
+                        <div className="flex flex-nowrap justify-end gap-1.5">
                           <Button size="sm" variant="outline" onClick={() => openTemplateEditor(tpl)}>
                             <Pencil className="mr-1 h-3 w-3" />
                             Edit
@@ -667,6 +710,14 @@ const CommunicationsPanel: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              <AdminPagination
+                page={templatesPaging.page}
+                totalPages={templatesPaging.totalPages}
+                total={templatesPaging.total}
+                pageSize={templatesPaging.pageSize}
+                onPageChange={templatesPaging.setPage}
+                className="mt-3"
+              />
             </div>
           )}
         </AdminSectionPanel>
@@ -707,7 +758,7 @@ const CommunicationsPanel: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((row) => (
+                  {logsPaging.pageItems.map((row) => (
                     <tr key={row.id} className="border-b border-border">
                       <td className="px-3 py-3 text-muted-foreground">
                         {formatWhen(row.created_at)}
@@ -737,6 +788,14 @@ const CommunicationsPanel: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              <AdminPagination
+                page={logsPaging.page}
+                totalPages={logsPaging.totalPages}
+                total={logsPaging.total}
+                pageSize={logsPaging.pageSize}
+                onPageChange={logsPaging.setPage}
+                className="mt-3"
+              />
             </div>
           )}
         </AdminSectionPanel>
@@ -759,7 +818,22 @@ const CommunicationsPanel: React.FC = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Subject</label>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <label className="block text-xs font-medium text-muted-foreground">Subject</label>
+                <AdminAiWriteButton
+                  label="Improve subject"
+                  disabled={!editSubject.trim()}
+                  needHint="Enter a subject first"
+                  run={() =>
+                    improveEmailTemplateSubject({
+                      name: editTpl?.name || 'Email',
+                      currentSubject: editSubject,
+                      description: editTpl?.description,
+                    })
+                  }
+                  onResult={setEditSubject}
+                />
+              </div>
               <Input value={editSubject} onChange={(e) => setEditSubject(e.target.value)} />
             </div>
             <div>
