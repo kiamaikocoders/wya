@@ -51,6 +51,13 @@ const AuthCallback = () => {
           if (error) throw error;
 
           if (data.user) {
+            try {
+              const { flushPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
+              await flushPendingSignupAvatar(data.user.id);
+            } catch (err) {
+              console.warn('Failed to flush pending signup avatar:', err);
+            }
+
             // Check if there's a pending welcome notification
             const pendingWelcome = localStorage.getItem('pending_welcome');
             if (pendingWelcome) {
