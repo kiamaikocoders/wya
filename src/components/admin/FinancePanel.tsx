@@ -11,6 +11,7 @@ import {
   AdminKpiTile,
   AdminListRow,
   AdminOutlinePill,
+  AdminPagination,
   AdminPrimaryPill,
   AdminRefreshButton,
   AdminSectionPanel,
@@ -28,6 +29,7 @@ import {
   type AdminTicketRow,
 } from '@/lib/admin-platform-service';
 import { adminService } from '@/lib/admin-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 type FinanceTab = 'overview' | 'payments' | 'tickets';
 
@@ -129,6 +131,9 @@ const FinancePanel: React.FC = () => {
   const overview: AdminFinanceOverview | null = overviewQuery.data ?? null;
   const payments: AdminPaymentRow[] = paymentsQuery.data ?? [];
   const tickets: AdminTicketRow[] = ticketsQuery.data ?? [];
+
+  const paymentsPaging = useListPagination(payments);
+  const ticketsPaging = useListPagination(tickets, { resetKey: ticketFilter });
 
   const completedPaymentsCount = payments.filter((p) =>
     /completed|success|paid/i.test(p.status)
@@ -241,7 +246,7 @@ const FinancePanel: React.FC = () => {
             <p className="py-8 text-center text-sm text-muted-foreground">No payments found.</p>
           ) : (
             <div className="space-y-2">
-              {payments.map((p) => (
+              {paymentsPaging.pageItems.map((p) => (
                 <AdminListRow
                   key={p.id}
                   title={formatKes(p.amount)}
@@ -253,6 +258,13 @@ const FinancePanel: React.FC = () => {
                   }
                 />
               ))}
+              <AdminPagination
+                page={paymentsPaging.page}
+                totalPages={paymentsPaging.totalPages}
+                total={paymentsPaging.total}
+                pageSize={paymentsPaging.pageSize}
+                onPageChange={paymentsPaging.setPage}
+              />
             </div>
           )}
         </AdminSectionPanel>
@@ -282,7 +294,7 @@ const FinancePanel: React.FC = () => {
               <p className="py-8 text-center text-sm text-muted-foreground">No tickets.</p>
             ) : (
               <div className="space-y-2">
-                {tickets.map((t) => (
+                {ticketsPaging.pageItems.map((t) => (
                   <AdminListRow
                     key={t.id}
                     title={t.event_title || `Event #${t.event_id}`}
@@ -322,6 +334,13 @@ const FinancePanel: React.FC = () => {
                     }
                   />
                 ))}
+                <AdminPagination
+                  page={ticketsPaging.page}
+                  totalPages={ticketsPaging.totalPages}
+                  total={ticketsPaging.total}
+                  pageSize={ticketsPaging.pageSize}
+                  onPageChange={ticketsPaging.setPage}
+                />
               </div>
             )}
           </AdminSectionPanel>

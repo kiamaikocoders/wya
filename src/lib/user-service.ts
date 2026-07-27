@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { resolveAvatarUrl } from './avatar-url';
 import { toast } from 'sonner';
 import { getDeleteMyAccountUrl } from '@/lib/supabase-functions-url';
 import { MEDIA_CONSENT_VERSION } from '@/legal/policy-versions';
@@ -93,7 +94,7 @@ export const userService = {
         id: user.id,
         email: user.email,
         name: profile?.full_name || user.email || 'Anonymous User',
-        profile_picture: profile?.avatar_url,
+        profile_picture: resolveAvatarUrl(profile?.avatar_url),
         bio: profile?.bio,
         location: profile?.location || '',
         user_type: user.user_metadata?.user_type || 'attendee',
@@ -118,7 +119,10 @@ export const userService = {
 
       if (profile.username !== undefined) updateData.username = profile.username;
       if (profile.full_name !== undefined) updateData.full_name = profile.full_name;
-      if (profile.avatar_url !== undefined) updateData.avatar_url = profile.avatar_url;
+      if (profile.avatar_url !== undefined) {
+        // Never persist ephemeral blob:/data: URLs (they break after refresh).
+        updateData.avatar_url = resolveAvatarUrl(profile.avatar_url) || null;
+      }
       if (profile.bio !== undefined) updateData.bio = profile.bio;
       if (profile.location !== undefined) updateData.location = profile.location;
       if (profile.latitude !== undefined) updateData.latitude = profile.latitude;

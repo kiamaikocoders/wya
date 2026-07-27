@@ -21,7 +21,7 @@ const CARD_SOFT = "#eff2f5";
 export type DetailRow = { label: string; value: string };
 
 export type FigmaEmailOpts = {
-  /** Absolute site origin, e.g. https://whereyouat.ke */
+  /** Absolute site origin, e.g. https://www.wya254.com */
   siteUrl: string;
   badge: string;
   headlineLine1: string;
@@ -72,7 +72,7 @@ function detailsBlock(rows: DetailRow[]): string {
 }
 
 export function renderFigmaEmail(opts: FigmaEmailOpts): string {
-  const site = opts.siteUrl.replace(/\/$/, "") || "https://whereyouat.ke";
+  const site = opts.siteUrl.replace(/\/$/, "") || "https://www.wya254.com";
   const logo = asset(site, "/emails/wya-logo.png");
   const hero =
     opts.heroImageUrl ||
@@ -205,7 +205,7 @@ export function wrapEmail(opts: {
   const line1 = opts.headlineLine1 ?? titleParts.slice(0, mid).join(" ");
   const line2 = opts.headlineLine2 ?? (titleParts.slice(mid).join(" ") || ".");
   return renderFigmaEmail({
-    siteUrl: opts.siteUrl || "https://whereyouat.ke",
+    siteUrl: opts.siteUrl || "https://www.wya254.com",
     badge: opts.badge ?? "WYA",
     headlineLine1: line1,
     headlineLine2: line2,

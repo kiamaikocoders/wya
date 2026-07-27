@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import Logo from '@/components/ui/Logo';
 import { ModeToggle } from '@/components/ui/mode-toggle';
@@ -9,18 +10,23 @@ import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { EventDetailPopup } from '@/components/events/EventDetailPopup';
 import EventMap from '@/pages/events/EventMap';
 import { cn } from '@/lib/utils';
+import { eventService } from '@/lib/event-service';
+import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
 import {
   FIGMA_SEEDED_EVENTS,
-  FIGMA_VIBE_COUNTS,
   type SeededEvent,
 } from './figmaSeededEvents';
+import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
 
-type SortKey = 'soonest' | 'price-low' | 'price-high';
+type SortKey = 'latest' | 'soonest' | 'price-low' | 'price-high';
 type ViewMode = 'grid' | 'map';
 
+const PAGE_SIZE = 12;
+
 /**
- * Figma 15 — Events Concept D (Hybrid). Self-contained.
- * Uses Figma-seeded events (no old sidebar / API skeleton UI).
+ * Figma 15 — Events Concept D (Hybrid).
+ * Keeps Figma-seeded events and merges every event from the database.
+ * Default order: latest first (earliest last). Grid is paginated.
  */
 const EventsPage = () => {
   const navigate = useNavigate();
@@ -32,13 +38,42 @@ const EventsPage = () => {
   const [navSearch, setNavSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [weekendOnly, setWeekendOnly] = useState(false);
-  const [sort, setSort] = useState<SortKey>('soonest');
+  const [sort, setSort] = useState<SortKey>('latest');
   const [view, setView] = useState<ViewMode>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [appModalOpen, setAppModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(
     eventIdParam && !Number.isNaN(Number(eventIdParam)) ? Number(eventIdParam) : null
   );
+
+  const dbEventsQuery = useQuery({
+    queryKey: ['events-browse-all'],
+    queryFn: async () => {
+      const result = await eventService.queryEvents({
+        search: '',
+        category: null,
+        location: null,
+        tags: [],
+        featuredOnly: false,
+        startDate: null,
+        endDate: null,
+        page: 1,
+        pageSize: 500,
+        sort: 'latest',
+        includePast: true,
+      });
+      return result.events;
+    },
+    staleTime: 60_000,
+  });
+
+  const catalog = useMemo(() => {
+    const seededIds = new Set(FIGMA_SEEDED_EVENTS.map((e) => e.id));
+    const fromDb = (dbEventsQuery.data ?? [])
+      .filter((e) => !seededIds.has(e.id))
+      .map(toBrowseEvent);
+    return [...FIGMA_SEEDED_EVENTS, ...fromDb];
+  }, [dbEventsQuery.data]);
 
   useEffect(() => {
     if (eventIdParam && !Number.isNaN(Number(eventIdParam))) {
@@ -59,7 +94,10 @@ const EventsPage = () => {
   };
 
   const events = useMemo(() => {
-    let list = [...FIGMA_SEEDED_EVENTS];
+    const seededIds = new Set(FIGMA_SEEDED_EVENTS.map((e) => e.id));
+    const seededOrder = new Map(FIGMA_SEEDED_EVENTS.map((e, i) => [e.id, i]));
+
+    let list = [...catalog];
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -87,23 +125,55 @@ const EventsPage = () => {
         return d === 0 || d === 6;
       });
     }
-    list.sort((a, b) => {
+
+    const seeded = list
+      .filter((e) => seededIds.has(e.id))
+      .sort((a, b) => (seededOrder.get(a.id) ?? 0) - (seededOrder.get(b.id) ?? 0));
+    const rest = list.filter((e) => !seededIds.has(e.id));
+    rest.sort((a, b) => {
       if (sort === 'price-low') return (a.price ?? 0) - (b.price ?? 0);
       if (sort === 'price-high') return (b.price ?? 0) - (a.price ?? 0);
-      return a.date.localeCompare(b.date);
+      if (sort === 'soonest') return a.date.localeCompare(b.date);
+      // latest (default): earliest last
+      return b.date.localeCompare(a.date);
     });
-    return list;
-  }, [search, category, weekendOnly, sort]);
 
-  const featured = useMemo(() => {
-    if (category || weekendOnly || search) return null;
-    return events.find((e) => e.featured) ?? events[0] ?? null;
+    // Keep Figma-seeded events first (original page-1 order), then DB events.
+    return [...seeded, ...rest];
+  }, [catalog, search, category, weekendOnly, sort]);
+
+  const vibeCounts = useMemo(() => countEventsByVibe(catalog), [catalog]);
+
+  const featuredEvents = useMemo(() => {
+    if (category || weekendOnly || search) return [];
+    const seededFeatured = FIGMA_SEEDED_EVENTS.filter((e) => e.featured);
+    const seededIds = new Set(seededFeatured.map((e) => e.id));
+    const fromCatalog = events.filter((e) => e.featured && !seededIds.has(e.id));
+    // Seeded featured first (original order), then other featured — cap for a snappy carousel.
+    return [...seededFeatured, ...fromCatalog].slice(0, 8);
   }, [events, category, weekendOnly, search]);
 
+  const featuredIds = useMemo(
+    () => new Set(featuredEvents.map((e) => e.id)),
+    [featuredEvents]
+  );
+
   const gridEvents = useMemo(() => {
-    if (!featured) return events;
-    return events.filter((e) => e.id !== featured.id);
-  }, [events, featured]);
+    if (featuredIds.size === 0) return events;
+    return events.filter((e) => !featuredIds.has(e.id));
+  }, [events, featuredIds]);
+
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+    total,
+    pageSize,
+  } = useListPagination(gridEvents, {
+    pageSize: PAGE_SIZE,
+    resetKey: `${search}|${category}|${weekendOnly}|${sort}`,
+  });
 
   const pageBg = isDark ? 'bg-[#0d1117] text-white' : 'bg-white text-[#0d1117]';
   const muted = isDark ? 'text-[#8b949e]' : 'text-[#5c6570]';
@@ -130,6 +200,7 @@ const EventsPage = () => {
   };
 
   const chips = ['Music', 'Nightlife', 'Food', 'Arts', 'Comedy'] as const;
+  const isLoading = dbEventsQuery.isLoading;
 
   return (
     <div className={cn('flex min-h-screen flex-col', pageBg)}>
@@ -189,7 +260,7 @@ const EventsPage = () => {
             Find the night that finds you
           </h1>
           <p className="text-[15px] text-[#e6edf3]">
-            128 events this week · Music, food, rooftops & more
+            {catalog.length.toLocaleString()} events · Music, food, rooftops & more
           </p>
         </div>
       </section>
@@ -202,7 +273,7 @@ const EventsPage = () => {
           </p>
         </div>
         <div className="mt-4 flex gap-4 overflow-x-auto px-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {FIGMA_VIBE_COUNTS.map((v) => {
+          {vibeCounts.map((v) => {
             const active = category === v.key;
             return (
               <button
@@ -246,6 +317,7 @@ const EventsPage = () => {
               onChange={(e) => setSort(e.target.value as SortKey)}
               className={cn('rounded-full border px-3.5 py-2 text-xs outline-none', pillIdle)}
             >
+              <option value="latest">Latest (earliest last)</option>
               <option value="soonest">Soonest</option>
               <option value="price-low">Price: Low</option>
               <option value="price-high">Price: High</option>
@@ -311,7 +383,11 @@ const EventsPage = () => {
       </section>
 
       <section className="w-full px-2 pb-12 pt-4 sm:px-2">
-        {view === 'map' ? (
+        {isLoading ? (
+          <div className="flex justify-center py-24">
+            <Loader2 className="size-8 animate-spin text-[#ff6b35]" />
+          </div>
+        ) : view === 'map' ? (
           <div
             className={cn(
               'mx-2 overflow-hidden rounded-[20px] border sm:mx-6',
@@ -351,41 +427,18 @@ const EventsPage = () => {
           </div>
         ) : (
           <div className="space-y-[18px] px-2 sm:px-2">
-            {featured && (
-              <button
-                type="button"
-                onClick={() => openEvent(featured.id)}
-                className={cn(
-                  'flex w-full flex-col overflow-hidden rounded-[20px] border text-left md:flex-row',
-                  card
-                )}
-              >
-                <div className="relative h-[200px] w-full shrink-0 md:h-[280px] md:w-1/2">
-                  <img
-                    src={featured.image_url}
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col items-start justify-center gap-3 px-6 py-8 sm:px-7">
-                  <p className="text-[11px] font-semibold tracking-[1.4px] text-[#ff6b35]">
-                    FEATURED
-                  </p>
-                  <h3 className={cn('text-[26px] font-bold leading-tight', heading)}>
-                    {featured.title}
-                  </h3>
-                  <p className={cn('text-sm whitespace-pre', muted)}>
-                    {featured.dateLabel}  ·  {featured.location.split(',')[0]}  ·  {featured.ticketLabel}
-                  </p>
-                  <span className="rounded-[10px] bg-[#ff6b35] px-[18px] py-3 text-sm font-semibold text-white">
-                    Get tickets
-                  </span>
-                </div>
-              </button>
-            )}
+            {featuredEvents.length > 0 ? (
+              <FeaturedEventsCarousel
+                events={featuredEvents}
+                card={card}
+                heading={heading}
+                muted={muted}
+                onOpen={openEvent}
+              />
+            ) : null}
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {gridEvents.map((event) => (
+              {pageItems.map((event) => (
                 <SeedCard
                   key={event.id}
                   event={event}
@@ -396,12 +449,68 @@ const EventsPage = () => {
                 />
               ))}
             </div>
+
+            {totalPages > 1 ? (
+              <div className="flex flex-col items-center gap-3 pt-4 sm:flex-row sm:justify-between sm:px-4">
+                <p className={cn('text-xs', muted)}>
+                  Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of{' '}
+                  {total.toLocaleString()}
+                  {featuredEvents.length ? ` (+ ${featuredEvents.length} featured)` : ''}
+                </p>
+                <nav
+                  aria-label="Events pagination"
+                  className="flex flex-wrap items-center justify-center gap-1"
+                >
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-medium disabled:opacity-40',
+                      pillIdle
+                    )}
+                  >
+                    Prev
+                  </button>
+                  {getPageWindow(page, totalPages).map((entry, idx) =>
+                    entry === 'ellipsis' ? (
+                      <span key={`e-${idx}`} className={cn('px-1 text-xs', muted)}>
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={entry}
+                        type="button"
+                        aria-current={entry === page ? 'page' : undefined}
+                        onClick={() => setPage(entry)}
+                        className={cn(
+                          'min-w-8 rounded-full border px-2.5 py-1.5 text-xs font-semibold',
+                          entry === page ? pillActive : pillIdle
+                        )}
+                      >
+                        {entry}
+                      </button>
+                    )
+                  )}
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-medium disabled:opacity-40',
+                      pillIdle
+                    )}
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
+            ) : null}
           </div>
         )}
       </section>
       </main>
 
-      {/* Lightweight filters sheet — Figma-style, no old sidebar */}
       {filtersOpen && (
         <div className="fixed inset-0 z-[80] flex justify-end">
           <button
@@ -485,6 +594,150 @@ const EventsPage = () => {
     </div>
   );
 };
+
+function FeaturedEventsCarousel({
+  events,
+  card,
+  heading,
+  muted,
+  onOpen,
+}: {
+  events: SeededEvent[];
+  card: string;
+  heading: string;
+  muted: string;
+  onOpen: (id: number) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const count = events.length;
+
+  useEffect(() => {
+    setIndex(0);
+  }, [events]);
+
+  useEffect(() => {
+    if (count <= 1 || paused) return;
+    const timer = window.setInterval(() => {
+      setIndex((i) => (i + 1) % count);
+    }, 5200);
+    return () => window.clearInterval(timer);
+  }, [count, paused]);
+
+  const goTo = (next: number) => {
+    setIndex(((next % count) + count) % count);
+  };
+
+  const active = events[index] ?? events[0];
+  if (!active) return null;
+
+  return (
+    <div
+      className={cn('relative overflow-hidden rounded-[20px] border', card)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setPaused(false);
+        }
+      }}
+    >
+      <div className="relative min-h-[200px] md:min-h-[280px]">
+        {events.map((event, i) => {
+          const isActive = i === index;
+          return (
+            <button
+              key={event.id}
+              type="button"
+              tabIndex={isActive ? 0 : -1}
+              aria-hidden={!isActive}
+              onClick={() => onOpen(event.id)}
+              className={cn(
+                'flex w-full flex-col text-left transition-opacity duration-700 ease-in-out md:flex-row',
+                isActive
+                  ? 'relative z-10 opacity-100'
+                  : 'pointer-events-none absolute inset-0 z-0 opacity-0'
+              )}
+            >
+              <div className="relative h-[200px] w-full shrink-0 md:h-[280px] md:w-1/2">
+                <img
+                  src={event.image_url}
+                  alt=""
+                  className="absolute inset-0 size-full object-cover"
+                />
+              </div>
+              <div className="flex flex-1 flex-col items-start justify-center gap-3 px-6 py-8 sm:px-7">
+                <p className="text-[11px] font-semibold tracking-[1.4px] text-[#ff6b35]">
+                  FEATURED
+                  {count > 1 ? (
+                    <span className={cn('ml-2 font-medium tracking-normal', muted)}>
+                      {i + 1} / {count}
+                    </span>
+                  ) : null}
+                </p>
+                <h3 className={cn('text-[26px] font-bold leading-tight', heading)}>
+                  {event.title}
+                </h3>
+                <p className={cn('text-sm whitespace-pre', muted)}>
+                  {event.dateLabel}  ·  {event.location.split(',')[0]}  ·  {event.ticketLabel}
+                </p>
+                <span className="rounded-[10px] bg-[#ff6b35] px-[18px] py-3 text-sm font-semibold text-white">
+                  Get tickets
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {count > 1 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex items-center justify-center gap-2 md:bottom-4 md:justify-end md:pr-7">
+          <div className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 backdrop-blur-sm">
+            <button
+              type="button"
+              aria-label="Previous featured event"
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(index - 1);
+              }}
+              className="flex size-7 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              ‹
+            </button>
+            {events.map((event, i) => (
+              <button
+                key={event.id}
+                type="button"
+                aria-label={`Show featured event ${i + 1}`}
+                aria-current={i === index ? 'true' : undefined}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(i);
+                }}
+                className={cn(
+                  'h-1.5 rounded-full transition-all',
+                  i === index ? 'w-5 bg-[#ff6b35]' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                )}
+              />
+            ))}
+            <button
+              type="button"
+              aria-label="Next featured event"
+              onClick={(e) => {
+                e.stopPropagation();
+                goTo(index + 1);
+              }}
+              className="flex size-7 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function SeedCard({
   event,

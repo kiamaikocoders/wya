@@ -10,6 +10,9 @@ import { userService } from '@/lib/user-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Upload, X } from 'lucide-react';
 import LocationPicker from '@/components/maps/LocationPicker';
+import { storageService } from '@/lib/storage-service';
+import { resolveAvatarUrl } from '@/lib/avatar-url';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditProfileModalProps {
   open: boolean;
@@ -28,16 +31,19 @@ interface EditProfileModalProps {
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, profile }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     username: profile.username || '',
     bio: profile.bio || '',
-    avatar_url: profile.avatar_url || '',
+    avatar_url: resolveAvatarUrl(profile.avatar_url) || '',
     location: profile.location || '',
   });
-  const [previewImage, setPreviewImage] = useState<string | null>(profile.avatar_url || null);
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    resolveAvatarUrl(profile.avatar_url) || null
+  );
   const [selectedLocation, setSelectedLocation] = useState<{
     address: string;
     latitude: number;
@@ -46,14 +52,15 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
 
   useEffect(() => {
     if (open) {
+      const avatar = resolveAvatarUrl(profile.avatar_url) || '';
       setFormData({
         full_name: profile.full_name || '',
         username: profile.username || '',
         bio: profile.bio || '',
-        avatar_url: profile.avatar_url || '',
+        avatar_url: avatar,
         location: profile.location || '',
       });
-      setPreviewImage(profile.avatar_url || null);
+      setPreviewImage(avatar || null);
     }
   }, [open, profile]);
 
@@ -71,18 +78,28 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
       return;
     }
 
+    const userId = user?.id || profile.id;
+    if (!userId) {
+      toast.error('You must be signed in to upload a photo');
+      return;
+    }
+
     setIsUploading(true);
+    const localPreview = URL.createObjectURL(file);
+    setPreviewImage(localPreview);
     try {
-      // For now, use object URL. In production, upload to Supabase Storage
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewImage(objectUrl);
-      setFormData(prev => ({ ...prev, avatar_url: objectUrl }));
-      toast.success('Image selected');
+      const uploaded = await storageService.uploadAvatar(file, userId);
+      URL.revokeObjectURL(localPreview);
+      setPreviewImage(uploaded.publicUrl);
+      setFormData((prev) => ({ ...prev, avatar_url: uploaded.publicUrl }));
     } catch (error) {
-      console.error('Error handling image:', error);
-      toast.error('Failed to process image');
+      console.error('Error uploading avatar:', error);
+      URL.revokeObjectURL(localPreview);
+      setPreviewImage(resolveAvatarUrl(formData.avatar_url) || null);
+      toast.error('Failed to upload photo');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -91,11 +108,12 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
     setIsSubmitting(true);
 
     try {
-      const updateData: any = {
+      const avatarUrl = resolveAvatarUrl(formData.avatar_url) || '';
+      const updateData: Record<string, unknown> = {
         full_name: formData.full_name.trim(),
         username: formData.username.trim(),
         bio: formData.bio.trim(),
-        avatar_url: formData.avatar_url,
+        avatar_url: avatarUrl,
         location: formData.location,
       };
       if (selectedLocation) {

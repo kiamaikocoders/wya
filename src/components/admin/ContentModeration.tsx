@@ -6,14 +6,18 @@ import { toast } from 'sonner';
 import {
   AdminFilterSelect,
   AdminListRow,
+  AdminPagination,
   AdminSectionPanel,
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
+import { AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
+import { analyzeModerationItem } from '@/lib/admin-ai-analysis';
 import {
   contentModerationService,
   type MediaModerationItem,
   type TextModerationPost,
 } from '@/lib/content-moderation-service';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 const ContentModeration: React.FC = () => {
   const queryClient = useQueryClient();
@@ -111,6 +115,15 @@ const ContentModeration: React.FC = () => {
     [eventsQuery.data]
   );
 
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+    total,
+    pageSize,
+  } = useListPagination(rows, { resetKey: eventId });
+
   return (
     <div className="space-y-3.5">
       <AdminFilterSelect
@@ -131,44 +144,64 @@ const ContentModeration: React.FC = () => {
           </p>
         ) : (
           <div className="space-y-2">
-            {rows.map((item) => (
-              <AdminListRow
-                key={item.key}
-                title={item.title}
-                meta={item.meta}
-                trailing={
-                  <>
-                    <AdminStatusPill tone="warning">Reported</AdminStatusPill>
-                    <button
-                      type="button"
-                      className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
-                      onClick={() =>
-                        actionMutation.mutate({
-                          kind: item.kind,
-                          id: item.sourceId,
-                          status: 'verified',
-                        })
-                      }
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                      onClick={() =>
-                        actionMutation.mutate({
-                          kind: item.kind,
-                          id: item.sourceId,
-                          status: 'archived',
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  </>
-                }
-              />
+            {pageItems.map((item) => (
+              <div key={item.key} className="space-y-1.5">
+                <AdminListRow
+                  title={item.title}
+                  meta={item.meta}
+                  trailing={
+                    <>
+                      <AdminStatusPill tone="warning">Reported</AdminStatusPill>
+                      <button
+                        type="button"
+                        className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
+                        onClick={() =>
+                          actionMutation.mutate({
+                            kind: item.kind,
+                            id: item.sourceId,
+                            status: 'verified',
+                          })
+                        }
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
+                        onClick={() =>
+                          actionMutation.mutate({
+                            kind: item.kind,
+                            id: item.sourceId,
+                            status: 'archived',
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    </>
+                  }
+                />
+                <div className="px-1">
+                  <AdminAiInlineNote
+                    label="AI review"
+                    run={() =>
+                      analyzeModerationItem({
+                        title: item.title,
+                        meta: item.meta,
+                        kind: item.kind,
+                      })
+                    }
+                  />
+                </div>
+              </div>
             ))}
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </AdminSectionPanel>

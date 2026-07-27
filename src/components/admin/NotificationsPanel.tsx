@@ -25,6 +25,8 @@ import {
 } from '@/components/admin/AdminPageShell';
 import { adminPlatformService } from '@/lib/admin-platform-service';
 import { playNotificationSound } from '@/lib/sounds';
+import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import { draftNotificationBody } from '@/lib/admin-ai-analysis';
 
 /**
  * Agribeta-style Notifications page: ops inbox + broadcast compose.
@@ -149,13 +151,26 @@ const NotificationsPanel: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="n-body">Body</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="n-body">Body</Label>
+                <AdminAiWriteButton
+                  disabled={!title.trim()}
+                  needHint="Enter a title first"
+                  run={() =>
+                    draftNotificationBody({
+                      title: title.trim(),
+                      audience,
+                    })
+                  }
+                  onResult={setBody}
+                />
+              </div>
               <Textarea
                 id="n-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={5}
-                placeholder="What should people know?"
+                placeholder="What should people know? or Write with AI"
               />
             </div>
             <AdminPrimaryPill disabled={sending} onClick={() => void sendBroadcast()}>

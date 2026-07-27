@@ -20,6 +20,8 @@ import {
   prepareMediaForUpload,
   STORAGE_CACHE_CONTROL_IMMUTABLE,
 } from '@/lib/media-upload-prepare';
+import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import { draftEventDescription } from '@/lib/admin-ai-analysis';
 
 interface Category {
   id: number;
@@ -396,13 +398,32 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="description">Description *</Label>
+                <AdminAiWriteButton
+                  label={formData.description.trim() ? 'Enhance with AI' : 'Write with AI'}
+                  disabled={!formData.title.trim()}
+                  needHint="Enter an event title first"
+                  run={() =>
+                    draftEventDescription({
+                      title: formData.title.trim(),
+                      location: formData.location || undefined,
+                      date: formData.date || undefined,
+                      category: selectedCategoryNames.join(', ') || undefined,
+                      existing: formData.description,
+                    })
+                  }
+                  onResult={(text) =>
+                    setFormData((prev) => ({ ...prev, description: text }))
+                  }
+                />
+              </div>
               <Textarea
                 id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Describe your event"
+                placeholder="Describe your event or Write with AI"
                 rows={4}
                 required
               />

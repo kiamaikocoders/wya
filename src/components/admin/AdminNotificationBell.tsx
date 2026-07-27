@@ -32,8 +32,10 @@ export function AdminNotificationBell({ className }: { className?: string }) {
   useEffect(() => {
     if (!user?.id) return;
 
+    const channelName = `admin-notifications:${user.id}:${crypto.randomUUID()}`;
+
     const channel = supabase
-      .channel(`admin-notifications-${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {

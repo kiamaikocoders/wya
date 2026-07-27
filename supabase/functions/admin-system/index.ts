@@ -225,7 +225,7 @@ serve(async (req) => {
           smtpPassSet: Boolean(resendKey),
           smtpPassSource: source,
           siteName: String(settings["platform.site_name"] ?? "WYA"),
-          siteUrl: String(settings["platform.site_url"] ?? "https://whereyouat.ke"),
+          siteUrl: String(settings["platform.site_url"] ?? "https://www.wya254.com"),
           note:
             source === "env"
               ? "RESEND_API_KEY is set on the Edge Function environment."

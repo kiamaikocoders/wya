@@ -128,7 +128,7 @@ serve(async (req) => {
     const siteOrigin =
       requestOrigin ||
       Deno.env.get("PUBLIC_SITE_URL") ||
-      "https://whereyouat.ke";
+      "https://www.wya254.com";
 
     const token = randomTokenUrlSafe();
     const tokenHash = await sha256Hex(token);

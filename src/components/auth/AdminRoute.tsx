@@ -1,8 +1,8 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminLogin from '@/pages/AdminLogin';
 import { AdminThemeProvider, useAdminTheme } from '@/components/admin/AdminThemeContext';
+import { StatusScreen } from '@/components/status/StatusScreen';
 import { cn } from '@/lib/utils';
 
 interface AdminRouteProps {
@@ -27,7 +27,7 @@ function AdminGateLoading() {
 /**
  * Standalone admin console gate:
  * - Unauthenticated → admin login (Figma)
- * - Authenticated non-admin → blocked
+ * - Authenticated non-admin → 403 status screen
  * - Admin → admin dashboard shell
  */
 const AdminRouteInner: React.FC<AdminRouteProps> = ({ children }) => {
@@ -42,7 +42,7 @@ const AdminRouteInner: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return <StatusScreen variant="forbidden" />;
   }
 
   return <>{children}</>;

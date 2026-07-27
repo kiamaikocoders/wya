@@ -21,12 +21,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Users, UserPlus, Search, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { followService } from '@/lib/follow';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
 
 export type SortOption = 'name_asc' | 'name_desc' | 'recently_active' | 'newest_first';
 export type RelationshipFilter = 'all' | 'following' | 'not_following';
@@ -150,6 +159,16 @@ const UsersDirectory = () => {
     }
     return sorted;
   }, [mappedUsers, searchQuery, activeTab, following, filterRelationship, filterLocation, filterCanMessage, canMessageIds, sortBy]);
+
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+  } = useListPagination(displayUsers, {
+    pageSize: 12,
+    resetKey: `${searchQuery}|${activeTab}|${sortBy}|${filterLocation}|${filterCanMessage}|${filterRelationship}`,
+  });
 
   const followMutation = useMutation({
     mutationFn: followService.followUser,
@@ -360,20 +379,65 @@ const UsersDirectory = () => {
               </p>
             </div>
           ) : (
-            displayUsers.map((user) => (
-              <UserCard
-                key={user.id}
-                id={user.id}
-                username={user.username}
-                name={user.name}
-                avatar={user.avatar_url}
-                bio={user.bio}
-                isFollowing={following.includes(user.id)}
-                onFollow={() => handleFollow(user.id)}
-                onUnfollow={() => handleUnfollow(user.id)}
-                onMessage={() => handleMessage(user.id)}
-              />
-            ))
+            <>
+              {pageItems.map((user) => (
+                <UserCard
+                  key={user.id}
+                  id={user.id}
+                  username={user.username}
+                  name={user.name}
+                  avatar={user.avatar_url}
+                  bio={user.bio}
+                  isFollowing={following.includes(user.id)}
+                  onFollow={() => handleFollow(user.id)}
+                  onUnfollow={() => handleUnfollow(user.id)}
+                  onMessage={() => handleMessage(user.id)}
+                />
+              ))}
+              {totalPages > 1 ? (
+                <Pagination className="pt-4">
+                  <PaginationContent className="flex flex-wrap items-center justify-center gap-1">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        aria-label="Previous page"
+                        onClick={() => setPage(Math.max(1, page - 1))}
+                        className={cn(
+                          'cursor-pointer',
+                          page <= 1 && 'pointer-events-none opacity-40'
+                        )}
+                      />
+                    </PaginationItem>
+                    {getPageWindow(page, totalPages).map((entry, idx) =>
+                      entry === 'ellipsis' ? (
+                        <PaginationItem key={`e-${idx}`}>
+                          <span className="px-2 text-muted-foreground">…</span>
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={entry}>
+                          <PaginationLink
+                            isActive={entry === page}
+                            onClick={() => setPage(entry)}
+                            className="cursor-pointer"
+                          >
+                            {entry}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        aria-label="Next page"
+                        onClick={() => setPage(Math.min(totalPages, page + 1))}
+                        className={cn(
+                          'cursor-pointer',
+                          page >= totalPages && 'pointer-events-none opacity-40'
+                        )}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              ) : null}
+            </>
           )}
         </div>
       </main>

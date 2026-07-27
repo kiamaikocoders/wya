@@ -6,15 +6,21 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   AdminFilterSelect,
   AdminListRow,
+  AdminPagination,
   AdminSearchInput,
   AdminSectionPanel,
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
+import { AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
+import { analyzeProposal } from '@/lib/admin-ai-analysis';
+import { useListPagination } from '@/hooks/use-list-pagination';
 
 type ProposalRow = {
   id: number;
   title: string;
   category: string | null;
+  description: string | null;
+  location: string | null;
   status: 'pending' | 'approved' | 'rejected';
   submitted_by: string | null;
   submitter_name?: string;
@@ -30,7 +36,7 @@ const ProposalManagement: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('proposals')
-        .select('id, title, category, status, submitted_by')
+        .select('id, title, category, description, location, status, submitted_by')
         .order('id', { ascending: false });
       if (error) throw error;
 
@@ -101,6 +107,15 @@ const ProposalManagement: React.FC = () => {
     });
   }, [proposalsQuery.data, search, status]);
 
+  const {
+    page,
+    setPage,
+    pageItems,
+    totalPages,
+    total,
+    pageSize,
+  } = useListPagination(rows, { resetKey: `${search}|${status}` });
+
   return (
     <div className="space-y-3.5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -126,50 +141,73 @@ const ProposalManagement: React.FC = () => {
           <p className="py-8 text-center text-sm text-muted-foreground">No proposals found.</p>
         ) : (
           <div className="space-y-2">
-            {rows.map((p) => (
-              <AdminListRow
-                key={p.id}
-                title={p.title}
-                meta={`${p.submitter_name || 'Organizer'} · ${p.category || 'Event'}`}
-                trailing={
-                  <>
-                    <AdminStatusPill
-                      tone={
-                        p.status === 'approved'
-                          ? 'success'
+            {pageItems.map((p) => (
+              <div key={p.id} className="space-y-1.5">
+                <AdminListRow
+                  title={p.title}
+                  meta={`${p.submitter_name || 'Organizer'} · ${p.category || 'Event'}`}
+                  trailing={
+                    <>
+                      <AdminStatusPill
+                        tone={
+                          p.status === 'approved'
+                            ? 'success'
+                            : p.status === 'pending'
+                              ? 'warning'
+                              : 'error'
+                        }
+                      >
+                        {p.status === 'approved'
+                          ? '✓ Approved'
                           : p.status === 'pending'
-                            ? 'warning'
-                            : 'error'
-                      }
-                    >
-                      {p.status === 'approved'
-                        ? '✓ Approved'
-                        : p.status === 'pending'
-                          ? 'Pending'
-                          : 'Rejected'}
-                    </AdminStatusPill>
-                    {p.status === 'pending' ? (
-                      <>
-                        <button
-                          type="button"
-                          className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
-                          onClick={() => statusMutation.mutate({ id: p.id, next: 'approved', row: p })}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                          onClick={() => statusMutation.mutate({ id: p.id, next: 'rejected', row: p })}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    ) : null}
-                  </>
-                }
-              />
+                            ? 'Pending'
+                            : 'Rejected'}
+                      </AdminStatusPill>
+                      {p.status === 'pending' ? (
+                        <>
+                          <button
+                            type="button"
+                            className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
+                            onClick={() => statusMutation.mutate({ id: p.id, next: 'approved', row: p })}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
+                            onClick={() => statusMutation.mutate({ id: p.id, next: 'rejected', row: p })}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : null}
+                    </>
+                  }
+                />
+                <div className="px-1">
+                  <AdminAiInlineNote
+                    label="AI review"
+                    run={() =>
+                      analyzeProposal({
+                        title: p.title,
+                        category: p.category,
+                        description: p.description,
+                        location: p.location,
+                        submitter: p.submitter_name,
+                        status: p.status,
+                      })
+                    }
+                  />
+                </div>
+              </div>
             ))}
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </AdminSectionPanel>

@@ -1,0 +1,42 @@
+---
+description: Figma-led Admin Create Event + Ghost inner pages (Dark + Light)
+globs: src/components/admin/AdminCreateEvent.tsx,src/components/admin/GhostManagement.tsx,src/pages/AdminGhost.tsx,src/pages/AdminEvents.tsx,src/pages/CreateEvent.tsx
+alwaysApply: false
+---
+
+# Admin inner pages (Create Event + Ghost)
+
+When editing Create Event or Ghost admin UI, **Figma is the source of truth**. Do not invent a new layout.
+
+## Scope
+
+- **In scope:** Create Event wizard (steps 1–4), Ghost Content table, Ghost Create Action form.
+- **Out of scope:** Admin shell (sidebar, header, theme toggle wiring). Do not restyle other admin list pages.
+
+## Figma
+
+File: [9RMXZrqarVf6A3t4Lug70v](https://www.figma.com/design/9RMXZrqarVf6A3t4Lug70v) — page **11 — Admin**.
+
+Pull Dark **and** Light via Figma MCP before coding:
+
+| Screen | Dark | Light |
+|--------|------|-------|
+| Create Event Step 1 — Event | `464:2` | `464:153` |
+| Create Event Step 2 — Access | `466:2` | pair |
+| Create Event Step 3 — Content | `467:2` | `467:132` |
+| Create Event Step 4 — Publish | `466:108` | pair |
+| Ghost Content | `465:2` | pair |
+| Ghost Create Action | `465:296` | pair |
+
+## Must match
+
+- **Create Event:** full-page wizard in main content (not a translucent overlay on the events table); stepper + progress; category **chips**; proper map height + pin; sticky Cancel / Next footer.
+- **Ghost Content:** columns story · event · engagement · posted · Edit/Delete; Delete = danger red (not primary orange).
+- **Create Action:** centered ~640px form; action-type chips; constrained fields (no full-bleed giant inputs).
+- **Theme:** both Dark + Light via existing admin theme tokens (`#FF6B35`, dark `#0D1117`/`#161B22`, light `#F6F8FA`/`#FFFFFF`). Never hardcode dark-only.
+
+## Don’t
+
+- Invent layout or restyle the whole admin nav.
+- Keep the old broken create-event overlay.
+- Change APIs/data wiring — UI structure only unless asked.

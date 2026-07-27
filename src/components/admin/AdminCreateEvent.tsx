@@ -1,12 +1,11 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, X, Check, ChevronRight, ChevronLeft, Search } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, Check, ChevronDown, Search, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,17 +13,19 @@ import { adminService } from '@/lib/admin-service';
 import { notificationService } from '@/lib/notification/notification-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { googleMapsDirectionsUrl } from '@/lib/location-service';
 import LocationPicker from '@/components/maps/LocationPicker';
-import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
-import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 import {
   prepareMediaForUpload,
   STORAGE_CACHE_CONTROL_IMMUTABLE,
 } from '@/lib/media-upload-prepare';
+import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
+import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import { draftEventDescription, draftWhatToExpect } from '@/lib/admin-ai-analysis';
 
 interface Category {
   id: number;
@@ -41,20 +42,60 @@ interface AdminCreateEventProps {
 
 type Step = 1 | 2 | 3 | 4;
 
+const STEP_META: Record<
+  Step,
+  { title: string; blurb: string; subtitle: string; nextLabel: string }
+> = {
+  1: {
+    title: 'Event',
+    blurb: 'Basics & location',
+    subtitle: 'Basic information, categories, and location pin',
+    nextLabel: 'Next · Access →',
+  },
+  2: {
+    title: 'Access',
+    blurb: 'Pricing & capacity',
+    subtitle: 'Pricing, capacity, and organizer',
+    nextLabel: 'Next · Content →',
+  },
+  3: {
+    title: 'Content',
+    blurb: 'Description & media',
+    subtitle: 'Description, cover media, and event details',
+    nextLabel: 'Next · Publish →',
+  },
+  4: {
+    title: 'Publish',
+    blurb: 'Review & go live',
+    subtitle: 'Review details and publish',
+    nextLabel: 'Publish event',
+  },
+};
+
+const fieldClass =
+  'h-11 rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]';
+const surfaceCard =
+  'rounded-xl border border-border bg-[hsl(var(--admin-surface))]';
+
 const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel }) => {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
   const [organizerSearch, setOrganizerSearch] = useState('');
-  
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [useExternalTicket, setUseExternalTicket] = useState(false);
+  const [addingTag, setAddingTag] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: '',
     category_id: null as number | null,
-    category_ids: [] as number[], // Multiple categories
+    category_ids: [] as number[],
     date: '',
     end_date: '' as string,
     time: '',
@@ -72,11 +113,10 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     organizer_id: null as string | null,
     status: 'approved' as 'pending' | 'approved' | 'rejected',
   });
-  
+
   const [tagsInput, setTagsInput] = useState('');
-  const [artistsInput, setArtistsInput] = useState('');
-  
-  // Fetch categories from database
+  const [whatToExpect, setWhatToExpect] = useState('');
+
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: async (): Promise<Category[]> => {
@@ -84,48 +124,31 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         .from('categories')
         .select('*')
         .order('order_index', { ascending: true });
-      
+
       if (error) throw error;
       return (data || []) as Category[];
     },
   });
 
-  // Organize categories hierarchically (merge duplicate root rows by name)
   const organizedCategories = useMemo(
     () => organizeEventCategoryParents(categoriesData),
     [categoriesData],
   );
 
-  // Get selected category name for display (singular, for backward compatibility)
-  const selectedCategoryName = useMemo(() => {
-    if (!formData.category_id) return null;
-    const category = categoriesData.find(c => c.id === formData.category_id);
-    return category?.name || null;
-  }, [formData.category_id, categoriesData]);
-
-  // Get selected category names for display (plural, for multiple categories)
   const selectedCategoryNames = useMemo(() => {
-    if (!formData.category_ids || formData.category_ids.length === 0) return [];
+    if (!formData.category_ids?.length) return [];
     return formData.category_ids
-      .map(id => {
-        const category = categoriesData.find(c => c.id === id);
-        return category?.name || null;
-      })
+      .map((id) => categoriesData.find((c) => c.id === id)?.name || null)
       .filter((name): name is string => name !== null);
   }, [formData.category_ids, categoriesData]);
 
-  // Toggle category selection
   const toggleCategory = (categoryId: number) => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const categoryIds = prev.category_ids.includes(categoryId)
-        ? prev.category_ids.filter(id => id !== categoryId)
+        ? prev.category_ids.filter((id) => id !== categoryId)
         : [...prev.category_ids, categoryId];
-      
-      // Also update category_id to first selected (for backward compatibility)
-      // Keep the primary category as the first one in the array
       const category_id = categoryIds.length > 0 ? categoryIds[0] : null;
-      const selectedCategory = categoriesData.find(c => c.id === category_id);
-      
+      const selectedCategory = categoriesData.find((c) => c.id === category_id);
       return {
         ...prev,
         category_ids: categoryIds,
@@ -134,99 +157,58 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       };
     });
   };
-  
-  // Set primary category (move to first position)
-  const setPrimaryCategory = (categoryId: number) => {
-    setFormData(prev => {
-      if (!prev.category_ids.includes(categoryId)) return prev;
-      
-      // Move selected category to first position
-      const otherIds = prev.category_ids.filter(id => id !== categoryId);
-      const categoryIds = [categoryId, ...otherIds];
-      
-      const selectedCategory = categoriesData.find(c => c.id === categoryId);
-      
-      return {
-        ...prev,
-        category_ids: categoryIds,
-        category_id: categoryId,
-        category: selectedCategory?.name || prev.category,
-      };
-    });
-  };
 
-  // Fetch users for organizer selection
   const { data: usersData } = useQuery({
     queryKey: ['admin-users-for-organizer', organizerSearch],
-    queryFn: () => adminService.getUsers({
-      page: 1,
-      pageSize: 50,
-      search: organizerSearch,
-      role: 'all',
-      status: 'all',
-    }),
+    queryFn: () =>
+      adminService.getUsers({
+        page: 1,
+        pageSize: 50,
+        search: organizerSearch,
+        role: 'all',
+        status: 'all',
+      }),
   });
 
-  const steps = [
-    { number: 1, title: 'Event', description: 'Basic information and scheduling' },
-    { number: 2, title: 'Access', description: 'Pricing, capacity, and organizer' },
-    { number: 3, title: 'Content', description: 'Description, media, and details' },
-    { number: 4, title: 'Publish', description: 'Review and publish' },
-  ];
-
-  const progress = ((currentStep - 1) / (steps.length - 1)) * 100;
+  const progressPct = Math.round((currentStep / 4) * 100);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
     if (name === 'price' || name === 'capacity') {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
-    } else if (name === 'featured') {
-      setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      setFormData((prev) => ({ ...prev, [name]: parseFloat(value) || 0 }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const syncWhatToExpect = (text: string) => {
+    setWhatToExpect(text);
+    const lines = text
+      .split('\n')
+      .map((l) => l.replace(/^[\s•\-]+/, '').trim())
+      .filter(Boolean);
+    setFormData((prev) => ({ ...prev, performing_artists: lines }));
   };
 
   const handleAddTag = () => {
     if (tagsInput.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, tagsInput.trim()]
+        tags: [...prev.tags, tagsInput.trim()],
       }));
       setTagsInput('');
+      setAddingTag(false);
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
-  const handleAddArtist = () => {
-    if (artistsInput.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        performing_artists: [...prev.performing_artists, artistsInput.trim()]
-      }));
-      setArtistsInput('');
-    }
-  };
-
-  const handleRemoveArtist = (artistToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      performing_artists: prev.performing_artists.filter(artist => artist !== artistToRemove)
-    }));
-  };
-
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File, asGallery = false) => {
     setIsUploading(true);
     try {
       const prepared = await prepareMediaForUpload(file, 'event-image');
@@ -236,44 +218,45 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       const folder = 'event-images';
       const filePath = `${folder}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, prepared, {
-          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-          upsert: false
-        });
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, prepared, {
+        cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
+        upsert: false,
+      });
+
+      let publicUrl: string;
 
       if (uploadError) {
-        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('new row violates')) {
+        if (
+          uploadError.message.includes('Bucket not found') ||
+          uploadError.message.includes('new row violates')
+        ) {
           const fallbackBucket = 'event-media';
           const fallbackPath = `events/${fileName}`;
           const { error: fallbackError } = await supabase.storage
             .from(fallbackBucket)
             .upload(fallbackPath, prepared, {
               cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-              upsert: false
+              upsert: false,
             });
-          
           if (fallbackError) throw fallbackError;
-          
-          const { data } = supabase.storage
-            .from(fallbackBucket)
-            .getPublicUrl(fallbackPath);
-          
-          setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-          setPreviewUrl(data.publicUrl);
-          toast.success('Image uploaded successfully');
-          return;
+          publicUrl = supabase.storage.from(fallbackBucket).getPublicUrl(fallbackPath).data.publicUrl;
+        } else {
+          throw uploadError;
         }
-        throw uploadError;
+      } else {
+        publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
       }
 
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-      setPreviewUrl(data.publicUrl);
+      if (asGallery) {
+        setGalleryUrls((prev) => [...prev, publicUrl]);
+        if (!formData.image_url) {
+          setFormData((prev) => ({ ...prev, image_url: publicUrl }));
+          setPreviewUrl(publicUrl);
+        }
+      } else {
+        setFormData((prev) => ({ ...prev, image_url: publicUrl }));
+        setPreviewUrl(publicUrl);
+      }
       toast.success('Image uploaded successfully');
     } catch (error: any) {
       console.error('Error uploading image:', error);
@@ -283,16 +266,15 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, asGallery = false) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
     }
-
-    handleFileUpload(file);
+    void handleFileUpload(file, asGallery);
   };
 
   const validateStep = (step: Step): boolean => {
@@ -322,7 +304,6 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         }
         return true;
       case 2:
-        // Access step is optional, no validation needed
         return true;
       case 3:
         if (!formData.description.trim()) {
@@ -338,10 +319,8 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
-      if (currentStep < 4) {
-        setCurrentStep((prev) => (prev + 1) as Step);
-      }
+    if (validateStep(currentStep) && currentStep < 4) {
+      setCurrentStep((prev) => (prev + 1) as Step);
     }
   };
 
@@ -356,11 +335,13 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       const { eventData } = vars;
       const { data, error } = await supabase
         .from('events')
-        .insert([{
-          ...eventData,
-          organizer_id: eventData.organizer_id || null,
-          status: 'approved',
-        }])
+        .insert([
+          {
+            ...eventData,
+            organizer_id: eventData.organizer_id || null,
+            status: 'approved',
+          },
+        ])
         .select()
         .single();
 
@@ -369,9 +350,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     },
     onSuccess: async (data, vars) => {
       const categoryIds = vars?.categoryIds || [];
-      // Persist multi-category selections to the junction table (in addition to category/category_id on events)
       try {
-        // Replace any existing mappings (should be none for a new event)
         await supabase.from('event_categories').delete().eq('event_id', data.id);
         if (categoryIds.length > 0) {
           const rows = categoryIds.map((category_id) => ({ event_id: data.id, category_id }));
@@ -385,17 +364,12 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
-      
-      // Notify all users about new admin-created event
+
       try {
-        const { data: allUsers } = await supabase
-          .from('profiles')
-          .select('id')
-          .limit(100); // Limit to avoid overwhelming
-        
+        const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
         if (allUsers && allUsers.length > 0) {
           await Promise.all(
-            allUsers.map(userProfile =>
+            allUsers.map((userProfile) =>
               notificationService.createNotification({
                 user_id: userProfile.id,
                 type: 'new_event',
@@ -407,15 +381,15 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 data: {
                   event_id: data.id,
                   event_title: data.title,
-                }
-              })
-            )
+                },
+              }),
+            ),
           );
         }
       } catch (notifError) {
         console.warn('Failed to send event notifications:', notifError);
       }
-      
+
       toast.success('Event created successfully! Users will be notified.');
       if (onSuccess) onSuccess();
     },
@@ -431,43 +405,41 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   const handleSubmit = async () => {
     if (!validateStep(4)) return;
 
-    // Use default image if none provided
     if (!formData.image_url && formData.category) {
       const defaultImages = {
-        Business: "https://images.unsplash.com/photo-1676372971824-ed498ef0db5f?q=80&w=2070",
-        Culture: "https://images.unsplash.com/photo-1529154045759-34c09aed3b73?q=80&w=2070",
-        Sports: "https://images.unsplash.com/photo-1474224017046-182ece80b263?q=80&w=2070",
-        Music: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070",
-        Technology: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072",
-        default: "https://images.unsplash.com/photo-1433622070098-754fdf81c929?q=80&w=2070"
+        Business: 'https://images.unsplash.com/photo-1676372971824-ed498ef0db5f?q=80&w=2070',
+        Culture: 'https://images.unsplash.com/photo-1529154045759-34c09aed3b73?q=80&w=2070',
+        Sports: 'https://images.unsplash.com/photo-1474224017046-182ece80b263?q=80&w=2070',
+        Music: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070',
+        Technology: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072',
+        default: 'https://images.unsplash.com/photo-1433622070098-754fdf81c929?q=80&w=2070',
       };
-      
-      const imageUrl = defaultImages[formData.category as keyof typeof defaultImages] || defaultImages.default;
+      const imageUrl =
+        defaultImages[formData.category as keyof typeof defaultImages] || defaultImages.default;
       formData.image_url = imageUrl;
     }
 
     setIsSubmitting(true);
-    
-    // Get category name and ID from first selected category_id
+
     let categoryName = formData.category;
     let categoryId = formData.category_id;
     if (formData.category_ids.length > 0) {
       const firstCategoryId = formData.category_ids[0];
-      const selectedCategory = categoriesData.find(c => c.id === firstCategoryId);
+      const selectedCategory = categoriesData.find((c) => c.id === firstCategoryId);
       categoryName = selectedCategory?.name || categoryName;
       categoryId = firstCategoryId;
     }
-    
-    // Remove category_ids and other fields that don't exist in the events table
+
     const { category_ids, category_id, ...eventDataWithoutCategoryIds } = formData;
-    
+
     const eventData = {
       ...eventDataWithoutCategoryIds,
-      category: categoryName, // Ensure category name is set (first category for backward compatibility)
-      category_id: categoryId, // Set category_id to first selected category
+      category: categoryName,
+      category_id: categoryId,
+      ticket_link: useExternalTicket ? formData.ticket_link : '',
       date: new Date(formData.date).toISOString(),
       end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
-      time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00', // Default to 6pm if not set
+      time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00',
       latitude: formData.latitude,
       longitude: formData.longitude,
       location_url:
@@ -476,224 +448,286 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           ? googleMapsDirectionsUrl(formData.latitude, formData.longitude, formData.location)
           : ''),
     };
-    
+
     createEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
   };
+
+  const whenLabel = (() => {
+    if (!formData.date) return 'Not set';
+    try {
+      const d = format(parseISO(formData.date.length === 10 ? `${formData.date}T12:00:00` : formData.date), 'MMM d, yyyy');
+      return formData.time ? `${d} · ${formData.time.slice(0, 5)}` : d;
+    } catch {
+      return formData.date;
+    }
+  })();
+
+  const organizerName =
+    formData.organizer_id
+      ? usersData?.data.find((u) => u.id === formData.organizer_id)?.name || 'Unknown'
+      : '';
+
+  const renderStepper = () => (
+    <div className={cn(surfaceCard, 'w-full px-[18px] py-3.5')}>
+      <div className="mb-2 flex items-center justify-between text-xs">
+        <span className="font-semibold text-muted-foreground">Progress</span>
+        <span className="font-bold text-primary">{progressPct}%</span>
+      </div>
+      <Progress value={progressPct} className="mb-3 h-1.5" />
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {([1, 2, 3, 4] as Step[]).map((n, i) => {
+          const done = currentStep > n;
+          const active = currentStep === n;
+          return (
+            <React.Fragment key={n}>
+              {i > 0 ? (
+                <div
+                  className={cn(
+                    'hidden h-0.5 w-7 shrink-0 sm:block',
+                    currentStep > n - 1 ? 'bg-primary' : 'bg-border',
+                  )}
+                />
+              ) : null}
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    'flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-[11px] font-bold',
+                    done || active
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border border-border bg-[hsl(var(--admin-surface-2))] text-muted-foreground',
+                  )}
+                >
+                  {done ? <Check className="h-3.5 w-3.5" /> : n}
+                </div>
+                <div className="hidden sm:block">
+                  <p
+                    className={cn(
+                      'text-[13px]',
+                      active ? 'font-semibold text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {STEP_META[n].title}
+                  </p>
+                  {currentStep === 1 ? (
+                    <p className="text-[11px] text-muted-foreground">{STEP_META[n].blurb}</p>
+                  ) : null}
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Event Title *</Label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Enter event title"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Categories *</Label>
-                {selectedCategoryNames.length > 0 ? (
-                  <div className="space-y-2 mb-2">
-                    <div className="flex flex-wrap gap-2">
-                    {selectedCategoryNames.map((name, idx) => {
-                      const categoryId = formData.category_ids[idx];
-                        const isPrimary = idx === 0;
-                      return (
-                          <Badge 
-                            key={categoryId} 
-                            variant={isPrimary ? "default" : "secondary"} 
-                            className="flex items-center gap-1"
-                          >
-                            {isPrimary && <span className="text-xs">⭐</span>}
-                          {name}
-                            {isPrimary && <span className="text-xs opacity-70">(Primary)</span>}
-                          <button
-                            type="button"
-                            onClick={() => toggleCategory(categoryId)}
-                            className="ml-1 hover:text-destructive"
-                              title="Remove category"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                            {!isPrimary && (
-                              <button
-                                type="button"
-                                onClick={() => setPrimaryCategory(categoryId)}
-                                className="ml-1 hover:text-primary"
-                                title="Set as primary category"
-                              >
-                                <span className="text-xs">⭐</span>
-                              </button>
-                            )}
-                        </Badge>
-                      );
-                    })}
-                    </div>
-                    {selectedCategoryNames.length > 1 && (
-                      <p className="text-xs text-muted-foreground">
-                        First category is primary. Click ⭐ on another category to make it primary.
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-                <Accordion type="multiple" className="w-full border rounded-lg">
-                  {organizedCategories.map((parentCategory) => (
-                    <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
-                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          {parentCategory.icon && <span>{parentCategory.icon}</span>}
-                          <span className="font-medium">{parentCategory.name}</span>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-4 pb-2">
-                        <div className="space-y-2">
-                          {parentCategory.subcategories.map((subcategory) => (
-                            <div key={subcategory.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`category-${subcategory.id}`}
-                                checked={formData.category_ids.includes(subcategory.id)}
-                                onCheckedChange={() => toggleCategory(subcategory.id)}
-                              />
-                              <label
-                                htmlFor={`category-${subcategory.id}`}
-                                className="text-sm font-normal cursor-pointer flex-1"
-                              >
-                                {subcategory.name}
-                              </label>
-                            </div>
-                          ))}
-                          <AddSubcategoryField
-                            parentCategoryId={parentCategory.id}
-                            categories={categoriesData}
-                            onCreated={(id) => toggleCategory(id)}
-                          />
-                          {/* Also allow selecting parent category directly */}
-                          <div className="flex items-center space-x-2 pt-1 border-t border-white/10">
-                            <Checkbox
-                              id={`category-${parentCategory.id}`}
-                              checked={formData.category_ids.includes(parentCategory.id)}
-                              onCheckedChange={() => toggleCategory(parentCategory.id)}
-                            />
-                            <label
-                              htmlFor={`category-${parentCategory.id}`}
-                              className="text-sm font-medium text-kenya-orange cursor-pointer flex-1"
-                            >
-                              All {parentCategory.name}
-                            </label>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
-              
-              <div className="space-y-2 md:col-span-2">
-                <Label>Location *</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Search, use GPS, or tap the map — then Confirm. Required to pin the event.
-                </p>
-                <LocationPicker
-                  mode="event"
-                  compact
-                  height={280}
-                  title=""
-                  description=""
-                  onLocationSelect={(loc) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: loc.address,
-                      latitude: loc.latitude,
-                      longitude: loc.longitude,
-                      location_url:
-                        prev.location_url.trim() ||
-                        googleMapsDirectionsUrl(loc.latitude, loc.longitude, loc.address),
-                    }));
-                  }}
-                  onLocationClear={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: '',
-                      latitude: null,
-                      longitude: null,
-                    }));
-                  }}
-                  initialLocation={
-                    formData.latitude != null && formData.longitude != null && formData.location
-                      ? {
-                          address: formData.location,
-                          latitude: formData.latitude,
-                          longitude: formData.longitude,
-                        }
-                      : undefined
-                  }
-                />
-                {formData.location && formData.latitude != null && formData.longitude != null ? (
-                  <p className="text-xs text-primary">
-                    Confirmed: {formData.location} ({formData.latitude.toFixed(5)},{' '}
-                    {formData.longitude.toFixed(5)})
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Confirm a pin before continuing.</p>
-                )}
-
-                <div className="space-y-2 pt-3">
-                  <Label htmlFor="location_url">Manual location link (optional)</Label>
-                  <Input
-                    id="location_url"
-                    name="location_url"
-                    value={formData.location_url}
-                    onChange={handleInputChange}
-                    placeholder="Paste a maps link (Google, Apple, Mapbox, etc.)"
-                    inputMode="url"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Auto-filled from the pin if left blank. Override with a custom maps link if needed.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">From (date) *</Label>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className={cn(surfaceCard, 'flex flex-col gap-3.5 p-[18px]')}>
+              <div className="space-y-1.5">
+                <Label htmlFor="title" className="text-xs font-semibold">
+                  Event title *
+                </Label>
                 <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
+                  id="title"
+                  name="title"
+                  value={formData.title}
                   onChange={handleInputChange}
+                  placeholder="e.g. Warehouse Techno Night"
+                  className={fieldClass}
                   required
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="end_date">To (date, optional)</Label>
-                <Input
-                  id="end_date"
-                  name="end_date"
-                  type="date"
-                  min={formData.date || undefined}
-                  value={formData.end_date || ''}
-                  onChange={handleInputChange}
-                />
-                <p className="text-xs text-muted-foreground">Leave empty for single-day events</p>
+                <Label className="text-xs font-semibold">Categories *</Label>
+                <Popover open={categoriesOpen} onOpenChange={setCategoriesOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        fieldClass,
+                        'flex w-full items-center justify-between px-3 text-left font-normal',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'truncate',
+                          selectedCategoryNames.length === 0 && 'text-muted-foreground',
+                        )}
+                      >
+                        {selectedCategoryNames.length === 0
+                          ? 'Select categories…'
+                          : selectedCategoryNames.length <= 2
+                            ? selectedCategoryNames.join(', ')
+                            : `${selectedCategoryNames.length} categories selected`}
+                      </span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    className="w-80 max-h-72 overflow-y-auto p-2 sm:w-96"
+                  >
+                    {organizedCategories.map((parent) => (
+                      <div key={parent.id} className="mb-2 last:mb-0">
+                        <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {parent.icon ? `${parent.icon} ` : ''}
+                          {parent.name}
+                        </p>
+                        <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-[13px] hover:bg-[hsl(var(--admin-surface-2))]">
+                          <Checkbox
+                            checked={formData.category_ids.includes(parent.id)}
+                            onCheckedChange={() => toggleCategory(parent.id)}
+                          />
+                          <span>All {parent.name}</span>
+                        </label>
+                        {parent.subcategories.map((sub) => (
+                          <label
+                            key={sub.id}
+                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 pl-4 text-[13px] hover:bg-[hsl(var(--admin-surface-2))]"
+                          >
+                            <Checkbox
+                              checked={formData.category_ids.includes(sub.id)}
+                              onCheckedChange={() => toggleCategory(sub.id)}
+                            />
+                            <span>{sub.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                    {organizedCategories.length === 0 ? (
+                      <p className="px-2 py-3 text-xs text-muted-foreground">No categories found</p>
+                    ) : null}
+                  </PopoverContent>
+                </Popover>
+                {formData.category_ids.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.category_ids.map((id) => {
+                      const name = categoriesData.find((c) => c.id === id)?.name;
+                      if (!name) return null;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => toggleCategory(id)}
+                          className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-1 text-[11px] font-semibold text-primary"
+                        >
+                          {name}
+                          <X className="h-3 w-3" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="date" className="text-xs font-semibold">
+                    From date *
+                  </Label>
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    className={fieldClass}
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="end_date" className="text-xs font-semibold">
+                    To date
+                  </Label>
+                  <Input
+                    id="end_date"
+                    name="end_date"
+                    type="date"
+                    min={formData.date || undefined}
+                    value={formData.end_date || ''}
+                    onChange={handleInputChange}
+                    className={fieldClass}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="time" className="text-xs font-semibold">
+                  Start time
+                </Label>
                 <Input
                   id="time"
                   name="time"
                   type="time"
                   value={formData.time}
                   onChange={handleInputChange}
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+
+            <div className={cn(surfaceCard, 'flex flex-col gap-2.5 p-4')}>
+              <Label className="text-xs font-semibold">Location *</Label>
+              <p className="text-xs text-muted-foreground">
+                Search, use GPS, or tap the map — then Confirm.
+              </p>
+              <LocationPicker
+                mode="event"
+                compact
+                height={440}
+                title=""
+                description=""
+                onLocationSelect={(loc) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: loc.address,
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                    location_url:
+                      prev.location_url.trim() ||
+                      googleMapsDirectionsUrl(loc.latitude, loc.longitude, loc.address),
+                  }));
+                }}
+                onLocationClear={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: '',
+                    latitude: null,
+                    longitude: null,
+                  }));
+                }}
+                initialLocation={
+                  formData.latitude != null && formData.longitude != null && formData.location
+                    ? {
+                        address: formData.location,
+                        latitude: formData.latitude,
+                        longitude: formData.longitude,
+                      }
+                    : undefined
+                }
+              />
+              <p className="text-[11px] text-muted-foreground">
+                {formData.location && formData.latitude != null
+                  ? `Confirm a pin before continuing · ${formData.location}`
+                  : 'Confirm a pin before continuing'}
+              </p>
+              <div className="space-y-1.5 pt-1">
+                <Label htmlFor="location_url" className="text-xs font-semibold">
+                  Manual maps link (optional)
+                </Label>
+                <Input
+                  id="location_url"
+                  name="location_url"
+                  value={formData.location_url}
+                  onChange={handleInputChange}
+                  placeholder="Paste Google / Apple Maps link"
+                  inputMode="url"
+                  className={fieldClass}
                 />
               </div>
             </div>
@@ -702,10 +736,13 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
       case 2:
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (KES)</Label>
+          <div className={cn(surfaceCard, 'flex w-full flex-col gap-3.5 p-5')}>
+            <h3 className="text-base font-bold text-foreground">Access & pricing</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="price" className="text-xs font-semibold">
+                  Ticket price (KES)
+                </Label>
                 <Input
                   id="price"
                   name="price"
@@ -714,12 +751,14 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   step="1"
                   value={formData.price || ''}
                   onChange={handleInputChange}
-                  placeholder="0 for free events"
+                  placeholder="0 for free"
+                  className={fieldClass}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Capacity</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="capacity" className="text-xs font-semibold">
+                  Capacity
+                </Label>
                 <Input
                   id="capacity"
                   name="capacity"
@@ -727,394 +766,392 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   min="0"
                   value={formData.capacity || ''}
                   onChange={handleInputChange}
-                  placeholder="Leave empty for unlimited"
+                  placeholder="Unlimited if empty"
+                  className={fieldClass}
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="ticket_link">External Ticket Link</Label>
-              <Input
-                id="ticket_link"
-                name="ticket_link"
-                type="url"
-                value={formData.ticket_link}
-                onChange={handleInputChange}
-                placeholder="https://eventbrite.com/..."
-              />
-              <p className="text-xs text-muted-foreground">
-                Users will be redirected here when clicking "Get Tickets"
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Event Organizer</Label>
-              <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Organizer</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search for organizer..."
-                    value={organizerSearch}
-                    onChange={(e) => setOrganizerSearch(e.target.value)}
-                    className="pl-9"
+                    placeholder="Search organizer…"
+                    value={
+                      formData.organizer_id && organizerName
+                        ? organizerName
+                        : organizerSearch
+                    }
+                    onChange={(e) => {
+                      if (formData.organizer_id) {
+                        setFormData((prev) => ({ ...prev, organizer_id: null }));
+                      }
+                      setOrganizerSearch(e.target.value);
+                    }}
+                    className={cn(fieldClass, 'pl-9')}
                   />
                 </div>
-                
-                {formData.organizer_id && (
-                  <div className="flex items-center gap-2 p-2 bg-accent rounded-lg">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={usersData?.data.find(u => u.id === formData.organizer_id)?.profile_picture} />
-                      <AvatarFallback>
-                        {usersData?.data.find(u => u.id === formData.organizer_id)?.name?.charAt(0).toUpperCase() || 'O'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        {usersData?.data.find(u => u.id === formData.organizer_id)?.name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {usersData?.data.find(u => u.id === formData.organizer_id)?.email}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, organizer_id: null }))}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {!formData.organizer_id && (
-                  <div className="border rounded-lg max-h-60 overflow-y-auto">
-                    {usersData?.data && usersData.data.length > 0 ? (
-                      <div className="divide-y">
-                        {usersData.data.map((user) => (
-                          <button
-                            key={user.id}
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, organizer_id: user.id }))}
-                            className="w-full p-3 hover:bg-accent flex items-center gap-3 text-left transition-colors"
-                          >
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.profile_picture} />
-                              <AvatarFallback>
-                                {user.name?.charAt(0).toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <p className="font-medium">{user.name}</p>
-                              <p className="text-sm text-muted-foreground">{user.email}</p>
-                            </div>
-                            <Badge variant="outline">{user.role}</Badge>
-                          </button>
-                        ))}
-                      </div>
+                {!formData.organizer_id && organizerSearch.trim() ? (
+                  <div className="mt-1 max-h-40 overflow-y-auto rounded-[10px] border border-border">
+                    {usersData?.data?.length ? (
+                      usersData.data.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({ ...prev, organizer_id: user.id }));
+                            setOrganizerSearch('');
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[hsl(var(--admin-surface-2))]"
+                        >
+                          <Avatar className="h-7 w-7">
+                            <AvatarImage src={user.profile_picture} />
+                            <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{user.name}</span>
+                        </button>
+                      ))
                     ) : (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No users found
-                      </div>
+                      <p className="p-3 text-xs text-muted-foreground">No users found</p>
                     )}
                   </div>
-                )}
+                ) : null}
+                {formData.organizer_id ? (
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                    onClick={() => setFormData((prev) => ({ ...prev, organizer_id: null }))}
+                  >
+                    Clear organizer
+                  </button>
+                ) : null}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Leave empty to create event without an organizer
-              </p>
             </div>
+
+            <div className="flex flex-col gap-2.5">
+              {(
+                [
+                  {
+                    id: 'featured',
+                    label: 'Featured on Home',
+                    checked: formData.featured,
+                    onChange: (v: boolean) => setFormData((prev) => ({ ...prev, featured: v })),
+                  },
+                  {
+                    id: 'require-approval',
+                    label: 'Require approval to attend',
+                    checked: requireApproval,
+                    onChange: setRequireApproval,
+                  },
+                  {
+                    id: 'external-ticket',
+                    label: 'External ticket link',
+                    checked: useExternalTicket,
+                    onChange: (v: boolean) => {
+                      setUseExternalTicket(v);
+                      if (!v) setFormData((prev) => ({ ...prev, ticket_link: '' }));
+                    },
+                  },
+                ] as const
+              ).map((row) => (
+                <div
+                  key={row.id}
+                  className="flex items-center justify-between rounded-[10px] bg-[hsl(var(--admin-surface-2))] p-3"
+                >
+                  <Label htmlFor={row.id} className="cursor-pointer text-[13px] font-medium">
+                    {row.label}
+                  </Label>
+                  <Switch
+                    id={row.id}
+                    checked={row.checked}
+                    onCheckedChange={row.onChange}
+                    className="h-[22px] w-10 data-[state=checked]:bg-primary data-[state=unchecked]:bg-border"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {useExternalTicket ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="ticket_link" className="text-xs font-semibold">
+                  Ticket URL
+                </Label>
+                <Input
+                  id="ticket_link"
+                  name="ticket_link"
+                  type="url"
+                  value={formData.ticket_link}
+                  onChange={handleInputChange}
+                  placeholder="https://…"
+                  className={fieldClass}
+                />
+              </div>
+            ) : null}
           </div>
         );
 
       case 3:
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">Full Description *</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Detailed event description"
-                rows={6}
-                required
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label>Event Image</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={isUploading}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      disabled={isUploading}
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Choose File
-                        </>
-                      )}
-                    </Button>
-                  </label>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">Or Enter Image URL</Label>
-                  <Input
-                    id="image_url"
-                    name="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => {
-                      handleInputChange(e);
-                      setPreviewUrl(e.target.value);
-                    }}
-                    placeholder="https://example.com/image.jpg"
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className={cn(surfaceCard, 'flex flex-col gap-3 p-[18px]')}>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="description" className="text-xs font-semibold">
+                    Description *
+                  </Label>
+                  <AdminAiWriteButton
+                    label={formData.description.trim() ? 'Enhance with AI' : 'Write with AI'}
+                    disabled={!formData.title.trim()}
+                    needHint="Enter an event title first"
+                    run={() =>
+                      draftEventDescription({
+                        title: formData.title.trim(),
+                        location: formData.location || undefined,
+                        date: formData.date || undefined,
+                        category: selectedCategoryNames.join(', ') || undefined,
+                        existing: formData.description,
+                      })
+                    }
+                    onResult={(text) =>
+                      setFormData((prev) => ({ ...prev, description: text.slice(0, 2000) }))
+                    }
                   />
                 </div>
-                
-                {previewUrl && (
-                  <div className="relative rounded-lg overflow-hidden border border-border">
-                    <img 
-                      src={previewUrl} 
-                      alt="Preview" 
-                      className="w-full h-64 object-cover" 
-                    />
-                    <Button
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Tell people what this event is about… or Write with AI"
+                  rows={6}
+                  maxLength={2000}
+                  className="min-h-[160px] rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-[13px]"
+                  required
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  {formData.description.length} / 2000 characters
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="what-to-expect" className="text-xs font-semibold">
+                    What to expect
+                  </Label>
+                  <AdminAiWriteButton
+                    label="Suggest with AI"
+                    disabled={!formData.title.trim()}
+                    needHint="Enter an event title first"
+                    run={() =>
+                      draftWhatToExpect({
+                        title: formData.title.trim(),
+                        description: formData.description || undefined,
+                      })
+                    }
+                    onResult={syncWhatToExpect}
+                  />
+                </div>
+                <Textarea
+                  id="what-to-expect"
+                  value={whatToExpect}
+                  onChange={(e) => syncWhatToExpect(e.target.value)}
+                  placeholder={'• Four rooms · techno, house\n• Cashless bar on site\n• Doors 22:00'}
+                  rows={4}
+                  className="rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Tags</Label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag) => (
+                    <button
+                      key={tag}
                       type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setPreviewUrl(null);
-                        setFormData(prev => ({ ...prev, image_url: '' }));
-                      }}
+                      onClick={() => handleRemoveTag(tag)}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      {tag} <X className="h-3 w-3" />
+                    </button>
+                  ))}
+                  {addingTag ? (
+                    <div className="flex gap-1">
+                      <Input
+                        value={tagsInput}
+                        onChange={(e) => setTagsInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                          if (e.key === 'Escape') setAddingTag(false);
+                        }}
+                        placeholder="Tag name"
+                        className="h-8 w-28 rounded-full border-border bg-[hsl(var(--admin-surface-2))] text-xs"
+                        autoFocus
+                      />
+                      <Button type="button" size="sm" variant="outline" onClick={handleAddTag}>
+                        Add
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setAddingTag(true)}
+                      className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                    >
+                      + Add tag
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className={cn(surfaceCard, 'flex flex-col gap-3 p-[18px]')}>
+              <Label className="text-xs font-semibold">Cover image *</Label>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="cover-upload"
+                disabled={isUploading}
+                onChange={(e) => handleFileChange(e, false)}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                id="gallery-upload"
+                disabled={isUploading}
+                onChange={(e) => handleFileChange(e, true)}
+              />
+
+              {previewUrl || formData.image_url ? (
+                <div className="relative h-[220px] overflow-hidden rounded-xl">
+                  <img
+                    src={previewUrl || formData.image_url}
+                    alt="Cover"
+                    className="size-full object-cover"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('cover-upload')?.click()}
+                  className="flex h-[220px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-[hsl(var(--admin-surface-2))] text-sm text-muted-foreground"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5" />
+                      Upload cover image
+                    </>
+                  )}
+                </button>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-[10px]"
+                  disabled={isUploading}
+                  onClick={() => document.getElementById('cover-upload')?.click()}
+                >
+                  Replace image
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-[10px]"
+                  onClick={() => toast.message('Crop opens after publish in media tools')}
+                >
+                  Crop
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-[10px]"
+                  onClick={() => {
+                    setPreviewUrl(null);
+                    setFormData((prev) => ({ ...prev, image_url: '' }));
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+
+              <Label className="text-xs font-semibold">Gallery (optional)</Label>
+              <div className="flex flex-wrap gap-2.5">
+                {galleryUrls.map((url) => (
+                  <div key={url} className="relative h-[72px] w-[100px] overflow-hidden rounded-[10px]">
+                    <img src={url} alt="" className="size-full object-cover" />
                   </div>
-                )}
+                ))}
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('gallery-upload')?.click()}
+                  className="flex h-[72px] w-[100px] items-center justify-center rounded-[10px] border border-border bg-[hsl(var(--admin-surface-2))] text-xl font-bold text-muted-foreground"
+                >
+                  +
+                </button>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="tags"
-                  value={tagsInput}
-                  onChange={(e) => setTagsInput(e.target.value)}
-                  placeholder="Add event tags"
-                  className="flex-1"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
-                />
-                <Button type="button" onClick={handleAddTag} variant="outline">
-                  Add
-                </Button>
-              </div>
-              
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.tags.map((tag, index) => (
-                    <div 
-                      key={index} 
-                      className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                    >
-                      <span>{tag}</span>
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveTag(tag)}
-                        className="hover:text-destructive focus:outline-none"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="artists">Performing Artists</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="artists"
-                  value={artistsInput}
-                  onChange={(e) => setArtistsInput(e.target.value)}
-                  placeholder="Add performing artist name"
-                  className="flex-1"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddArtist();
-                    }
-                  }}
-                />
-                <Button type="button" onClick={handleAddArtist} variant="outline">
-                  Add
-                </Button>
-              </div>
-              
-              {formData.performing_artists.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.performing_artists.map((artist, index) => (
-                    <div 
-                      key={index} 
-                      className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                    >
-                      <span>{artist}</span>
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveArtist(artist)}
-                        className="hover:text-destructive focus:outline-none"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => document.getElementById('gallery-upload')?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) void handleFileUpload(file, true);
+                }}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-[hsl(var(--admin-surface-2))] px-4 py-5 text-center"
+              >
+                <span className="text-[13px] font-semibold text-foreground">Drop more images here</span>
+                <span className="text-[11px] text-muted-foreground">
+                  PNG, JPG up to 5MB · 16:9 recommended
+                </span>
+              </button>
             </div>
           </div>
         );
 
       case 4:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Review Event Details</h3>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Event Title</Label>
-                  <p className="font-medium">{formData.title || 'Not set'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Categories</Label>
-                  {selectedCategoryNames.length > 0 ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="default" className="flex items-center gap-1">
-                          <span className="text-xs">⭐</span>
-                          {selectedCategoryNames[0]}
-                          <span className="text-xs opacity-70">(Primary)</span>
-                        </Badge>
-                      </div>
-                      {selectedCategoryNames.length > 1 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          <span className="text-xs text-muted-foreground mr-1">Also:</span>
-                          {selectedCategoryNames.slice(1).map((name, idx) => {
-                            const categoryId = formData.category_ids[idx + 1];
-                            return (
-                              <Badge key={categoryId} variant="secondary" className="text-xs">
-                                {name}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="font-medium">Not set</p>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Location</Label>
-                  <p className="font-medium">{formData.location || 'Not set'}</p>
-                  {formData.latitude !== null && formData.longitude !== null && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Coordinates: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Date</Label>
-                  <p className="font-medium">
-                    {formData.date ? new Date(formData.date).toLocaleDateString() : 'Not set'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Time</Label>
-                  <p className="font-medium">{formData.time || 'Not set'}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Price</Label>
-                  <p className="font-medium">
-                    {formData.price > 0 ? `KES ${formData.price}` : 'Free'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Capacity</Label>
-                  <p className="font-medium">
-                    {formData.capacity > 0 ? formData.capacity : 'Unlimited'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Organizer</Label>
-                  <p className="font-medium">
-                    {formData.organizer_id 
-                      ? usersData?.data.find(u => u.id === formData.organizer_id)?.name || 'Unknown'
-                      : 'No organizer'}
-                  </p>
-                </div>
+          <div className={cn(surfaceCard, 'flex w-full flex-col gap-3 p-5')}>
+            <h3 className="text-base font-bold text-foreground">Review & publish</h3>
+            {(
+              [
+                ['Title', formData.title || 'Not set'],
+                ['When', whenLabel],
+                ['Where', formData.location || 'Not set'],
+                [
+                  'Price',
+                  formData.price > 0 ? `KES ${formData.price.toLocaleString()}` : 'Free',
+                ],
+                [
+                  'Categories',
+                  selectedCategoryNames.length ? selectedCategoryNames.join(' · ') : 'Not set',
+                ],
+              ] as const
+            ).map(([label, value]) => (
+              <div
+                key={label}
+                className="flex items-start justify-between gap-4 py-2 text-[13px]"
+              >
+                <span className="text-muted-foreground">{label}</span>
+                <span className="max-w-[60%] text-right font-semibold text-foreground">{value}</span>
               </div>
-
-              {formData.description && (
-                <div>
-                  <Label className="text-muted-foreground">Description</Label>
-                  <ParagraphizedDescription
-                    text={formData.description}
-                    className="mt-1"
-                    paragraphClassName="text-sm"
-                  />
-                </div>
-              )}
-
-              {previewUrl && (
-                <div>
-                  <Label className="text-muted-foreground">Event Image</Label>
-                  <img src={previewUrl} alt="Preview" className="mt-2 w-full h-48 object-cover rounded-lg" />
-                </div>
-              )}
-
-              <div className="flex items-center space-x-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  name="featured"
-                  checked={formData.featured}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="featured" className="cursor-pointer font-normal">
-                  Feature this event on the homepage
-                </Label>
-              </div>
+            ))}
+            <div className="rounded-[10px] bg-[hsl(var(--admin-success)/0.12)] px-3 py-2.5 text-xs font-medium text-[hsl(var(--admin-success))]">
+              Ready to publish · pin confirmed · required fields complete
             </div>
+            {formData.featured ? (
+              <Badge variant="secondary" className="w-fit">
+                Featured on Home
+              </Badge>
+            ) : null}
           </div>
         );
 
@@ -1124,101 +1161,79 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   };
 
   return (
-    <div className="space-y-6">
-
-        {/* Progress Bar */}
-        <div className="mt-4 space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
-            <span>Progress {Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
+    <div className="-mx-1 flex min-h-[calc(100vh-8rem)] flex-col">
+      <div className="mb-4 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Create event</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Step {currentStep} of 4 · {STEP_META[currentStep].subtitle}
+          </p>
         </div>
-
-        {/* Step Indicators */}
-        <div className="flex justify-between mt-6">
-          {steps.map((step) => (
-            <div
-              key={step.number}
-              className={`flex items-center gap-2 ${
-                currentStep >= step.number ? 'text-primary' : 'text-muted-foreground'
-              }`}
+        <div className="flex gap-2">
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-[10px]"
+              onClick={onCancel}
             >
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                  currentStep > step.number
-                    ? 'bg-primary border-primary text-primary-foreground'
-                    : currentStep === step.number
-                    ? 'border-primary text-primary'
-                    : 'border-muted-foreground'
-                }`}
-              >
-                {currentStep > step.number ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <span className="text-sm font-medium">{step.number}</span>
-                )}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium">{step.title}</p>
-                <p className="text-xs text-muted-foreground">{step.description}</p>
-              </div>
-              {step.number < steps.length && (
-                <ChevronRight className="h-4 w-4 mx-2 hidden sm:block" />
-              )}
-            </div>
-          ))}
+              Cancel
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-[10px]"
+            onClick={() => toast.message('Draft saving isn’t available yet — use Publish when ready')}
+          >
+            Save draft
+          </Button>
         </div>
+      </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); currentStep === 4 ? handleSubmit() : handleNext(); }}>
-        <div className="min-h-[400px] py-4">
-          {renderStepContent()}
-        </div>
-        
-        <div className="flex justify-between gap-3 pt-6 border-t mt-6">
+      <form
+        className="flex flex-1 flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (currentStep === 4) void handleSubmit();
+          else handleNext();
+        }}
+      >
+        {renderStepper()}
+        <div className="flex-1">{renderStepContent()}</div>
+
+        <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-border bg-background/95 py-3 backdrop-blur-sm">
           <div>
-            {currentStep > 1 && (
-              <Button 
-                type="button" 
+            {currentStep === 1 ? (
+              <p className="text-xs text-muted-foreground">Required fields marked *</p>
+            ) : (
+              <Button
+                type="button"
                 variant="outline"
+                className="rounded-[10px]"
                 onClick={handlePrevious}
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
+                ← Back
               </Button>
             )}
           </div>
-          
-          <div className="flex gap-3">
-            {onCancel && currentStep === 1 && (
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={onCancel}
-              >
-                Cancel
-              </Button>
-            )}
-            {currentStep < 4 ? (
-              <Button type="submit">
-                Next
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
+          <Button
+            type="submit"
+            className="rounded-[10px] bg-primary px-4 font-bold text-primary-foreground"
+            disabled={
+              currentStep === 4 &&
+              (isSubmitting || isUploading || createEventMutation.isPending)
+            }
+          >
+            {currentStep === 4 && (isSubmitting || createEventMutation.isPending) ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating…
+              </>
             ) : (
-              <Button 
-                type="submit"
-                disabled={isSubmitting || isUploading || createEventMutation.isPending}
-              >
-                {isSubmitting || createEventMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Event'
-                )}
-              </Button>
+              STEP_META[currentStep].nextLabel
             )}
-          </div>
+          </Button>
         </div>
       </form>
     </div>

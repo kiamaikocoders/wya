@@ -7,7 +7,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 const GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
 
 /** Vercel AI Gateway model id (override with VERCEL_AI_GATEWAY_MODEL). */
-const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
+const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
 function setCors(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");

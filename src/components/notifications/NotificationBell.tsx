@@ -34,35 +34,33 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('Setting up notifications subscription for user:', user.id);
+    // Unique name per mount — supabase.channel(name) reuses an already-subscribed
+    // channel on Strict Mode / HMR remounts, which throws if .on() runs after .subscribe().
+    const channelName = `notifications:${user.id}:${crypto.randomUUID()}`;
 
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('New notification received:', payload);
-          const newNotification = payload.new;
+          const newNotification = payload.new as { title?: string; message?: string };
           playNotificationSound();
           toast.success(newNotification.title || 'New notification received', {
-            description: newNotification.message
+            description: newNotification.message,
           });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
       )
-      .subscribe((status) => {
-        console.log('Notification subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
-      console.log('Cleaning up notifications subscription');
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [user?.id, queryClient]);
 

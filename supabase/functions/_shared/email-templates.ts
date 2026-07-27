@@ -143,7 +143,7 @@ function figma(
     bodyIsHtml?: boolean;
   }
 ): string {
-  const siteUrl = v(vars, "siteUrl", "https://whereyouat.ke");
+  const siteUrl = v(vars, "siteUrl", "https://www.wya254.com");
   const userName = v(vars, "userName", "there");
   const greeting =
     opts.greeting ??
@@ -171,7 +171,7 @@ export function renderTransactionalTemplate(
   id: EmailTemplateId,
   vars: TemplateVars
 ): { subject: string; html: string } {
-  const siteUrl = v(vars, "siteUrl", "https://whereyouat.ke");
+  const siteUrl = v(vars, "siteUrl", "https://www.wya254.com");
   const link = v(vars, "link", siteUrl);
   const title = v(vars, "title", "WYA");
   const message = v(vars, "message", "");
