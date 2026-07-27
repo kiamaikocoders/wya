@@ -51,7 +51,7 @@ const Login = () => {
             <input
               id="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder=""
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={t.input}
@@ -73,7 +73,7 @@ const Login = () => {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={cn(t.input, 'pr-11')}
@@ -94,6 +94,10 @@ const Login = () => {
           <button type="submit" disabled={isSubmitting} className={t.primaryBtn}>
             {isSubmitting ? 'Signing in…' : 'Sign In  →'}
           </button>
+
+          <Link to="/admin" className={t.outlineBtn}>
+            Admin
+          </Link>
         </form>
 
         <div className="flex items-center gap-2.5">
