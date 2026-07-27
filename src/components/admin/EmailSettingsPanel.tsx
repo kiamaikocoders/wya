@@ -285,7 +285,7 @@ const EmailSettingsPanel: React.FC<{ embedded?: boolean }> = ({ embedded = false
             label="Test delivery"
             value={testToDraft}
             onChange={setTestToDraft}
-            placeholder="admin@wya.com"
+            placeholder="team@wya254.com"
             actionLabel="Send test"
             pending={testEmailMutation.isPending}
             onAction={() => testEmailMutation.mutate()}

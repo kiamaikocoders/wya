@@ -101,6 +101,8 @@ export const MEDIA_CONSENT_PAGE = {
   footer: `Last updated: ${TERMS_EFFECTIVE_LABEL} · Eventsphere Ltd`,
 };
 
+export const SUPPORT_EMAIL = 'support@wyakenya.com';
+
 export const FAQ_ITEMS = [
   {
     q: 'Is WYA free to use?',
@@ -116,12 +118,10 @@ export const FAQ_ITEMS = [
   },
   {
     q: 'How do I contact support?',
-    a: 'Email support@wyakenya.com or use Contact Support from the footer. We typically reply within 24 hours.',
+    a: `Email ${SUPPORT_EMAIL} or use Contact Support from the footer. We typically reply within 24 hours.`,
   },
   {
     q: 'How is my data protected?',
     a: 'See our Privacy Policy. We follow the Kenya Data Protection Act, 2019 and let you manage marketing preferences.',
   },
 ] as const;
-
-export const SUPPORT_EMAIL = 'support@wyakenya.com';

@@ -19,7 +19,7 @@ The WYA Platform is owned and operated by:
 Eventsphere Ltd
 Trading as: WYA — Where You At?
 Registered in: Nairobi, Kenya
-Email: hello@wya.ke
+Email: support@wyakenya.com
 
 Eventsphere Ltd is the Data Controller in respect of your personal data for the purposes of the KDPA.
 
@@ -75,7 +75,7 @@ Eventsphere Ltd uses your personal data for the following purposes:
 • Serving you personalized in-app content and branded event promotions
 • Conducting surveys or research to improve the Platform
 
-You may opt out of marketing communications at any time through your account settings or by contacting us at hello@wya.ke. Opting out of marketing messages will not affect essential service communications.
+You may opt out of marketing communications at any time through your account settings or by contacting us at support@wyakenya.com. Opting out of marketing messages will not affect essential service communications.
 
 3.3 For Safety, Legal & Compliance Purposes
 
@@ -116,7 +116,7 @@ If you do not wish your content to be shared with Event Organizers for promotion
 
 • Adjust your content-sharing preferences in your account privacy settings (where available), or
 • Refrain from posting content relating to specific events on the Platform, or
-• Contact us at hello@wya.ke to request that specific content not be shared.
+• Contact us at support@wyakenya.com to request that specific content not be shared.
 
 Eventsphere Ltd will endeavor to ensure content attribution is maintained where possible. However, once content has been shared with an Event Organizer, we cannot guarantee how that Organizer stores or further uses it. We encourage you to review the privacy practices of Event Organizers whose events you engage with on the Platform.
 
@@ -170,7 +170,7 @@ As a data subject under the KDPA, you have the following rights in respect of yo
 • Right to Data Portability — to receive a copy of your personal data in a structured, commonly used, and machine-readable format.
 • Right to Withdraw Consent — to withdraw consent at any time where processing is based on consent, without affecting the lawfulness of prior processing.
 
-To exercise any of these rights, please contact us at hello@wya.ke. We will respond to your request within 21 days as required by the KDPA. We may need to verify your identity before processing your request. If you are unsatisfied with our response, you have the right to lodge a complaint with the Office of the Data Protection Commissioner (ODPC) of Kenya.
+To exercise any of these rights, please contact us at support@wyakenya.com. We will respond to your request within 21 days as required by the KDPA. We may need to verify your identity before processing your request. If you are unsatisfied with our response, you have the right to lodge a complaint with the Office of the Data Protection Commissioner (ODPC) of Kenya.
 
 10. Cookies & Tracking Technologies
 
@@ -187,7 +187,7 @@ You can control cookies through your browser or device settings. Please note tha
 
 The WYA Platform is intended for users who are 18 years of age or older. We do not knowingly collect personal data from individuals under the age of 18. If we become aware that we have inadvertently collected data from a minor, we will take immediate steps to delete that data.
 
-If you believe that we may have collected data from a person under 18, please contact us immediately at hello@wya.ke.
+If you believe that we may have collected data from a person under 18, please contact us immediately at support@wyakenya.com.
 
 12. Cross-Border Data Transfers
 
@@ -207,7 +207,7 @@ Your continued use of the Platform following notification of changes constitutes
 For any questions, concerns, or requests relating to this Privacy Policy or the handling of your personal data, please contact us:
 
 Eventsphere Ltd (trading as WYA — Where You At?)
-Email: hello@wya.ke
+Email: support@wyakenya.com
 Location: Nairobi, Kenya
 
 You also have the right to contact the Office of the Data Protection Commissioner (ODPC) of Kenya:

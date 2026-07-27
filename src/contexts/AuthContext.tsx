@@ -210,6 +210,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setIsNewUser(true);
           } else if (event === 'SIGNED_IN') {
             setIsNewUser(false);
+            // Apply stashed signup photo as soon as we have a session (confirm or login).
+            void import('@/lib/pending-signup-avatar')
+              .then(({ flushPendingSignupAvatar }) =>
+                flushPendingSignupAvatar(session.user.id, session.user.email ?? undefined)
+              )
+              .then((flushed) => {
+                if (!flushed?.publicUrl) return;
+                setUser((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        avatar_url: flushed.publicUrl,
+                        profile_picture: flushed.publicUrl,
+                        ...(flushed.displayName
+                          ? { full_name: flushed.displayName, name: flushed.displayName }
+                          : {}),
+                      }
+                    : prev
+                );
+              })
+              .catch((err) => console.warn('Failed to flush pending signup avatar:', err));
+
             // Check last login time (non-blocking - run in background)
             supabase
               .from('profiles')
@@ -314,7 +336,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Flush signup avatar if email confirm skipped AuthCallback
       try {
         const { flushPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
-        await flushPendingSignupAvatar(data.user.id);
+        const flushed = await flushPendingSignupAvatar(data.user.id, email);
+        if (flushed?.publicUrl) {
+          setUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  avatar_url: flushed.publicUrl,
+                  profile_picture: flushed.publicUrl,
+                  ...(flushed.displayName
+                    ? { full_name: flushed.displayName, name: flushed.displayName }
+                    : {}),
+                }
+              : prev
+          );
+        }
       } catch (err) {
         console.warn('Failed to flush pending signup avatar on login:', err);
       }
@@ -417,10 +453,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const displayName = options?.displayName?.trim() || name;
       // Create user with Supabase auth
       // The database trigger (handle_new_user) will automatically create the profile
+      const emailRedirectTo = `${window.location.origin}/auth/callback`;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo,
           data: {
             full_name: displayName,
             username: email.split('@')[0],
@@ -448,14 +486,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error) throw error;
       
       // Profile is automatically created by database trigger (handle_new_user)
-      // Avatar requires auth storage RLS — upload now if session exists, else stash for email confirm.
+      // Avatar requires auth storage RLS — upload now if session exists, else stash for email confirm
+      // (IndexedDB on this origin; emailRedirectTo keeps confirm on the same origin).
       if (data.user && options?.avatarFile) {
         const { stashPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
         if (data.session) {
           try {
             const { storageService } = await import('@/lib/storage-service');
             const uploaded = await storageService.uploadAvatar(options.avatarFile, data.user.id);
-            await supabase
+            const { error: avatarUpdateError } = await supabase
               .from('profiles')
               .update({
                 avatar_url: uploaded.publicUrl,
@@ -464,19 +503,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   : {}),
               })
               .eq('id', data.user.id);
+            if (avatarUpdateError) throw avatarUpdateError;
           } catch (avatarErr) {
             console.warn('Immediate avatar upload failed; stashing for later:', avatarErr);
             await stashPendingSignupAvatar(
               data.user.id,
               options.avatarFile,
-              options.displayName
+              options.displayName,
+              email
             );
           }
         } else {
           await stashPendingSignupAvatar(
             data.user.id,
             options.avatarFile,
-            options.displayName
+            options.displayName,
+            email
           );
         }
       }
