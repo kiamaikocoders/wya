@@ -35,7 +35,13 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, consents: AttendeeSignupConsents) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    name: string,
+    consents: AttendeeSignupConsents,
+    options?: { avatarFile?: File; displayName?: string }
+  ) => Promise<void>;
   adminLogin: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
@@ -305,6 +311,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
+      // Flush signup avatar if email confirm skipped AuthCallback
+      try {
+        const { flushPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
+        await flushPendingSignupAvatar(data.user.id);
+      } catch (err) {
+        console.warn('Failed to flush pending signup avatar on login:', err);
+      }
+
       // Navigate after account status check
       const isAdminUser = lockProfile?.username === 'admin';
       navigate(isAdminUser ? '/admin' : '/home');
@@ -390,10 +404,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signup = async (email: string, password: string, name: string, consents: AttendeeSignupConsents) => {
+  const signup = async (
+    email: string,
+    password: string,
+    name: string,
+    consents: AttendeeSignupConsents,
+    options?: { avatarFile?: File; displayName?: string }
+  ) => {
     setLoading(true);
     try {
       const now = new Date().toISOString();
+      const displayName = options?.displayName?.trim() || name;
       // Create user with Supabase auth
       // The database trigger (handle_new_user) will automatically create the profile
       const { data, error } = await supabase.auth.signUp({
@@ -401,7 +422,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         password,
         options: {
           data: {
-            full_name: name,
+            full_name: displayName,
             username: email.split('@')[0],
             phone: consents.phone?.trim() || undefined,
             date_of_birth: consents.dateOfBirth,
@@ -427,11 +448,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (error) throw error;
       
       // Profile is automatically created by database trigger (handle_new_user)
-      // No need to manually create it here
-      
+      // Avatar requires auth storage RLS — upload now if session exists, else stash for email confirm.
+      if (data.user && options?.avatarFile) {
+        const { stashPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
+        if (data.session) {
+          try {
+            const { storageService } = await import('@/lib/storage-service');
+            const uploaded = await storageService.uploadAvatar(options.avatarFile, data.user.id);
+            await supabase
+              .from('profiles')
+              .update({
+                avatar_url: uploaded.publicUrl,
+                ...(options.displayName?.trim()
+                  ? { full_name: options.displayName.trim() }
+                  : {}),
+              })
+              .eq('id', data.user.id);
+          } catch (avatarErr) {
+            console.warn('Immediate avatar upload failed; stashing for later:', avatarErr);
+            await stashPendingSignupAvatar(
+              data.user.id,
+              options.avatarFile,
+              options.displayName
+            );
+          }
+        } else {
+          await stashPendingSignupAvatar(
+            data.user.id,
+            options.avatarFile,
+            options.displayName
+          );
+        }
+      }
+
       // Send welcome notification (will be sent after email confirmation)
       if (data.user) {
-        const userName = name || email.split('@')[0];
+        const userName = displayName || email.split('@')[0];
         // Store flag to send welcome notification after email confirmation
         localStorage.setItem('pending_welcome', JSON.stringify({
           userId: data.user.id,
