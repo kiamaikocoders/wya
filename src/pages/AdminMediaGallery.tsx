@@ -9,7 +9,7 @@ const AdminMediaGallery: React.FC = () => {
   return (
     <AdminPageShell
       title="Event media"
-      subtitle="UGC photos and videos for organizer intelligence."
+      subtitle="Review UGC and email organizers a gallery link"
       icon={Images}
       actions={
         <AdminRefreshButton

@@ -52,6 +52,8 @@ const Layout = () => {
     "/auth/callback",
     "/auth/confirm",
   ].includes(location.pathname);
+  const isImmersiveWizard =
+    location.pathname === "/onboarding" || location.pathname === "/request-event";
   const isLanding = location.pathname === "/";
   const isDiscoverPage = location.pathname === "/discover";
   const isEventsBrowse =
@@ -64,7 +66,8 @@ const Layout = () => {
     "/contact",
     "/feedback",
   ].includes(location.pathname);
-  const hideChrome = isAuthPage || isDiscoverPage || isLegalPage || isEventsBrowse;
+  const hideChrome =
+    isAuthPage || isDiscoverPage || isLegalPage || isEventsBrowse || isImmersiveWizard;
 
   return (
     <DiscoverUIProvider>

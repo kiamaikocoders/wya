@@ -1,0 +1,22 @@
+---
+description: Request Event UI — match Figma page request event (imagery, D+L)
+globs: src/pages/RequestEvent.tsx,src/components/admin/ProposalManagement.tsx,src/pages/AdminProposals.tsx
+alwaysApply: false
+---
+
+# Request Event (`/request-event`)
+
+## Source of truth
+
+Figma [9RMXZrqarVf6A3t4Lug70v](https://www.figma.com/design/9RMXZrqarVf6A3t4Lug70v) — page **`request event`**.
+
+Align with **Web Auth** + **web onboarding** (split hero + panel). Do **not** keep the old purple `bg-gradient-promo` / `white/5` card look.
+
+## Musts
+
+- Implement **both** Dark and Light via existing theme tokens.
+- Keep site **Nav + Footer** chrome (same as Events / Landing) — never ship the split hero/panel alone.
+- Use **real imagery** on each step (hero + optional cover upload preview) — not flat purple panels alone.
+- Keep the 4-step flow: Concept → Logistics → Collaboration → Review.
+- Pull layouts from Figma MCP before coding (artboard **1440×1298**: Nav 66 + content 900 + Footer 332).
+- This is proposal intake (`proposals` pending), not the admin create-event wizard.

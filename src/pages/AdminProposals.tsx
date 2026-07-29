@@ -9,7 +9,7 @@ const AdminProposals: React.FC = () => {
   return (
     <AdminPageShell
       title="Proposals"
-      subtitle="Review organizer event proposals"
+      subtitle="Open a proposal for the full pitch, submitter details, and decision emails"
       icon={FileText}
       actions={
         <AdminRefreshButton

@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.admin-invite-user]
 verify_jwt = false
+
+[functions.submit-proposal]
+verify_jwt = false
