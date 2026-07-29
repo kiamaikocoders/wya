@@ -12,31 +12,29 @@ import {
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
 import { AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
+import {
+  AdminProposalDetailDialog,
+  type AdminProposalDetail,
+} from '@/components/admin/AdminProposalDetailDialog';
 import { analyzeProposal } from '@/lib/admin-ai-analysis';
 import { useListPagination } from '@/hooks/use-list-pagination';
 
-type ProposalRow = {
-  id: number;
-  title: string;
-  category: string | null;
-  description: string | null;
-  location: string | null;
-  status: 'pending' | 'approved' | 'rejected';
-  submitted_by: string | null;
-  submitter_name?: string;
-};
+type ProposalRow = AdminProposalDetail;
 
 const ProposalManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [selected, setSelected] = useState<ProposalRow | null>(null);
 
   const proposalsQuery = useQuery({
     queryKey: ['admin-proposals-figma'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('proposals')
-        .select('id, title, category, description, location, status, submitted_by')
+        .select(
+          'id, title, category, description, location, status, submitted_by, submitted_on, contact_email, contact_phone, estimated_date, expected_attendees, budget, sponsor_needs, image_url, admin_notes'
+        )
         .order('id', { ascending: false });
       if (error) throw error;
 
@@ -52,45 +50,93 @@ const ProposalManagement: React.FC = () => {
         );
       }
 
-      return (data || []).map((p) => ({
-        ...p,
-        status: (p.status as ProposalRow['status']) || 'pending',
-        submitter_name: p.submitted_by ? nameMap.get(p.submitted_by) : 'Unknown',
-      })) as ProposalRow[];
+      return (data || []).map((p) => {
+        const isRegistered = Boolean(p.submitted_by);
+        return {
+          ...p,
+          status: (p.status as ProposalRow['status']) || 'pending',
+          is_registered: isRegistered,
+          submitter_name: isRegistered
+            ? nameMap.get(p.submitted_by!) || p.contact_email || 'Registered user'
+            : p.contact_email || 'Guest',
+        };
+      }) as ProposalRow[];
     },
   });
 
   const statusMutation = useMutation({
-    mutationFn: async ({ id, next, row }: { id: number; next: 'approved' | 'rejected'; row: ProposalRow }) => {
-      const { error } = await supabase.from('proposals').update({ status: next }).eq('id', id);
+    mutationFn: async ({
+      id,
+      next,
+      reason,
+    }: {
+      id: number;
+      next: 'approved' | 'rejected';
+      reason?: string;
+    }) => {
+      const note = reason?.trim() || null;
+      const { error } = await supabase
+        .from('proposals')
+        .update({
+          status: next,
+          ...(note ? { admin_notes: note } : {}),
+        })
+        .eq('id', id);
       if (error) throw error;
-      return { next, row };
-    },
-    onSuccess: async (_d, vars) => {
-      toast.success(vars.next === 'approved' ? 'Proposal approved' : 'Proposal rejected');
-      queryClient.invalidateQueries({ queryKey: ['admin-proposals-figma'] });
-      if (vars.row.submitted_by) {
-        try {
-          const { proposalNotifications } = await import('@/lib/proposal-notifications');
-          if (vars.next === 'approved') {
-            await proposalNotifications.notifyProposalApproved(
-              vars.row.submitted_by,
-              vars.row.title,
-              vars.row.id
-            );
-          } else {
-            await proposalNotifications.notifyProposalRejected(
-              vars.row.submitted_by,
-              vars.row.title,
-              vars.row.id
-            );
-          }
-        } catch (e) {
-          console.warn('Proposal email/notify failed', e);
-        }
+
+      const { data, error: notifyError } = await supabase.functions.invoke('submit-proposal', {
+        body: {
+          action: 'notify_decision',
+          proposal_id: id,
+          decision: next,
+          reason: note || undefined,
+        },
+      });
+
+      if (notifyError) {
+        throw new Error(
+          notifyError.message ||
+            'Decision saved, but the notification email failed to send.'
+        );
       }
+
+      const payload = data as {
+        error?: string;
+        emails_sent?: string[];
+        email_errors?: string[];
+      } | null;
+
+      if (payload?.error) {
+        throw new Error(payload.error);
+      }
+
+      return {
+        next,
+        emailsSent: payload?.emails_sent ?? [],
+        emailErrors: payload?.email_errors ?? [],
+      };
     },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (result) => {
+      const emailed =
+        result.emailsSent.length > 0
+          ? ` Email sent to ${result.emailsSent.join(', ')}.`
+          : '';
+      toast.success(
+        `${result.next === 'approved' ? 'Proposal approved' : 'Proposal rejected'}.${emailed}`
+      );
+      if (result.emailErrors.length) {
+        toast.warning(`Email issue: ${result.emailErrors.join('; ')}`);
+      }
+      if (!result.emailsSent.length && !result.emailErrors.length) {
+        toast.warning('Decision saved, but no decision email was sent. Check contact email / Resend.');
+      }
+      setSelected(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-proposals-figma'] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      queryClient.invalidateQueries({ queryKey: ['admin-proposals-figma'] });
+    },
   });
 
   const rows = useMemo(() => {
@@ -102,19 +148,21 @@ const ProposalManagement: React.FC = () => {
       return (
         p.title.toLowerCase().includes(q) ||
         (p.category || '').toLowerCase().includes(q) ||
-        (p.submitter_name || '').toLowerCase().includes(q)
+        (p.submitter_name || '').toLowerCase().includes(q) ||
+        (p.contact_email || '').toLowerCase().includes(q) ||
+        (p.location || '').toLowerCase().includes(q)
       );
     });
   }, [proposalsQuery.data, search, status]);
 
-  const {
-    page,
-    setPage,
-    pageItems,
-    totalPages,
-    total,
-    pageSize,
-  } = useListPagination(rows, { resetKey: `${search}|${status}` });
+  const { page, setPage, pageItems, totalPages, total, pageSize } = useListPagination(rows, {
+    resetKey: `${search}|${status}`,
+  });
+
+  const selectedLive =
+    selected && proposalsQuery.data
+      ? proposalsQuery.data.find((p) => p.id === selected.id) ?? selected
+      : selected;
 
   return (
     <div className="space-y-3.5">
@@ -132,7 +180,10 @@ const ProposalManagement: React.FC = () => {
         />
       </div>
 
-      <AdminSectionPanel title="Pending proposals">
+      <AdminSectionPanel
+        title="Event proposals"
+        description="Open a proposal to review the full pitch, who submitted it, and send a decision with feedback."
+      >
         {proposalsQuery.isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -145,9 +196,15 @@ const ProposalManagement: React.FC = () => {
               <div key={p.id} className="space-y-1.5">
                 <AdminListRow
                   title={p.title}
-                  meta={`${p.submitter_name || 'Organizer'} · ${p.category || 'Event'}`}
+                  meta={`${p.submitter_name || 'Organizer'} · ${p.category || 'Event'}${
+                    p.contact_email ? ` · ${p.contact_email}` : ''
+                  }${p.location ? ` · ${p.location}` : ''}`}
+                  onClick={() => setSelected(p)}
                   trailing={
                     <>
+                      <AdminStatusPill tone={p.is_registered ? 'success' : 'warning'}>
+                        {p.is_registered ? 'Registered' : 'Unregistered'}
+                      </AdminStatusPill>
                       <AdminStatusPill
                         tone={
                           p.status === 'approved'
@@ -163,24 +220,9 @@ const ProposalManagement: React.FC = () => {
                             ? 'Pending'
                             : 'Rejected'}
                       </AdminStatusPill>
-                      {p.status === 'pending' ? (
-                        <>
-                          <button
-                            type="button"
-                            className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground"
-                            onClick={() => statusMutation.mutate({ id: p.id, next: 'approved', row: p })}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                            onClick={() => statusMutation.mutate({ id: p.id, next: 'rejected', row: p })}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : null}
+                      <span className="hidden text-[11px] font-medium text-primary sm:inline">
+                        View
+                      </span>
                     </>
                   }
                 />
@@ -211,6 +253,19 @@ const ProposalManagement: React.FC = () => {
           </div>
         )}
       </AdminSectionPanel>
+
+      <AdminProposalDetailDialog
+        proposal={selectedLive}
+        open={!!selectedLive}
+        onClose={() => !statusMutation.isPending && setSelected(null)}
+        busy={statusMutation.isPending}
+        onApprove={(id, note) =>
+          statusMutation.mutate({ id, next: 'approved', reason: note })
+        }
+        onReject={(id, reason) =>
+          statusMutation.mutate({ id, next: 'rejected', reason })
+        }
+      />
     </div>
   );
 };

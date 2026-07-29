@@ -1,25 +1,19 @@
-
-import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, Calendar, CheckCircle, ChevronLeft, ChevronRight, Rocket, Upload, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import Logo from '@/components/ui/Logo';
+import { ModeToggle } from '@/components/ui/mode-toggle';
+import { GetAppModal } from '@/components/marketing/GetAppModal';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { useAuth } from '@/contexts/AuthContext';
-import Section from '@/components/ui/Section';
+import { useWebAuthTheme } from '@/components/auth/webAuthTheme';
+import { WebOnboardingSplitShell } from '@/components/onboarding/WebOnboardingSplitShell';
+import { CityChip } from '@/components/onboarding/CityChip';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { proposalNotifications } from '@/lib/proposal-notifications';
 import {
   prepareMediaForUpload,
   STORAGE_CACHE_CONTROL_IMMUTABLE,
@@ -39,32 +33,90 @@ interface EventProposal {
   imageUrl?: string;
 }
 
-const steps = [
+const stepMeta = [
   {
-    label: 'Concept',
-    description: 'Introduce your experience to the community.',
+    heroSrc: '/request-event/hero-concept.png',
+    headline: 'Pitch the night.',
+    subcopy:
+      'Tell WYA what you want to host. We review proposals before they go live — not an instant publish.',
+    panelTitle: 'Concept',
+    panelHint: 'Title, category, story — and a cover image for reviewers.',
   },
   {
-    label: 'Logistics',
-    description: 'Share timing, location, and headcount.',
+    heroSrc: '/request-event/hero-logistics.png',
+    headline: 'When & where.',
+    subcopy:
+      'Tentative date, venue or city, and expected headcount — enough for reviewers to plan.',
+    panelTitle: 'Logistics',
+    panelHint: 'Share timing, location, and scale.',
   },
   {
-    label: 'Collaboration',
-    description: 'Tell us who should partner with you.',
+    heroSrc: '/request-event/hero-collab.png',
+    headline: 'Who partners in?',
+    subcopy:
+      'Sponsors, brands, and how we reach you. Optional — but it speeds up review.',
+    panelTitle: 'Collaboration',
+    panelHint: 'Partnership needs and contact details.',
   },
   {
-    label: 'Review',
-    description: 'Confirm details before sending.',
+    heroSrc: '/request-event/hero-review.png',
+    headline: 'Ready to send.',
+    subcopy: 'Confirm the pitch. WYA reviews before anything goes live on the platform.',
+    panelTitle: 'Review & submit',
+    panelHint: '',
   },
-];
+] as const;
+
+const categoryOptions = [
+  'Music',
+  'Food & Drink',
+  'Arts & Culture',
+  'Nightlife',
+  'Business',
+  'Other',
+] as const;
+
+const pillPrimary =
+  'inline-flex items-center justify-center rounded-full bg-[#ff6b35] px-7 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[#ff6b35]/90 disabled:cursor-not-allowed disabled:opacity-70 min-h-[48px] touch-manipulation';
+
+function outlineNav(isDark: boolean) {
+  return cn(
+    'inline-flex items-center justify-center rounded-full border px-5 py-3 text-sm font-semibold transition-colors min-h-[44px] touch-manipulation',
+    isDark
+      ? 'border-[#21262d] text-[#e6edf3] hover:bg-white/5'
+      : 'border-[#d0d7de] text-[#0d1117] hover:bg-black/5'
+  );
+}
+
+function fieldLabel(isDark: boolean) {
+  return cn('text-[11px] font-semibold uppercase tracking-wide', isDark ? 'text-[#8b949e]' : 'text-[#5c6570]');
+}
+
+function SummaryChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex rounded-full bg-[rgba(255,107,53,0.15)] px-3 py-1.5 text-xs font-semibold text-[#ff6b35]">
+      {label}
+    </span>
+  );
+}
+
+function formatReviewDate(iso: string) {
+  if (!iso) return null;
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 const RequestEvent: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+  const t = useWebAuthTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [appModalOpen, setAppModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [proposal, setProposal] = useState<EventProposal>({
     title: '',
@@ -79,65 +131,48 @@ const RequestEvent: React.FC = () => {
     additionalInfo: '',
   });
 
-  const categories = useMemo(
-    () => [
-      'Music',
-      'Sports',
-      'Arts & Culture',
-      'Food & Drink',
-      'Business & Networking',
-      'Technology',
-      'Education',
-      'Community Service',
-      'Other',
-    ],
-    []
-  );
+  useEffect(() => {
+    if (user?.email) {
+      setProposal((prev) => (prev.contactEmail ? prev : { ...prev, contactEmail: user.email }));
+    }
+  }, [user?.email]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const meta = stepMeta[currentStep];
+  const inputClass = t.input;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProposal((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: keyof EventProposal, value: string) => {
     setProposal((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      // Get current user for user-specific folder
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) throw new Error('You must be logged in to upload images');
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
       const prepared = await prepareMediaForUpload(file, 'proposal');
       const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const bucket = 'event-images';
-      const folder = `proposals/${authUser.id}`; // Use user-specific folder
+      const folder = authUser ? `proposals/${authUser.id}` : 'proposals/guest';
       const filePath = `${folder}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, prepared, {
-          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-          upsert: false
-        });
+      const { error: uploadError } = await supabase.storage.from('event-images').upload(filePath, prepared, {
+        cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
+        upsert: false,
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
+      const { data } = supabase.storage.from('event-images').getPublicUrl(filePath);
       setProposal((prev) => ({ ...prev, imageUrl: data.publicUrl }));
       setPreviewUrl(data.publicUrl);
       toast.success('Image uploaded successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image');
+      const message = error instanceof Error ? error.message : 'Failed to upload image';
+      toast.error(message);
     } finally {
       setIsUploading(false);
     }
@@ -146,35 +181,33 @@ const RequestEvent: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
       return;
     }
-
-    // Create preview
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
-
-    // Upload file
-    handleImageUpload(file);
+    void handleImageUpload(file);
   };
 
   const removeImage = () => {
     setProposal((prev) => ({ ...prev, imageUrl: '' }));
     setPreviewUrl(null);
-  };
-
-  const goToStep = (step: number) => {
-    if (step < 0 || step > steps.length - 1) return;
-    setCurrentStep(step);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleNext = () => {
     if (currentStep === 0) {
       if (!proposal.title || !proposal.description || !proposal.category) {
         toast.error('Add a title, description, and category to continue.');
+        return;
+      }
+      if (!proposal.imageUrl || isUploading) {
+        toast.error(
+          isUploading
+            ? 'Wait for the cover image to finish uploading.'
+            : 'Add a cover image before continuing.'
+        );
         return;
       }
     }
@@ -185,13 +218,13 @@ const RequestEvent: React.FC = () => {
       }
     }
     if (currentStep === 2) {
-      if (!proposal.contactEmail) {
-        toast.error('Enter a contact email so we can reach you.');
+      const email = proposal.contactEmail.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast.error('Enter a valid contact email so we can send you updates.');
         return;
       }
     }
-
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev) => Math.min(prev + 1, stepMeta.length - 1));
   };
 
   const handleBack = () => {
@@ -204,291 +237,248 @@ const RequestEvent: React.FC = () => {
       setCurrentStep(0);
       return;
     }
+    if (!proposal.imageUrl) {
+      toast.error('A cover image is required before submitting.');
+      setCurrentStep(0);
+      return;
+    }
+    const contactEmail = proposal.contactEmail.trim().toLowerCase();
+    if (!contactEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      toast.error('A valid contact email is required for feedback.');
+      setCurrentStep(2);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      // Get current authenticated user from Supabase (required for RLS)
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authUser) {
-        throw new Error('You must be logged in to submit a proposal.');
-      }
+      const descriptionWithContext = proposal.additionalInfo
+        ? `${proposal.description}\n\n---\nAdditional context:\n${proposal.additionalInfo}`
+        : proposal.description;
 
-      // Insert proposal into database
-      const { data, error } = await supabase
-        .from('proposals')
-        .insert({
+      const { data, error } = await supabase.functions.invoke('submit-proposal', {
+        body: {
+          action: 'submit',
           title: proposal.title,
-          description: proposal.description,
+          description: descriptionWithContext,
           category: proposal.category,
           estimated_date: proposal.estimatedDate || null,
           location: proposal.location || null,
-          expected_attendees: proposal.expectedAttendees ? parseInt(proposal.expectedAttendees, 10) : null,
-          budget: null,
+          expected_attendees: proposal.expectedAttendees || null,
           sponsor_needs: proposal.sponsorNeeds || null,
-          image_url: proposal.imageUrl || null,
-          contact_email: proposal.contactEmail || null,
+          image_url: proposal.imageUrl,
+          contact_email: contactEmail,
           contact_phone: proposal.contactPhone || null,
-          submitted_by: authUser.id, // Use auth.uid() directly for RLS compliance
-          status: 'pending',
-        })
-        .select()
-        .single();
+        },
+      });
 
-      if (error) {
-        throw error;
-      }
-      // Send notification to user about proposal submission
-      if (data && authUser) {
-        try {
-          await proposalNotifications.notifyProposalSubmitted(
-            authUser.id,
-            proposal.title,
-            data.id
-          );
-        } catch (notifError) {
-          console.warn('Failed to send proposal submission notification:', notifError);
-        }
-      }
+      if (error) throw error;
+      const payload = data as { ok?: boolean; error?: string; emails_sent?: string[] } | null;
+      if (payload?.error) throw new Error(payload.error);
+      if (!payload?.ok) throw new Error('Could not submit proposal');
 
-      toast.success('Proposal sent! We’ll review and follow up shortly.');
+      toast.success(
+        payload.emails_sent?.length
+          ? 'Proposal sent! Check your email for a confirmation.'
+          : 'Proposal sent! We’ll review and follow up shortly.'
+      );
       navigate(isAuthenticated ? '/home' : '/');
     } catch (error) {
       console.error('Error submitting proposal:', error);
-      toast.error('Failed to submit proposal. Please try again.');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to submit proposal. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const StepCard = ({
-    step,
-    title,
-    description,
-    isActive,
-    isCompleted,
-  }: {
-    step: number;
-    title: string;
-    description: string;
-    isActive: boolean;
-    isCompleted: boolean;
-  }) => (
-    <button
-      type="button"
-      onClick={() => goToStep(step)}
-      className={cn(
-        'flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-kenya-orange/50 hover:bg-white/10',
-        isActive && 'border-kenya-orange/70 bg-white/10 shadow-[0_0_25px_rgba(255,128,0,0.25)]',
-        isCompleted && !isActive && 'border-kenya-orange/35'
-      )}
-    >
-      <span
-        className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white',
-          isCompleted && 'bg-gradient-accent text-white'
-        )}
-      >
-        {isCompleted ? <CheckCircle className="h-4 w-4" /> : step + 1}
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-semibold text-white">{title}</p>
-        <p className="text-xs text-white/60">{description}</p>
-      </div>
-    </button>
-  );
+  const coverSrc = previewUrl || '/request-event/cover-placeholder.png';
+  const reviewBanner = previewUrl || '/request-event/review-banner.png';
+
+  const reviewChips = useMemo(() => {
+    const chips: string[] = [];
+    const dateLabel = formatReviewDate(proposal.estimatedDate);
+    if (dateLabel) chips.push(dateLabel);
+    if (proposal.location) chips.push(proposal.location);
+    if (proposal.expectedAttendees) chips.push(`~${proposal.expectedAttendees} guests`);
+    if (proposal.contactEmail) chips.push(proposal.contactEmail);
+    return chips;
+  }, [proposal]);
 
   return (
-    <div className="min-h-screen bg-gradient-promo pb-16">
-      <Section
-        title="Bring a new experience to life"
-        subtitle="Share the story behind your idea. We’ll help with visibility, partnerships, and insights along the way."
-        action={
-          <Button variant="outline" onClick={() => navigate('/events')}>
-            Explore live experiences
-          </Button>
-        }
+    <div className={cn('flex min-h-screen flex-col', t.pageBg)}>
+      <header
+        className={cn(
+          'sticky top-0 z-40 flex h-[66px] items-center justify-between border-b px-4 py-4 sm:px-8',
+          t.isDark ? 'border-[#21262d] bg-[#0d1117]' : 'border-[#e8ecf0] bg-white'
+        )}
       >
-        <div className="grid gap-6 md:grid-cols-[0.32fr_0.68fr]">
-          <div className="space-y-3">
-            {steps.map((step, index) => (
-              <StepCard
-                key={step.label}
-                step={index}
-                title={step.label}
-                description={step.description}
-                isActive={index === currentStep}
-                isCompleted={index < currentStep}
-              />
-            ))}
-            <Card className="border-white/10 bg-white/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm text-white/80">
-                  <Rocket className="h-4 w-4 text-gradient-orange-accent" />
-                  Proposal snapshot
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-white/70">
-                <p>
-                  <span className="font-semibold text-white/85">Title:</span>{' '}
-                  {proposal.title || '—'}
-                </p>
-                <p>
-                  <span className="font-semibold text-white/85">Category:</span>{' '}
-                  {proposal.category || '—'}
-                </p>
-                <p>
-                  <span className="font-semibold text-white/85">Target date:</span>{' '}
-                  {proposal.estimatedDate || '—'}
-                </p>
-                <p>
-                  <span className="font-semibold text-white/85">Location:</span>{' '}
-                  {proposal.location || '—'}
-                </p>
-                <p>
-                  <span className="font-semibold text-white/85">Contact:</span>{' '}
-                  {proposal.contactEmail || proposal.contactPhone || '—'}
-                </p>
-              </CardContent>
-            </Card>
+        <div className="flex items-center gap-3">
+          <Logo
+            href="/"
+            size="sm"
+            className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0"
+          />
+          <span className="text-[13px] font-semibold text-[#ff6b35]">Request event</span>
         </div>
-        
-          <Card className="border-white/10 bg-white/5">
-            <CardHeader className="space-y-1">
-              <div className="flex items-center gap-3 text-sm text-white/60">
-                <Calendar className="h-4 w-4 text-gradient-orange-accent" />
-                Step {currentStep + 1} of {steps.length}
-              </div>
-              <CardTitle className="text-2xl text-white">
-                {steps[currentStep].label}
-              </CardTitle>
-              <p className="text-sm text-white/65">
-                {steps[currentStep].description}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {currentStep === 0 && (
-                <div className="space-y-4">
-            <div className="space-y-2">
-                    <label htmlFor="title" className="text-sm font-medium text-white">
-                      Event title <span className="text-gradient-orange-accent">*</span>
-              </label>
-              <Input
-                id="title"
-                name="title"
-                value={proposal.title}
-                onChange={handleChange}
-                      placeholder="Rooftop Sundowner Nairobi"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-                    <label htmlFor="category" className="text-sm font-medium text-white">
-                      Category <span className="text-gradient-orange-accent">*</span>
-              </label>
-              <Select
-                value={proposal.category}
-                      onValueChange={(value) =>
-                        handleSelectChange('category', value)
-                      }
-              >
-                <SelectTrigger>
-                        <SelectValue placeholder="Choose a category" />
-                </SelectTrigger>
-                <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="flex items-center gap-2.5">
+          <ModeToggle />
+          <button
+            type="button"
+            onClick={() => setAppModalOpen(true)}
+            className="rounded-full bg-[#ff6b35] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ff6b35]/90"
+          >
+            Get the app
+          </button>
+        </div>
+      </header>
+
+      <WebOnboardingSplitShell
+        heroSrc={meta.heroSrc}
+        step={currentStep + 1}
+        stepBadge={`PROPOSAL · STEP ${currentStep + 1} OF 4`}
+        headline={meta.headline}
+        subcopy={meta.subcopy}
+        embedded
+      >
+      {currentStep === 0 ? (
+        <>
+          <div className="space-y-1.5">
+            <h2 className={cn('text-[28px] font-bold leading-tight', t.heading)}>{meta.panelTitle}</h2>
+            <p className={cn('text-sm', t.muted)}>{meta.panelHint}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="title" className={fieldLabel(t.isDark)}>
+              Event title *
+            </label>
+            <Input
+              id="title"
+              name="title"
+              value={proposal.title}
+              onChange={handleChange}
+              placeholder="Rooftop Sundowner Nairobi"
+              className={cn(inputClass, 'h-11 rounded-xl')}
+            />
+          </div>
+
           <div className="space-y-2">
-                    <label
-                      htmlFor="description"
-                      className="text-sm font-medium text-white"
-                    >
-                      Event description <span className="text-gradient-orange-accent">*</span>
+            <p className={fieldLabel(t.isDark)}>Category *</p>
+            <div className="flex flex-wrap gap-2">
+              {categoryOptions.map((cat) => (
+                <CityChip
+                  key={cat}
+                  label={cat}
+                  selected={proposal.category === cat}
+                  onClick={() => setProposal((prev) => ({ ...prev, category: cat }))}
+                  isDark={t.isDark}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="description" className={fieldLabel(t.isDark)}>
+              Description *
             </label>
             <Textarea
               id="description"
               name="description"
               value={proposal.description}
               onChange={handleChange}
-                      placeholder="Share the story, target audience, and desired outcomes."
-              rows={5}
-              required
+              placeholder="Share the story, audience, and vibe…"
+              rows={4}
+              className={cn(
+                'min-h-[88px] rounded-xl border px-3.5 py-3 text-sm',
+                t.isDark
+                  ? 'border-[#21262d] bg-[#0d1117] text-[#e6edf3] placeholder:text-[#8b949e]'
+                  : 'border-[#d0d7de] bg-white text-[#0d1117] placeholder:text-[#8b949e]'
+              )}
             />
           </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-white">
-              Event Image (Optional)
-            </label>
-            {previewUrl ? (
-              <div className="relative">
-                <img 
-                  src={previewUrl} 
-                  alt="Preview" 
-                  className="w-full h-48 object-cover rounded-lg border border-white/10"
-                />
-                <Button
+
+          <div className="flex flex-wrap items-center gap-4">
+            <img
+              src={coverSrc}
+              alt=""
+              className="h-[100px] w-[160px] rounded-xl object-cover"
+            />
+            <div className="space-y-1.5">
+              <p className={cn('text-sm font-semibold', t.heading)}>Cover image *</p>
+              <p className={cn('text-xs', t.muted)}>PNG or JPG · required for review</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
                   type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={removeImage}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center">
-                <input
-                  type="file"
-                  id="image-upload"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
+                  onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="cursor-pointer flex flex-col items-center gap-2"
+                  className={cn(
+                    'rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors',
+                    t.isDark
+                      ? 'border-[#21262d] bg-[#161b22] text-[#e6edf3] hover:bg-white/5'
+                      : 'border-[#d0d7de] bg-[#f6f8fa] text-[#0d1117] hover:bg-black/5'
+                  )}
                 >
                   {isUploading ? (
-                    <>
-                      <Loader2 className="h-8 w-8 animate-spin text-gradient-orange-accent" />
-                      <span className="text-sm text-white/60">Uploading...</span>
-                    </>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 className="size-3.5 animate-spin" /> Uploading…
+                    </span>
+                  ) : previewUrl ? (
+                    'Replace photo'
                   ) : (
-                    <>
-                      <Upload className="h-8 w-8 text-gradient-orange-accent" />
-                      <span className="text-sm text-white/60">
-                        Click to upload an image
-                      </span>
-                      <span className="text-xs text-white/40">
-                        PNG, JPG up to 10MB
-                      </span>
-                    </>
+                    'Add photo'
                   )}
-                </label>
+                </button>
+                {previewUrl && (
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className={cn('rounded-full px-3.5 py-2 text-xs font-semibold', t.muted)}
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </div>
-                </div>
-              )}
 
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-                      <label
-                        htmlFor="estimatedDate"
-                        className="text-sm font-medium text-white"
-                      >
-                        Estimated date <span className="text-gradient-orange-accent">*</span>
+          <div className="mt-auto flex justify-end pt-2">
+            <button type="button" onClick={handleNext} className={pillPrimary}>
+              Continue
+            </button>
+          </div>
+        </>
+      ) : currentStep === 1 ? (
+        <>
+          <div className="space-y-1.5">
+            <h2 className={cn('text-[28px] font-bold leading-tight', t.heading)}>{meta.panelTitle}</h2>
+            <p className={cn('text-sm', t.muted)}>{meta.panelHint}</p>
+          </div>
+
+          <div className="relative h-[180px] w-full overflow-hidden rounded-[18px]">
+            <img
+              src="/request-event/logistics-vibe.png"
+              alt=""
+              className="absolute inset-0 size-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[rgba(13,17,23,0.45)]" />
+            <div className="absolute bottom-5 left-6 space-y-1">
+              <p className="text-xs font-semibold text-[#ff6b35]">Suggested vibe</p>
+              <p className="text-lg font-bold text-white">Indoor loft · Westlands-ready</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="w-full space-y-1.5 sm:max-w-[240px]">
+              <label htmlFor="estimatedDate" className={fieldLabel(t.isDark)}>
+                Estimated date *
               </label>
               <Input
                 id="estimatedDate"
@@ -496,70 +486,78 @@ const RequestEvent: React.FC = () => {
                 type="date"
                 value={proposal.estimatedDate}
                 onChange={handleChange}
+                className={cn(inputClass, 'h-11 rounded-xl')}
               />
             </div>
-            <div className="space-y-2">
-                      <label
-                        htmlFor="location"
-                        className="text-sm font-medium text-white"
-                      >
-                        Location <span className="text-gradient-orange-accent">*</span>
+            <div className="flex-1 space-y-1.5">
+              <label htmlFor="location" className={fieldLabel(t.isDark)}>
+                Location *
               </label>
               <Input
                 id="location"
                 name="location"
                 value={proposal.location}
                 onChange={handleChange}
-                        placeholder="Venue, city, or concept"
+                placeholder="Venue, city, or concept"
+                className={cn(inputClass, 'h-11 rounded-xl')}
               />
             </div>
           </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-                      <label
-                        htmlFor="expectedAttendees"
-                        className="text-sm font-medium text-white"
-                      >
-                        Expected attendees
-              </label>
-              <Input
-                id="expectedAttendees"
-                name="expectedAttendees"
-                type="number"
-                value={proposal.expectedAttendees}
-                onChange={handleChange}
-                        placeholder="e.g. 150"
-              />
-            </div>
-          </div>
-                </div>
-              )}
 
-              {currentStep === 2 && (
-                <div className="space-y-4">
-          <div className="space-y-2">
-                    <label
-                      htmlFor="sponsorNeeds"
-                      className="text-sm font-medium text-white"
-                    >
-                      Sponsorship & partnership needs
+          <div className="w-full max-w-[240px] space-y-1.5">
+            <label htmlFor="expectedAttendees" className={fieldLabel(t.isDark)}>
+              Expected attendees
+            </label>
+            <Input
+              id="expectedAttendees"
+              name="expectedAttendees"
+              value={proposal.expectedAttendees}
+              onChange={handleChange}
+              placeholder="e.g. 150"
+              className={cn(inputClass, 'h-11 rounded-xl')}
+            />
+          </div>
+
+          <div className="mt-auto flex items-center justify-between gap-4 pt-2">
+            <button type="button" onClick={handleBack} className={outlineNav(t.isDark)}>
+              Back
+            </button>
+            <button type="button" onClick={handleNext} className={pillPrimary}>
+              Continue
+            </button>
+          </div>
+        </>
+      ) : currentStep === 2 ? (
+        <>
+          <div className="space-y-1.5">
+            <h2 className={cn('text-[28px] font-bold leading-tight', t.heading)}>{meta.panelTitle}</h2>
+            <p className={cn('text-sm', t.muted)}>{meta.panelHint}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="sponsorNeeds" className={fieldLabel(t.isDark)}>
+              Sponsorship & partner needs
             </label>
             <Textarea
               id="sponsorNeeds"
               name="sponsorNeeds"
               value={proposal.sponsorNeeds}
               onChange={handleChange}
-                      placeholder="Outline sponsor tiers, preferred partners, or unique requests."
-                      rows={4}
+              placeholder="Outline tiers, preferred brands, or unique asks…"
+              rows={3}
+              className={cn(
+                'min-h-[88px] rounded-xl border px-3.5 py-3 text-sm',
+                t.isDark
+                  ? 'border-[#21262d] bg-[#0d1117] text-[#e6edf3] placeholder:text-[#8b949e]'
+                  : 'border-[#d0d7de] bg-white text-[#0d1117] placeholder:text-[#8b949e]'
+              )}
             />
           </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-                      <label
-                        htmlFor="contactEmail"
-                        className="text-sm font-medium text-white"
-                      >
-                        Contact email <span className="text-gradient-orange-accent">*</span>
+
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex-1 space-y-1.5">
+              <label htmlFor="contactEmail" className={fieldLabel(t.isDark)}>
+                Contact email *
               </label>
               <Input
                 id="contactEmail"
@@ -567,144 +565,150 @@ const RequestEvent: React.FC = () => {
                 type="email"
                 value={proposal.contactEmail}
                 onChange={handleChange}
-                        placeholder="hello@yourbrand.com"
-                        required
+                placeholder="hello@yourbrand.com"
+                className={cn(inputClass, 'h-11 rounded-xl')}
               />
             </div>
-            <div className="space-y-2">
-                      <label
-                        htmlFor="contactPhone"
-                        className="text-sm font-medium text-white"
-                      >
-                        Contact phone
+            <div className="flex-1 space-y-1.5">
+              <label htmlFor="contactPhone" className={fieldLabel(t.isDark)}>
+                Contact phone
               </label>
               <Input
                 id="contactPhone"
                 name="contactPhone"
                 value={proposal.contactPhone}
                 onChange={handleChange}
-                        placeholder="+254 700 000000"
+                placeholder="+254 700 000000"
+                className={cn(inputClass, 'h-11 rounded-xl')}
               />
             </div>
           </div>
-          <div className="space-y-2">
-                    <label
-                      htmlFor="additionalInfo"
-                      className="text-sm font-medium text-white"
-                    >
-                      Additional context
+
+          <div className="space-y-1.5">
+            <label htmlFor="additionalInfo" className={fieldLabel(t.isDark)}>
+              Additional context
             </label>
             <Textarea
               id="additionalInfo"
               name="additionalInfo"
               value={proposal.additionalInfo}
               onChange={handleChange}
-                      placeholder="Anything else we should know—timelines, collaborators, or inspiration?"
-                      rows={4}
+              placeholder="Timelines, collaborators, inspiration…"
+              rows={3}
+              className={cn(
+                'min-h-[88px] rounded-xl border px-3.5 py-3 text-sm',
+                t.isDark
+                  ? 'border-[#21262d] bg-[#0d1117] text-[#e6edf3] placeholder:text-[#8b949e]'
+                  : 'border-[#d0d7de] bg-white text-[#0d1117] placeholder:text-[#8b949e]'
+              )}
             />
           </div>
-                </div>
-              )}
 
-              {currentStep === 3 && (
-                <div className="space-y-4 text-sm text-white/70">
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-                      Overview
-                    </p>
-                    <p className="mt-3 text-lg font-semibold text-white">
-                      {proposal.title || 'Untitled experience'}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/60">
-                      <Badge className="bg-white/10 text-white/70">
-                        {proposal.category || 'No category'}
-                      </Badge>
-                      <Badge className="bg-white/10 text-white/70">
-                        {proposal.estimatedDate || 'Date TBD'}
-                      </Badge>
-                      <Badge className="bg-white/10 text-white/70">
-                        {proposal.location || 'Location TBD'}
-                      </Badge>
-                    </div>
-                    <p className="mt-4 whitespace-pre-wrap text-sm text-white/80">
-                      {proposal.description}
-                    </p>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-                        Headcount
-                      </p>
-                      <p className="mt-3 text-lg font-semibold text-white">
-                        {proposal.expectedAttendees || 'Not specified'}
-                      </p>
-                      <p className="text-xs text-white/60">
-                        Make sure capacity aligns with your venue.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-                      Partnerships
-                    </p>
-                    <p className="mt-3 whitespace-pre-wrap">
-                      {proposal.sponsorNeeds || 'No sponsorship requests listed.'}
-                    </p>
-                  </div>
-                  <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/40">
-                      Contact
-                    </p>
-                    <div className="mt-3 space-y-1">
-                      <p>{proposal.contactEmail}</p>
-                      {proposal.contactPhone && <p>{proposal.contactPhone}</p>}
-                    </div>
-                  </div>
+          <div className="rounded-xl bg-[rgba(255,107,53,0.12)] px-4 py-3">
+            <p className="text-[13px] font-medium text-[#ff6b35]">
+              Tip: clear contact details = faster follow-up from WYA.
+            </p>
+          </div>
+
+          <div className="mt-auto flex items-center justify-between gap-4 pt-2">
+            <button type="button" onClick={handleBack} className={outlineNav(t.isDark)}>
+              Back
+            </button>
+            <button type="button" onClick={handleNext} className={pillPrimary}>
+              Continue
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2 className={cn('text-[28px] font-bold leading-tight', t.heading)}>{meta.panelTitle}</h2>
+
+          <div
+            className={cn(
+              'overflow-hidden rounded-[20px] border',
+              t.isDark ? 'border-[#21262d] bg-[#161b22]' : 'border-[#e8ecf0] bg-[#f6f8fa]'
+            )}
+          >
+            <div className="relative h-[150px] w-full overflow-hidden">
+              <img src={reviewBanner} alt="" className="absolute inset-0 size-full object-cover" />
+              <div className="absolute inset-0 bg-[rgba(13,17,23,0.35)]" />
+              <div className="absolute bottom-5 left-6 space-y-1">
+                <p className="text-xs font-semibold text-[#ff6b35]">
+                  {proposal.category || 'Category'}
+                </p>
+                <p className="text-[22px] font-bold text-white">
+                  {proposal.title || 'Untitled proposal'}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3.5 px-6 pb-6 pt-5">
+              <p className={cn('text-sm leading-relaxed', t.muted)}>
+                {proposal.description || 'No description yet.'}
+              </p>
+              {reviewChips.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {reviewChips.map((chip) => (
+                    <SummaryChip key={chip} label={chip} />
+                  ))}
                 </div>
               )}
-            </CardContent>
-            <div className="flex items-center justify-between border-t border-white/10 bg-white/5 p-6">
-              <div className="flex items-center gap-2 text-xs text-white/50">
-                <Calendar className="h-4 w-4" />
-                {currentStep === steps.length - 1
-                  ? 'Ready to send for review.'
-                  : 'Save progress automatically as you go.'}
-              </div>
-              <div className="flex items-center gap-3">
-            <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBack}
-                  disabled={currentStep === 0}
-            >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  Back
-            </Button>
-                {currentStep === steps.length - 1 ? (
-                  <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting
-                </>
-              ) : (
-                      <>
-                        Submit proposal
-                        <Rocket className="ml-2 h-4 w-4" />
-                      </>
+              {(proposal.sponsorNeeds || proposal.additionalInfo) && (
+                <div className="space-y-1.5">
+                  <p className={cn('text-[11px] font-semibold uppercase', t.muted)}>Partnerships</p>
+                  <p className={cn('text-[13px]', t.heading)}>
+                    {proposal.sponsorNeeds || proposal.additionalInfo}
+                  </p>
+                </div>
               )}
-            </Button>
-                ) : (
-                  <Button onClick={handleNext}>
-                    Continue
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+            </div>
           </div>
-          </Card>
-      </div>
-      </Section>
+
+          <div
+            className={cn(
+              'rounded-xl border px-4 py-3',
+              t.isDark ? 'border-[#21262d] bg-[#161b22]' : 'border-[#e8ecf0] bg-[#f6f8fa]'
+            )}
+          >
+            <p className={cn('text-[13px]', t.muted)}>
+              Status after submit: Pending review · you will get a notification when WYA decides.
+            </p>
+          </div>
+
+          {!isAuthenticated && (
+            <p className={cn('text-sm', t.muted)}>
+              No account needed — we’ll email updates to your contact address. Already on WYA?{' '}
+              <Link to="/login" state={{ from: '/request-event' }} className="font-semibold text-[#ff6b35]">
+                Log in
+              </Link>{' '}
+              so we can link this to your profile.
+            </p>
+          )}
+
+          <div className="mt-auto flex items-center justify-between gap-4 pt-2">
+            <button type="button" onClick={handleBack} className={outlineNav(t.isDark)}>
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitting}
+              className={pillPrimary}
+            >
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" /> Submitting…
+                </span>
+              ) : (
+                'Submit proposal'
+              )}
+            </button>
+          </div>
+        </>
+      )}
+      </WebOnboardingSplitShell>
+
+      <SiteFooter className="mt-auto shrink-0" />
+      <GetAppModal open={appModalOpen} onClose={() => setAppModalOpen(false)} />
     </div>
   );
 };

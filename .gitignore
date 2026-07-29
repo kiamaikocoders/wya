@@ -12,7 +12,9 @@ dist
 .env
 mcp-config.env
 supabase/.env.secrets.local
+.tmp_*
 .tmp_mcp_deploy_ghost.json
+supabase/.temp/
 .deploy_one_line.json
 mcp-deploy-process-ghost-actions.json
 .cursor_mcp_deploy_payload.txt

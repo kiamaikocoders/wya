@@ -122,10 +122,6 @@ const Landing = () => {
     }
   }, [isAuthenticated, loading, navigate]);
 
-  const scrollToHow = () => {
-    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const card = isDark
     ? 'border-[#333b47] bg-[#1a1f26]'
     : 'border-[#e8ecf0] bg-white shadow-[0px_14px_32px_0px_rgba(0,0,0,0.1)]';
@@ -188,13 +184,12 @@ const Landing = () => {
             >
               Browse live events
             </Link>
-            <button
-              type="button"
-              onClick={scrollToHow}
+            <Link
+              to="/request-event"
               className="rounded-[14px] border border-white/40 px-[22px] py-3.5 text-[15px] font-semibold text-white hover:bg-white/10"
             >
-              See how it works
-            </button>
+              Request event
+            </Link>
           </div>
         </div>
 

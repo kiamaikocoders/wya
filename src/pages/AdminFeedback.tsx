@@ -9,7 +9,7 @@ const AdminFeedback: React.FC = () => {
   return (
     <AdminPageShell
       title="App feedback"
-      subtitle="Messages from signed-in users (not event surveys)."
+      subtitle="Open a message for the full note, who sent it, and status actions"
       icon={Inbox}
       actions={
         <AdminRefreshButton

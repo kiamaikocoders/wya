@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
@@ -11,17 +11,27 @@ import {
   AdminStatusPill,
 } from '@/components/admin/AdminPageShell';
 import { AdminAiInsightPanel, AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
+import { AdminFeedbackDetailDialog } from '@/components/admin/AdminFeedbackDetailDialog';
 import { clusterFeedbackThemes, draftFeedbackReply } from '@/lib/admin-ai-analysis';
 import {
   feedbackService,
   FEEDBACK_STATUSES,
+  type AppFeedbackWithProfile,
   type FeedbackStatus,
 } from '@/lib/feedback-service';
 import { useListPagination } from '@/hooks/use-list-pagination';
 
+const CATEGORY_SHORT: Record<string, string> = {
+  bug: 'Bug',
+  idea: 'Idea',
+  general: 'General',
+  other: 'Other',
+};
+
 const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FeedbackStatus | 'all'>('all');
+  const [selected, setSelected] = useState<AppFeedbackWithProfile | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['admin-app-feedback', filter],
@@ -40,9 +50,10 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: FeedbackStatus }) =>
       feedbackService.updateStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       toast.success('Status updated');
       queryClient.invalidateQueries({ queryKey: ['admin-app-feedback'] });
+      setSelected((prev) => (prev && prev.id === vars.id ? { ...prev, status: vars.status } : prev));
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -51,10 +62,18 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
     mutationFn: (id: string) => feedbackService.remove(id),
     onSuccess: () => {
       toast.success('Feedback removed');
+      setSelected(null);
       queryClient.invalidateQueries({ queryKey: ['admin-app-feedback'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const selectedLive = useMemo(() => {
+    if (!selected) return null;
+    return items.find((i) => i.id === selected.id) ?? selected;
+  }, [items, selected]);
+
+  const busy = updateMutation.isPending || deleteMutation.isPending;
 
   return (
     <div className="space-y-3.5">
@@ -90,7 +109,10 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
         }}
       />
 
-      <AdminSectionPanel title="Messages">
+      <AdminSectionPanel
+        title="Messages"
+        description="Open a message to read the full feedback and update status."
+      >
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -115,6 +137,7 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
                   <AdminListRow
                     title={name}
                     meta={`${item.message.slice(0, 120)}${item.message.length > 120 ? '…' : ''} · ${item.page_path || '/'} · ${when}`}
+                    onClick={() => setSelected(item)}
                     trailing={
                       <>
                         <AdminStatusPill
@@ -128,23 +151,12 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
                         >
                           {item.status}
                         </AdminStatusPill>
-                        <AdminStatusPill tone="muted">{item.category}</AdminStatusPill>
-                        {item.status === 'new' ? (
-                          <button
-                            type="button"
-                            className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium"
-                            onClick={() => updateMutation.mutate({ id: item.id, status: 'read' })}
-                          >
-                            Mark read
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-destructive"
-                          onClick={() => deleteMutation.mutate(item.id)}
-                        >
-                          Delete
-                        </button>
+                        <AdminStatusPill tone="muted">
+                          {CATEGORY_SHORT[item.category] || item.category}
+                        </AdminStatusPill>
+                        <span className="hidden text-[11px] font-medium text-primary sm:inline">
+                          View
+                        </span>
                       </>
                     }
                   />
@@ -173,6 +185,19 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
           </div>
         )}
       </AdminSectionPanel>
+
+      <AdminFeedbackDetailDialog
+        feedback={selectedLive}
+        open={!!selectedLive}
+        onClose={() => !busy && setSelected(null)}
+        busy={busy}
+        onUpdateStatus={(id, status) => updateMutation.mutate({ id, status })}
+        onDelete={(id) => {
+          if (window.confirm('Delete this feedback permanently?')) {
+            deleteMutation.mutate(id);
+          }
+        }}
+      />
     </div>
   );
 };
