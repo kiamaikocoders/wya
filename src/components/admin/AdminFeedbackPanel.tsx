@@ -53,6 +53,7 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
     onSuccess: (_d, vars) => {
       toast.success('Status updated');
       queryClient.invalidateQueries({ queryKey: ['admin-app-feedback'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-app-feedback-new-count'] });
       setSelected((prev) => (prev && prev.id === vars.id ? { ...prev, status: vars.status } : prev));
     },
     onError: (err: Error) => toast.error(err.message),
@@ -64,6 +65,7 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
       toast.success('Feedback removed');
       setSelected(null);
       queryClient.invalidateQueries({ queryKey: ['admin-app-feedback'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-app-feedback-new-count'] });
     },
     onError: (err: Error) => toast.error(err.message),
   });

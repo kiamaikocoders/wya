@@ -1,0 +1,37 @@
+---
+description: Figma-led Admin Atlas maps page (Dark + Light)
+globs: src/components/admin/AdminAtlas.tsx,src/pages/AdminMaps.tsx,src/lib/admin-atlas.ts
+alwaysApply: false
+---
+
+# Admin Atlas (`/admin/maps`)
+
+When editing Admin Atlas UI, **Figma is the source of truth**. Do not invent a new layout.
+
+## Figma
+
+File: [9RMXZrqarVf6A3t4Lug70v](https://www.figma.com/design/9RMXZrqarVf6A3t4Lug70v) — page **`maps`**.
+
+| Screen | Node |
+|--------|------|
+| A — Command Atlas / Dark | `635:171` |
+| A — Command Atlas / Light | `635:463` |
+| B — Layer Rail / Dark | `635:755` (alt concept; not shipped) |
+| B — Layer Rail / Light | `635:1031` |
+
+**Shipped concept:** A — Command Tabs (Analytics-style chrome).
+
+## Must match
+
+- Title **Admin Atlas** + subtitle *Supply · demand · activity on the map — not live tracking*
+- Actions: Export · Refresh · Share view
+- Period pills + City / Status / Category / Layer filters
+- Module tabs: Overview · Events · Signups · Heat · Coverage · Ops (orange border active, not filled pills)
+- KPI row: Live/upcoming · Pending (+ urgent) · Signup clusters · Coverage gaps
+- Map: coloured pins, heat halos, signup clusters, legend, ops badges, growth timeline scrubber
+- Theme via existing admin tokens — never hardcode dark-only
+
+## Product constraints
+
+- Aggregated ops only — **no live user trails**
+- Reuse Mapbox + `AdminPageShell` / analytics period chrome

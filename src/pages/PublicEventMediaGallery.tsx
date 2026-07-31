@@ -1,45 +1,55 @@
-import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useMemo, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import { Image as ImageIcon, LayoutGrid, Loader2, Video, User, Link2 } from 'lucide-react';
+import { Loader2, Search, User } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { fetchPublicEventMediaGallery } from '@/lib/event-media-share';
+import { toast } from 'sonner';
+import { fetchPublicEventMediaGallery, downloadPublicEventMediaZip } from '@/lib/event-media-share';
 import type { EventMediaItem } from '@/lib/admin-event-media-service';
 import { GalleryVideo } from '@/components/event-media/GalleryVideo';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useTheme } from '@/contexts/ThemeContext';
+import Logo from '@/components/ui/Logo';
+import { ModeToggle } from '@/components/ui/mode-toggle';
+import { GetAppModal } from '@/components/marketing/GetAppModal';
+import { SiteFooter } from '@/components/marketing/SiteFooter';
 
 type MediaFilter = 'all' | 'image' | 'video';
 
-const glassPanel =
-  'rounded-2xl border border-white/[0.08] bg-white/[0.04] shadow-[0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-2xl';
-
-const accentText = 'text-amber-400';
-
-function formatEventDate(dateStr: string | null): string {
+function formatHeroDate(dateStr: string | null): string {
   if (!dateStr) return '';
   try {
-    return format(parseISO(dateStr), 'MMM d, yyyy');
+    return format(parseISO(dateStr), 'EEE d MMM yyyy');
   } catch {
     return '';
   }
 }
 
-function formatDateTime(dateStr: string): string {
+function formatExpiry(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
   try {
-    return format(parseISO(dateStr), 'MMM d, yyyy · h:mm a');
+    return format(parseISO(dateStr), 'd MMM yyyy');
   } catch {
-    return dateStr;
+    return '';
   }
+}
+
+function sourceLabel(source: EventMediaItem['source']): string {
+  return source === 'story' ? 'Story' : 'Forum';
 }
 
 const PublicEventMediaGallery: React.FC = () => {
   const { token: tokenParam } = useParams<{ token: string }>();
   const token = tokenParam ? decodeURIComponent(tokenParam) : '';
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+  const [navSearch, setNavSearch] = useState('');
+  const [appModalOpen, setAppModalOpen] = useState(false);
+  const [zipDownloading, setZipDownloading] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['public-event-media-gallery', token],
@@ -54,9 +64,85 @@ const PublicEventMediaGallery: React.FC = () => {
     return items.filter((i) => i.mediaType === mediaFilter);
   }, [data, mediaFilter]);
 
+  const heroMeta = useMemo(() => {
+    if (!data) return '';
+    const parts = [
+      formatHeroDate(data.event.date),
+      data.event.location?.trim() || '',
+      data.event.category?.trim() || '',
+    ].filter(Boolean);
+    return parts.join(' · ');
+  }, [data]);
+
+  const briefMeta = useMemo(() => {
+    if (!data) return '';
+    const parts = [
+      formatHeroDate(data.event.date),
+      data.event.location?.trim() || '',
+    ].filter(Boolean);
+    return parts.join(' · ');
+  }, [data]);
+
+  const heroUrl =
+    data?.heroUrl ||
+    data?.event.imageUrl ||
+    data?.summary.items.find((i) => i.mediaType === 'image')?.mediaUrl ||
+    null;
+
+  const thumbUrl = data?.event.imageUrl || heroUrl;
+
+  const pageBg = isDark ? 'bg-[#0d1117] text-white' : 'bg-[#f6f8fa] text-[#0d1117]';
+  const muted = isDark ? 'text-[#8b949e]' : 'text-[#656d76]';
+  const heading = isDark ? 'text-[#e6edf3]' : 'text-[#0d1117]';
+  const navBorder = isDark ? 'border-[#21262d] bg-[#0d1117]' : 'border-[#d0d7de] bg-white';
+  const searchBg = isDark
+    ? 'border-[#21262d] bg-[#161b22] text-[#e6edf3] placeholder:text-[#8b949e]'
+    : 'border-[#d0d7de] bg-white text-[#0d1117] placeholder:text-[#656d76]';
+  const briefPanel = isDark
+    ? 'border-[#333b47] bg-[#161b22]'
+    : 'border-[#d0d7de] bg-white';
+  const statsBox = isDark ? 'bg-[#0d1117] text-[#8b949e]' : 'bg-[#f6f8fa] text-[#656d76]';
+  const contribRow = isDark
+    ? 'border-[#333b47] bg-[#0d1117]'
+    : 'border-[#d0d7de] bg-[#f6f8fa]';
+  const cardBorder = isDark ? 'border-[#333b47]' : 'border-[#d0d7de]';
+  const cardFooter = isDark ? 'bg-[#161b22] text-[#8b949e]' : 'bg-white text-[#656d76]';
+  const pillIdle = isDark
+    ? 'border-[#333b47] bg-[#161b22] text-[#e6edf3]'
+    : 'border-[#d0d7de] bg-transparent text-[#0d1117]';
+  const downloadBtn = isDark
+    ? 'bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3]'
+    : 'bg-[#f6f8fa] text-[#656d76] hover:text-[#0d1117]';
+
+  const applyNavSearch = (e: FormEvent) => {
+    e.preventDefault();
+    const q = navSearch.trim();
+    navigate(q ? `/events?q=${encodeURIComponent(q)}` : '/events');
+  };
+
+  const onDownloadZip = async () => {
+    if (!token || zipDownloading) return;
+    if (!data?.summary.items.length) {
+      toast.error('No media to download');
+      return;
+    }
+    setZipDownloading(true);
+    const toastId = toast.loading('Building zip…');
+    try {
+      await downloadPublicEventMediaZip(token, data.event.title);
+      toast.success('Download started', { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not download zip', {
+        id: toastId,
+      });
+    } finally {
+      setZipDownloading(false);
+    }
+  };
+
   if (!token) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center p-6 text-muted-foreground">
+      <div className={cn('flex min-h-screen items-center justify-center p-6', pageBg, muted)}>
         Invalid link.
       </div>
     );
@@ -73,153 +159,309 @@ const PublicEventMediaGallery: React.FC = () => {
         <meta name="robots" content="noindex,nofollow" />
       </Helmet>
 
-      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-[#050508] p-4 text-zinc-100 md:p-8">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-90"
-          aria-hidden
-          style={{
-            background:
-              'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(180,120,40,0.18), transparent 55%), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(60,40,120,0.12), transparent 50%)',
-          }}
-        />
+      <div className={cn('flex min-h-screen flex-col', pageBg)}>
+        <header
+          className={cn(
+            'sticky top-0 z-40 flex h-[66px] items-center justify-between border-b px-4 py-4 sm:px-8',
+            navBorder
+          )}
+        >
+          <div className="flex items-center gap-5 sm:gap-7">
+            <Logo
+              href="/"
+              size="sm"
+              className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0"
+            />
+            <nav className="hidden items-center gap-6 md:flex">
+              <Link to="/discover" className={cn('text-[13px] hover:text-[#ff6b35]', muted)}>
+                Discover
+              </Link>
+              <Link to="/events" className="text-[13px] font-semibold text-[#ff6b35]">
+                Events
+              </Link>
+              <Link to="/stories" className={cn('text-[13px] hover:text-[#ff6b35]', muted)}>
+                Stories
+              </Link>
+            </nav>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <form onSubmit={applyNavSearch} className="relative hidden sm:block">
+              <Search
+                className={cn(
+                  'pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2',
+                  muted
+                )}
+              />
+              <input
+                type="search"
+                value={navSearch}
+                onChange={(e) => setNavSearch(e.target.value)}
+                placeholder="Search events…"
+                className={cn(
+                  'h-[31px] w-[140px] rounded-full border pl-8 pr-3.5 text-xs outline-none focus:border-[#ff6b35] md:w-[180px]',
+                  searchBg
+                )}
+              />
+            </form>
+            <ModeToggle />
+            <button
+              type="button"
+              onClick={() => setAppModalOpen(true)}
+              className="rounded-full bg-[#ff6b35] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ff6b35]/90"
+            >
+              Get the app
+            </button>
+          </div>
+        </header>
 
-        <div className="relative z-10 mx-auto max-w-7xl space-y-8">
-          <header className="flex flex-col gap-4 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-                <Link2 className="h-3.5 w-3.5 text-amber-400/90" />
-                Shared gallery
+        <main className="flex-1">
+          <section className="relative h-[280px] w-full overflow-hidden sm:h-[340px] lg:h-[420px]">
+            {heroUrl ? (
+              <img
+                src={heroUrl}
+                alt=""
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 80% 50% at 40% 40%, rgba(255,107,53,0.35), transparent 55%), #0d1117',
+                }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-[rgba(13,18,23,0.25)] via-[rgba(13,18,23,0.65)] to-[rgba(13,18,23,0.95)]" />
+            <div className="relative z-10 flex h-full flex-col justify-end gap-2.5 px-4 pb-10 sm:px-8 lg:px-16">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="rounded-full bg-[#ff6b35] px-2.5 py-1.5 text-[11px] font-semibold text-white">
+                  Shared gallery · link only
+                </span>
+                {data?.expiresAt ? (
+                  <span
+                    className={cn(
+                      'text-[11px] font-medium',
+                      isDark ? 'text-[#8b949e]' : 'text-[#d9e0e5]'
+                    )}
+                  >
+                    Expires {formatExpiry(data.expiresAt)}
+                  </span>
+                ) : null}
               </div>
-              <h1 className="font-serif text-2xl font-light tracking-tight text-white md:text-3xl">
+              <h1 className="max-w-[900px] text-[28px] font-bold leading-tight text-white sm:text-[36px] lg:text-[40px] lg:leading-[51px]">
                 {isLoading ? 'Loading…' : data?.event.title ?? 'Event media'}
               </h1>
-              <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
-                Photos and videos from stories and forum posts for this event. This page is only
-                available to people with the link.
+              {heroMeta ? (
+                <p
+                  className={cn(
+                    'text-[15px] font-medium',
+                    isDark ? 'text-[#8b949e]' : 'text-[#e5ebf0]'
+                  )}
+                >
+                  {heroMeta}
+                </p>
+              ) : null}
+              <p
+                className={cn(
+                  'max-w-xl text-sm',
+                  isDark ? 'text-[#bfc7d1]' : 'text-[#e0e5eb]'
+                )}
+              >
+                Your private media brief — stories & forum posts from this event.
               </p>
             </div>
-            {data?.event?.date ? (
-              <p className="text-sm text-zinc-500">{formatEventDate(data.event.date)}</p>
-            ) : null}
-          </header>
+          </section>
 
           {isLoading && !data ? (
-            <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-zinc-500">
+            <div className={cn('flex min-h-[40vh] flex-col items-center justify-center gap-3', muted)}>
               <Loader2 className="h-10 w-10 animate-spin" />
               <p className="text-sm">Loading shared gallery…</p>
             </div>
           ) : null}
 
           {error ? (
-            <div className={cn('p-6 text-sm text-red-400', glassPanel)}>
-              This link is invalid, expired, or no longer active.
+            <div className="px-4 py-10 sm:px-8">
+              <div
+                className={cn(
+                  'rounded-xl border p-6 text-sm text-red-400',
+                  isDark ? 'border-[#333b47] bg-[#161b22]' : 'border-[#d0d7de] bg-white'
+                )}
+              >
+                This link is invalid, expired, or no longer active.
+              </div>
             </div>
           ) : null}
 
-          {!error && !isLoading && data ? (
-            <>
-              <section className="grid gap-4 sm:grid-cols-3">
-                <StatCard
-                  label="Total posts"
-                  value={data.summary.total}
-                  loading={false}
-                  icon={<LayoutGrid className="h-5 w-5 text-amber-400/90" />}
-                />
-                <StatCard
-                  label="Photos"
-                  value={data.summary.photos}
-                  loading={false}
-                  icon={<ImageIcon className="h-5 w-5 text-amber-400/90" />}
-                />
-                <StatCard
-                  label="Videos"
-                  value={data.summary.videos}
-                  loading={false}
-                  icon={<Video className="h-5 w-5 text-amber-400/90" />}
-                />
-              </section>
+          {!error && data ? (
+            <section className="flex flex-col lg:flex-row">
+              <aside
+                className={cn(
+                  'flex w-full shrink-0 flex-col gap-4 border-b p-5 sm:p-7 lg:w-[400px] lg:border-b-0 lg:border-r',
+                  briefPanel
+                )}
+              >
+                <div className="relative h-[160px] w-full overflow-hidden rounded-xl sm:h-[180px]">
+                  {thumbUrl ? (
+                    <img
+                      src={thumbUrl}
+                      alt=""
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[#21262d]" />
+                  )}
+                </div>
 
-              <div className={cn('p-4 md:p-5', glassPanel)}>
-                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-lg font-medium text-white">Gallery</h2>
-                    <p className="text-xs text-zinc-500">
-                      Event ID{' '}
-                      <span className={cn('font-mono', accentText)}>{data.event.id}</span>
-                    </p>
+                <p className="text-[11px] font-semibold text-[#ff6b35]">Shared event media</p>
+                <h2 className={cn('text-[22px] font-bold leading-[30px]', heading)}>
+                  {data.event.title}
+                </h2>
+                {briefMeta ? <p className={cn('text-[13px]', muted)}>{briefMeta}</p> : null}
+                <p className={cn('text-xs leading-4', muted)}>
+                  Private link for organizers. Media from stories & forum posts tied to this event.
+                </p>
+
+                <div className={cn('flex flex-col gap-2 rounded-xl p-3 text-xs', statsBox)}>
+                  <div className="flex gap-2">
+                    <span className="flex-1 font-medium">Posts</span>
+                    <span className="font-semibold tabular-nums">{data.summary.total}</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      [
-                        { key: 'all' as const, label: 'All' },
-                        { key: 'image' as const, label: 'Photos' },
-                        { key: 'video' as const, label: 'Videos' },
-                      ] as const
-                    ).map(({ key, label }) => (
-                      <Button
-                        key={key}
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setMediaFilter(key)}
-                        className={cn(
-                          'rounded-full border border-transparent px-4 text-xs font-medium',
-                          mediaFilter === key
-                            ? 'border-amber-500/40 bg-amber-500/10 text-amber-200'
-                            : 'text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-300'
-                        )}
-                      >
-                        {label}
-                      </Button>
-                    ))}
+                  <div className="flex gap-2">
+                    <span className="flex-1 font-medium">Photos</span>
+                    <span className="font-semibold tabular-nums">{data.summary.photos}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="flex-1 font-medium">Videos</span>
+                    <span className="font-semibold tabular-nums">{data.summary.videos}</span>
                   </div>
                 </div>
 
+                {(data.topContributors?.length ?? 0) > 0 ? (
+                  <>
+                    <p className={cn('text-xs font-semibold', heading)}>Top contributors</p>
+                    <ul className="flex flex-col gap-2">
+                      {data.topContributors!.map((c) => (
+                        <li
+                          key={c.userId}
+                          className={cn(
+                            'flex items-center gap-2 rounded-lg border px-2.5 py-2',
+                            contribRow
+                          )}
+                        >
+                          {c.avatarUrl ? (
+                            <img
+                              src={c.avatarUrl}
+                              alt=""
+                              width={28}
+                              height={28}
+                              className="size-7 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span
+                              className={cn(
+                                'flex size-7 shrink-0 items-center justify-center rounded-full',
+                                isDark ? 'bg-[#21262d]' : 'bg-[#e8ecf0]'
+                              )}
+                            >
+                              <User className="size-3.5" />
+                            </span>
+                          )}
+                          <span className={cn('min-w-0 flex-1 truncate text-xs font-medium', heading)}>
+                            {c.name}
+                          </span>
+                          <span className={cn('shrink-0 text-[11px]', muted)}>
+                            {c.postCount} {c.postCount === 1 ? 'post' : 'posts'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+
+                <div className="flex flex-col gap-1.5 rounded-[10px] border border-[rgba(255,107,53,0.4)] p-3 text-[11px]">
+                  <p className="font-semibold text-[#ff6b35]">Media consent</p>
+                  <p className={cn('leading-[15px]', muted)}>
+                    Attendees opted in at signup. Do not republish outside WYA without permission.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => void onDownloadZip()}
+                  disabled={zipDownloading || data.summary.total === 0}
+                  className={cn(
+                    'inline-flex items-center gap-2 self-start rounded-[10px] px-4 py-3 text-[13px] font-semibold transition-colors disabled:opacity-60',
+                    downloadBtn
+                  )}
+                >
+                  {zipDownloading ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                  {zipDownloading ? 'Building zip…' : 'Download zip'}
+                </button>
+              </aside>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-4 p-5 sm:p-7">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className={cn('text-lg font-semibold', heading)}>All media</h2>
+                  <div className="min-w-[12px] flex-1" />
+                  {(
+                    [
+                      { key: 'all' as const, label: 'All' },
+                      { key: 'image' as const, label: 'Photos' },
+                      { key: 'video' as const, label: 'Videos' },
+                    ] as const
+                  ).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setMediaFilter(key)}
+                      className={cn(
+                        'rounded-full px-3.5 py-2 text-xs font-semibold transition-colors',
+                        mediaFilter === key
+                          ? 'bg-[#ff6b35] text-white'
+                          : cn('border', pillIdle)
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
                 {filteredItems.length === 0 ? (
-                  <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-zinc-500">
+                  <div
+                    className={cn(
+                      'flex min-h-[200px] items-center justify-center rounded-xl border text-sm',
+                      cardBorder,
+                      muted
+                    )}
+                  >
                     No media for this filter yet.
                   </div>
                 ) : (
-                  <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {filteredItems.map((item) => (
                       <li
                         key={item.compositeId}
-                        className="group relative overflow-hidden rounded-xl border border-white/[0.07] bg-black/40 shadow-lg transition-all duration-300 hover:border-amber-500/25"
+                        className={cn(
+                          'overflow-hidden rounded-xl border',
+                          cardBorder
+                        )}
                       >
-                        <div className="relative aspect-square overflow-hidden bg-zinc-900">
+                        <div className="relative aspect-[320/220] overflow-hidden bg-[#0d1117]">
                           {item.mediaType === 'video' ? (
                             <GalleryVideo url={item.mediaUrl} />
                           ) : (
                             <img
                               src={item.mediaUrl}
                               alt=""
-                              className="absolute inset-0 z-[1] h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                              className="absolute inset-0 size-full object-cover"
                               loading="lazy"
                             />
                           )}
-                          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
-                          <Badge
-                            className={cn(
-                              'absolute left-2 top-2 border-0 text-[10px] font-semibold uppercase tracking-wide',
-                              item.source === 'story'
-                                ? 'bg-violet-500/25 text-violet-200'
-                                : 'bg-sky-500/20 text-sky-200'
-                            )}
-                          >
-                            {item.source === 'story' ? 'Story' : 'Forum'}
-                          </Badge>
-                          <Badge className="absolute right-2 top-2 border-0 bg-black/55 text-[10px] font-medium text-zinc-200">
-                            {item.mediaType === 'video' ? 'Video' : 'Photo'}
-                          </Badge>
                         </div>
-                        <div className="space-y-1.5 p-3">
-                          <p className="line-clamp-2 text-xs leading-snug text-zinc-300">{item.label}</p>
-                          <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                            <User className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{item.contributorName}</span>
-                          </div>
-                          <p className="text-[10px] text-zinc-600">
-                            {formatDateTime(item.createdAt)}
+                        <div className={cn('flex flex-col gap-1 px-2.5 py-2', cardFooter)}>
+                          <p className="line-clamp-1 text-[11px] font-medium">{item.label}</p>
+                          <p className="text-[10px]">
+                            {sourceLabel(item.source)} · {item.contributorName}
                           </p>
                         </div>
                       </li>
@@ -227,40 +469,16 @@ const PublicEventMediaGallery: React.FC = () => {
                   </ul>
                 )}
               </div>
-            </>
+            </section>
           ) : null}
-        </div>
+        </main>
+
+        <SiteFooter />
       </div>
+
+      <GetAppModal open={appModalOpen} onClose={() => setAppModalOpen(false)} />
     </>
   );
 };
-
-function StatCard({
-  label,
-  value,
-  loading,
-  icon,
-}: {
-  label: string;
-  value: number;
-  loading: boolean;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className={cn('flex items-center gap-4 p-5', glassPanel)}>
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-black/35">
-        {icon}
-      </div>
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{label}</p>
-        {loading ? (
-          <Loader2 className="mt-1 h-6 w-6 animate-spin text-zinc-500" />
-        ) : (
-          <p className="mt-0.5 font-serif text-3xl font-light tabular-nums text-white">{value}</p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default PublicEventMediaGallery;

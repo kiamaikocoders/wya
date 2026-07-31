@@ -40,6 +40,8 @@ export interface CreateEventPayload {
   performing_artists?: string[]; // Array of performing artist names
   latitude?: number; // Latitude for map pinning
   longitude?: number; // Longitude for map pinning
+  /** When set (and frequency !== none), creates an event_series + occurrences */
+  recurrence?: import('@/lib/recurrence').RecurrenceFormState;
 }
 
 export interface UpdateEventPayload extends Partial<CreateEventPayload> {

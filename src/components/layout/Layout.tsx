@@ -8,6 +8,7 @@ import FooterMinimal from "./FooterMinimal";
 import MaintenanceBanner from "./MaintenanceBanner";
 import { cn } from "@/lib/utils";
 import { DiscoverUIProvider } from "@/contexts/DiscoverUIContext";
+import { LocationConfirmPrompt } from "@/components/location/LocationConfirmPrompt";
 
 const Layout = () => {
   const location = useLocation();
@@ -58,6 +59,7 @@ const Layout = () => {
   const isDiscoverPage = location.pathname === "/discover";
   const isEventsBrowse =
     location.pathname === "/events" || /^\/events\/[^/]+$/.test(location.pathname);
+  const isSharedEventMedia = location.pathname.startsWith("/share/event-media");
   const isLegalPage = [
     "/privacy-policy",
     "/terms-of-service",
@@ -67,11 +69,17 @@ const Layout = () => {
     "/feedback",
   ].includes(location.pathname);
   const hideChrome =
-    isAuthPage || isDiscoverPage || isLegalPage || isEventsBrowse || isImmersiveWizard;
+    isAuthPage ||
+    isDiscoverPage ||
+    isLegalPage ||
+    isEventsBrowse ||
+    isImmersiveWizard ||
+    isSharedEventMedia;
 
   return (
     <DiscoverUIProvider>
       <div className="relative flex min-h-screen flex-col bg-background">
+        {!isAuthPage && !isAdminPage && <LocationConfirmPrompt />}
         {!hideChrome && <Navbar />}
         {!isAuthPage && !isAdminPage && !isLegalPage && <MaintenanceBanner />}
         <main className={cn("flex-1", !hideChrome && "pb-20 md:pb-24")}>

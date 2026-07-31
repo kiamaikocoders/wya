@@ -48,6 +48,12 @@ export function getPublicEventMediaGalleryUrl(): string {
   return base ? `${base}/functions/v1/public-event-media-gallery` : "";
 }
 
+/** Public GET ?token= — downloads a zip of shared event media (no auth). */
+export function getPublicEventMediaZipUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/public-event-media-zip` : "";
+}
+
 /** Cron/service: expire marketplace listings + process seller payouts. */
 export function getMarketplaceWorkerUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();

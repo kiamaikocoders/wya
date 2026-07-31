@@ -37,11 +37,12 @@ export const feedbackService = {
       throw new Error(`Message must be between 1 and ${MAX_MESSAGE} characters.`);
     }
 
+    const category = normalizeCategory(input.category);
     const { data, error } = await supabase
       .from('app_feedback')
       .insert({
         user_id: userId,
-        category: normalizeCategory(input.category),
+        category,
         message,
         page_path: input.pagePath?.trim() || null,
       })
@@ -49,7 +50,35 @@ export const feedbackService = {
       .single();
 
     if (error) throw new Error(error.message);
+
+    try {
+      const { notificationService } = await import('@/lib/notification/notification-service');
+      const preview = message.length > 120 ? `${message.slice(0, 117)}…` : message;
+      await notificationService.notifyAdmins({
+        type: 'app_feedback',
+        title: 'New app feedback',
+        message: `${category}: ${preview}`,
+        resource_type: 'app_feedback',
+        resource_uuid: data.id,
+        link: '/admin/feedback',
+        data: { feedback_id: data.id, category },
+      });
+    } catch (e) {
+      console.warn('Admin feedback notify failed', e);
+    }
+
     return data;
+  },
+
+  /** Count of feedback items awaiting review (sidebar badge). */
+  async countNewForAdmin(): Promise<number> {
+    const { count, error } = await supabase
+      .from('app_feedback')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'new');
+
+    if (error) throw new Error(error.message);
+    return count ?? 0;
   },
 
   async listForAdmin(status?: FeedbackStatus | 'all'): Promise<AppFeedbackWithProfile[]> {

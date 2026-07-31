@@ -20,6 +20,9 @@ verify_jwt = false
 [functions.public-event-media-gallery]
 verify_jwt = false
 
+[functions.public-event-media-zip]
+verify_jwt = false
+
 [functions.dispatch-notification]
 verify_jwt = false
 
@@ -33,6 +36,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.admin-system]
+verify_jwt = false
+
+[functions.announce-delivery]
 verify_jwt = false
 
 [functions.send-transactional-email]

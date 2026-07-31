@@ -92,6 +92,8 @@ export const eventService = {
       .select(
         'id,title,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
+      .eq('status', 'approved')
+      .is('cancelled_at', null)
       .gte('event_last_day', startOfToday)
       .order('date', { ascending: true })
       .limit(limit);
@@ -153,7 +155,9 @@ export const eventService = {
         .select(
           'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
           { count: 'exact' }
-        );
+        )
+        .eq('status', 'approved')
+        .is('cancelled_at', null);
 
       if (search) {
         const term = search.trim();
@@ -478,45 +482,79 @@ export const eventService = {
   },
 
   // Create event
-  createEvent: async (eventData: CreateEventPayload): Promise<Event> => {
+  createEvent: async (eventData: CreateEventPayload & { recurrence?: import('@/lib/recurrence').RecurrenceFormState }): Promise<Event> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('You must be logged in to create an event');
-      
+
+      const { recurrence, ...rest } = eventData as CreateEventPayload & {
+        recurrence?: import('@/lib/recurrence').RecurrenceFormState;
+      };
+
+      if (recurrence && recurrence.frequency !== 'none') {
+        const { buildRecurrenceRule } = await import('./recurrence');
+        const { createEventSeriesWithOccurrences } = await import('./event-series-service');
+
+        const startDay = rest.date.slice(0, 10);
+        const endDay = rest.end_date ? rest.end_date.slice(0, 10) : null;
+        const timeFromDatetime =
+          rest.date.includes('T') ? rest.date.slice(11, 16) : rest.time;
+        const rule = buildRecurrenceRule(recurrence, startDay, endDay);
+        if (!rule) throw new Error('Invalid recurrence rule');
+
+        const result = await createEventSeriesWithOccurrences({
+          rule,
+          createdBy: user.id,
+          event: {
+            title: rest.title,
+            description: rest.description,
+            category: rest.category,
+            location: rest.location,
+            location_url: (rest as any).location_url,
+            image_url: rest.image_url,
+            capacity: rest.capacity,
+            price: rest.price,
+            tags: rest.tags,
+            performing_artists: rest.performing_artists,
+            latitude: rest.latitude,
+            longitude: rest.longitude,
+            organizer_id: user.id,
+            status: 'pending',
+            time: timeFromDatetime ? `${timeFromDatetime}:00`.slice(0, 8) : '18:00:00',
+          },
+        });
+
+        const first = result.events[0];
+        toast.success(
+          `Recurring event submitted for approval · ${result.occurrenceDates.length} dates`,
+        );
+        return {
+          id: first.id,
+          title: rest.title,
+          description: rest.description,
+          date: first.date,
+          location: rest.location,
+          image_url: rest.image_url,
+          category: rest.category,
+          organizer_id: user.id,
+          price: rest.price,
+          tags: rest.tags || [],
+        } as Event;
+      }
+
       const { data, error } = await supabase
         .from('events')
         .insert({
-          ...eventData,
+          ...rest,
           organizer_id: user.id,
-        })
+          status: 'pending',
+        } as any)
         .select()
         .single();
       
       if (error) throw error;
       
-      // Send notifications to all users about new event
-      try {
-        const { onboardingNotifications } = await import('./onboarding-notifications');
-        const { data: allUsers } = await supabase
-          .from('profiles')
-          .select('id')
-          .neq('id', user.id); // Don't notify the creator
-        
-        if (allUsers && allUsers.length > 0) {
-          // Notify up to 100 users (to avoid overwhelming the system)
-          const usersToNotify = allUsers.slice(0, 100);
-          await Promise.all(
-            usersToNotify.map(userProfile =>
-              onboardingNotifications.sendNewEventNotification(userProfile.id, data.title, data.id)
-            )
-          );
-        }
-      } catch (notifError) {
-        console.warn('Failed to send event notifications:', notifError);
-        // Don't fail event creation if notifications fail
-      }
-      
-      toast.success('Event created successfully! Users will be notified.');
+      toast.success('Event submitted for approval.');
       return data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create event';

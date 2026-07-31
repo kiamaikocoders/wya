@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "typecheck": "NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit -p tsconfig.app.json",
     "optimize:images": "node scripts/optimize-images.mjs",
     "preview": "vite preview",
     "cap:sync": "cap sync",

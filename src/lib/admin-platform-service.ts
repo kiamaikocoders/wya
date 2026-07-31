@@ -9,7 +9,12 @@ export function getCommunicationTemplatesFromBundle(): boolean {
 
 let communicationTemplatesFromBundle = false;
 
-export type AnnouncementAudience = 'all' | 'attendees' | 'organizers' | 'admins';
+export type AnnouncementAudience =
+  | 'all'
+  | 'attendees'
+  | 'organizers'
+  | 'admins'
+  | 'location';
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 export type AnnouncementChannel = 'email' | 'in_app' | 'both';
 
@@ -18,6 +23,7 @@ export interface PlatformAnnouncement {
   title: string;
   body: string;
   audience: AnnouncementAudience;
+  audience_locations?: string[] | null;
   channel?: AnnouncementChannel;
   status: AnnouncementStatus;
   link?: string | null;
@@ -27,6 +33,23 @@ export interface PlatformAnnouncement {
   created_at: string;
   updated_at: string;
 }
+
+/** Common Kenya area labels used for location-targeted broadcasts. */
+export const BROADCAST_LOCATION_PRESETS = [
+  'Nairobi',
+  'Westlands',
+  'Karen',
+  'Kilimani',
+  'Parklands',
+  'Kitengela',
+  'Rongai',
+  'Kiambu',
+  'Thika',
+  'Nakuru',
+  'Mombasa',
+  'Kisumu',
+  'Eldoret',
+] as const;
 
 export interface CommunicationTemplate {
   id: string;
@@ -308,13 +331,51 @@ export const adminPlatformService = {
     return (data ?? []) as PlatformAnnouncement[];
   },
 
+  /**
+   * Distinct profile / onboarding location labels for the broadcast location picker.
+   */
+  listBroadcastLocations: async (): Promise<string[]> => {
+    const [{ data: profiles }, { data: onboarding }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('location')
+        .not('location', 'is', null)
+        .neq('location', '')
+        .limit(2000),
+      supabase
+        .from('user_onboarding_preferences')
+        .select('home_base, preferred_cities')
+        .limit(2000),
+    ]);
+
+    const set = new Set<string>(BROADCAST_LOCATION_PRESETS);
+    for (const row of profiles ?? []) {
+      const loc = String(row.location ?? '').trim();
+      if (loc) set.add(loc.length > 40 ? loc.split(',')[0]!.trim() || loc : loc);
+    }
+    for (const row of onboarding ?? []) {
+      const home = String(row.home_base ?? '').trim();
+      if (home) set.add(home.length > 40 ? home.split(',')[0]!.trim() || home : home);
+      const cities = Array.isArray(row.preferred_cities) ? row.preferred_cities : [];
+      for (const c of cities) {
+        const city = String(c ?? '').trim();
+        if (city) set.add(city);
+      }
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  },
+
   createAnnouncement: async (payload: {
     title: string;
     body: string;
     audience: AnnouncementAudience;
+    audience_locations?: string[];
     channel?: AnnouncementChannel;
     link?: string;
   }): Promise<PlatformAnnouncement> => {
+    if (payload.audience === 'location' && !(payload.audience_locations?.length)) {
+      throw new Error('Select at least one location');
+    }
     const { data: auth } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from('platform_announcements')
@@ -322,6 +383,8 @@ export const adminPlatformService = {
         title: payload.title,
         body: payload.body,
         audience: payload.audience,
+        audience_locations:
+          payload.audience === 'location' ? payload.audience_locations ?? [] : [],
         channel: payload.channel ?? 'both',
         link: payload.link || null,
         status: 'draft',
@@ -340,16 +403,22 @@ export const adminPlatformService = {
       title: string;
       body: string;
       audience: AnnouncementAudience;
+      audience_locations?: string[];
       channel: AnnouncementChannel;
       link?: string;
     }
   ): Promise<void> => {
+    if (payload.audience === 'location' && !(payload.audience_locations?.length)) {
+      throw new Error('Select at least one location');
+    }
     const { error } = await supabase
       .from('platform_announcements')
       .update({
         title: payload.title,
         body: payload.body,
         audience: payload.audience,
+        audience_locations:
+          payload.audience === 'location' ? payload.audience_locations ?? [] : [],
         channel: payload.channel,
         link: payload.link || null,
         updated_at: new Date().toISOString(),
@@ -359,14 +428,24 @@ export const adminPlatformService = {
     toast.success('Draft updated');
   },
 
-  publishAnnouncement: async (id: number): Promise<{ notified_count: number }> => {
+  publishAnnouncement: async (
+    id: number
+  ): Promise<{
+    notified_count: number;
+    emailed?: number;
+    pushed?: number;
+  }> => {
     const { data: announcement } = await supabase
       .from('platform_announcements')
-      .select('id, title, body, link, channel')
+      .select('id, title, body, link, channel, audience, audience_locations')
       .eq('id', id)
       .maybeSingle();
 
     const channel = (announcement?.channel as AnnouncementChannel) || 'both';
+    const audience = (announcement?.audience as AnnouncementAudience) || 'all';
+    const locations = Array.isArray(announcement?.audience_locations)
+      ? announcement!.audience_locations!
+      : [];
 
     const { data, error } = await supabase.rpc('admin_publish_announcement', {
       p_announcement_id: id,
@@ -374,27 +453,61 @@ export const adminPlatformService = {
     if (error) throw error;
     const notified = Number((data as { notified_count?: number })?.notified_count ?? 0);
 
-    if (channel === 'email' || channel === 'both') {
+    let emailed = 0;
+    let pushed = 0;
+    let deliveryNote = '';
+
+    // Email + push fan-out (in-app rows already inserted by the RPC when channel allows).
+    if (channel === 'email' || channel === 'both' || channel === 'in_app') {
       try {
-        await supabase.functions.invoke('admin-system', {
-          body: {
-            action: 'announce_email_fanout',
-            title: announcement?.title ?? 'Announcement',
-            message: announcement?.body ?? '',
-            link: announcement?.link || '/home',
-          },
-        });
+        const { data: fanout, error: fanoutError } = await supabase.functions.invoke(
+          'announce-delivery',
+          {
+            body: {
+              title: announcement?.title ?? 'Announcement',
+              message: announcement?.body ?? '',
+              link: announcement?.link || '/home',
+              channel,
+              audience,
+              locations,
+            },
+          }
+        );
+        if (fanoutError) {
+          deliveryNote = fanoutError.message || 'Delivery fan-out failed';
+          console.warn('Announcement delivery fan-out failed', fanoutError);
+        } else {
+          const payload = fanout as {
+            emailed?: number;
+            pushed?: number;
+            email_skipped?: number;
+            push_skipped?: number;
+            errors?: string[];
+          } | null;
+          emailed = Number(payload?.emailed ?? 0);
+          pushed = Number(payload?.pushed ?? 0);
+          if (payload?.errors?.length) {
+            console.warn('Announcement delivery partial errors', payload.errors);
+          }
+        }
       } catch (e) {
-        console.warn('Announcement email fan-out failed', e);
+        deliveryNote = e instanceof Error ? e.message : 'Delivery fan-out failed';
+        console.warn('Announcement delivery fan-out failed', e);
       }
     }
 
-    toast.success(
-      channel === 'email'
-        ? 'Published · email fan-out started'
-        : `Published · notified ${notified} users`
-    );
-    return { notified_count: notified };
+    if (deliveryNote) {
+      toast.warning(
+        `Published in-app to ${notified} · delivery warning: ${deliveryNote}`
+      );
+    } else {
+      toast.success(
+        `Published · in-app ${notified}` +
+          (channel === 'email' || channel === 'both' ? ` · email ${emailed}` : '') +
+          (channel === 'in_app' || channel === 'both' ? ` · push ${pushed}` : '')
+      );
+    }
+    return { notified_count: notified, emailed, pushed };
   },
 
   archiveAnnouncement: async (id: number): Promise<void> => {

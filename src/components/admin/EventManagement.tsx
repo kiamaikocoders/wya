@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +20,12 @@ import AdminCreateEvent from './AdminCreateEvent';
 import AdminEditEvent from './AdminEditEvent';
 import { AdminEventDetailDialog } from './AdminEventDetailDialog';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  cancelEventOccurrence,
+  cancelFutureOccurrences,
+  restoreEventOccurrence,
+} from '@/lib/event-series-service';
 
 function formatKesCompact(amount: number): string {
   if (amount >= 1_000_000) return `KES ${(amount / 1_000_000).toFixed(1)}M`;
@@ -28,6 +35,7 @@ function formatKesCompact(amount: number): string {
 
 const EventManagement: React.FC = () => {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [page, setPage] = useState(1);
@@ -38,6 +46,32 @@ const EventManagement: React.FC = () => {
   useEffect(() => {
     setPage(1);
   }, [search, status]);
+
+  // Deep-link from Admin Atlas: /admin/events?edit=<id>
+  useEffect(() => {
+    const raw = searchParams.get('edit');
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id)) return;
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error('Could not open event for edit');
+        const next = new URLSearchParams(searchParams);
+        next.delete('edit');
+        setSearchParams(next, { replace: true });
+        return;
+      }
+      setEditing(data as AdminEvent);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, setSearchParams]);
 
   const statsQuery = useQuery({
     queryKey: ['admin-event-stats'],
@@ -62,8 +96,13 @@ const EventManagement: React.FC = () => {
 
   const approveMutation = useMutation({
     mutationFn: (id: number) => adminService.approveEvent(id),
-    onSuccess: () => {
-      toast.success('Event approved');
+    onSuccess: (_data, id) => {
+      const ev = events.find((e) => e.id === id) || (viewing?.id === id ? viewing : null);
+      toast.success(
+        ev?.is_recurring
+          ? `Series approved · ${ev.series?.occurrence_total ?? ''} dates`
+          : 'Event approved',
+      );
       setViewing(null);
       invalidateEvents();
     },
@@ -72,8 +111,39 @@ const EventManagement: React.FC = () => {
 
   const rejectMutation = useMutation({
     mutationFn: (id: number) => adminService.rejectEvent(id),
+    onSuccess: (_data, id) => {
+      const ev = events.find((e) => e.id === id) || (viewing?.id === id ? viewing : null);
+      toast.success(ev?.is_recurring ? 'Series rejected' : 'Event rejected');
+      setViewing(null);
+      invalidateEvents();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelOccurrenceMutation = useMutation({
+    mutationFn: (id: number) => cancelEventOccurrence(id),
     onSuccess: () => {
-      toast.success('Event rejected');
+      toast.success('Occurrence cancelled');
+      setViewing(null);
+      invalidateEvents();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const restoreOccurrenceMutation = useMutation({
+    mutationFn: (id: number) => restoreEventOccurrence(id),
+    onSuccess: () => {
+      toast.success('Occurrence restored');
+      setViewing(null);
+      invalidateEvents();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelFutureMutation = useMutation({
+    mutationFn: (id: number) => cancelFutureOccurrences(id),
+    onSuccess: (count) => {
+      toast.success(`Cancelled ${count} occurrence${count === 1 ? '' : 's'}`);
       setViewing(null);
       invalidateEvents();
     },
@@ -195,6 +265,20 @@ const EventManagement: React.FC = () => {
                         {event.organizer_name || 'No organizer'}
                         {event.featured ? ' · Featured' : ''}
                       </p>
+                      {event.is_recurring ? (
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-primary">
+                          Recurring · {event.series?.summary || 'Series'}
+                        </p>
+                      ) : (
+                        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                          One-time
+                        </p>
+                      )}
+                      {event.cancelled_at ? (
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-[hsl(var(--admin-error))]">
+                          Cancelled date
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 
@@ -277,6 +361,27 @@ const EventManagement: React.FC = () => {
         }}
         onApprove={(id) => approveMutation.mutate(id)}
         onReject={(id) => rejectMutation.mutate(id)}
+        onCancelOccurrence={(id) => {
+          if (
+            window.confirm(
+              viewing?.is_recurring
+                ? 'Cancel only this date? Other dates in the series stay live.'
+                : 'Cancel this event? It will be hidden from public listings.',
+            )
+          ) {
+            cancelOccurrenceMutation.mutate(id);
+          }
+        }}
+        onRestoreOccurrence={(id) => restoreOccurrenceMutation.mutate(id)}
+        onCancelFuture={(id) => {
+          if (
+            window.confirm(
+              'Cancel this date and all future dates in the series? Past dates stay as they are.',
+            )
+          ) {
+            cancelFutureMutation.mutate(id);
+          }
+        }}
       />
 
       {editing ? (
@@ -285,9 +390,17 @@ const EventManagement: React.FC = () => {
             event={editing}
             onSuccess={() => {
               setEditing(null);
+              const next = new URLSearchParams(searchParams);
+              next.delete('edit');
+              setSearchParams(next, { replace: true });
               invalidateEvents();
             }}
-            onCancel={() => setEditing(null)}
+            onCancel={() => {
+              setEditing(null);
+              const next = new URLSearchParams(searchParams);
+              next.delete('edit');
+              setSearchParams(next, { replace: true });
+            }}
           />
         </div>
       ) : null}

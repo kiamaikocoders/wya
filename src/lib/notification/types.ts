@@ -24,6 +24,7 @@ export interface Notification {
     | 'welcome'
     | 'checkin'
     | 'feedback_reply'
+    | 'app_feedback'
     | 'survey_invite'
     | 'story_like';
   title: string;

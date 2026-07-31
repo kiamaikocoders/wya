@@ -1,16 +1,32 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getPublicEventMediaGalleryUrl } from '@/lib/supabase-functions-url';
+import {
+  getPublicEventMediaGalleryUrl,
+  getPublicEventMediaZipUrl,
+} from '@/lib/supabase-functions-url';
 import type { EventMediaItem, EventMediaSummary } from '@/lib/admin-event-media-service';
 
 export interface SharedGalleryEvent {
   id: number;
   title: string;
   date: string | null;
+  location?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
+}
+
+export interface SharedGalleryContributor {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+  postCount: number;
 }
 
 export interface PublicEventMediaResponse {
   event: SharedGalleryEvent;
   summary: EventMediaSummary;
+  expiresAt?: string | null;
+  heroUrl?: string | null;
+  topContributors?: SharedGalleryContributor[];
 }
 
 export type CreateEventMediaShareOptions = {
@@ -176,10 +192,75 @@ export async function fetchPublicEventMediaGallery(
     throw new Error('Invalid gallery response');
   }
   return {
-    event,
+    event: {
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      location: (event as { location?: string | null }).location ?? null,
+      category: (event as { category?: string | null }).category ?? null,
+      imageUrl:
+        (event as { imageUrl?: string | null }).imageUrl ??
+        (event as { image_url?: string | null }).image_url ??
+        null,
+    },
+    expiresAt: (payload as { expiresAt?: string }).expiresAt ?? (payload as { expires_at?: string }).expires_at ?? null,
+    heroUrl: (payload as { heroUrl?: string | null }).heroUrl ?? null,
+    topContributors: Array.isArray((payload as { topContributors?: unknown }).topContributors)
+      ? ((payload as { topContributors: SharedGalleryContributor[] }).topContributors)
+      : [],
     summary: {
       ...summary,
       items: summary.items as EventMediaItem[],
     },
   };
+}
+
+function slugifyFilename(title: string): string {
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'event-media'
+  );
+}
+
+/** Download a zip of shared gallery media for a public share token. */
+export async function downloadPublicEventMediaZip(
+  token: string,
+  eventTitle?: string
+): Promise<void> {
+  const baseFn = getPublicEventMediaZipUrl();
+  if (!baseFn) {
+    throw new Error('VITE_SUPABASE_URL is not configured');
+  }
+  const url = `${baseFn}?token=${encodeURIComponent(token)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof payload?.error === 'string' ? payload.error : 'Could not download zip'
+    );
+  }
+  const blob = await res.blob();
+  if (!blob.size) {
+    throw new Error('Empty zip response');
+  }
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const matched = disposition.match(/filename="([^"]+)"/i);
+  const filename =
+    matched?.[1] || `wya-${slugifyFilename(eventTitle || 'event')}-media.zip`;
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }

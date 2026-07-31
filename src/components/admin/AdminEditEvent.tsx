@@ -22,6 +22,11 @@ import {
 } from '@/lib/media-upload-prepare';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
 import { draftEventDescription } from '@/lib/admin-ai-analysis';
+import {
+  updateEventWithSeriesScope,
+  type SeriesEditScope,
+} from '@/lib/event-series-service';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: number;
@@ -68,6 +73,8 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
   
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
+  const [editScope, setEditScope] = useState<SeriesEditScope>('this');
+  const isSeriesEvent = Boolean(event.series_id);
 
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
@@ -278,47 +285,31 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     handleFileUpload(file);
   };
 
-  const syncEventCategories = async (eventId: number, categoryIds: number[]) => {
-    // Replace existing category relations with the selected set
-    const { error: deleteError } = await supabase
-      .from('event_categories')
-      .delete()
-      .eq('event_id', eventId);
-    if (deleteError) throw deleteError;
-
-    if (categoryIds.length === 0) return;
-    const rows = categoryIds.map((category_id) => ({ event_id: eventId, category_id }));
-    const { error: insertError } = await supabase.from('event_categories').insert(rows);
-    if (insertError) throw insertError;
-  };
-
   const updateEventMutation = useMutation({
-    mutationFn: async (vars: { eventData: any; categoryIds: number[] }) => {
-      const { eventData, categoryIds } = vars;
-      const { data, error } = await supabase
-        .from('events')
-        .update({
-          ...eventData,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', event.id)
-        .select();
-
-      if (error) throw error;
-      
-      // Check if any rows were updated
-      if (!data || data.length === 0) {
-        throw new Error('No rows were updated. You may not have permission to update this event, or the event may not exist.');
-      }
-      
-      await syncEventCategories(event.id, categoryIds);
-      return data[0]; // Return the first (and should be only) updated row
+    mutationFn: async (vars: {
+      eventData: any;
+      categoryIds: number[];
+      scope: SeriesEditScope;
+    }) => {
+      const { eventData, categoryIds, scope } = vars;
+      return updateEventWithSeriesScope({
+        eventId: event.id,
+        eventData,
+        categoryIds,
+        scope: isSeriesEvent ? scope : 'this',
+      });
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-events-figma'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       queryClient.invalidateQueries({ queryKey: ['event-categories', event.id] });
-      toast.success('Event updated successfully');
+      const n = result.updatedIds.length;
+      toast.success(
+        result.scope === 'this'
+          ? 'Event updated successfully'
+          : `Updated ${n} occurrence${n === 1 ? '' : 's'} in the series`,
+      );
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
@@ -375,12 +366,74 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
     };
     
-    updateEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
+    updateEventMutation.mutate({
+      eventData,
+      categoryIds: formData.category_ids,
+      scope: editScope,
+    });
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-6">
+          {isSeriesEvent ? (
+            <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Series edit scope</h3>
+                <p className="text-xs text-muted-foreground">
+                  {event.series?.summary || 'Recurring series'} · date changes always apply to this
+                  occurrence only
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {(
+                  [
+                    {
+                      value: 'this' as const,
+                      label: 'This occurrence',
+                      hint: 'Only this date',
+                    },
+                    {
+                      value: 'future' as const,
+                      label: 'This & future',
+                      hint: 'From this date onward',
+                    },
+                    {
+                      value: 'all' as const,
+                      label: 'Entire series',
+                      hint: 'All dates in the series',
+                    },
+                  ] as const
+                ).map((opt) => {
+                  const active = editScope === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEditScope(opt.value)}
+                      className={cn(
+                        'rounded-[10px] border px-3 py-2.5 text-left transition-colors',
+                        active
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border bg-background hover:bg-muted/40',
+                      )}
+                    >
+                      <p
+                        className={cn(
+                          'text-[13px] font-semibold',
+                          active ? 'text-primary' : 'text-foreground',
+                        )}
+                      >
+                        {opt.label}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">{opt.hint}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Basic Information</h3>
@@ -871,6 +924,10 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
                 </>
+              ) : isSeriesEvent && editScope === 'future' ? (
+                'Update this & future'
+              ) : isSeriesEvent && editScope === 'all' ? (
+                'Update entire series'
               ) : (
                 'Update Event'
               )}

@@ -1,6 +1,4 @@
 import { notificationService } from './notification/notification-service';
-import { supabase } from './supabase';
-import { toast } from 'sonner';
 
 /**
  * Comprehensive notification service for proposal-related activities
@@ -81,30 +79,41 @@ export const proposalNotifications = {
   },
 
   /**
+   * Notify admins when a new proposal lands for review.
+   */
+  notifyAdminsProposalSubmitted: async (proposalTitle: string, proposalId: number) => {
+    try {
+      await notificationService.notifyAdmins({
+        type: 'proposal_submitted',
+        title: 'New event proposal',
+        message: `"${proposalTitle}" is awaiting review.`,
+        resource_id: proposalId,
+        resource_type: 'proposal',
+        link: '/admin/proposals',
+        data: { proposal_id: proposalId, proposal_title: proposalTitle },
+      });
+    } catch (error) {
+      console.error('Error notifying admins of proposal submission:', error);
+    }
+  },
+
+  /**
    * Notify admins when a proposal is approved
    */
-  notifyAdminsProposalApproved: async (userId: string, proposalTitle: string, proposalId: number) => {
+  notifyAdminsProposalApproved: async (
+    _userId: string,
+    proposalTitle: string,
+    proposalId: number
+  ) => {
     try {
-      const { data: admins } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', 'admin');
-
-      if (admins && admins.length > 0) {
-        await Promise.all(
-          admins.map(admin =>
-            notificationService.createNotification({
-              user_id: admin.id,
-              type: 'admin_action',
-              title: 'Proposal Approved',
-              message: `Proposal "${proposalTitle}" was approved and published.`,
-              resource_id: proposalId,
-              resource_type: 'proposal',
-              link: `/admin/proposals`,
-            })
-          )
-        );
-      }
+      await notificationService.notifyAdmins({
+        type: 'admin_action',
+        title: 'Proposal approved',
+        message: `Proposal "${proposalTitle}" was approved and published.`,
+        resource_id: proposalId,
+        resource_type: 'proposal',
+        link: '/admin/proposals',
+      });
     } catch (error) {
       console.error('Error notifying admins:', error);
     }
