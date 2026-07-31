@@ -7,12 +7,16 @@ import { getPageWindow } from '@/hooks/use-list-pagination';
 
 /**
  * Figma Admin page chrome: header with icon badge + title/subtitle + actions.
+ * Optional `toolbar` / `subnav` render as full-bleed ruled bands under the title row
+ * (Analytics / Sponsor Analytics command chrome).
  */
 export function AdminPageShell({
   title,
   subtitle,
   icon: Icon,
   actions,
+  toolbar,
+  subnav,
   children,
   className,
   contentClassName,
@@ -21,33 +25,45 @@ export function AdminPageShell({
   subtitle?: string;
   icon?: ComponentType<{ className?: string; strokeWidth?: number }>;
   actions?: ReactNode;
+  /** Ruled band under title (filters / period controls). */
+  toolbar?: ReactNode;
+  /** Ruled band under toolbar (module tabs). */
+  subnav?: ReactNode;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
 }) {
   return (
     <div className={cn('flex min-h-full flex-col bg-background', className)}>
-      <header className="sticky top-0 z-20 flex flex-col gap-3 border-b border-border bg-background px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-7 sm:py-4">
-        <div className="flex min-w-0 flex-1 items-center gap-4">
-          {Icon ? (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--admin-surface-2))]">
-              <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} />
-            </div>
-          ) : null}
-          <div className="min-w-0">
-            <h1 className="truncate text-[22px] font-bold leading-tight tracking-tight text-foreground">
-              {title}
-            </h1>
-            {subtitle ? (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
+      <header className="sticky top-0 z-20 bg-background">
+        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-7 sm:py-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            {Icon ? (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--admin-surface-2))]">
+                <Icon className="h-5 w-5 text-primary" strokeWidth={1.75} />
+              </div>
             ) : null}
+            <div className="min-w-0">
+              <h1 className="truncate text-[22px] font-bold leading-tight tracking-tight text-foreground">
+                {title}
+              </h1>
+              {subtitle ? (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {actions}
+            <AdminNotificationBell />
+            <AdminThemeToggle />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {actions}
-          <AdminNotificationBell />
-          <AdminThemeToggle />
-        </div>
+        {toolbar ? (
+          <div className="border-b border-border px-5 py-3 sm:px-7">{toolbar}</div>
+        ) : null}
+        {subnav ? (
+          <div className="border-b border-border px-5 py-2.5 sm:px-7">{subnav}</div>
+        ) : null}
       </header>
       <div className={cn('flex-1 space-y-3.5 px-5 py-[18px] sm:px-7 sm:py-5', contentClassName)}>
         {children}

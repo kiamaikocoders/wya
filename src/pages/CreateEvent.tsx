@@ -14,6 +14,12 @@ import { CreateEventPayload } from '@/types/event.types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image, Film, Link2, Loader2 } from 'lucide-react';
 import LocationPicker from '@/components/maps/LocationPicker';
+import {
+  RecurrenceFields,
+  defaultRecurrenceFormState,
+  type RecurrenceFormState,
+} from '@/components/events/RecurrenceFields';
+import { buildRecurrenceRule, expandOccurrenceDates } from '@/lib/recurrence';
 
 const categories = ['Business', 'Culture', 'Sports', 'Music', 'Technology', 'Education', 'Social', 'Other'];
 const locations = ['Nairobi', 'Lamu', 'Naivasha', 'Samburu', 'Mombasa', 'Kisumu', 'Nakuru', 'Other'];
@@ -54,6 +60,7 @@ const CreateEvent: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tagsInput, setTagsInput] = useState('');
   const [mediaType, setMediaType] = useState<"image" | "video" | "link">("image");
+  const [recurrence, setRecurrence] = useState<RecurrenceFormState>(defaultRecurrenceFormState);
   
   // Redirect if not authenticated or not an organizer
   useEffect(() => {
@@ -137,6 +144,23 @@ const CreateEvent: React.FC = () => {
       toast.error('End date must be on or after the start date');
       return;
     }
+
+    if (recurrence.frequency !== 'none') {
+      try {
+        const rule = buildRecurrenceRule(recurrence, startDateStr, endDateStr || null);
+        if (!rule || expandOccurrenceDates(rule).length === 0) {
+          toast.error('No occurrences match this recurrence — adjust the end rule');
+          return;
+        }
+        if (recurrence.frequency === 'weekly' && recurrence.byweekday.length === 0) {
+          toast.error('Select at least one weekday for a weekly series');
+          return;
+        }
+      } catch (err: any) {
+        toast.error(err?.message || 'Invalid recurrence settings');
+        return;
+      }
+    }
     
     if (!formData.location) {
       toast.error('Please select a location');
@@ -171,6 +195,7 @@ const CreateEvent: React.FC = () => {
       const payload: CreateEventPayload = {
         ...formData,
         end_date: formData.end_date ? formData.end_date.slice(0, 10) : undefined,
+        recurrence,
       };
       await eventService.createEvent(payload);
       navigate('/events');
@@ -289,9 +314,21 @@ const CreateEvent: React.FC = () => {
                     }}
                     placeholder="Same day if left empty"
                   />
-                  <p className="text-xs text-text-white/70">Leave empty for single-day events</p>
+                  <p className="text-xs text-text-white/70">
+                    {recurrence.frequency === 'none'
+                      ? 'Leave empty for single-day events'
+                      : 'For recurring events, this is how long each occurrence lasts'}
+                  </p>
                 </div>
               </div>
+
+              <RecurrenceFields
+                value={recurrence}
+                onChange={setRecurrence}
+                startDate={formData.date.slice(0, 10)}
+                occurrenceEndDate={formData.end_date?.slice(0, 10)}
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (KES)</Label>

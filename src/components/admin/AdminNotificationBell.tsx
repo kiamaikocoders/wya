@@ -1,33 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { notificationService } from '@/lib/notification';
+import {
+  notificationService,
+  notificationsQueryKey,
+} from '@/lib/notification/notification-service';
 import { supabase } from '@/lib/supabase';
 import { playNotificationSound } from '@/lib/sounds';
 
 /**
- * Admin header bell → /admin/notifications. Plays chime on new inserts.
+ * Admin header bell → /admin/notifications?tab=inbox. Chimes on new inserts.
  */
 export function AdminNotificationBell({ className }: { className?: string }) {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['admin-header-notifications', user?.id],
-    queryFn: () => (user ? notificationService.getUserNotifications(user.id) : []),
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['admin-notifications-unread', user?.id],
+    queryFn: () => (user ? notificationService.getUnreadCount(user.id) : 0),
     enabled: isAuthenticated && !!user?.id,
     refetchInterval: 30_000,
   });
-
-  useEffect(() => {
-    setUnreadCount(notifications.filter((n) => !n.read).length);
-  }, [notifications]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -50,8 +48,21 @@ export function AdminNotificationBell({ className }: { className?: string }) {
           toast.success(row.title || 'New notification', {
             description: row.message,
           });
-          queryClient.invalidateQueries({ queryKey: ['admin-header-notifications', user.id] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
         }
       )
       .subscribe();
@@ -61,12 +72,20 @@ export function AdminNotificationBell({ className }: { className?: string }) {
     };
   }, [user?.id, queryClient]);
 
+  // Keep inbox list warm so the page matches the badge immediately.
+  useQuery({
+    queryKey: notificationsQueryKey(user?.id),
+    queryFn: () => (user ? notificationService.getUserNotifications(user.id) : []),
+    enabled: isAuthenticated && !!user?.id,
+    refetchInterval: 30_000,
+  });
+
   if (!isAuthenticated) return null;
 
   return (
     <button
       type="button"
-      onClick={() => navigate('/admin/notifications')}
+      onClick={() => navigate('/admin/notifications?tab=inbox')}
       aria-label={
         unreadCount > 0
           ? `Notifications, ${unreadCount} unread`

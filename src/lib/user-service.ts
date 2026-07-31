@@ -40,6 +40,8 @@ export interface Profile {
   marketing_consent_at?: string | null;
   location_consent?: boolean;
   location_consent_at?: string | null;
+  location_source?: string | null;
+  location_confirm_needed?: boolean;
   organizer_content_sharing_opt_in?: boolean;
   media_consent?: boolean;
   media_consent_at?: string | null;
@@ -68,6 +70,8 @@ export interface UpdateProfilePayload {
   privacy_accepted_at?: string | null;
   marketing_consent?: boolean;
   location_consent?: boolean;
+  location_source?: string | null;
+  location_confirm_needed?: boolean;
   organizer_content_sharing_opt_in?: boolean;
   media_consent?: boolean;
   email_notifications?: boolean;
@@ -127,6 +131,23 @@ export const userService = {
       if (profile.location !== undefined) updateData.location = profile.location;
       if (profile.latitude !== undefined) updateData.latitude = profile.latitude;
       if (profile.longitude !== undefined) updateData.longitude = profile.longitude;
+      if (
+        profile.location !== undefined ||
+        profile.latitude !== undefined ||
+        profile.longitude !== undefined
+      ) {
+        updateData.location_source = profile.location_source ?? 'user';
+        updateData.location_confirm_needed =
+          profile.location_confirm_needed !== undefined
+            ? profile.location_confirm_needed
+            : false;
+      }
+      if (profile.location_source !== undefined) {
+        updateData.location_source = profile.location_source;
+      }
+      if (profile.location_confirm_needed !== undefined) {
+        updateData.location_confirm_needed = profile.location_confirm_needed;
+      }
       if (profile.phone !== undefined) updateData.phone = profile.phone;
       if (profile.date_of_birth !== undefined) updateData.date_of_birth = profile.date_of_birth;
 
@@ -191,7 +212,7 @@ export const userService = {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth, is_ghost'
+          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, location_source, location_confirm_needed, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth, is_ghost'
         )
         .eq('id', userId)
         .single();

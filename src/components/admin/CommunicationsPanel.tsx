@@ -46,6 +46,7 @@ import {
 } from '@/components/admin/AdminPageShell';
 import EmailSettingsPanel from '@/components/admin/EmailSettingsPanel';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
+import { BroadcastLocationPicker } from '@/components/admin/BroadcastLocationPicker';
 import {
   draftAnnouncementBody,
   improveEmailTemplateSubject,
@@ -82,8 +83,8 @@ function formatWhen(iso?: string | null) {
 
 function channelLabel(ch?: string) {
   if (ch === 'email') return 'Email';
-  if (ch === 'in_app') return 'In-app';
-  return 'Both';
+  if (ch === 'in_app') return 'In-app + push';
+  return 'Email + in-app + push';
 }
 
 function isSchemaMissing(err: unknown) {
@@ -101,6 +102,7 @@ const CommunicationsPanel: React.FC = () => {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [audience, setAudience] = useState<AnnouncementAudience>('all');
+  const [locations, setLocations] = useState<string[]>([]);
   const [channel, setChannel] = useState<AnnouncementChannel>('both');
   const [link, setLink] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -175,6 +177,7 @@ const CommunicationsPanel: React.FC = () => {
     setTitle('');
     setBody('');
     setAudience('all');
+    setLocations([]);
     setChannel('both');
     setLink('');
   };
@@ -182,11 +185,15 @@ const CommunicationsPanel: React.FC = () => {
   const saveDraftMutation = useMutation({
     mutationFn: async () => {
       if (!title.trim() || !body.trim()) throw new Error('Subject and body are required');
+      if (audience === 'location' && locations.length === 0) {
+        throw new Error('Select at least one location');
+      }
       if (editingId) {
         await adminPlatformService.updateAnnouncement(editingId, {
           title: title.trim(),
           body: body.trim(),
           audience,
+          audience_locations: audience === 'location' ? locations : [],
           channel,
           link: link.trim() || undefined,
         });
@@ -196,6 +203,7 @@ const CommunicationsPanel: React.FC = () => {
         title: title.trim(),
         body: body.trim(),
         audience,
+        audience_locations: audience === 'location' ? locations : [],
         channel,
         link: link.trim() || undefined,
       });
@@ -211,12 +219,16 @@ const CommunicationsPanel: React.FC = () => {
   const broadcastMutation = useMutation({
     mutationFn: async () => {
       if (!title.trim() || !body.trim()) throw new Error('Subject and body are required');
+      if (audience === 'location' && locations.length === 0) {
+        throw new Error('Select at least one location');
+      }
       let id = editingId;
       if (id) {
         await adminPlatformService.updateAnnouncement(id, {
           title: title.trim(),
           body: body.trim(),
           audience,
+          audience_locations: audience === 'location' ? locations : [],
           channel,
           link: link.trim() || undefined,
         });
@@ -225,6 +237,7 @@ const CommunicationsPanel: React.FC = () => {
           title: title.trim(),
           body: body.trim(),
           audience,
+          audience_locations: audience === 'location' ? locations : [],
           channel,
           link: link.trim() || undefined,
         });
@@ -303,6 +316,9 @@ const CommunicationsPanel: React.FC = () => {
     setTitle(row.title);
     setBody(row.body);
     setAudience(row.audience);
+    setLocations(
+      Array.isArray(row.audience_locations) ? [...row.audience_locations] : []
+    );
     setChannel(row.channel || 'both');
     setLink(row.link || '');
     setTab('broadcast');
@@ -449,6 +465,7 @@ const CommunicationsPanel: React.FC = () => {
                       <SelectItem value="attendees">Attendees</SelectItem>
                       <SelectItem value="organizers">Organizers</SelectItem>
                       <SelectItem value="admins">Admins only</SelectItem>
+                      <SelectItem value="location">Specific locations</SelectItem>
                     </SelectContent>
                   </Select>
                 </AdminField>
@@ -461,13 +478,16 @@ const CommunicationsPanel: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="in_app">In-app</SelectItem>
-                      <SelectItem value="both">Email + in-app</SelectItem>
+                      <SelectItem value="email">Email only</SelectItem>
+                      <SelectItem value="in_app">In-app (+ push)</SelectItem>
+                      <SelectItem value="both">Email + in-app (+ push)</SelectItem>
                     </SelectContent>
                   </Select>
                 </AdminField>
               </div>
+              {audience === 'location' ? (
+                <BroadcastLocationPicker value={locations} onChange={setLocations} />
+              ) : null}
               <AdminField label="Subject">
                 <AdminTextInput
                   value={title}
@@ -546,7 +566,14 @@ const CommunicationsPanel: React.FC = () => {
                             {formatWhen(r.created_at)}
                           </div>
                         </td>
-                        <td className="px-3 py-3 capitalize text-muted-foreground">{r.audience}</td>
+                        <td className="px-3 py-3 capitalize text-muted-foreground">
+                          {r.audience}
+                          {r.audience === 'location' && r.audience_locations?.length
+                            ? ` · ${r.audience_locations.slice(0, 2).join(', ')}${
+                                r.audience_locations.length > 2 ? '…' : ''
+                              }`
+                            : ''}
+                        </td>
                         <td className="px-3 py-3">{channelLabel(r.channel)}</td>
                         <td className="px-3 py-3">
                           <span

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Calendar,
@@ -18,15 +19,20 @@ import {
   Megaphone,
   ScrollText,
   Bell,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { notificationService } from '@/lib/notification/notification-service';
+import { feedbackService } from '@/lib/feedback-service';
+import { supabase } from '@/lib/supabase';
 
 interface SidebarItem {
   label: string;
   path: string;
   icon: React.ElementType;
+  badgeKey?: 'notifications' | 'feedback';
 }
 
 interface SidebarSection {
@@ -60,7 +66,12 @@ const sidebarSections: SidebarSection[] = [
     title: 'Content',
     items: [
       { label: 'Moderation', path: '/admin/moderation', icon: MessageSquare },
-      { label: 'App feedback', path: '/admin/feedback', icon: Inbox },
+      {
+        label: 'App feedback',
+        path: '/admin/feedback',
+        icon: Inbox,
+        badgeKey: 'feedback',
+      },
       { label: 'Event media', path: '/admin/media-gallery', icon: Images },
     ],
   },
@@ -70,18 +81,33 @@ const sidebarSections: SidebarSection[] = [
       { label: 'Communications', path: '/admin/communications', icon: Megaphone },
       { label: 'Analytics', path: '/admin/analytics', icon: ActivitySquare },
       { label: 'Sponsor Analytics', path: '/admin/sponsor-analytics', icon: BarChart3 },
+      { label: 'Maps', path: '/admin/maps', icon: Map },
       { label: 'Ghost', path: '/admin/ghost', icon: Ghost },
     ],
   },
   {
     title: 'System',
     items: [
-      { label: 'Notifications', path: '/admin/notifications', icon: Bell },
+      {
+        label: 'Notifications',
+        path: '/admin/notifications',
+        icon: Bell,
+        badgeKey: 'notifications',
+      },
       { label: 'System', path: '/admin/system', icon: Settings2 },
       { label: 'Audit log', path: '/admin/audit', icon: ScrollText },
     ],
   },
 ];
+
+function SidebarBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 interface AdminSidebarProps {
   isMobileOpen: boolean;
@@ -92,6 +118,45 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, onMobileToggl
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const { data: unreadNotifications = 0 } = useQuery({
+    queryKey: ['admin-notifications-unread', user?.id],
+    queryFn: () => (user ? notificationService.getUnreadCount(user.id) : 0),
+    enabled: !!user?.id,
+    refetchInterval: 30_000,
+  });
+
+  const { data: newFeedback = 0, refetch: refetchFeedbackCount } = useQuery({
+    queryKey: ['admin-app-feedback-new-count'],
+    queryFn: () => feedbackService.countNewForAdmin(),
+    enabled: !!user?.id,
+    refetchInterval: 30_000,
+  });
+
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel(`admin-sidebar-feedback:${crypto.randomUUID()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'app_feedback' },
+        () => {
+          void refetchFeedbackCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetchFeedbackCount]);
+
+  const badgeFor = (key?: SidebarItem['badgeKey']) => {
+    if (key === 'notifications') return unreadNotifications;
+    if (key === 'feedback') return newFeedback;
+    return 0;
+  };
 
   const isActive = (path: string) => {
     if (path === '/admin') return location.pathname === '/admin';
@@ -145,10 +210,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, onMobileToggl
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
+                const badge = badgeFor(item.badgeKey);
                 return (
                   <Link
                     key={item.path}
-                    to={item.path}
+                    to={
+                      item.path === '/admin/notifications'
+                        ? '/admin/notifications?tab=inbox'
+                        : item.path
+                    }
                     onClick={() => {
                       if (isMobileOpen) onMobileToggle();
                     }}
@@ -167,6 +237,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, onMobileToggl
                       strokeWidth={1.75}
                     />
                     <span className="truncate">{item.label}</span>
+                    <SidebarBadge count={badge} />
                   </Link>
                 );
               })}

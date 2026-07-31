@@ -16,6 +16,7 @@ export interface EventMediaItem {
   eventId: number;
   userId: string;
   contributorName: string;
+  contributorAvatarUrl?: string | null;
   mediaUrl: string;
   mediaType: 'image' | 'video';
   label: string;

@@ -15,6 +15,9 @@ type Props = {
   onEdit?: (event: AdminEvent) => void;
   onApprove?: (id: number) => void;
   onReject?: (id: number) => void;
+  onCancelOccurrence?: (id: number) => void;
+  onRestoreOccurrence?: (id: number) => void;
+  onCancelFuture?: (id: number) => void;
 };
 
 function formatWhen(event: AdminEvent): string {
@@ -42,6 +45,9 @@ export function AdminEventDetailDialog({
   onEdit,
   onApprove,
   onReject,
+  onCancelOccurrence,
+  onRestoreOccurrence,
+  onCancelFuture,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -136,6 +142,21 @@ export function AdminEventDetailDialog({
                         ? 'Rejected'
                         : event.status || '—'}
                 </AdminStatusPill>
+                <span
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                    event.is_recurring
+                      ? 'bg-primary/15 text-primary'
+                      : 'border border-border bg-[hsl(var(--admin-surface-2))] text-muted-foreground',
+                  )}
+                >
+                  {event.is_recurring ? 'Recurring' : 'One-time'}
+                </span>
+                {event.cancelled_at ? (
+                  <span className="rounded-full bg-[hsl(var(--admin-error)/0.15)] px-2.5 py-1 text-[11px] font-semibold text-[hsl(var(--admin-error))]">
+                    Cancelled date
+                  </span>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -162,6 +183,15 @@ export function AdminEventDetailDialog({
 
               <div className="space-y-2.5 rounded-[14px] border border-border bg-[hsl(var(--admin-surface))] px-3.5 py-3">
                 <MetaRow icon={<Calendar className="size-3.5 text-primary" />} label="Date & time" value={formatWhen(event)} />
+                <MetaRow
+                  icon={<Calendar className="size-3.5 text-primary" />}
+                  label="Schedule"
+                  value={
+                    event.is_recurring
+                      ? event.series?.summary || 'Recurring series'
+                      : 'One-time event'
+                  }
+                />
                 <MetaRow icon={<MapPin className="size-3.5 text-primary" />} label="Venue" value={event.location || '—'} />
                 <MetaRow
                   icon={<Ticket className="size-3.5 text-primary" />}
@@ -259,7 +289,9 @@ export function AdminEventDetailDialog({
                     className="flex-1 rounded-[10px] bg-primary py-3 text-sm font-bold text-primary-foreground"
                     onClick={() => onApprove(event.id)}
                   >
-                    Approve
+                    {event.is_recurring
+                      ? `Approve series (${event.series?.occurrence_total ?? ''} dates)`
+                      : 'Approve'}
                   </button>
                 ) : null}
                 {event.status === 'pending' && onReject ? (
@@ -268,7 +300,37 @@ export function AdminEventDetailDialog({
                     className="flex-1 rounded-[10px] border border-border py-3 text-sm font-semibold text-[hsl(var(--admin-error))]"
                     onClick={() => onReject(event.id)}
                   >
-                    Reject
+                    {event.is_recurring ? 'Reject series' : 'Reject'}
+                  </button>
+                ) : null}
+                {event.status !== 'pending' && event.cancelled_at && onRestoreOccurrence ? (
+                  <button
+                    type="button"
+                    className="flex-1 rounded-[10px] bg-primary py-3 text-sm font-bold text-primary-foreground"
+                    onClick={() => onRestoreOccurrence(event.id)}
+                  >
+                    Restore this date
+                  </button>
+                ) : null}
+                {event.status !== 'pending' && !event.cancelled_at && onCancelOccurrence ? (
+                  <button
+                    type="button"
+                    className="flex-1 rounded-[10px] border border-border py-3 text-sm font-semibold text-[hsl(var(--admin-error))]"
+                    onClick={() => onCancelOccurrence(event.id)}
+                  >
+                    {event.is_recurring ? 'Cancel this date' : 'Cancel event'}
+                  </button>
+                ) : null}
+                {event.status !== 'pending' &&
+                !event.cancelled_at &&
+                event.is_recurring &&
+                onCancelFuture ? (
+                  <button
+                    type="button"
+                    className="flex-1 rounded-[10px] border border-border py-3 text-sm font-semibold text-[hsl(var(--admin-error))]"
+                    onClick={() => onCancelFuture(event.id)}
+                  >
+                    Cancel this & future
                   </button>
                 ) : null}
                 {onEdit ? (
@@ -276,7 +338,7 @@ export function AdminEventDetailDialog({
                     type="button"
                     className={cn(
                       'rounded-[10px] border border-border py-3 text-sm font-semibold text-foreground',
-                      event.status === 'pending' ? 'flex-1' : 'w-full',
+                      event.status === 'pending' || event.cancelled_at ? 'flex-1' : 'w-full',
                     )}
                     onClick={() => onEdit(event)}
                   >

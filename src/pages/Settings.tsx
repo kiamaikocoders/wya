@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { userService } from '@/lib/user-service';
@@ -192,6 +192,17 @@ const Settings: React.FC = () => {
     });
   }, [user?.id, profile?.id, profile?.push_notifications]);
 
+  const [searchParams] = useSearchParams();
+  const locationSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchParams.get('focus') !== 'location') return;
+    const t = window.setTimeout(() => {
+      locationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [searchParams, profile?.id]);
+
   const handleSaveSettings = async () => {
     if (!user?.id || !profile) return;
     try {
@@ -210,6 +221,8 @@ const Settings: React.FC = () => {
         location: settings.location.trim() || undefined,
         latitude: settings.latitude ?? undefined,
         longitude: settings.longitude ?? undefined,
+        location_source: 'user',
+        location_confirm_needed: false,
       });
 
       await syncPushSubscriptionWithPreference(settings.push_notifications, {
@@ -534,7 +547,7 @@ const Settings: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
+                <div ref={locationSectionRef} id="settings-location" className="space-y-3 scroll-mt-24">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-kenya-orange" />
                     <Label className="text-white">Your location</Label>

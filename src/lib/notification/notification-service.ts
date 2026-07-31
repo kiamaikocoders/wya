@@ -2,10 +2,22 @@
 import { supabase } from '../supabase';
 import type { CreateNotificationData, Notification, NotificationSettings } from './types';
 
+/** React Query key for a user's notification inbox (shared by consumer + admin bells). */
+export function notificationsQueryKey(userId: string | undefined) {
+  return ['notifications', userId] as const;
+}
+
 function isRlsInsertError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const e = error as { code?: string; message?: string };
   return e.code === '42501' || (typeof e.message === 'string' && e.message.includes('row-level security'));
+}
+
+function mapNotificationRows(data: Record<string, unknown>[] | null): Notification[] {
+  return (data || []).map((item) => ({
+    ...item,
+    type: item.type as Notification['type'],
+  })) as Notification[];
 }
 
 async function dispatchViaEdgeFunction(
@@ -55,80 +67,98 @@ async function dispatchPushNotification(payload: {
 // Create the notification service
 export const notificationService = {
   getUserNotifications: async (userId: string): Promise<Notification[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      
-      // Cast the returned data to match our expected type
-      return (data || []).map(item => ({
-        ...item,
-        type: item.type as Notification['type']
-      }));
-    } catch (error) {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
       console.error('Error fetching notifications:', error);
-      return [];
+      throw error;
     }
+
+    return mapNotificationRows(data);
   },
-  
+
+  /** Unread count for badge surfaces (head-only count query). */
+  getUnreadCount: async (userId: string): Promise<number> => {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+
+    if (error) {
+      console.error('Error counting unread notifications:', error);
+      throw error;
+    }
+    return count ?? 0;
+  },
+
   // Get all notifications for the current user
   getAllNotifications: async (): Promise<Notification[]> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      
-      // Cast the returned data to match our expected type
-      return (data || []).map(item => ({
-        ...item,
-        type: item.type as Notification['type']
-      }));
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return [];
-    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    return notificationService.getUserNotifications(user.id);
   },
-  
+
   markAsRead: async (notificationId: number): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-        
-      if (error) throw error;
-    } catch (error) {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+
+    if (error) {
       console.error('Error marking notification as read:', error);
       throw error;
     }
   },
-  
+
   markAllAsRead: async (userId: string): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', userId)
-        .eq('read', false);
-        
-      if (error) throw error;
-    } catch (error) {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('read', false);
+
+    if (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;
     }
   },
-  
+
+  /**
+   * Fan-out an in-app notification to every admin profile (`username = 'admin'`).
+   */
+  notifyAdmins: async (
+    notification: Omit<CreateNotificationData, 'user_id'>
+  ): Promise<number> => {
+    const { data: admins, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', 'admin');
+
+    if (error) {
+      console.error('Error loading admin recipients:', error);
+      throw error;
+    }
+    if (!admins?.length) return 0;
+
+    const results = await Promise.allSettled(
+      admins.map((admin) =>
+        notificationService.createNotification({
+          ...notification,
+          user_id: admin.id,
+        })
+      )
+    );
+
+    return results.filter((r) => r.status === 'fulfilled').length;
+  },
+
   createNotification: async (notification: CreateNotificationData): Promise<number | null> => {
     const { user_id, type, title, message, resource_id, resource_type, resource_uuid, link, data } =
       notification;

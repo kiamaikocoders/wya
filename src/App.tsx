@@ -46,6 +46,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminModeration = lazy(() => import("./pages/AdminModeration"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminSponsorAnalytics = lazy(() => import("./pages/AdminSponsorAnalytics"));
+const AdminMaps = lazy(() => import("./pages/AdminMaps"));
 const AdminGhost = lazy(() => import("./pages/AdminGhost"));
 const AdminMediaGallery = lazy(() => import("./pages/AdminMediaGallery"));
 const AdminFeedback = lazy(() => import("./pages/AdminFeedback"));
@@ -163,6 +164,7 @@ const App = () => {
                     <Route path="feedback" element={<AdminFeedback />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
                     <Route path="sponsor-analytics" element={<AdminSponsorAnalytics />} />
+                    <Route path="maps" element={<AdminMaps />} />
                     <Route path="ghost" element={<AdminGhost />} />
                     <Route path="marketplace" element={<AdminMarketplace />} />
                     <Route path="finance" element={<AdminFinance />} />

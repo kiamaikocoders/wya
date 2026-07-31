@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  notificationService
+import {
+  notificationService,
+  notificationsQueryKey,
 } from '@/lib/notification';
 import type { Notification } from '@/lib/notification/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,36 +25,36 @@ import { requestNotificationPermission } from '@/lib/sounds';
 const NotificationsDropdown = () => {
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
-  const [unreadCount, setUnreadCount] = useState(0);
-  
+
   const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => user ? notificationService.getUserNotifications(user.id) : [],
+    queryKey: notificationsQueryKey(user?.id),
+    queryFn: () => (user ? notificationService.getUserNotifications(user.id) : []),
     enabled: isAuthenticated && !!user?.id,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60_000,
   });
-  
-  useEffect(() => {
-    if (notifications && Array.isArray(notifications)) {
-      setUnreadCount(notifications.filter(n => !n.read).length);
-    }
-  }, [notifications]);
-  
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    void queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
+  };
+
   const handleMarkAsRead = async (id: number) => {
     try {
       await notificationService.markAsRead(id);
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      invalidate();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
       toast.error('Failed to mark notification as read');
     }
   };
-  
+
   const handleMarkAllAsRead = async () => {
     if (user) {
       try {
         await notificationService.markAllAsRead(user.id);
-        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        invalidate();
       } catch (error) {
         console.error('Failed to mark all notifications as read:', error);
         toast.error('Failed to mark notifications as read');
@@ -66,6 +67,7 @@ const NotificationsDropdown = () => {
   }
   
   const getNotificationLink = (notification: Notification) => {
+    if (notification.link) return notification.link;
     if (notification.resource_type === 'event' && notification.resource_id) {
       return `/events/${notification.resource_id}`;
     }

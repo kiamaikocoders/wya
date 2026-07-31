@@ -101,6 +101,94 @@ function formatUptime(sec: number) {
   return `${m}m`;
 }
 
+function locationMatches(haystack: string | null | undefined, needle: string): boolean {
+  if (!haystack || !needle) return false;
+  const h = haystack.toLowerCase();
+  const n = needle.toLowerCase();
+  return h.includes(n) || n.includes(h);
+}
+
+/**
+ * Resolve broadcast recipients with the same audience rules as admin_publish_announcement.
+ */
+async function resolveAnnouncementRecipients(
+  admin: ReturnType<typeof createClient>,
+  opts: { audience: string; locations: string[]; limit: number }
+): Promise<string[]> {
+  const { audience, locations, limit } = opts;
+
+  if (audience === "admins") {
+    const { data } = await admin.from("profiles").select("id").eq("username", "admin");
+    return (data ?? []).map((r) => r.id).slice(0, limit);
+  }
+
+  if (audience === "organizers") {
+    const { data } = await admin
+      .from("events")
+      .select("organizer_id")
+      .not("organizer_id", "is", null)
+      .limit(5000);
+    const ids = [
+      ...new Set(
+        (data ?? [])
+          .map((r) => r.organizer_id as string | null)
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+    return ids.slice(0, limit);
+  }
+
+  if (audience === "location") {
+    const [{ data: profiles }, { data: onboarding }] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id, location")
+        .or("is_ghost.is.null,is_ghost.eq.false")
+        .limit(5000),
+      admin
+        .from("user_onboarding_preferences")
+        .select("user_id, home_base, preferred_cities")
+        .limit(5000),
+    ]);
+    const byUser = new Map(
+      (onboarding ?? []).map((o) => [
+        o.user_id as string,
+        o as {
+          home_base: string | null;
+          preferred_cities: string[] | null;
+        },
+      ])
+    );
+    const matched: string[] = [];
+    for (const p of profiles ?? []) {
+      const pref = byUser.get(p.id);
+      const cities = Array.isArray(pref?.preferred_cities) ? pref!.preferred_cities! : [];
+      const hit = locations.some(
+        (loc) =>
+          locationMatches(p.location, loc) ||
+          locationMatches(pref?.home_base, loc) ||
+          cities.some((c) => locationMatches(c, loc))
+      );
+      if (hit) matched.push(p.id);
+      if (matched.length >= limit) break;
+    }
+    return matched;
+  }
+
+  // all | attendees (attendees ≈ everyone except username admin)
+  let q = admin
+    .from("profiles")
+    .select("id, username")
+    .or("is_ghost.is.null,is_ghost.eq.false")
+    .limit(limit * 2);
+  const { data, error } = await q;
+  if (error) throw error;
+  const rows = (data ?? []).filter((r) =>
+    audience === "attendees" ? r.username !== "admin" : true
+  );
+  return rows.map((r) => r.id).slice(0, limit);
+}
+
 serve(async (req) => {
   const requestOrigin = req.headers.get("Origin");
   const corsHeaders = corsHeadersFor(getAllowedOrigin(requestOrigin));
@@ -318,40 +406,130 @@ serve(async (req) => {
       );
     }
 
-    if (action === "announce_email_fanout") {
+    if (action === "announce_email_fanout" || action === "announce_delivery_fanout") {
       const title = String(body?.title ?? "Announcement");
       const message = String(body?.message ?? "");
       const link = String(body?.link ?? "/home");
+      const channel = String(body?.channel ?? "both");
+      const audience = String(body?.audience ?? "all");
+      const locations = Array.isArray(body?.locations)
+        ? body.locations.map((l: unknown) => String(l).trim()).filter(Boolean)
+        : [];
+      const sendEmail = channel === "email" || channel === "both";
+      const sendPush = channel === "in_app" || channel === "both";
       const limit = Math.min(Number(body?.limit ?? 500), 2000);
 
-      const { data: profiles, error: profErr } = await admin
-        .from("profiles")
-        .select("id")
-        .eq("email_notifications", true)
-        .or("is_ghost.is.null,is_ghost.eq.false")
-        .limit(limit);
-
-      if (profErr) throw profErr;
-
-      const { sendTransactionalToUser } = await import("../_shared/resend.ts");
-      let sent = 0;
-      let skipped = 0;
-      for (const row of profiles ?? []) {
-        const result = await sendTransactionalToUser({
-          admin,
-          userId: row.id,
-          templateId: "announcement",
-          notificationType: "announcement",
-          vars: { title, message, link },
-        });
-        if (result.sent) sent += 1;
-        else skipped += 1;
+      if (audience === "location" && locations.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "locations required for location audience" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
       }
 
-      return new Response(JSON.stringify({ success: true, sent, skipped }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+      const recipientIds = await resolveAnnouncementRecipients(admin, {
+        audience,
+        locations,
+        limit,
       });
+
+      const { sendTransactionalToUser } = await import("../_shared/resend.ts");
+      let emailed = 0;
+      let emailSkipped = 0;
+      let pushed = 0;
+      let pushSkipped = 0;
+      const errors: string[] = [];
+
+      const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID") ?? "";
+      const oneSignalApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "";
+      const siteUrl =
+        (await loadSharedEmailSettings(admin)).siteUrl || "https://www.wya254.com";
+
+      for (const userId of recipientIds) {
+        if (sendEmail) {
+          try {
+            const result = await sendTransactionalToUser({
+              admin,
+              userId,
+              templateId: "announcement",
+              notificationType: "announcement",
+              vars: { title, message, link },
+            });
+            if (result.sent) emailed += 1;
+            else emailSkipped += 1;
+          } catch (e) {
+            emailSkipped += 1;
+            errors.push(`email:${userId}:${e instanceof Error ? e.message : "failed"}`);
+          }
+        }
+
+        if (sendPush) {
+          if (!oneSignalAppId || !oneSignalApiKey) {
+            pushSkipped += 1;
+            continue;
+          }
+          try {
+            const { data: profile } = await admin
+              .from("profiles")
+              .select("push_notifications")
+              .eq("id", userId)
+              .maybeSingle();
+            if (profile?.push_notifications === false) {
+              pushSkipped += 1;
+              continue;
+            }
+            const launch = link.startsWith("http")
+              ? link
+              : `${siteUrl}${link.startsWith("/") ? link : `/${link}`}`;
+            const pushRes = await fetch("https://api.onesignal.com/notifications", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                Authorization: `Key ${oneSignalApiKey}`,
+              },
+              body: JSON.stringify({
+                app_id: oneSignalAppId,
+                target_channel: "push",
+                headings: { en: title },
+                contents: { en: message.slice(0, 240) },
+                include_aliases: { external_id: [userId] },
+                url: launch,
+                data: { link, type: "announcement" },
+              }),
+            });
+            if (pushRes.ok) pushed += 1;
+            else {
+              pushSkipped += 1;
+              const details = await pushRes.json().catch(() => ({}));
+              errors.push(
+                `push:${userId}:${JSON.stringify(details?.errors ?? pushRes.status)}`
+              );
+            }
+          } catch (e) {
+            pushSkipped += 1;
+            errors.push(`push:${userId}:${e instanceof Error ? e.message : "failed"}`);
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          recipients: recipientIds.length,
+          emailed,
+          email_skipped: emailSkipped,
+          pushed,
+          push_skipped: pushSkipped,
+          send_email: sendEmail,
+          send_push: sendPush,
+          audience,
+          locations,
+          errors: errors.slice(0, 20),
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     if (action === "test_template") {

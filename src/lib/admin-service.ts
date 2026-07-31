@@ -10,6 +10,12 @@ import type {
   MarketplaceTransfer,
 } from './marketplace-service';
 import { toast } from 'sonner';
+import {
+  approveEventOrSeries,
+  getEventSeriesByIds,
+  rejectEventOrSeries,
+} from './event-series-service';
+import { formatRecurrenceSummary } from './recurrence';
 
 export type ProfileAccountStatus = 'active' | 'suspended' | 'banned' | 'deleted';
 
@@ -50,6 +56,18 @@ export interface AdminUserStats {
   average_events_per_user: number;
 }
 
+export interface AdminEventSeriesInfo {
+  id: string;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  interval_count: number;
+  byweekday: number[] | null;
+  until_date: string | null;
+  occurrence_count: number | null;
+  occurrence_total: number;
+  cancelled_total: number;
+  summary: string;
+}
+
 export interface AdminEvent {
   id: number;
   title: string;
@@ -75,6 +93,11 @@ export interface AdminEvent {
   ticket_link?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  series_id?: string | null;
+  series_index?: number | null;
+  series?: AdminEventSeriesInfo | null;
+  is_recurring?: boolean;
+  cancelled_at?: string | null;
 }
 
 export interface AdminEventStats {
@@ -676,9 +699,51 @@ export const adminService = {
         ticketCountMap.set(t.event_id, count + 1);
       });
 
+      const seriesIds = (data || [])
+        .map((e: { series_id?: string | null }) => e.series_id)
+        .filter((id): id is string => Boolean(id));
+      const seriesMap = await getEventSeriesByIds(seriesIds);
+
+      // Pending queue: one row per series (first occurrence) so admins review the request once
+      const rawRows = data || [];
+      const rowsForStatus =
+        status === 'pending'
+          ? rawRows.filter(
+              (e: { series_id?: string | null; series_index?: number | null }) =>
+                !e.series_id || e.series_index === 0 || e.series_index == null,
+            )
+          : rawRows;
+
       // Transform data
-      const events: AdminEvent[] = (data || []).map(event => {
+      const events: AdminEvent[] = rowsForStatus.map((event: any) => {
         const organizer = event.organizer_id ? organizerMap.get(event.organizer_id) : null;
+        const seriesRow = event.series_id ? seriesMap.get(event.series_id) : null;
+        const activeTotal = seriesRow
+          ? Math.max(0, seriesRow.occurrence_total - (seriesRow.cancelled_total || 0))
+          : 0;
+        const seriesInfo: AdminEventSeriesInfo | null = seriesRow
+          ? {
+              id: seriesRow.id,
+              frequency: seriesRow.frequency,
+              interval_count: seriesRow.interval_count,
+              byweekday: seriesRow.byweekday,
+              until_date: seriesRow.until_date,
+              occurrence_count: seriesRow.occurrence_count,
+              occurrence_total: seriesRow.occurrence_total,
+              cancelled_total: seriesRow.cancelled_total || 0,
+              summary: formatRecurrenceSummary(
+                {
+                  frequency: seriesRow.frequency,
+                  interval: seriesRow.interval_count,
+                  byweekday: (seriesRow.byweekday || []) as any,
+                  untilDate: seriesRow.until_date,
+                  occurrenceCount: seriesRow.occurrence_count,
+                },
+                activeTotal || seriesRow.occurrence_total,
+              ),
+            }
+          : null;
+
         return {
           id: event.id,
           title: event.title,
@@ -704,6 +769,11 @@ export const adminService = {
           ticket_link: event.ticket_link ?? null,
           latitude: event.latitude ?? null,
           longitude: event.longitude ?? null,
+          series_id: event.series_id ?? null,
+          series_index: event.series_index ?? null,
+          series: seriesInfo,
+          is_recurring: Boolean(seriesInfo),
+          cancelled_at: event.cancelled_at ?? null,
         };
       });
 
@@ -756,11 +826,19 @@ export const adminService = {
         return sum + price;
       }, 0) || 0;
 
-      // Get pending events count
-      const { count: pendingEvents } = await supabase
+      // Pending: count one-time + distinct series (not every occurrence)
+      const { data: pendingRows } = await (supabase as any)
         .from('events')
-        .select('id', { count: 'exact', head: true })
+        .select('id, series_id')
         .eq('status', 'pending');
+
+      const pendingSeries = new Set<string>();
+      let pendingOneTime = 0;
+      (pendingRows || []).forEach((row: { series_id?: string | null }) => {
+        if (row.series_id) pendingSeries.add(row.series_id);
+        else pendingOneTime += 1;
+      });
+      const pendingEvents = pendingOneTime + pendingSeries.size;
 
       // Get approved events count
       const { count: approvedEvents } = await supabase
@@ -790,12 +868,7 @@ export const adminService = {
 
   approveEvent: async (eventId: number): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .update({ status: 'approved', featured: true })
-        .eq('id', eventId);
-
-      if (error) throw error;
+      await approveEventOrSeries(eventId);
     } catch (error) {
       console.error('Error approving event:', error);
       throw error;
@@ -804,18 +877,32 @@ export const adminService = {
 
   rejectEvent: async (eventId: number, reason?: string): Promise<void> => {
     try {
-      const { error } = await supabase
+      const { data: event } = await (supabase as any)
         .from('events')
-        .update({ status: 'rejected' })
-        .eq('id', eventId);
+        .select('id, series_id')
+        .eq('id', eventId)
+        .maybeSingle();
 
-      if (error) throw error;
+      await rejectEventOrSeries(eventId);
 
-      const { error: listingError } = await supabase.rpc('marketplace_cancel_listings_for_event', {
-        p_event_id: eventId,
-      });
-      if (listingError) {
-        console.warn('Event rejected but marketplace listing cleanup failed:', listingError);
+      const idsToClean = [eventId];
+      if (event?.series_id) {
+        const { data: siblings } = await (supabase as any)
+          .from('events')
+          .select('id')
+          .eq('series_id', event.series_id);
+        (siblings || []).forEach((row: { id: number }) => {
+          if (!idsToClean.includes(row.id)) idsToClean.push(row.id);
+        });
+      }
+
+      for (const id of idsToClean) {
+        const { error: listingError } = await supabase.rpc('marketplace_cancel_listings_for_event', {
+          p_event_id: id,
+        });
+        if (listingError) {
+          console.warn('Event rejected but marketplace listing cleanup failed:', listingError);
+        }
       }
     } catch (error) {
       console.error('Error rejecting event:', error);
@@ -1006,12 +1093,9 @@ export const adminService = {
 
   bulkApproveEvents: async (eventIds: number[]): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .update({ status: 'approved', featured: true })
-        .in('id', eventIds);
-
-      if (error) throw error;
+      for (const id of eventIds) {
+        await approveEventOrSeries(id);
+      }
     } catch (error) {
       console.error('Error bulk approving events:', error);
       throw error;
@@ -1020,12 +1104,9 @@ export const adminService = {
 
   bulkRejectEvents: async (eventIds: number[]): Promise<void> => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .update({ status: 'rejected' })
-        .in('id', eventIds);
-
-      if (error) throw error;
+      for (const id of eventIds) {
+        await rejectEventOrSeries(id);
+      }
     } catch (error) {
       console.error('Error bulk rejecting events:', error);
       throw error;

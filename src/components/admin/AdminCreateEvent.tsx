@@ -26,6 +26,18 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
 import { draftEventDescription, draftWhatToExpect } from '@/lib/admin-ai-analysis';
+import {
+  RecurrenceFields,
+  defaultRecurrenceFormState,
+  type RecurrenceFormState,
+} from '@/components/events/RecurrenceFields';
+import {
+  buildRecurrenceRule,
+  expandOccurrenceDates,
+  formatRecurrenceSummary,
+} from '@/lib/recurrence';
+import { createEventSeriesWithOccurrences } from '@/lib/event-series-service';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Category {
   id: number;
@@ -79,6 +91,7 @@ const surfaceCard =
 
 const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel }) => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -89,6 +102,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   const [useExternalTicket, setUseExternalTicket] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [recurrence, setRecurrence] = useState<RecurrenceFormState>(defaultRecurrenceFormState);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -292,6 +306,22 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           toast.error('Please set an event date');
           return false;
         }
+        if (recurrence.frequency !== 'none') {
+          try {
+            const rule = buildRecurrenceRule(recurrence, formData.date, formData.end_date || null);
+            if (!rule || expandOccurrenceDates(rule).length === 0) {
+              toast.error('No occurrences match this recurrence — adjust the end rule');
+              return false;
+            }
+            if (recurrence.frequency === 'weekly' && recurrence.byweekday.length === 0) {
+              toast.error('Select at least one weekday for a weekly series');
+              return false;
+            }
+          } catch (err: any) {
+            toast.error(err?.message || 'Invalid recurrence settings');
+            return false;
+          }
+        }
         if (
           !formData.location.trim() ||
           formData.latitude == null ||
@@ -331,8 +361,56 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   };
 
   const createEventMutation = useMutation({
-    mutationFn: async (vars: { eventData: any; categoryIds: number[] }) => {
-      const { eventData } = vars;
+    mutationFn: async (vars: {
+      eventData: any;
+      categoryIds: number[];
+      recurrence: RecurrenceFormState;
+    }) => {
+      const { eventData, categoryIds, recurrence: recurrenceState } = vars;
+
+      if (recurrenceState.frequency !== 'none') {
+        const rule = buildRecurrenceRule(
+          recurrenceState,
+          formData.date,
+          formData.end_date || null,
+        );
+        if (!rule) throw new Error('Invalid recurrence rule');
+
+        const result = await createEventSeriesWithOccurrences({
+          rule,
+          createdBy: user?.id ?? null,
+          categoryIds,
+          event: {
+            title: eventData.title,
+            description: eventData.description,
+            category: eventData.category,
+            category_id: eventData.category_id,
+            location: eventData.location,
+            location_url: eventData.location_url,
+            image_url: eventData.image_url,
+            capacity: eventData.capacity,
+            price: eventData.price,
+            tags: eventData.tags,
+            performing_artists: eventData.performing_artists,
+            latitude: eventData.latitude,
+            longitude: eventData.longitude,
+            ticket_link: eventData.ticket_link,
+            featured: eventData.featured,
+            organizer_id: eventData.organizer_id || null,
+            status: 'approved',
+            time: eventData.time,
+          },
+        });
+
+        return {
+          kind: 'series' as const,
+          title: eventData.title,
+          firstEventId: result.events[0]?.id as number,
+          occurrenceCount: result.occurrenceDates.length,
+          summary: formatRecurrenceSummary(rule, result.occurrenceDates.length),
+        };
+      }
+
       const { data, error } = await supabase
         .from('events')
         .insert([
@@ -346,51 +424,83 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         .single();
 
       if (error) throw error;
-      return data;
+      return { kind: 'single' as const, event: data };
     },
-    onSuccess: async (data, vars) => {
-      const categoryIds = vars?.categoryIds || [];
-      try {
-        await supabase.from('event_categories').delete().eq('event_id', data.id);
-        if (categoryIds.length > 0) {
-          const rows = categoryIds.map((category_id) => ({ event_id: data.id, category_id }));
-          const { error: insertError } = await supabase.from('event_categories').insert(rows);
-          if (insertError) throw insertError;
+    onSuccess: async (result, vars) => {
+      if (result.kind === 'single') {
+        const data = result.event;
+        const categoryIds = vars?.categoryIds || [];
+        try {
+          await supabase.from('event_categories').delete().eq('event_id', data.id);
+          if (categoryIds.length > 0) {
+            const rows = categoryIds.map((category_id) => ({ event_id: data.id, category_id }));
+            const { error: insertError } = await supabase.from('event_categories').insert(rows);
+            if (insertError) throw insertError;
+          }
+        } catch (catError: any) {
+          console.error('Failed to persist event categories:', catError);
+          toast.error(catError?.message || 'Event created, but categories failed to save');
         }
-      } catch (catError: any) {
-        console.error('Failed to persist event categories:', catError);
-        toast.error(catError?.message || 'Event created, but categories failed to save');
+
+        try {
+          const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
+          if (allUsers && allUsers.length > 0) {
+            await Promise.all(
+              allUsers.map((userProfile) =>
+                notificationService.createNotification({
+                  user_id: userProfile.id,
+                  type: 'new_event',
+                  title: '🎉 New Event Posted!',
+                  message: `"${data.title}" was just posted. Check it out!`,
+                  resource_id: data.id,
+                  resource_type: 'event',
+                  link: `/events/${data.id}`,
+                  data: {
+                    event_id: data.id,
+                    event_title: data.title,
+                  },
+                }),
+              ),
+            );
+          }
+        } catch (notifError) {
+          console.warn('Failed to send event notifications:', notifError);
+        }
+
+        toast.success('Event created successfully! Users will be notified.');
+      } else {
+        try {
+          const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
+          if (allUsers && allUsers.length > 0 && result.firstEventId) {
+            await Promise.all(
+              allUsers.map((userProfile) =>
+                notificationService.createNotification({
+                  user_id: userProfile.id,
+                  type: 'new_event',
+                  title: '🎉 New Event Series!',
+                  message: `"${result.title}" (${result.summary}) was just posted.`,
+                  resource_id: result.firstEventId,
+                  resource_type: 'event',
+                  link: `/events/${result.firstEventId}`,
+                  data: {
+                    event_id: result.firstEventId,
+                    event_title: result.title,
+                  },
+                }),
+              ),
+            );
+          }
+        } catch (notifError) {
+          console.warn('Failed to send event notifications:', notifError);
+        }
+
+        toast.success(
+          `Series created · ${result.occurrenceCount} occurrence${result.occurrenceCount === 1 ? '' : 's'} published.`,
+        );
       }
 
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
-
-      try {
-        const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
-        if (allUsers && allUsers.length > 0) {
-          await Promise.all(
-            allUsers.map((userProfile) =>
-              notificationService.createNotification({
-                user_id: userProfile.id,
-                type: 'new_event',
-                title: '🎉 New Event Posted!',
-                message: `"${data.title}" was just posted. Check it out!`,
-                resource_id: data.id,
-                resource_type: 'event',
-                link: `/events/${data.id}`,
-                data: {
-                  event_id: data.id,
-                  event_title: data.title,
-                },
-              }),
-            ),
-          );
-        }
-      } catch (notifError) {
-        console.warn('Failed to send event notifications:', notifError);
-      }
-
-      toast.success('Event created successfully! Users will be notified.');
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
@@ -449,14 +559,27 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           : ''),
     };
 
-    createEventMutation.mutate({ eventData, categoryIds: formData.category_ids });
+    createEventMutation.mutate({
+      eventData,
+      categoryIds: formData.category_ids,
+      recurrence,
+    });
   };
 
   const whenLabel = (() => {
     if (!formData.date) return 'Not set';
     try {
       const d = format(parseISO(formData.date.length === 10 ? `${formData.date}T12:00:00` : formData.date), 'MMM d, yyyy');
-      return formData.time ? `${d} · ${formData.time.slice(0, 5)}` : d;
+      const base = formData.time ? `${d} · ${formData.time.slice(0, 5)}` : d;
+      if (recurrence.frequency === 'none') return base;
+      try {
+        const rule = buildRecurrenceRule(recurrence, formData.date, formData.end_date || null);
+        if (!rule) return base;
+        const dates = expandOccurrenceDates(rule);
+        return `${base} · ${formatRecurrenceSummary(rule, dates.length)}`;
+      } catch {
+        return base;
+      }
     } catch {
       return formData.date;
     }
@@ -669,6 +792,21 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   className={fieldClass}
                 />
               </div>
+
+              <RecurrenceFields
+                value={recurrence}
+                onChange={setRecurrence}
+                startDate={formData.date}
+                occurrenceEndDate={formData.end_date || undefined}
+                fieldClassName={fieldClass}
+                labelClassName="text-xs font-semibold"
+              />
+              {recurrence.frequency !== 'none' ? (
+                <p className="text-[11px] text-muted-foreground">
+                  “To date” sets how many days each occurrence lasts. Series end is controlled under
+                  Repeats.
+                </p>
+              ) : null}
             </div>
 
             <div className={cn(surfaceCard, 'flex flex-col gap-2.5 p-4')}>
@@ -1125,6 +1263,10 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               [
                 ['Title', formData.title || 'Not set'],
                 ['When', whenLabel],
+                [
+                  'Schedule',
+                  recurrence.frequency === 'none' ? 'One-time' : 'Recurring series',
+                ],
                 ['Where', formData.location || 'Not set'],
                 [
                   'Price',

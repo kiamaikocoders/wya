@@ -550,6 +550,8 @@ export type Database = {
           location: string | null
           location_consent: boolean
           location_consent_at: string | null
+          location_source: string | null
+          location_confirm_needed: boolean
           longitude: number | null
           marketing_consent: boolean
           marketing_consent_at: string | null
@@ -586,6 +588,8 @@ export type Database = {
           location?: string | null
           location_consent?: boolean
           location_consent_at?: string | null
+          location_source?: string | null
+          location_confirm_needed?: boolean
           longitude?: number | null
           marketing_consent?: boolean
           marketing_consent_at?: string | null
@@ -622,6 +626,8 @@ export type Database = {
           location?: string | null
           location_consent?: boolean
           location_consent_at?: string | null
+          location_source?: string | null
+          location_confirm_needed?: boolean
           longitude?: number | null
           marketing_consent?: boolean
           marketing_consent_at?: string | null
