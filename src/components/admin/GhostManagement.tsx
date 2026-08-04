@@ -43,10 +43,8 @@ import { eventLastDayIso } from '@/utils/event-utils';
 import { storyService } from '@/lib/story/story-service';
 import { adminService, type AdminStory } from '@/lib/admin-service';
 import { supabase } from '@/lib/supabase';
-import {
-  prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
-} from '@/lib/media-upload-prepare';
+import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
+import { uploadToR2 } from '@/lib/r2-upload';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -336,23 +334,16 @@ const GhostManagement: React.FC = () => {
       const prepared = await prepareMediaForUpload(file, 'ghost');
       const fileExt = prepared.name.split('.').pop();
       const fileName = `ghost-content/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const bucket = 'media';
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, prepared, {
-          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-          upsert: false
-        });
+      const { publicUrl } = await uploadToR2({
+        bucket: 'media',
+        file: prepared,
+        path: fileName,
+        contentType: prepared.type || 'application/octet-stream',
+      });
 
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName);
-
-      setMediaUrl(data.publicUrl);
-      setMediaPreview(data.publicUrl);
+      setMediaUrl(publicUrl);
+      setMediaPreview(publicUrl);
       toast.success('File uploaded successfully');
     } catch (error: any) {
       console.error('Error uploading file:', error);

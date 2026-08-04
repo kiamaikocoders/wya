@@ -14,10 +14,8 @@ import { WebOnboardingSplitShell } from '@/components/onboarding/WebOnboardingSp
 import { CityChip } from '@/components/onboarding/CityChip';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
-} from '@/lib/media-upload-prepare';
+import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
+import { uploadToR2 } from '@/lib/r2-upload';
 
 interface EventProposal {
   title: string;
@@ -158,16 +156,16 @@ const RequestEvent: React.FC = () => {
       const folder = authUser ? `proposals/${authUser.id}` : 'proposals/guest';
       const filePath = `${folder}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from('event-images').upload(filePath, prepared, {
-        cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-        upsert: false,
+      const { publicUrl } = await uploadToR2({
+        bucket: 'event-images',
+        file: prepared,
+        path: filePath,
+        contentType: prepared.type || 'image/jpeg',
+        allowGuest: !authUser,
       });
 
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('event-images').getPublicUrl(filePath);
-      setProposal((prev) => ({ ...prev, imageUrl: data.publicUrl }));
-      setPreviewUrl(data.publicUrl);
+      setProposal((prev) => ({ ...prev, imageUrl: publicUrl }));
+      setPreviewUrl(publicUrl);
       toast.success('Image uploaded successfully');
     } catch (error: unknown) {
       console.error('Error uploading image:', error);

@@ -64,3 +64,7 @@ verify_jwt = false
 
 [functions.submit-proposal]
 verify_jwt = false
+
+[functions.create-r2-upload-url]
+# In-function getUser; guests allowed only for proposal paths.
+verify_jwt = false

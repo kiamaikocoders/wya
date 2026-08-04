@@ -2,9 +2,9 @@ import { supabase } from './supabase';
 import { toast } from 'sonner';
 import {
   prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
   type MediaUploadContext,
 } from './media-upload-prepare';
+import { R2_PUBLIC_BASE_URL, uploadToR2 } from './r2-upload';
 
 export interface UploadOptions {
   bucket: string;
@@ -117,30 +117,16 @@ export const storageService = {
       
       // Create file path with user folder
       const userFolder = user.id;
-      const filePath = options.folder 
+      const filePath = options.folder
         ? `${userFolder}/${options.folder}/${fileName}`
         : `${userFolder}/${fileName}`;
 
-      // Upload file
-      const { data, error } = await supabase.storage
-        .from(options.bucket)
-        .upload(filePath, fileToUpload, {
-          upsert: options.upsert || false,
-          cacheControl: options.cacheControl ?? STORAGE_CACHE_CONTROL_IMMUTABLE,
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from(options.bucket)
-        .getPublicUrl(filePath);
-
-      return {
-        path: data.path,
-        publicUrl: urlData.publicUrl,
-        fullPath: `${options.bucket}/${data.path}`
-      };
+      return await uploadToR2({
+        bucket: options.bucket,
+        file: fileToUpload,
+        path: filePath,
+        contentType: fileToUpload.type || 'application/octet-stream',
+      });
     } catch (error) {
       console.error('Error uploading file:', error);
       toast.error('Failed to upload file');
@@ -213,13 +199,9 @@ export const storageService = {
     }
   },
 
-  // Get file public URL
+  // Get file public URL (CDN for new keys)
   getPublicUrl: (bucketName: string, filePath: string): string => {
-    const { data } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    return `${R2_PUBLIC_BASE_URL}/${bucketName}/${filePath.replace(/^\//, '')}`;
   },
 
   // Get signed URL for private files

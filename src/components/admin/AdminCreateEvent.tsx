@@ -18,10 +18,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { googleMapsDirectionsUrl } from '@/lib/location-service';
 import LocationPicker from '@/components/maps/LocationPicker';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
-import {
-  prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
-} from '@/lib/media-upload-prepare';
+import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
+import { uploadToR2 } from '@/lib/r2-upload';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
@@ -228,38 +226,12 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       const prepared = await prepareMediaForUpload(file, 'event-image');
       const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const bucket = 'event-images';
-      const folder = 'event-images';
-      const filePath = `${folder}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, prepared, {
-        cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-        upsert: false,
+      const { publicUrl } = await uploadToR2({
+        bucket: 'event-images',
+        file: prepared,
+        path: `event-images/${fileName}`,
+        contentType: prepared.type || 'image/jpeg',
       });
-
-      let publicUrl: string;
-
-      if (uploadError) {
-        if (
-          uploadError.message.includes('Bucket not found') ||
-          uploadError.message.includes('new row violates')
-        ) {
-          const fallbackBucket = 'event-media';
-          const fallbackPath = `events/${fileName}`;
-          const { error: fallbackError } = await supabase.storage
-            .from(fallbackBucket)
-            .upload(fallbackPath, prepared, {
-              cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-              upsert: false,
-            });
-          if (fallbackError) throw fallbackError;
-          publicUrl = supabase.storage.from(fallbackBucket).getPublicUrl(fallbackPath).data.publicUrl;
-        } else {
-          throw uploadError;
-        }
-      } else {
-        publicUrl = supabase.storage.from(bucket).getPublicUrl(filePath).data.publicUrl;
-      }
 
       if (asGallery) {
         setGalleryUrls((prev) => [...prev, publicUrl]);
