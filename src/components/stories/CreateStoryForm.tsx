@@ -8,17 +8,14 @@ import { ImagePlus, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
 import { storyService } from '@/lib/story/story-service';
-import { supabase } from '@/lib/supabase';
 import {
   LegalReconsentRequiredForPostingError,
   MediaConsentRequiredForPostingError,
 } from '@/lib/posting-guard';
 import { toast } from 'sonner';
 import { CreateStoryDto } from '@/lib/story/types';
-import {
-  prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
-} from '@/lib/media-upload-prepare';
+import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
+import { uploadToR2 } from '@/lib/r2-upload';
 
 interface CreateStoryFormProps {
   eventId?: number;
@@ -47,23 +44,14 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
       const prepared = await prepareMediaForUpload(file, 'story');
       const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `stories/${fileName}`;
+      const { publicUrl } = await uploadToR2({
+        bucket: 'media',
+        file: prepared,
+        path: `stories/${fileName}`,
+        contentType: prepared.type || 'image/jpeg',
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, prepared, {
-          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
+      return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image');

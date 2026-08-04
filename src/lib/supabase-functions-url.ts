@@ -71,3 +71,9 @@ export function getAdminSystemUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();
   return base ? `${base}/functions/v1/admin-system` : "";
 }
+
+/** Authenticated/guest: create a short-lived R2 PUT URL. */
+export function getCreateR2UploadUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/create-r2-upload-url` : "";
+}

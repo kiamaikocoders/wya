@@ -16,10 +16,8 @@ import LocationPicker from '@/components/maps/LocationPicker';
 import { googleMapsDirectionsUrl } from '@/lib/location-service';
 import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
 import { organizeEventCategoryParents } from '@/lib/category-hierarchy';
-import {
-  prepareMediaForUpload,
-  STORAGE_CACHE_CONTROL_IMMUTABLE,
-} from '@/lib/media-upload-prepare';
+import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
+import { uploadToR2 } from '@/lib/r2-upload';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
 import { draftEventDescription } from '@/lib/admin-ai-analysis';
 import {
@@ -222,48 +220,15 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       const prepared = await prepareMediaForUpload(file, 'event-image');
       const fileExt = prepared.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const bucket = 'event-images';
-      const folder = 'event-images';
-      const filePath = `${folder}/${fileName}`;
+      const { publicUrl } = await uploadToR2({
+        bucket: 'event-images',
+        file: prepared,
+        path: `event-images/${fileName}`,
+        contentType: prepared.type || 'image/jpeg',
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, prepared, {
-          cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-          upsert: false
-        });
-
-      if (uploadError) {
-        if (uploadError.message.includes('Bucket not found') || uploadError.message.includes('new row violates')) {
-          const fallbackBucket = 'event-media';
-          const fallbackPath = `events/${fileName}`;
-          const { error: fallbackError } = await supabase.storage
-            .from(fallbackBucket)
-            .upload(fallbackPath, prepared, {
-              cacheControl: STORAGE_CACHE_CONTROL_IMMUTABLE,
-              upsert: false
-            });
-          
-          if (fallbackError) throw fallbackError;
-          
-          const { data } = supabase.storage
-            .from(fallbackBucket)
-            .getPublicUrl(fallbackPath);
-          
-          setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-          setPreviewUrl(data.publicUrl);
-          toast.success('Image uploaded successfully');
-          return;
-        }
-        throw uploadError;
-      }
-
-      const { data } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-      setPreviewUrl(data.publicUrl);
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      setPreviewUrl(publicUrl);
       toast.success('Image uploaded successfully');
     } catch (error: any) {
       console.error('Error uploading image:', error);

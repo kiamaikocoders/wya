@@ -35,6 +35,56 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       {
+        name: "r2-upload-url-dev-proxy",
+        enforce: "pre",
+        configureServer(server) {
+          server.middlewares.use(async (req, res, next) => {
+            const pathname = req.url?.split("?")[0] || "";
+            if (pathname !== "/api/r2-upload-url") {
+              return next();
+            }
+
+            const sendJson = (status: number, obj: Record<string, unknown>) => {
+              res.statusCode = status;
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.end(JSON.stringify(obj));
+            };
+
+            if (req.method === "OPTIONS") {
+              res.statusCode = 204;
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+              res.setHeader(
+                "Access-Control-Allow-Headers",
+                "Content-Type, Authorization, apikey",
+              );
+              res.end();
+              return;
+            }
+
+            if (req.method !== "POST") {
+              sendJson(405, { error: "Method not allowed" });
+              return;
+            }
+
+            try {
+              const { createR2PresignedUpload } = await import("./lib/r2-presign");
+              const raw = await readBody(req as IncomingMessage);
+              const body = JSON.parse(raw || "{}") as Record<string, unknown>;
+              const result = await createR2PresignedUpload({
+                env,
+                authorizationHeader: String(req.headers.authorization || ""),
+                body,
+              });
+              sendJson(result.status, result.body);
+            } catch {
+              sendJson(500, { error: "R2 upload URL proxy error" });
+            }
+          });
+        },
+      },
+      {
         name: "vercel-ai-dev-proxy",
         enforce: "pre",
         configureServer(server) {
