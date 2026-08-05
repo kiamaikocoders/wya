@@ -12,8 +12,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 import { resolveCategoryImage } from '@/pages/events/conceptDUtils';
 import { companion } from '@/lib/companion-theme';
 import { cn } from '@/lib/utils';
@@ -26,16 +33,19 @@ const FALLBACK_GALLERY = [
 
 /**
  * Figma redesign profile — cover, orange-ring avatar, form + image stack.
+ * Email is read-only; change uses the existing Supabase change-email flow.
  */
 const WebProfile = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, changeEmail } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [changingEmail, setChangingEmail] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
+  const [newEmail, setNewEmail] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -56,17 +66,12 @@ const WebProfile = () => {
     }
   }, [profile?.id, profile?.full_name, profile?.bio]);
 
-  useEffect(() => {
-    if (user?.email) {
-      setEmail(user.email);
-    }
-  }, [user?.email]);
-
+  const currentEmail = user?.email || '';
   const displayName = fullName || profile?.full_name || user?.full_name || user?.name || '';
   const avatarUrl = resolveAvatarUrl(
     profile?.avatar_url || user?.avatar_url || user?.profile_picture
   );
-  const initials = (displayName || email || 'U')
+  const initials = (displayName || currentEmail || 'U')
     .split(' ')
     .map((p) => p[0])
     .join('')
@@ -120,21 +125,36 @@ const WebProfile = () => {
       }
       await userService.updateProfile({ full_name: name, bio: bio.trim() });
       await updateUser({ name, full_name: name });
-
-      const nextEmail = email.trim().toLowerCase();
-      if (nextEmail && nextEmail !== (user.email || '').toLowerCase()) {
-        const { error } = await supabase.auth.updateUser({ email: nextEmail });
-        if (error) throw error;
-        toast.success('Check your inbox to confirm the new email address');
-      } else {
-        toast.success('Profile updated');
-      }
       await queryClient.invalidateQueries({ queryKey: ['userProfile', user.id] });
+      toast.success('Profile updated');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update profile';
       toast.error(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const next = newEmail.trim().toLowerCase();
+    if (!next || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next)) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    if (next === currentEmail.toLowerCase()) {
+      toast.error('That is already your current email');
+      return;
+    }
+    setChangingEmail(true);
+    try {
+      await changeEmail(next);
+      setEmailDialogOpen(false);
+      setNewEmail('');
+    } catch {
+      /* AuthContext already toasts */
+    } finally {
+      setChangingEmail(false);
     }
   };
 
@@ -230,12 +250,25 @@ const WebProfile = () => {
               <Input
                 id="web-profile-email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                className={cn('h-11', companion.input)}
+                value={currentEmail}
+                disabled
+                readOnly
+                className={cn('h-11 opacity-80', companion.input)}
               />
+              <p className={cn('text-xs', companion.muted)}>
+                Email changes require confirmation on the new address.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className={cn('mt-1', companion.border, companion.heading)}
+                onClick={() => {
+                  setNewEmail('');
+                  setEmailDialogOpen(true);
+                }}
+              >
+                Change email
+              </Button>
             </div>
             <div className="space-y-2">
               <Label
@@ -279,6 +312,53 @@ const WebProfile = () => {
           ))}
         </aside>
       </div>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className={cn(companion.surface, companion.border, companion.heading)}>
+          <DialogHeader>
+            <DialogTitle>Change email</DialogTitle>
+            <DialogDescription className={companion.muted}>
+              We&apos;ll send a confirmation link to the new address. Your current email stays
+              active until you confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => void handleChangeEmail(e)} className="space-y-4">
+            <div className="space-y-2">
+              <Label className={companion.muted}>Current email</Label>
+              <Input value={currentEmail} disabled className={cn('h-11 opacity-80', companion.input)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="web-new-email" className={companion.heading}>
+                New email
+              </Label>
+              <Input
+                id="web-new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className={cn('h-11', companion.input)}
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEmailDialogOpen(false)}
+                className={cn(companion.border, companion.heading)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className={companion.accentBtn} disabled={changingEmail}>
+                {changingEmail ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Send confirmation
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -8,8 +8,8 @@ const AdminFeedback: React.FC = () => {
   const queryClient = useQueryClient();
   return (
     <AdminPageShell
-      title="App feedback"
-      subtitle="Open a message for the full note, who sent it, and status actions"
+      title="App feedback & contact"
+      subtitle="Product feedback and Contact Support messages — open a row for the full note and status actions"
       icon={Inbox}
       actions={
         <AdminRefreshButton

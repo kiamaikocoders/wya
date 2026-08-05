@@ -68,15 +68,15 @@ const Layout = () => {
   ].includes(location.pathname);
   const isSupportPage = ["/faq", "/contact", "/feedback"].includes(location.pathname);
 
-  // Authenticated light-web keeps chrome on Events so it stays inside the app shell.
-  const hideEventsChrome = isEventsBrowse && (nativeApp || !isAuthenticated);
+  // Events browse/detail use the public marketing chrome (landing already covers discovery).
+  const hideEventsChrome = isEventsBrowse;
 
+  // Support pages ship their own Legal shell header/footer — hide app chrome to avoid duplicates.
   const hideChrome =
     isAuthPage ||
     (nativeApp && isDiscoverPage) ||
     isLegalPage ||
-    (nativeApp && isSupportPage) ||
-    (!isAuthenticated && isSupportPage) ||
+    isSupportPage ||
     hideEventsChrome ||
     isImmersiveWizard ||
     isSharedEventMedia;

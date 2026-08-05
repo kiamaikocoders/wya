@@ -17,7 +17,7 @@ export type Database = {
           message: string
           page_path: string | null
           status: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           category?: string
@@ -26,7 +26,7 @@ export type Database = {
           message: string
           page_path?: string | null
           status?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           category?: string
@@ -35,7 +35,7 @@ export type Database = {
           message?: string
           page_path?: string | null
           status?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1167,6 +1167,10 @@ export type Database = {
           p_date_from?: string | null
         }
         Returns: number
+      }
+      get_companion_home_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
     }
     Enums: {

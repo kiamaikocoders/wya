@@ -30,41 +30,38 @@ const Account = () => {
     staleTime: 60_000,
   });
 
-  const { featuredEvents, stats } = useMemo(() => {
-    const now = new Date();
-    const weekEnd = new Date(now);
-    weekEnd.setDate(weekEnd.getDate() + 7);
+  const { data: homeStats } = useQuery({
+    queryKey: ['companionHomeStats'],
+    queryFn: () => eventService.getCompanionHomeStats(),
+    staleTime: 60_000,
+  });
 
+  const formatStat = (n: number | undefined) => {
+    if (n == null) return '—';
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (n >= 10_000) return `${Math.round(n / 1000)}K`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+    return String(n);
+  };
+
+  const featuredEvents = useMemo(() => {
     const ticketedIds = new Set(
       tickets.filter((t) => t.status !== 'cancelled').map((t) => t.event_id)
     );
 
-    const events = upcomingFeed.slice(0, 3);
-    const eventsThisWeek = upcomingFeed.filter((e) => {
-      const d = new Date(e.date);
-      return d >= now && d <= weekEnd;
-    }).length;
-
-    const cities = new Set(
-      upcomingFeed
-        .map((e) => e.location?.split(',')[0]?.trim())
-        .filter(Boolean)
-    );
-
-    return {
-      featuredEvents: events.map((event) => ({
-        ...event,
-        imageUrl: event.image_url || resolveCategoryImage(event.category),
-        hasTicket: ticketedIds.has(event.id),
-        ticketId: tickets.find((t) => t.event_id === event.id && t.status !== 'cancelled')?.id,
-      })),
-      stats: {
-        eventsThisWeek: eventsThisWeek > 0 ? `${eventsThisWeek}+` : '0',
-        activeUsers: '45K',
-        cities: String(Math.max(cities.size, 1)),
-      },
-    };
+    return upcomingFeed.slice(0, 3).map((event) => ({
+      ...event,
+      imageUrl: event.image_url || resolveCategoryImage(event.category),
+      hasTicket: ticketedIds.has(event.id),
+      ticketId: tickets.find((t) => t.event_id === event.id && t.status !== 'cancelled')?.id,
+    }));
   }, [upcomingFeed, tickets]);
+
+  const stats = {
+    eventsThisWeek: formatStat(homeStats?.eventsThisWeek),
+    activeUsers: formatStat(homeStats?.activeUsers),
+    cities: formatStat(homeStats?.cities),
+  };
 
   const formatCardMeta = (iso: string, location?: string) => {
     const d = new Date(iso);
@@ -123,7 +120,7 @@ const Account = () => {
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className={cn('text-lg font-semibold', companion.heading)}>Happening soon</h2>
-          <Link to="/events" className={cn('text-sm font-medium hover:underline', companion.accent)}>
+          <Link to="/" className={cn('text-sm font-medium hover:underline', companion.accent)}>
             Browse all
           </Link>
         </div>
@@ -147,7 +144,7 @@ const Account = () => {
           >
             <p className={cn('text-sm', companion.muted)}>No upcoming events right now.</p>
             <Button asChild className={cn('mt-4', companion.accentBtn)}>
-              <Link to="/events">Browse events</Link>
+              <Link to="/">Browse events</Link>
             </Button>
           </div>
         ) : (

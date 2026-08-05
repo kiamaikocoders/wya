@@ -38,6 +38,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   idea: 'Idea',
   general: 'General feedback',
   other: 'Other',
+  contact: 'Contact support',
 };
 
 /**
@@ -70,7 +71,7 @@ export function AdminFeedbackDetailDialog({
   const name =
     feedback.profiles?.full_name?.trim() ||
     feedback.profiles?.username?.trim() ||
-    'User';
+    (feedback.category === 'contact' ? 'Contact guest' : 'User');
   const username = feedback.profiles?.username?.trim() || null;
   const avatar = feedback.profiles?.avatar_url || null;
   const categoryLabel = CATEGORY_LABEL[feedback.category] || feedback.category;

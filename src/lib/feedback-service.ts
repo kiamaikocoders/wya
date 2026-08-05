@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Tables } from '@/integrations/supabase/types';
 
-export const FEEDBACK_CATEGORIES = ['bug', 'idea', 'general', 'other'] as const;
+export const FEEDBACK_CATEGORIES = ['bug', 'idea', 'general', 'other', 'contact'] as const;
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number];
 
 export const FEEDBACK_STATUSES = ['new', 'read', 'archived'] as const;
@@ -23,6 +23,18 @@ export type SubmitFeedbackInput = {
   category: FeedbackCategory;
   message: string;
   pagePath?: string | null;
+};
+
+export type SubmitContactInput = {
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  pagePath?: string | null;
+  /** When signed in, link the row to the profile. */
+  userId?: string | null;
 };
 
 function normalizeCategory(value: string): FeedbackCategory {
@@ -65,6 +77,67 @@ export const feedbackService = {
       });
     } catch (e) {
       console.warn('Admin feedback notify failed', e);
+    }
+
+    return data;
+  },
+
+  /**
+   * Contact Support form — stores in app_feedback as category `contact`
+   * so it appears in the admin feedback inbox.
+   */
+  async submitContact(input: SubmitContactInput): Promise<AppFeedbackRow> {
+    const email = input.email.trim().toLowerCase();
+    const subject = input.subject.trim();
+    const body = input.message.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error('A valid email is required.');
+    }
+    if (!subject) {
+      throw new Error('Subject is required.');
+    }
+    if (body.length === 0 || body.length > MAX_MESSAGE) {
+      throw new Error(`Message must be between 1 and ${MAX_MESSAGE} characters.`);
+    }
+
+    const name = [input.firstName?.trim(), input.lastName?.trim()].filter(Boolean).join(' ');
+    const message = [
+      `Subject: ${subject}`,
+      `Name: ${name || '—'}`,
+      `Email: ${email}`,
+      `Phone: ${input.phone?.trim() || '—'}`,
+      '',
+      body,
+    ].join('\n');
+
+    const userId = input.userId || null;
+    const { data, error } = await supabase
+      .from('app_feedback')
+      .insert({
+        user_id: userId,
+        category: 'contact',
+        message,
+        page_path: input.pagePath?.trim() || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    try {
+      const { notificationService } = await import('@/lib/notification/notification-service');
+      const preview = body.length > 120 ? `${body.slice(0, 117)}…` : body;
+      await notificationService.notifyAdmins({
+        type: 'app_feedback',
+        title: 'New contact message',
+        message: `${subject}: ${preview}`,
+        resource_type: 'app_feedback',
+        resource_uuid: data.id,
+        link: '/admin/feedback',
+        data: { feedback_id: data.id, category: 'contact', email },
+      });
+    } catch (e) {
+      console.warn('Admin contact notify failed', e);
     }
 
     return data;
