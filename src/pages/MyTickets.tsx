@@ -71,17 +71,18 @@ const MyTickets = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
         <TabsList
           className={cn(
-            'h-11 w-full justify-start rounded-[10px] p-0',
+            'grid h-11 w-full max-w-md grid-cols-2 gap-1 rounded-full border p-1',
             companion.border,
-            companion.surface
+            'bg-[#eaeef2] dark:bg-[#161b22]'
           )}
         >
           <TabsTrigger
             value="upcoming"
             className={cn(
-              'h-full flex-1 rounded-none rounded-l-[10px] text-sm data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              'data-[state=active]:font-semibold data-[state=active]:text-[#ff6b35]',
-              'data-[state=inactive]:font-normal data-[state=inactive]:text-[#656d76] dark:data-[state=inactive]:text-[#8b949e]'
+              'h-full rounded-full text-sm transition-all',
+              'data-[state=active]:bg-[#ff6b35] data-[state=active]:font-semibold data-[state=active]:text-white data-[state=active]:shadow-sm',
+              'data-[state=inactive]:bg-transparent data-[state=inactive]:font-medium data-[state=inactive]:text-[#656d76]',
+              'dark:data-[state=inactive]:text-[#8b949e]'
             )}
           >
             Upcoming
@@ -89,9 +90,10 @@ const MyTickets = () => {
           <TabsTrigger
             value="past"
             className={cn(
-              'h-full flex-1 rounded-none rounded-r-[10px] text-sm data-[state=active]:bg-transparent data-[state=active]:shadow-none',
-              'data-[state=active]:font-semibold data-[state=active]:text-[#ff6b35]',
-              'data-[state=inactive]:font-normal data-[state=inactive]:text-[#656d76] dark:data-[state=inactive]:text-[#8b949e]'
+              'h-full rounded-full text-sm transition-all',
+              'data-[state=active]:bg-[#ff6b35] data-[state=active]:font-semibold data-[state=active]:text-white data-[state=active]:shadow-sm',
+              'data-[state=inactive]:bg-transparent data-[state=inactive]:font-medium data-[state=inactive]:text-[#656d76]',
+              'dark:data-[state=inactive]:text-[#8b949e]'
             )}
           >
             Past
@@ -157,7 +159,7 @@ function EmptyTickets({
       <p className={cn('mb-4 text-sm', companion.muted)}>{description}</p>
       {showBrowse && (
         <Button asChild className={companion.accentBtn}>
-          <Link to="/events">Browse events</Link>
+          <Link to="/">Browse events</Link>
         </Button>
       )}
     </div>

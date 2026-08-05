@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar, Ticket, User, Bell, Home } from 'lucide-react';
+import { Ticket, User, Bell, Home } from 'lucide-react';
 import { companion } from '@/lib/companion-theme';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +11,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: 'Home', icon: Home, path: '/account' },
-  { name: 'Events', icon: Calendar, path: '/events' },
   { name: 'Tickets', icon: Ticket, path: '/tickets' },
   { name: 'Alerts', icon: Bell, path: '/notifications' },
   { name: 'Profile', icon: User, path: '/profile' },
@@ -32,9 +31,6 @@ const WebAccountNav = () => {
     }
     if (path === '/profile') {
       return location.pathname === '/profile' || location.pathname === '/settings';
-    }
-    if (path === '/events') {
-      return location.pathname === '/events' || location.pathname.startsWith('/events/');
     }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };

@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/lib/user-service';
+import { notificationService } from '@/lib/notification/notification-service';
+import type { NotificationSettings } from '@/lib/notification/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +22,9 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { companion } from '@/lib/companion-theme';
 import { cn } from '@/lib/utils';
+
+const ANDROID_APK_URL = '/downloads/wya-app.apk';
+const IOS_DOWNLOAD_URL = '/download';
 
 type SettingsTab = 'account' | 'notifications' | 'security' | 'support' | 'app';
 
@@ -45,9 +50,7 @@ const WebSettings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [eventReminders, setEventReminders] = useState(true);
-  const [weeklyDigest, setWeeklyDigest] = useState(false);
-  const [ticketUpdates, setTicketUpdates] = useState(true);
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings | null>(null);
   const [profileVisibility, setProfileVisibility] = useState('public');
   const [twoFactor, setTwoFactor] = useState(false);
 
@@ -72,27 +75,24 @@ const WebSettings = () => {
 
   useEffect(() => {
     if (!profile) return;
-    setEventReminders(profile.email_notifications ?? true);
-    setWeeklyDigest(Boolean(profile.marketing_consent));
-    setTicketUpdates(profile.email_notifications ?? true);
     setProfileVisibility(profile.profile_visibility || 'public');
     setTwoFactor(Boolean(profile.two_factor_auth));
-  }, [
-    profile?.id,
-    profile?.email_notifications,
-    profile?.marketing_consent,
-    profile?.profile_visibility,
-    profile?.two_factor_auth,
-  ]);
+  }, [profile?.id, profile?.profile_visibility, profile?.two_factor_auth]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void notificationService
+      .getNotificationSettings()
+      .then(setNotifSettings)
+      .catch((err) => console.error('Failed to load notification settings', err));
+  }, [user?.id]);
 
   const scrollTo = (tab: SettingsTab) => {
     setActiveTab(tab);
     sectionRefs[tab].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const persistPrefs = async (patch: {
-    email_notifications?: boolean;
-    marketing_consent?: boolean;
+  const persistProfilePrefs = async (patch: {
     profile_visibility?: string;
     two_factor_auth?: boolean;
   }) => {
@@ -104,6 +104,24 @@ const WebSettings = () => {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save settings';
       toast.error(msg);
+    } finally {
+      setSavingToggle(false);
+    }
+  };
+
+  const persistNotifPrefs = async (next: NotificationSettings) => {
+    setSavingToggle(true);
+    setNotifSettings(next);
+    try {
+      await notificationService.updateNotificationSettings(next);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save notification settings';
+      toast.error(msg);
+      try {
+        setNotifSettings(await notificationService.getNotificationSettings());
+      } catch {
+        /* ignore */
+      }
     } finally {
       setSavingToggle(false);
     }
@@ -211,11 +229,18 @@ const WebSettings = () => {
                 description="Get notified before events start"
                 trailing={
                   <OrangeSwitch
-                    checked={eventReminders}
-                    disabled={savingToggle}
+                    checked={notifSettings?.notification_types.event_updates ?? true}
+                    disabled={savingToggle || !notifSettings}
                     onCheckedChange={(checked) => {
-                      setEventReminders(checked);
-                      void persistPrefs({ email_notifications: checked });
+                      if (!notifSettings) return;
+                      void persistNotifPrefs({
+                        ...notifSettings,
+                        email_notifications: true,
+                        notification_types: {
+                          ...notifSettings.notification_types,
+                          event_updates: checked,
+                        },
+                      });
                     }}
                   />
                 }
@@ -226,11 +251,14 @@ const WebSettings = () => {
                 description="Curated events in your city"
                 trailing={
                   <OrangeSwitch
-                    checked={weeklyDigest}
-                    disabled={savingToggle}
+                    checked={notifSettings?.marketing_consent ?? false}
+                    disabled={savingToggle || !notifSettings}
                     onCheckedChange={(checked) => {
-                      setWeeklyDigest(checked);
-                      void persistPrefs({ marketing_consent: checked });
+                      if (!notifSettings) return;
+                      void persistNotifPrefs({
+                        ...notifSettings,
+                        marketing_consent: checked,
+                      });
                     }}
                   />
                 }
@@ -241,11 +269,18 @@ const WebSettings = () => {
                 description="Confirmations and transfers"
                 trailing={
                   <OrangeSwitch
-                    checked={ticketUpdates}
-                    disabled={savingToggle}
+                    checked={notifSettings?.notification_types.tickets ?? true}
+                    disabled={savingToggle || !notifSettings}
                     onCheckedChange={(checked) => {
-                      setTicketUpdates(checked);
-                      void persistPrefs({ email_notifications: checked || eventReminders });
+                      if (!notifSettings) return;
+                      void persistNotifPrefs({
+                        ...notifSettings,
+                        email_notifications: true,
+                        notification_types: {
+                          ...notifSettings.notification_types,
+                          tickets: checked,
+                        },
+                      });
                     }}
                   />
                 }
@@ -272,7 +307,7 @@ const WebSettings = () => {
                     disabled={savingToggle}
                     onCheckedChange={(checked) => {
                       setTwoFactor(checked);
-                      void persistPrefs({ two_factor_auth: checked });
+                      void persistProfilePrefs({ two_factor_auth: checked });
                     }}
                   />
                 }
@@ -327,22 +362,37 @@ const WebSettings = () => {
 
           <section ref={sectionRefs.app} className="scroll-mt-24 space-y-1 pb-4">
             <SectionLabel>Get the app</SectionLabel>
-            <div className="space-y-0">
-              <SettingsRow
-                as={Link}
-                to="/download"
-                icon="📱"
-                title="Download for iOS"
-                description="App Store"
-              />
-              <SettingsRow
-                as={Link}
-                to="/download"
-                icon="🤖"
-                title="Download for Android"
-                description="Google Play"
-              />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a
+                href={IOS_DOWNLOAD_URL}
+                className="inline-flex transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6b35]"
+              >
+                <img
+                  src="/companion/badge-app-store.svg"
+                  alt="Download on the App Store"
+                  className="h-10 w-auto"
+                  width={120}
+                  height={40}
+                />
+              </a>
+              <a
+                href={ANDROID_APK_URL}
+                className="inline-flex transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6b35]"
+                download
+              >
+                <img
+                  src="/companion/badge-google-play.svg"
+                  alt="Get it on Google Play"
+                  className="h-10 w-auto"
+                  width={135}
+                  height={40}
+                />
+              </a>
             </div>
+            <p className={cn('pt-1 text-xs', companion.muted)}>
+              Android installs via our APK download. iOS uses the download page until the App Store
+              listing is live.
+            </p>
           </section>
         </div>
       </div>
@@ -420,7 +470,7 @@ const WebSettings = () => {
                 type="button"
                 onClick={() => {
                   setProfileVisibility(opt.value);
-                  void persistPrefs({ profile_visibility: opt.value }).then(() => {
+                  void persistProfilePrefs({ profile_visibility: opt.value }).then(() => {
                     setVisibilityOpen(false);
                     toast.success(`Visibility set to ${opt.label.toLowerCase()}`);
                   });

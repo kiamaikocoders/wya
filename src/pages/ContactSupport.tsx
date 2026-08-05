@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { LegalHeroFormShell } from '@/components/legal/LegalPageShell';
 import { Button } from '@/components/ui/button';
@@ -6,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SUPPORT_EMAIL } from '@/legal/legal-page-content';
+import { useAuth } from '@/contexts/AuthContext';
+import { feedbackService } from '@/lib/feedback-service';
 import { toast } from 'sonner';
 
 const fieldClass =
   'h-12 rounded-[14px] border-[#dbe0e5] bg-[#f9f9fa] text-[#1a1f24] placeholder:text-[#8c949e] focus-visible:ring-[#ff6b35]';
 
 const ContactSupport = () => {
+  const { user } = useAuth();
+  const location = useLocation();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -20,24 +25,50 @@ const ContactSupport = () => {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user?.email && !email) {
+      setEmail(user.email);
+    }
+    if ((user?.full_name || user?.name) && !firstName && !lastName) {
+      const parts = (user.full_name || user.name || '').trim().split(/\s+/);
+      setFirstName(parts[0] || '');
+      setLastName(parts.slice(1).join(' '));
+    }
+  }, [user?.id, user?.email, user?.full_name, user?.name]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !email.trim() || !subject.trim()) {
       toast.error('Please fill in email, subject, and message.');
       return;
     }
     setSubmitting(true);
-    const body = [
-      `Name: ${firstName} ${lastName}`.trim(),
-      `Phone: ${phone || '—'}`,
-      `Email: ${email}`,
-      '',
-      message.trim(),
-    ].join('\n');
-    const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject.trim())}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    toast.success('Opening your email client…');
-    setSubmitting(false);
+    try {
+      await feedbackService.submitContact({
+        firstName,
+        lastName,
+        email,
+        phone,
+        subject,
+        message,
+        pagePath: `${location.pathname}${location.search}`,
+        userId: user?.id ?? null,
+      });
+      toast.success('Message sent — we usually reply within 24 hours.');
+      setSubject('');
+      setMessage('');
+      if (!user) {
+        setFirstName('');
+        setLastName('');
+        setPhone('');
+        setEmail('');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Could not send message');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -74,7 +105,7 @@ const ContactSupport = () => {
       }
     >
       <h2 className="text-[28px] font-bold text-[#1a1f24]">Send a message</h2>
-      <form onSubmit={handleSubmit} className="mt-[18px] space-y-[18px]">
+      <form onSubmit={(e) => void handleSubmit(e)} className="mt-[18px] space-y-[18px]">
         <div className="grid gap-3.5 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-[13px] font-semibold text-[#404752]">First Name</Label>
@@ -147,7 +178,7 @@ const ContactSupport = () => {
           {submitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Opening…
+              Sending…
             </>
           ) : (
             'Submit'

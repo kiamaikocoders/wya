@@ -26,6 +26,7 @@ const CATEGORY_SHORT: Record<string, string> = {
   idea: 'Idea',
   general: 'General',
   other: 'Other',
+  contact: 'Contact',
 };
 
 const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
@@ -127,7 +128,7 @@ const AdminFeedbackPanel: React.FC<{ hideTitle?: boolean }> = () => {
               const name =
                 item.profiles?.full_name?.trim() ||
                 item.profiles?.username?.trim() ||
-                'User';
+                (item.category === 'contact' ? 'Contact' : 'User');
               let when = 'just now';
               try {
                 when = formatDistanceToNow(parseISO(item.created_at), { addSuffix: false });

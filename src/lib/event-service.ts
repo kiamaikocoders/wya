@@ -83,6 +83,33 @@ export const eventService = {
     return result.events;
   },
 
+  /**
+   * Aggregate stats for the light-web companion home strip.
+   */
+  getCompanionHomeStats: async (): Promise<{
+    eventsThisWeek: number;
+    activeUsers: number;
+    cities: number;
+  }> => {
+    const { data, error } = await supabase.rpc('get_companion_home_stats');
+    if (error) {
+      console.error('Error fetching companion home stats:', error);
+      throw error;
+    }
+
+    const payload = (data ?? {}) as {
+      events_this_week?: number;
+      active_users?: number;
+      cities?: number;
+    };
+
+    return {
+      eventsThisWeek: Number(payload.events_this_week ?? 0),
+      activeUsers: Number(payload.active_users ?? 0),
+      cities: Number(payload.cities ?? 0),
+    };
+  },
+
   // Lightweight home feed (avoids count/stats queries and returns a small payload)
   getHomeFeedEvents: async (limit = 50): Promise<Event[]> => {
     const now = new Date();
