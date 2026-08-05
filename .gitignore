@@ -45,4 +45,7 @@ android/.idea/
 !debug.keystore
 .archive/
 .vercel
-.env*
+.env
+.env.local
+.env.*.local
+!.env.example
