@@ -6,23 +6,18 @@ import {
   notificationsQueryKey,
 } from '@/lib/notification/notification-service';
 import type { Notification } from '@/lib/notification/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Bell,
-  CheckCircle,
-  Calendar,
-  Info,
-  UserPlus,
-  MessageCircle,
-  FileText,
-  Inbox,
-} from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { resolveWebSafePath } from '@/lib/post-auth-navigation';
+import { companion } from '@/lib/companion-theme';
+import { cn } from '@/lib/utils';
 
+/**
+ * Figma redesign Alerts — compact unread-dot rows (light + dark).
+ */
 const Notifications = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -50,35 +45,6 @@ const Notifications = () => {
     void queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'event_update':
-      case 'event_cancelled':
-      case 'new_event':
-      case 'event_created':
-        return <Calendar className="h-6 w-6 text-blue-500" />;
-      case 'announcement':
-        return <Info className="h-6 w-6 text-purple-500" />;
-      case 'ticket':
-      case 'checkin':
-        return <CheckCircle className="h-6 w-6 text-green-500" />;
-      case 'follow':
-        return <UserPlus className="h-6 w-6 text-gradient-orange-accent" />;
-      case 'message':
-        return <MessageCircle className="h-6 w-6 text-blue-600" />;
-      case 'proposal_submitted':
-      case 'proposal_approved':
-      case 'proposal_rejected':
-        return <FileText className="h-6 w-6 text-kenya-orange" />;
-      case 'app_feedback':
-      case 'feedback_reply':
-        return <Inbox className="h-6 w-6 text-kenya-orange" />;
-      case 'system':
-      default:
-        return <Bell className="h-6 w-6 text-gradient-orange-accent" />;
-    }
-  };
-
   const handleMarkAllAsRead = async () => {
     try {
       if (user) {
@@ -89,17 +55,6 @@ const Notifications = () => {
       }
     } catch {
       toast.error('Failed to mark notifications as read');
-    }
-  };
-
-  const handleMarkAsRead = async (id: number) => {
-    try {
-      await notificationService.markAsRead(id);
-      toast.success('Notification marked as read');
-      invalidate();
-      refetch();
-    } catch {
-      toast.error('Failed to mark notification as read');
     }
   };
 
@@ -118,84 +73,101 @@ const Notifications = () => {
   };
 
   return (
-    <div className="container py-8 animate-fade-in">
-      <div className="flex flex-col space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-white text-3xl font-bold">Your Notifications</h1>
-          {notifications.length > 0 && (
-            <Button variant="outline" onClick={handleMarkAllAsRead}>
-              Mark all as read
-            </Button>
-          )}
+    <div className={cn('mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-8 lg:px-12', companion.page)}>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className={cn('text-3xl font-bold', companion.heading)}>Alerts</h1>
+          <p className={cn('mt-2 text-sm', companion.muted)}>
+            Stay updated on events, tickets, and activity
+          </p>
         </div>
+        {notifications.length > 0 && (
+          <Button
+            variant="outline"
+            onClick={() => void handleMarkAllAsRead()}
+            className={cn(
+              'bg-transparent',
+              companion.border,
+              companion.heading,
+              'hover:bg-white dark:hover:bg-[#161b22]'
+            )}
+          >
+            Mark all as read
+          </Button>
+        )}
+      </div>
 
+      <div className="mt-6 space-y-3">
         {isLoading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-kenya-orange"></div>
+          <div className="flex justify-center py-16">
+            <div
+              className={cn(
+                'h-12 w-12 animate-spin rounded-full border-t-2 border-b-2',
+                companion.spinner
+              )}
+            />
           </div>
         ) : error ? (
-          <Card className="p-8 flex flex-col items-center text-center">
-            <Bell className="h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Could not load notifications</h2>
-            <p className="text-muted-foreground mb-4">Please try again.</p>
-            <Button variant="outline" onClick={() => void refetch()}>
+          <div className={cn('px-6 py-12 text-center', companion.card)}>
+            <Bell className={cn('mx-auto mb-4 h-12 w-12', companion.muted)} />
+            <h2 className={cn('mb-2 text-lg font-semibold', companion.heading)}>
+              Could not load alerts
+            </h2>
+            <p className={cn('mb-4 text-sm', companion.muted)}>Please try again.</p>
+            <Button
+              variant="outline"
+              onClick={() => void refetch()}
+              className={cn(companion.border, companion.heading)}
+            >
               Retry
             </Button>
-          </Card>
-        ) : notifications.length > 0 ? (
-          <div className="grid gap-4">
-            {notifications.map((notification) => (
-              <Card
-                key={notification.id}
-                className={`transition-colors cursor-pointer ${
-                  !notification.read
-                    ? 'bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30/10 border-kenya-orange/50'
-                    : ''
-                }`}
-                onClick={() => void openNotification(notification)}
-              >
-                <CardHeader className="flex flex-row items-start space-x-4 pb-2">
-                  <div className="mt-1">{getNotificationIcon(notification.type)}</div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{notification.title}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                        })}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pl-14">
-                  <p className="text-muted-foreground">{notification.message}</p>
-                </CardContent>
-                {!notification.read && (
-                  <CardFooter className="justify-end pt-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleMarkAsRead(notification.id);
-                      }}
-                    >
-                      Mark as read
-                    </Button>
-                  </CardFooter>
-                )}
-              </Card>
-            ))}
           </div>
+        ) : notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <button
+              key={notification.id}
+              type="button"
+              onClick={() => void openNotification(notification)}
+              className={cn(
+                'flex w-full items-center gap-4 px-5 py-4 text-left transition',
+                companion.card,
+                'hover:border-[#ff6b35]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6b35]'
+              )}
+            >
+              <span
+                className={cn(
+                  'size-2.5 shrink-0 rounded-full',
+                  notification.read
+                    ? 'bg-[#d0d7dd] dark:bg-[#30363d]'
+                    : 'bg-[#ff6b35]'
+                )}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    'truncate text-sm',
+                    notification.read
+                      ? cn('font-normal', companion.muted)
+                      : cn('font-semibold', companion.heading)
+                  )}
+                >
+                  {notification.title}
+                </p>
+                <p className={cn('mt-1 text-xs', companion.muted)}>
+                  {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                </p>
+              </div>
+            </button>
+          ))
         ) : (
-          <Card className="p-8 flex flex-col items-center text-center">
-            <Bell className="h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Notifications</h2>
-            <p className="text-muted-foreground">
-              You don't have any notifications right now. We'll notify you when there are updates
-              about events, tickets, or important announcements.
+          <div className={cn('px-6 py-12 text-center', companion.card)}>
+            <Bell className={cn('mx-auto mb-4 h-12 w-12', companion.muted)} />
+            <h2 className={cn('mb-2 text-lg font-semibold', companion.heading)}>No alerts yet</h2>
+            <p className={cn('text-sm', companion.muted)}>
+              We&apos;ll notify you about tickets, events, and important updates.
             </p>
-          </Card>
+          </div>
         )}
       </div>
     </div>

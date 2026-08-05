@@ -1,29 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Camera, Loader2, LogOut, Settings } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/lib/user-service';
 import { storageService } from '@/lib/storage-service';
 import { resolveAvatarUrl } from '@/lib/avatar-url';
+import { eventService } from '@/lib/event-service';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { resolveCategoryImage } from '@/pages/events/conceptDUtils';
+import { companion } from '@/lib/companion-theme';
+import { cn } from '@/lib/utils';
+
+const FALLBACK_GALLERY = [
+  '/landing/hero-crowd.jpg',
+  '/landing/cta-rooftop.png',
+  '/landing/story-1.jpg',
+];
 
 /**
- * PDF light-web profile: name, email, photo — no social tabs or connections.
+ * Figma redesign profile — cover, orange-ring avatar, form + image stack.
  */
 const WebProfile = () => {
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
@@ -31,11 +43,18 @@ const WebProfile = () => {
     enabled: !!user?.id,
   });
 
+  const { data: galleryEvents = [] } = useQuery({
+    queryKey: ['homeFeedEvents', 'profile-gallery'],
+    queryFn: () => eventService.getHomeFeedEvents(6),
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '');
+      setBio(profile.bio || '');
     }
-  }, [profile?.id, profile?.full_name]);
+  }, [profile?.id, profile?.full_name, profile?.bio]);
 
   useEffect(() => {
     if (user?.email) {
@@ -44,13 +63,22 @@ const WebProfile = () => {
   }, [user?.email]);
 
   const displayName = fullName || profile?.full_name || user?.full_name || user?.name || '';
-  const avatarUrl = resolveAvatarUrl(profile?.avatar_url || user?.avatar_url || user?.profile_picture);
+  const avatarUrl = resolveAvatarUrl(
+    profile?.avatar_url || user?.avatar_url || user?.profile_picture
+  );
   const initials = (displayName || email || 'U')
     .split(' ')
     .map((p) => p[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const galleryImages = [
+    ...galleryEvents
+      .map((e) => e.image_url || resolveCategoryImage(e.category))
+      .filter(Boolean),
+    ...FALLBACK_GALLERY,
+  ].slice(0, 3);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,7 +118,7 @@ const WebProfile = () => {
         setSaving(false);
         return;
       }
-      await userService.updateProfile({ full_name: name });
+      await userService.updateProfile({ full_name: name, bio: bio.trim() });
       await updateUser({ name, full_name: name });
 
       const nextEmail = email.trim().toLowerCase();
@@ -112,112 +140,145 @@ const WebProfile = () => {
 
   if (isLoading && !profile) {
     return (
-      <div className="flex justify-center py-16">
-        <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
+      <div className={cn('flex justify-center py-16', companion.page)}>
+        <div
+          className={cn(
+            'h-10 w-10 animate-spin rounded-full border-t-2 border-b-2',
+            companion.spinner
+          )}
+        />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-lg px-4 py-8 pb-28">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/settings">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Link>
-        </Button>
-      </div>
-
-      <div className="mb-8 flex flex-col items-center gap-3">
+    <div className={cn('mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-8 lg:px-12', companion.page)}>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_432px]">
         <div className="relative">
-          <Avatar className="h-24 w-24 border border-border">
-            <AvatarImage src={avatarUrl || undefined} alt="" />
-            <AvatarFallback className="bg-primary/15 text-xl text-primary">{initials}</AvatarFallback>
-          </Avatar>
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            className="absolute bottom-0 right-0 h-9 w-9 rounded-full"
-            disabled={uploading}
-            onClick={() => fileRef.current?.click()}
-            aria-label="Change photo"
-          >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => void handleAvatarChange(e)}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">Upload or change your profile picture</p>
-      </div>
+          <div className="relative h-[180px] overflow-hidden rounded-2xl sm:h-[200px]">
+            <img
+              src="/companion/profile-hero.jpg"
+              alt=""
+              className="absolute inset-0 size-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-black/50" />
+          </div>
 
-      <form onSubmit={(e) => void handleSave(e)} className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="web-profile-name">Name</Label>
-          <Input
-            id="web-profile-name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Your name"
-            autoComplete="name"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="web-profile-email">Email</Label>
-          <Input
-            id="web-profile-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-          <p className="text-xs text-muted-foreground">
-            Changing email may require confirmation before it takes effect.
+          <div className="relative -mt-12 mb-4 ml-1 inline-block">
+            <div className="relative">
+              <Avatar className="size-24 border-2 border-[#ff6b35] bg-white dark:bg-[#161b22]">
+                <AvatarImage src={avatarUrl || undefined} alt="" />
+                <AvatarFallback className="bg-white text-xl text-[#ff6b35] dark:bg-[#161b22]">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className={cn(
+                  'absolute bottom-0 right-0 h-8 w-8 rounded-full',
+                  companion.border,
+                  companion.surface
+                )}
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+                aria-label="Change photo"
+              >
+                {uploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleAvatarChange(e)}
+              />
+            </div>
+          </div>
+
+          <h1 className={cn('mb-5 text-2xl font-bold', companion.heading)}>Profile</h1>
+
+          <form onSubmit={(e) => void handleSave(e)} className="max-w-xl space-y-5">
+            <div className="space-y-2">
+              <Label
+                htmlFor="web-profile-name"
+                className={cn('text-[13px] font-medium', companion.heading)}
+              >
+                Full name
+              </Label>
+              <Input
+                id="web-profile-name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your name"
+                autoComplete="name"
+                className={cn('h-11', companion.input)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="web-profile-email"
+                className={cn('text-[13px] font-medium', companion.heading)}
+              >
+                Email
+              </Label>
+              <Input
+                id="web-profile-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className={cn('h-11', companion.input)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label
+                htmlFor="web-profile-bio"
+                className={cn('text-[13px] font-medium', companion.heading)}
+              >
+                Bio
+              </Label>
+              <Textarea
+                id="web-profile-bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Nightlife enthusiast · Nairobi"
+                rows={3}
+                className={cn('min-h-[88px]', companion.input)}
+              />
+            </div>
+            <Button
+              type="submit"
+              className={cn('px-6 py-3 text-sm font-semibold', companion.accentBtn)}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save changes
+            </Button>
+          </form>
+
+          <p className={cn('mt-8 text-sm', companion.muted)}>
+            Prefer account prefs?{' '}
+            <Link to="/settings" className={cn('font-medium hover:underline', companion.accent)}>
+              Open settings
+            </Link>
           </p>
         </div>
-        <Button
-          type="submit"
-          className="w-full bg-kenya-orange text-kenya-dark hover:bg-kenya-orange/90"
-          disabled={saving}
-        >
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Save changes
-        </Button>
-      </form>
 
-      <div className="mt-8 space-y-3">
-        <Button asChild variant="outline" className="w-full">
-          <Link to="/settings">
-            <Settings className="mr-2 h-4 w-4" />
-            Open settings
-          </Link>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => void logout()}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
+        <aside className="hidden flex-col gap-3 lg:flex">
+          {galleryImages.map((src, i) => (
+            <div key={`${src}-${i}`} className="h-[240px] overflow-hidden rounded-xl">
+              <img src={src} alt="" className="size-full object-cover" loading="lazy" />
+            </div>
+          ))}
+        </aside>
       </div>
-
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        Posts, followers, and social features live in the{' '}
-        <Link to="/download" className="font-medium text-primary underline-offset-4 hover:underline">
-          WYA app
-        </Link>
-        .
-      </p>
     </div>
   );
 };

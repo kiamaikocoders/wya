@@ -12,7 +12,7 @@ import MaintenanceBanner from "./MaintenanceBanner";
 import { cn } from "@/lib/utils";
 import { DiscoverUIProvider } from "@/contexts/DiscoverUIContext";
 import { LocationConfirmPrompt } from "@/components/location/LocationConfirmPrompt";
-import { isNativeApp, isWebAccountPath } from "@/lib/post-auth-navigation";
+import { isNativeApp } from "@/lib/post-auth-navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Layout = () => {
@@ -20,7 +20,6 @@ const Layout = () => {
   const { isAuthenticated } = useAuth();
   const [scrollToTop, setScrollToTop] = useState(false);
   const nativeApp = isNativeApp();
-  const webAccountSurface = !nativeApp && isWebAccountPath(location.pathname);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -85,30 +84,49 @@ const Layout = () => {
   const showWebAccountNav = !nativeApp && !hideChrome && isAuthenticated;
   const showFullBottomNav = nativeApp && !hideChrome;
   const showTopNavbar = nativeApp && !hideChrome;
-  const showWebAccountHeader = webAccountSurface && !hideChrome && isAuthenticated;
+  // Figma desktop shell: header on all authenticated light-web pages (not only account paths).
+  const showWebAccountHeader = !nativeApp && !hideChrome && isAuthenticated;
   const showWebAccountFooter = showWebAccountHeader;
 
   return (
     <DiscoverUIProvider>
-      <div className="relative flex min-h-screen flex-col bg-background">
+      <div
+        className={cn(
+          'relative flex min-h-screen flex-col',
+          showWebAccountHeader
+            ? 'bg-[#f6f8fa] text-[#0d1117] dark:bg-[#0d1117] dark:text-[#e6edf3]'
+            : 'bg-background text-foreground'
+        )}
+      >
         {!isAuthPage && !isAdminPage && nativeApp && <LocationConfirmPrompt />}
         {showTopNavbar && <Navbar />}
         {showWebAccountHeader && <WebAccountHeader />}
         {!isAuthPage && !isAdminPage && !isLegalPage && !(nativeApp && isSupportPage) && (
           <MaintenanceBanner />
         )}
-        <main className={cn("flex-1", (showFullBottomNav || showWebAccountNav) && "pb-4")}>
+        <main
+          className={cn(
+            'flex-1',
+            showWebAccountNav && 'pb-20 md:pb-0',
+            showFullBottomNav && 'pb-20 md:pb-24'
+          )}
+        >
           <Outlet />
         </main>
         {showWebAccountFooter && <WebAccountFooter />}
-        {showWebAccountNav && <WebAccountNav />}
+        {/* Mobile-only bottom nav; desktop uses SiteHeader links per Figma */}
+        {showWebAccountNav && (
+          <div className="md:hidden">
+            <WebAccountNav />
+          </div>
+        )}
         {showFullBottomNav && <BottomNav />}
         {!hideChrome && nativeApp && (isLanding ? <Footer /> : <FooterMinimal />)}
 
         {scrollToTop && !isLegalPage && !(isEventsBrowse && hideEventsChrome) && (
           <button
             onClick={scrollTop}
-            className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"
+            className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-8 sm:right-10"
             aria-label="Scroll to top"
           >
             <svg
