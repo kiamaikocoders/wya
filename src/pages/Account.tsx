@@ -1,196 +1,159 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Bell,
-  Calendar,
-  Ticket,
-  User,
-  Download,
-  ChevronRight,
-  MapPin,
-} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ticketService } from '@/lib/ticket-service';
 import { eventService } from '@/lib/event-service';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { EventDetailPopup } from '@/components/events/EventDetailPopup';
-import { resolveCategoryImage } from '@/pages/events/conceptDUtils';
+import { formatEventPrice, resolveCategoryImage } from '@/pages/events/conceptDUtils';
+import { companion } from '@/lib/companion-theme';
 import { cn } from '@/lib/utils';
 
-type HubEventRow = {
-  id: number;
-  title: string;
-  date: string;
-  location?: string;
-  imageUrl?: string;
-  category?: string;
-  description?: string;
-  price?: number;
-  ticketId?: number;
-  ticketStatus?: string;
-  hasTicket: boolean;
-};
-
 /**
- * Light-web hub: upcoming events (ticketed + browse), past ticketed events, get-app CTA.
+ * Figma redesign home — hero, stats strip, 3-up event cards (light + dark).
  */
 const Account = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
-  const { data: tickets = [], isLoading: ticketsLoading } = useQuery({
+  const { data: tickets = [] } = useQuery({
     queryKey: ['userTickets', user?.id],
     queryFn: () => ticketService.getUserTickets(),
     enabled: !!user?.id,
   });
 
-  const { data: upcomingFeed = [], isLoading: eventsLoading } = useQuery({
+  const { data: upcomingFeed = [], isLoading } = useQuery({
     queryKey: ['homeFeedEvents', 'web-account'],
     queryFn: () => eventService.getHomeFeedEvents(40),
     staleTime: 60_000,
   });
 
-  const { upcomingRows, pastTicketed, upcomingTicketCount } = useMemo(() => {
+  const { featuredEvents, stats } = useMemo(() => {
     const now = new Date();
-    const ticketMap = new Map<number, (typeof tickets)[number]>();
-    for (const ticket of tickets) {
-      if (ticket.status === 'cancelled') continue;
-      const existing = ticketMap.get(ticket.event_id);
-      if (!existing || new Date(ticket.event_date) < new Date(existing.event_date)) {
-        ticketMap.set(ticket.event_id, ticket);
-      }
-    }
+    const weekEnd = new Date(now);
+    weekEnd.setDate(weekEnd.getDate() + 7);
 
-    const rows: HubEventRow[] = upcomingFeed.map((event) => {
-      const ticket = ticketMap.get(event.id);
-      return {
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        location: event.location,
+    const ticketedIds = new Set(
+      tickets.filter((t) => t.status !== 'cancelled').map((t) => t.event_id)
+    );
+
+    const events = upcomingFeed.slice(0, 3);
+    const eventsThisWeek = upcomingFeed.filter((e) => {
+      const d = new Date(e.date);
+      return d >= now && d <= weekEnd;
+    }).length;
+
+    const cities = new Set(
+      upcomingFeed
+        .map((e) => e.location?.split(',')[0]?.trim())
+        .filter(Boolean)
+    );
+
+    return {
+      featuredEvents: events.map((event) => ({
+        ...event,
         imageUrl: event.image_url || resolveCategoryImage(event.category),
-        category: event.category,
-        description: event.description,
-        price: event.price,
-        ticketId: ticket?.id,
-        ticketStatus: ticket?.status,
-        hasTicket: Boolean(ticket),
-      };
-    });
-
-    for (const ticket of tickets) {
-      if (ticket.status === 'cancelled') continue;
-      if (new Date(ticket.event_date) < now) continue;
-      if (rows.some((r) => r.id === ticket.event_id)) continue;
-      rows.push({
-        id: ticket.event_id,
-        title: ticket.event_title,
-        date: ticket.event_date,
-        imageUrl: resolveCategoryImage(undefined),
-        ticketId: ticket.id,
-        ticketStatus: ticket.status,
-        hasTicket: true,
-      });
-    }
-
-    rows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const past = tickets
-      .filter((t) => t.status !== 'cancelled' && new Date(t.event_date) < now)
-      .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
-
-    const upcomingCount = tickets.filter(
-      (t) => t.status !== 'cancelled' && new Date(t.event_date) >= now
-    ).length;
-
-    return { upcomingRows: rows, pastTicketed: past, upcomingTicketCount: upcomingCount };
+        hasTicket: ticketedIds.has(event.id),
+        ticketId: tickets.find((t) => t.event_id === event.id && t.status !== 'cancelled')?.id,
+      })),
+      stats: {
+        eventsThisWeek: eventsThisWeek > 0 ? `${eventsThisWeek}+` : '0',
+        activeUsers: '45K',
+        cities: String(Math.max(cities.size, 1)),
+      },
+    };
   }, [upcomingFeed, tickets]);
 
-  const displayName =
-    user?.full_name || user?.name || user?.email?.split('@')[0] || 'Your account';
-  const initials = displayName
-    .split(' ')
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString(undefined, {
+  const formatCardMeta = (iso: string, location?: string) => {
+    const d = new Date(iso);
+    const datePart = d.toLocaleDateString('en-GB', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
     });
+    const city = location?.split(',')[0]?.trim() || 'Kenya';
+    return `${datePart} · ${city}`;
+  };
 
-  const isLoading = ticketsLoading || eventsLoading;
+  const priceLabel = (price?: number | null) => {
+    const formatted = formatEventPrice(price);
+    if (formatted === 'Free') return 'Free';
+    return `From ${formatted}`;
+  };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8 pb-8">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-14 w-14 border border-border">
-          <AvatarImage src={user?.avatar_url || user?.profile_picture || undefined} alt="" />
-          <AvatarFallback className="bg-primary/15 text-primary">{initials}</AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{displayName}</h1>
-          <p className="text-sm text-muted-foreground">{user?.email}</p>
-        </div>
-      </div>
-
-      <section className="mt-8 rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Full experience
-            </h2>
-            <p className="mt-1 text-sm text-foreground">
-              Discover, chat, sponsors, and hosting live in the WYA app.
-            </p>
-          </div>
-          <Button asChild size="sm" className="shrink-0 bg-kenya-orange text-kenya-dark hover:bg-kenya-orange/90">
-            <Link to="/download">
-              <Download className="mr-2 h-4 w-4" />
-              Get app
-            </Link>
-          </Button>
+    <div className={cn('mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-8 lg:px-12', companion.page)}>
+      <section className="relative h-[220px] overflow-hidden rounded-2xl sm:h-[280px]">
+        <img
+          src="/companion/hero-home.jpg"
+          alt=""
+          className="absolute inset-0 size-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-black/70" />
+        <div className="absolute bottom-8 left-6 right-6 sm:left-8">
+          <h1 className="text-3xl font-bold text-white sm:text-4xl">Find your next night out</h1>
+          <p className="mt-2 max-w-xl text-sm text-[#e6edf3] sm:text-base">
+            Events, tickets, and stories across Nairobi &amp; beyond
+          </p>
         </div>
       </section>
 
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            <Calendar className="h-5 w-5 text-primary" />
-            Upcoming
-          </h2>
-          <Link
-            to="/events"
-            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+      <section className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-0">
+        {[
+          { value: stats.eventsThisWeek, label: 'Events this week' },
+          { value: stats.activeUsers, label: 'Active users' },
+          { value: stats.cities, label: 'Cities' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className={cn(
+              'flex h-20 flex-col items-center justify-center gap-1 px-6',
+              companion.card,
+              'sm:rounded-none sm:first:rounded-l-xl sm:last:rounded-r-xl sm:[&:not(:first-child)]:border-l-0'
+            )}
           >
+            <p className={cn('text-2xl font-bold', companion.heading)}>{stat.value}</p>
+            <p className={cn('text-[13px]', companion.muted)}>{stat.label}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className={cn('text-lg font-semibold', companion.heading)}>Happening soon</h2>
+          <Link to="/events" className={cn('text-sm font-medium hover:underline', companion.accent)}>
             Browse all
-            <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
+          <div className="flex justify-center py-16">
+            <div
+              className={cn(
+                'h-10 w-10 animate-spin rounded-full border-t-2 border-b-2',
+                companion.spinner
+              )}
+            />
           </div>
-        ) : upcomingRows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border px-5 py-10 text-center">
-            <p className="text-sm text-muted-foreground">No upcoming events right now.</p>
-            <Button asChild variant="outline" className="mt-4">
+        ) : featuredEvents.length === 0 ? (
+          <div
+            className={cn(
+              'rounded-xl border border-dashed px-5 py-12 text-center',
+              companion.border,
+              companion.surface
+            )}
+          >
+            <p className={cn('text-sm', companion.muted)}>No upcoming events right now.</p>
+            <Button asChild className={cn('mt-4', companion.accentBtn)}>
               <Link to="/events">Browse events</Link>
             </Button>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {upcomingRows.slice(0, 8).map((event) => (
-              <li key={`${event.id}-${event.ticketId ?? 'open'}`}>
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredEvents.map((event) => (
+              <li key={event.id}>
                 <button
                   type="button"
                   onClick={() => {
@@ -201,37 +164,28 @@ const Account = () => {
                     setSelectedEventId(event.id);
                   }}
                   className={cn(
-                    'flex w-full gap-3 rounded-2xl border border-border bg-card p-3 text-left transition',
-                    'hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                    'flex w-full flex-col overflow-hidden text-left transition',
+                    companion.card,
+                    'hover:border-[#ff6b35]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff6b35]'
                   )}
                 >
-                  <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
+                  <div className="relative h-[200px] w-full overflow-hidden bg-[#f6f8fa] dark:bg-[#0d1117]">
                     <img
-                      src={event.imageUrl || resolveCategoryImage(event.category)}
+                      src={event.imageUrl}
                       alt=""
                       className="size-full object-cover"
                       loading="lazy"
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="line-clamp-2 font-semibold text-foreground">{event.title}</p>
-                      <Badge
-                        variant={event.hasTicket ? 'default' : 'secondary'}
-                        className="shrink-0 capitalize"
-                      >
-                        {event.hasTicket ? 'Your ticket' : 'Get tickets'}
-                      </Badge>
-                    </div>
-                    {event.description && (
-                      <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                        {event.description}
-                      </p>
-                    )}
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5 shrink-0" />
-                      {formatDate(event.date)}
-                      {event.location ? ` · ${event.location.split(',')[0]}` : ''}
+                  <div className="flex flex-col gap-2 px-4 pb-4 pt-3">
+                    <p className={cn('line-clamp-1 text-base font-semibold', companion.heading)}>
+                      {event.title}
+                    </p>
+                    <p className={cn('text-[13px]', companion.muted)}>
+                      {formatCardMeta(event.date, event.location)}
+                    </p>
+                    <p className={cn('text-sm font-medium', companion.accent)}>
+                      {priceLabel(event.price)}
                     </p>
                   </div>
                 </button>
@@ -241,91 +195,6 @@ const Account = () => {
         )}
       </section>
 
-      <section className="mt-8">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
-            <Ticket className="h-5 w-5 text-primary" />
-            Past events
-          </h2>
-          <Link
-            to="/tickets"
-            className="inline-flex items-center text-sm font-medium text-primary hover:underline"
-          >
-            All tickets
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        {ticketsLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-t-2 border-b-2 border-kenya-orange" />
-          </div>
-        ) : pastTicketed.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border px-5 py-8 text-center">
-            <p className="text-sm text-muted-foreground">No past ticketed events yet.</p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {pastTicketed.slice(0, 5).map((ticket) => (
-              <li key={ticket.id}>
-                <Link
-                  to={`/tickets/${ticket.id}`}
-                  className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold text-foreground">{ticket.event_title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatDate(ticket.event_date)}</p>
-                  </div>
-                  <Badge variant="outline" className="shrink-0 capitalize">
-                    {ticket.status}
-                  </Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="mt-8 grid gap-3 sm:grid-cols-2">
-        <Link
-          to="/tickets"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Ticket className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">My tickets</p>
-            <p className="text-xs text-muted-foreground">
-              {tickets.length} total · {upcomingTicketCount} upcoming
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/profile"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <User className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">Profile</p>
-            <p className="text-xs text-muted-foreground">Name, email, photo</p>
-          </div>
-        </Link>
-        <Link
-          to="/notifications"
-          className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition hover:border-primary/40 sm:col-span-2"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            <Bell className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">Notifications</p>
-            <p className="text-xs text-muted-foreground">Recent updates</p>
-          </div>
-        </Link>
-      </section>
       <EventDetailPopup
         eventId={selectedEventId}
         open={selectedEventId != null}

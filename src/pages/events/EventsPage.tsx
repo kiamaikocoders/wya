@@ -180,7 +180,7 @@ const EventsPage = () => {
     resetKey: `${search}|${category}|${weekendOnly}|${sort}`,
   });
 
-  const pageBg = isDark ? 'bg-[#0d1117] text-white' : 'bg-white text-[#0d1117]';
+  const pageBg = isDark ? 'bg-[#0d1117] text-white' : 'bg-[#f6f8fa] text-[#0d1117]';
   const muted = isDark ? 'text-[#8b949e]' : 'text-[#5c6570]';
   const heading = isDark ? 'text-[#e6edf3]' : 'text-[#0d1117]';
   const card = isDark ? 'border-[#21262d] bg-[#161b22]' : 'border-[#e8ecf0] bg-[#f6f8fa]';

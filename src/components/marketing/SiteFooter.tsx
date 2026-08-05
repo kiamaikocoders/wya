@@ -13,6 +13,8 @@ type SiteFooterProps = {
   className?: string;
   /** Override the Home link (e.g. `/account` on light web). */
   homeHref?: string;
+  /** Optional brand blurb under the logo. */
+  tagline?: string;
 };
 
 function TikTokIcon({ className }: { className?: string }) {
@@ -24,19 +26,23 @@ function TikTokIcon({ className }: { className?: string }) {
 }
 
 /** Shared footer for landing + legal/help pages (Concept D style). */
-export function SiteFooter({ className, homeHref = '/' }: SiteFooterProps) {
+export function SiteFooter({
+  className,
+  homeHref = '/',
+  tagline = 'Discover the best events happening in Kenya. Connect with organizers and other attendees.',
+}: SiteFooterProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [email, setEmail] = useState('');
 
   const heading = isDark ? 'text-[#e6edf3]' : 'text-[#0d1117]';
-  const muted = isDark ? 'text-[#8b949e]' : 'text-[#5c6570]';
+  const muted = isDark ? 'text-[#8b949e]' : 'text-[#656d76]';
 
   return (
     <footer
       className={cn(
         'mt-auto w-full shrink-0 px-4 pb-10 pt-14 sm:px-5 md:px-6 lg:px-8',
-        isDark ? 'bg-[#0a0e14]' : 'bg-[#f6f8fa]',
+        isDark ? 'bg-[#0a0e14]' : 'bg-white',
         className
       )}
     >
@@ -48,8 +54,7 @@ export function SiteFooter({ className, homeHref = '/' }: SiteFooterProps) {
             className="[&_img]:!h-14 md:[&_img]:!h-16 [&_img]:!min-w-0 [&>div]:!min-w-0"
           />
           <p className={cn('max-w-sm text-sm leading-[22px]', muted)}>
-            Discover the best events happening in Kenya. Connect with organizers and other
-            attendees.
+            {tagline}
           </p>
           <div className="flex items-center gap-3">
             <a
