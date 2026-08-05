@@ -658,7 +658,7 @@ export const storyService = {
       // Check if the story belongs to the current user
       const { data: storyCheck } = await supabase
         .from('stories')
-        .select('user_id')
+        .select('user_id, media_url')
         .eq('id', storyId)
         .single();
 
@@ -672,6 +672,13 @@ export const storyService = {
         .eq('id', storyId);
 
       if (error) throw error;
+
+      const mediaUrl =
+        typeof storyCheck.media_url === 'string' ? storyCheck.media_url.trim() : '';
+      if (mediaUrl) {
+        const { storageService } = await import('@/lib/storage-service');
+        await storageService.deleteByPublicUrl(mediaUrl);
+      }
 
       toast.success('Story deleted successfully');
       return true;

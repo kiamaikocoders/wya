@@ -35,12 +35,15 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       {
-        name: "r2-upload-url-dev-proxy",
+        name: "r2-storage-dev-proxy",
         enforce: "pre",
         configureServer(server) {
           server.middlewares.use(async (req, res, next) => {
             const pathname = req.url?.split("?")[0] || "";
-            if (pathname !== "/api/r2-upload-url") {
+            if (
+              pathname !== "/api/r2-upload-url" &&
+              pathname !== "/api/r2-delete"
+            ) {
               return next();
             }
 
@@ -69,17 +72,37 @@ export default defineConfig(({ mode }) => {
             }
 
             try {
-              const { createR2PresignedUpload } = await import("./lib/r2-presign");
               const raw = await readBody(req as IncomingMessage);
               const body = JSON.parse(raw || "{}") as Record<string, unknown>;
+              const authorizationHeader = String(
+                req.headers.authorization || "",
+              );
+
+              if (pathname === "/api/r2-delete") {
+                const { deleteR2Object } = await import("./lib/r2-delete");
+                const result = await deleteR2Object({
+                  env,
+                  authorizationHeader,
+                  body: body as {
+                    url?: string;
+                    key?: string;
+                    bucket?: string;
+                    path?: string;
+                  },
+                });
+                sendJson(result.status, result.body);
+                return;
+              }
+
+              const { createR2PresignedUpload } = await import("./lib/r2-presign");
               const result = await createR2PresignedUpload({
                 env,
-                authorizationHeader: String(req.headers.authorization || ""),
+                authorizationHeader,
                 body,
               });
               sendJson(result.status, result.body);
             } catch {
-              sendJson(500, { error: "R2 upload URL proxy error" });
+              sendJson(500, { error: "R2 storage proxy error" });
             }
           });
         },

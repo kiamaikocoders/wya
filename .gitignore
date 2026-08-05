@@ -44,3 +44,5 @@ android/.idea/
 *.keystore
 !debug.keystore
 .archive/
+.vercel
+.env*

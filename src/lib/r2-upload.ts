@@ -31,14 +31,18 @@ type PresignResponse = {
   error?: string;
 };
 
-function getR2UploadUrlEndpoint(): string {
+function getR2ApiEndpoint(path: '/api/r2-upload-url' | '/api/r2-delete'): string {
   const proxyBase = import.meta.env.VITE_AI_PROXY_BASE_URL as string | undefined;
   if (proxyBase?.trim()) {
-    return `${proxyBase.replace(/\/$/, '')}/api/r2-upload-url`;
+    return `${proxyBase.replace(/\/$/, '')}${path}`;
   }
   const base = import.meta.env.BASE_URL || '/';
-  if (base === '/') return '/api/r2-upload-url';
-  return `${base.replace(/\/$/, '')}/api/r2-upload-url`;
+  if (base === '/') return path;
+  return `${base.replace(/\/$/, '')}${path}`;
+}
+
+function getR2UploadUrlEndpoint(): string {
+  return getR2ApiEndpoint('/api/r2-upload-url');
 }
 
 /**
@@ -111,4 +115,36 @@ export async function uploadToR2(request: R2UploadRequest): Promise<UploadResult
     publicUrl: payload.publicUrl,
     fullPath: payload.fullPath,
   };
+}
+
+/**
+ * Delete an R2 object by public CDN URL or key (server enforces ownership/admin).
+ */
+export async function deleteFromR2(options: {
+  url?: string;
+  key?: string;
+  bucket?: string;
+  path?: string;
+}): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error('You must be logged in to delete files');
+  }
+
+  const res = await fetch(getR2ApiEndpoint('/api/r2-delete'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(options),
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) {
+    throw new Error(payload.error || 'Failed to delete R2 object');
+  }
 }

@@ -4,7 +4,7 @@ import {
   prepareMediaForUpload,
   type MediaUploadContext,
 } from './media-upload-prepare';
-import { R2_PUBLIC_BASE_URL, uploadToR2 } from './r2-upload';
+import { deleteFromR2, R2_PUBLIC_BASE_URL, uploadToR2 } from './r2-upload';
 
 export interface UploadOptions {
   bucket: string;
@@ -31,29 +31,67 @@ export interface StorageBucket {
   allowed_mime_types: string[];
 }
 
-/** Parse a Supabase public storage URL into bucket + object path. */
-export function parseSupabaseStoragePublicUrl(
-  url: string
-): { bucket: string; path: string } | null {
+export type StorageObjectRef = {
+  backend: 'r2' | 'supabase';
+  bucket: string;
+  path: string;
+  key: string;
+};
+
+/**
+ * Parse a public media URL into a storage reference (R2 CDN or Supabase Storage).
+ */
+export function parseStoragePublicUrl(url: string): StorageObjectRef | null {
+  const trimmed = url?.trim();
+  if (!trimmed) return null;
+
   try {
-    const parsed = new URL(url);
-    const marker = '/storage/v1/object/public/';
-    const markerIndex = parsed.pathname.indexOf(marker);
-    if (markerIndex === -1) return null;
+    const parsed = new URL(trimmed);
+    const supabaseMarker = '/storage/v1/object/public/';
+    const supabaseIndex = parsed.pathname.indexOf(supabaseMarker);
+    if (supabaseIndex !== -1) {
+      const remainder = decodeURIComponent(
+        parsed.pathname.slice(supabaseIndex + supabaseMarker.length)
+      );
+      const slashIndex = remainder.indexOf('/');
+      if (slashIndex <= 0) return null;
+      const bucket = remainder.slice(0, slashIndex);
+      const path = remainder.slice(slashIndex + 1);
+      if (!bucket || !path) return null;
+      return { backend: 'supabase', bucket, path, key: `${bucket}/${path}` };
+    }
 
-    const remainder = decodeURIComponent(
-      parsed.pathname.slice(markerIndex + marker.length)
-    );
-    const slashIndex = remainder.indexOf('/');
-    if (slashIndex <= 0) return null;
+    let cdnHost: string;
+    try {
+      cdnHost = new URL(R2_PUBLIC_BASE_URL).host;
+    } catch {
+      cdnHost = 'cdn.wya254.com';
+    }
+    if (parsed.host === cdnHost || parsed.host === 'cdn.wya254.com') {
+      const key = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
+      const slashIndex = key.indexOf('/');
+      if (slashIndex <= 0) return null;
+      return {
+        backend: 'r2',
+        bucket: key.slice(0, slashIndex),
+        path: key.slice(slashIndex + 1),
+        key,
+      };
+    }
 
-    return {
-      bucket: remainder.slice(0, slashIndex),
-      path: remainder.slice(slashIndex + 1),
-    };
+    return null;
   } catch {
     return null;
   }
+}
+
+/** @deprecated Prefer parseStoragePublicUrl — Supabase-only legacy helper. */
+export function parseSupabaseStoragePublicUrl(
+  url: string
+): { bucket: string; path: string } | null {
+  const ref = parseStoragePublicUrl(url);
+  if (!ref || ref.backend !== 'supabase') return null;
+  return { bucket: ref.bucket, path: ref.path };
 }
 
 export const storageService = {
@@ -182,20 +220,62 @@ export const storageService = {
     }
   },
 
-  // Delete file
+  // Delete file by logical bucket + path (R2 and/or legacy Supabase)
   deleteFile: async (bucketName: string, filePath: string): Promise<void> => {
     try {
-      const { error } = await supabase.storage
+      let r2Error: unknown = null;
+      try {
+        await deleteFromR2({ bucket: bucketName, path: filePath });
+      } catch (error) {
+        r2Error = error;
+      }
+
+      const { error: supabaseError } = await supabase.storage
         .from(bucketName)
         .remove([filePath]);
 
-      if (error) throw error;
+      // Succeed if either backend accepted the delete (R2 404 is treated as success upstream)
+      if (r2Error && supabaseError) {
+        throw r2Error;
+      }
 
       toast.success('File deleted successfully');
     } catch (error) {
       console.error('Error deleting file:', error);
       toast.error('Failed to delete file');
       throw error;
+    }
+  },
+
+  /**
+   * Delete media by public URL — R2 CDN or legacy Supabase Storage.
+   * Best-effort: logs warnings instead of throwing when cleanup fails.
+   */
+  deleteByPublicUrl: async (
+    url: string,
+    options?: { throwOnError?: boolean }
+  ): Promise<boolean> => {
+    const ref = parseStoragePublicUrl(url);
+    if (!ref) {
+      console.warn('Unrecognized storage URL for cleanup:', url);
+      return false;
+    }
+
+    try {
+      if (ref.backend === 'r2') {
+        await deleteFromR2({ url });
+        return true;
+      }
+
+      const { error } = await supabase.storage
+        .from(ref.bucket)
+        .remove([ref.path]);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.warn('Media cleanup failed:', error);
+      if (options?.throwOnError) throw error;
+      return false;
     }
   },
 

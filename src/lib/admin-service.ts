@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
 import { isUndefinedColumnError } from './supabase-schema-compat';
-import { parseSupabaseStoragePublicUrl } from './storage-service';
+import { storageService } from './storage-service';
 import { resolveAvatarUrl } from './avatar-url';
 import type {
   AdminMarketplaceStats,
@@ -1388,15 +1388,12 @@ export const adminService = {
           : '';
 
       if (mediaUrl) {
-        const storageRef = parseSupabaseStoragePublicUrl(mediaUrl);
-        if (storageRef) {
-          const { error: storageError } = await supabase.storage
-            .from(storageRef.bucket)
-            .remove([storageRef.path]);
-
-          if (storageError) {
-            console.warn('Ghost story deleted from DB but media cleanup failed:', storageError);
-          }
+        const cleaned = await storageService.deleteByPublicUrl(mediaUrl);
+        if (!cleaned) {
+          console.warn(
+            'Ghost story deleted from DB but media cleanup failed or URL unrecognized:',
+            mediaUrl,
+          );
         }
       }
 
