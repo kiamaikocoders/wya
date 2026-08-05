@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Search, X } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/ui/Logo';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { GetAppModal } from '@/components/marketing/GetAppModal';
@@ -11,6 +12,7 @@ import { EventDetailPopup } from '@/components/events/EventDetailPopup';
 import EventMap from '@/pages/events/EventMap';
 import { cn } from '@/lib/utils';
 import { eventService } from '@/lib/event-service';
+import { isNativeApp } from '@/lib/post-auth-navigation';
 import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
 import {
   FIGMA_SEEDED_EVENTS,
@@ -27,12 +29,15 @@ const PAGE_SIZE = 12;
  * Figma 15 — Events Concept D (Hybrid).
  * Keeps Figma-seeded events and merges every event from the database.
  * Default order: latest first (earliest last). Grid is paginated.
+ * When authenticated on web, embeds in the light-web shell (no marketing header/footer).
  */
 const EventsPage = () => {
   const navigate = useNavigate();
   const { eventId: eventIdParam } = useParams<{ eventId?: string }>();
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const isDark = theme === 'dark';
+  const embedInLightWeb = isAuthenticated && !isNativeApp();
 
   const [search, setSearch] = useState('');
   const [navSearch, setNavSearch] = useState('');
@@ -203,7 +208,8 @@ const EventsPage = () => {
   const isLoading = dbEventsQuery.isLoading;
 
   return (
-    <div className={cn('flex min-h-screen flex-col', pageBg)}>
+    <div className={cn('flex min-h-screen flex-col', pageBg, embedInLightWeb && 'min-h-0')}>
+      {!embedInLightWeb && (
       <header
         className={cn(
           'sticky top-0 z-40 flex h-[66px] items-center justify-between border-b px-4 py-4 sm:px-8',
@@ -247,6 +253,25 @@ const EventsPage = () => {
           </button>
         </div>
       </header>
+      )}
+
+      {embedInLightWeb && (
+        <div className="border-b border-border px-4 py-3 sm:px-8">
+          <form onSubmit={applyNavSearch} className="relative mx-auto max-w-xl">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={navSearch}
+              onChange={(e) => setNavSearch(e.target.value)}
+              placeholder="Search events…"
+              className={cn(
+                'h-10 w-full rounded-xl border pl-10 pr-3.5 text-sm outline-none focus:border-[#ff6b35]',
+                searchBg
+              )}
+            />
+          </form>
+        </div>
+      )}
 
       <main className="flex-1">
       <section className="relative h-[280px] w-full overflow-hidden sm:h-[340px] lg:h-[400px]">
@@ -584,7 +609,7 @@ const EventsPage = () => {
         </div>
       )}
 
-      <SiteFooter className="mt-auto shrink-0" />
+      {!embedInLightWeb && <SiteFooter className="mt-auto shrink-0" />}
       <GetAppModal open={appModalOpen} onClose={() => setAppModalOpen(false)} />
       <EventDetailPopup
         eventId={selectedEventId}

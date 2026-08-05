@@ -4,11 +4,10 @@ import Footer from './Footer';
 
 const MarketingLayout = () => {
   const { pathname } = useLocation();
-  // Concept D landing + events browse are self-contained (own nav + footer + theme).
+  // Landing is self-contained (own nav + footer + theme).
   const isLanding = pathname === '/';
-  const isEventsBrowse = pathname === '/events' || /^\/events\/[^/]+$/.test(pathname);
 
-  if (isLanding || isEventsBrowse) {
+  if (isLanding) {
     return <Outlet />;
   }
 

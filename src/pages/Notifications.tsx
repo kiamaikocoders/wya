@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { resolveWebSafePath } from '@/lib/post-auth-navigation';
 
 const Notifications = () => {
   const navigate = useNavigate();
@@ -112,7 +113,7 @@ const Notifications = () => {
       }
     }
     if (notification.link) {
-      navigate(notification.link);
+      navigate(resolveWebSafePath(notification.link));
     }
   };
 

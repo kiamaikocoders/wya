@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, MessageSquarePlus } from "lucide-react";
+import { getAuthenticatedHomePath, isNativeApp } from "@/lib/post-auth-navigation";
 
 const socialLinks = [
   { 
@@ -21,11 +22,13 @@ const socialLinks = [
 ];
 
 const FooterMinimal = () => {
+  const brandHref = isNativeApp() ? getAuthenticatedHomePath() : '/';
+
   return (
     <footer className="border-t border-white/5 bg-black/60 py-6 backdrop-blur">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center justify-between gap-4 px-6 text-center text-white/70 sm:flex-row sm:text-left">
         <div className="flex flex-col items-center gap-1 sm:items-start">
-          <Link to="/home" className="text-sm font-semibold tracking-wide text-white">
+          <Link to={brandHref} className="text-sm font-semibold tracking-wide text-white">
             WYA Kenya
           </Link>
           <span className="text-xs text-white/50">

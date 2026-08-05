@@ -11,6 +11,7 @@ import { LegalConsentGate } from "@/components/legal/LegalConsentGate";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
+import AppOnlyRoute from "./components/auth/AppOnlyRoute";
 import { updateService } from './lib/update-service';
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -22,11 +23,12 @@ import { MaintenanceGate } from "@/components/status/MaintenanceGate";
 
 const Layout = lazy(() => import("./components/layout/Layout"));
 const MarketingLayout = lazy(() => import("./components/layout/MarketingLayout"));
+const HomeOrAccountRedirect = lazy(() => import("./components/auth/HomeOrAccountRedirect"));
 
 const Landing = lazy(() => import("./pages/Landing"));
 const DownloadApp = lazy(() => import("./pages/DownloadApp"));
 
-const Home = lazy(() => import("./pages/Home"));
+const Account = lazy(() => import("./pages/Account"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const Events = lazy(() => import("./pages/Events"));
 const Categories = lazy(() => import("./pages/Categories"));
@@ -37,6 +39,8 @@ const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const EmailConfirmationPending = lazy(() => import("./pages/EmailConfirmationPending"));
+const ProfileBySurface = lazy(() => import("./components/auth/ProfileBySurface"));
+const SettingsBySurface = lazy(() => import("./components/auth/SettingsBySurface"));
 
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -63,7 +67,6 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const SurveyPage = lazy(() => import("./pages/SurveyPage"));
 const CreateSurveyPage = lazy(() => import("./pages/CreateSurveyPage"));
 const SurveyResultsPage = lazy(() => import("./pages/SurveyResultsPage"));
-const Profile = lazy(() => import("./pages/Profile"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Search = lazy(() => import("./pages/Search"));
 const MyTickets = lazy(() => import("./pages/MyTickets"));
@@ -85,7 +88,6 @@ const UsersDirectory = lazy(() => import("./pages/UsersDirectory"));
 const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
 const SponsorZone = lazy(() => import("./pages/SponsorZone"));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
-const Settings = lazy(() => import("./pages/Settings"));
 const FeedbackPage = lazy(() => import("./pages/FeedbackPage"));
 
 const queryClient = new QueryClient({
@@ -144,7 +146,6 @@ const App = () => {
                   <Route element={<MarketingLayout />}>
                     <Route path="/" element={<Landing />} />
                     <Route path="/download" element={<DownloadApp />} />
-                    <Route path="/events/:eventId?" element={<Events />} />
                   </Route>
                   {/* Admin console — standalone entry (login → dashboard, no consumer site shell) */}
                   <Route
@@ -179,7 +180,16 @@ const App = () => {
                   <Route path="/admin-login" element={<Navigate to="/admin" replace />} />
 
                   <Route element={<Layout />}>
-                    <Route path="/home" element={<Home />} />
+                    <Route path="/events/:eventId?" element={<Events />} />
+                    <Route path="/home" element={<HomeOrAccountRedirect />} />
+                    <Route
+                      path="/account"
+                      element={
+                        <ProtectedRoute>
+                          <Account />
+                        </ProtectedRoute>
+                      }
+                    />
                     <Route
                       path="/onboarding"
                       element={
@@ -188,8 +198,22 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route path="/share/event-media/:token" element={<PublicEventMediaGallery />} />
-                    <Route path="/categories/:slug" element={<Categories />} />
+                    <Route
+                      path="/share/event-media/:token"
+                      element={
+                        <AppOnlyRoute featureLabel="Event media galleries">
+                          <PublicEventMediaGallery />
+                        </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/categories/:slug"
+                      element={
+                        <AppOnlyRoute featureLabel="Category browsing">
+                          <Categories />
+                        </AppOnlyRoute>
+                      }
+                    />
                     <Route path="/welcome" element={<AuthWelcome />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
@@ -198,19 +222,56 @@ const App = () => {
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/auth/confirm" element={<AuthCallback />} />
                     <Route path="/email-confirmation-pending" element={<EmailConfirmationPending />} />
-                    <Route path="/request-event" element={<RequestEvent />} />
+                    <Route
+                      path="/request-event"
+                      element={
+                        <AppOnlyRoute featureLabel="Event requests and hosting">
+                          <RequestEvent />
+                        </AppOnlyRoute>
+                      }
+                    />
                     <Route
                       path="/create-event"
                       element={
                         <ProtectedRoute>
-                          <CreateEvent />
+                          <AppOnlyRoute featureLabel="Event creation">
+                            <CreateEvent />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/stories" element={<Stories />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/ai-assistance" element={<AIAssistance />} />
+                    <Route
+                      path="/search"
+                      element={
+                        <AppOnlyRoute featureLabel="Search">
+                          <Search />
+                        </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/stories"
+                      element={
+                        <AppOnlyRoute featureLabel="Stories">
+                          <Stories />
+                        </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/notifications"
+                      element={
+                        <ProtectedRoute>
+                          <Notifications />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/ai-assistance"
+                      element={
+                        <AppOnlyRoute featureLabel="AI assistance">
+                          <AIAssistance />
+                        </AppOnlyRoute>
+                      }
+                    />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/media-consent" element={<MediaConsentPolicy />} />
@@ -221,21 +282,37 @@ const App = () => {
                       path="/favorites"
                       element={
                         <ProtectedRoute>
-                          <Favorites />
+                          <AppOnlyRoute featureLabel="Favourites">
+                            <Favorites />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
 
-                    {/* Sponsor routes */}
-                    <Route path="/sponsors" element={<SponsorsPage />} />
-                    <Route path="/sponsors/:sponsorId" element={<SponsorZone />} />
+                    {/* Sponsors — app-only per streamlined web proposal */}
+                    <Route
+                      path="/sponsors"
+                      element={
+                        <AppOnlyRoute featureLabel="Sponsors">
+                          <SponsorsPage />
+                        </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/sponsors/:sponsorId"
+                      element={
+                        <AppOnlyRoute featureLabel="Sponsor zones">
+                          <SponsorZone />
+                        </AppOnlyRoute>
+                      }
+                    />
 
                     {/* User Profiles */}
                     <Route
                       path="/profile"
                       element={
                         <ProtectedRoute>
-                          <Profile />
+                          <ProfileBySurface />
                         </ProtectedRoute>
                       }
                     />
@@ -243,18 +320,27 @@ const App = () => {
                       path="/settings"
                       element={
                         <ProtectedRoute>
-                          <Settings />
+                          <SettingsBySurface />
                         </ProtectedRoute>
                       }
                     />
-                    <Route path="/users/:userId" element={<UserProfile />} />
+                    <Route
+                      path="/users/:userId"
+                      element={
+                        <AppOnlyRoute featureLabel="Member profiles">
+                          <UserProfile />
+                        </AppOnlyRoute>
+                      }
+                    />
 
                     {/* Chat */}
                     <Route
                       path="/chat"
                       element={
                         <ProtectedRoute>
-                          <ChatPage />
+                          <AppOnlyRoute featureLabel="Chat">
+                            <ChatPage />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -262,7 +348,9 @@ const App = () => {
                       path="/chat/:conversationId"
                       element={
                         <ProtectedRoute>
-                          <ChatPage />
+                          <AppOnlyRoute featureLabel="Chat">
+                            <ChatPage />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -272,7 +360,9 @@ const App = () => {
                       path="/surveys/:surveyId"
                       element={
                         <ProtectedRoute>
-                          <SurveyPage />
+                          <AppOnlyRoute featureLabel="Surveys">
+                            <SurveyPage />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -280,7 +370,9 @@ const App = () => {
                       path="/surveys/:surveyId/results"
                       element={
                         <ProtectedRoute>
-                          <SurveyResultsPage />
+                          <AppOnlyRoute featureLabel="Survey results">
+                            <SurveyResultsPage />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -288,7 +380,9 @@ const App = () => {
                       path="/surveys/create"
                       element={
                         <ProtectedRoute>
-                          <CreateSurveyPage />
+                          <AppOnlyRoute featureLabel="Survey creation">
+                            <CreateSurveyPage />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -297,7 +391,7 @@ const App = () => {
                     <Route path="/forum" element={<Navigate to="/discover" replace />} />
                     <Route path="/forum/:postId" element={<Navigate to="/discover" replace />} />
 
-                    {/* Tickets */}
+                    {/* Tickets — available on web and app */}
                     <Route
                       path="/tickets"
                       element={
@@ -320,7 +414,9 @@ const App = () => {
                       path="/analytics"
                       element={
                         <ProtectedRoute>
-                          <AnalyticsDashboard />
+                          <AppOnlyRoute featureLabel="Analytics">
+                            <AnalyticsDashboard />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -328,7 +424,9 @@ const App = () => {
                       path="/analytics/events/:eventId"
                       element={
                         <ProtectedRoute>
-                          <AnalyticsDashboard />
+                          <AppOnlyRoute featureLabel="Analytics">
+                            <AnalyticsDashboard />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
@@ -336,16 +434,39 @@ const App = () => {
                       path="/analytics/event/:eventId"
                       element={
                         <ProtectedRoute>
-                          <EventAnalytics />
+                          <AppOnlyRoute featureLabel="Event analytics">
+                            <EventAnalytics />
+                          </AppOnlyRoute>
                         </ProtectedRoute>
                       }
                     />
 
-                    <Route path="/users" element={<UsersDirectory />} />
+                    <Route
+                      path="/users"
+                      element={
+                        <AppOnlyRoute featureLabel="Member directory">
+                          <UsersDirectory />
+                        </AppOnlyRoute>
+                      }
+                    />
 
                     {/* Discover */}
-                    <Route path="/discover" element={<DiscoverPage />} />
-                    <Route path="/discover/:id" element={<DiscoverPage />} />
+                    <Route
+                      path="/discover"
+                      element={
+                        <AppOnlyRoute featureLabel="Discover">
+                          <DiscoverPage />
+                        </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/discover/:id"
+                      element={
+                        <AppOnlyRoute featureLabel="Discover">
+                          <DiscoverPage />
+                        </AppOnlyRoute>
+                      }
+                    />
 
                     <Route path="*" element={<NotFound />} />
                   </Route>

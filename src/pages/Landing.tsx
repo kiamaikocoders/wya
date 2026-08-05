@@ -7,6 +7,7 @@ import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
+import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 const METRICS = [
   { value: '12K+', label: 'Attendees' },
@@ -118,7 +119,7 @@ const Landing = () => {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      navigate('/home', { replace: true });
+      navigate(getPostLoginPath(), { replace: true });
     }
   }, [isAuthenticated, loading, navigate]);
 

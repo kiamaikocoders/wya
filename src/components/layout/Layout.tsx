@@ -3,37 +3,38 @@ import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
+import WebAccountNav from "./WebAccountNav";
+import WebAccountHeader from "./WebAccountHeader";
+import WebAccountFooter from "./WebAccountFooter";
 import Footer from "./Footer";
 import FooterMinimal from "./FooterMinimal";
 import MaintenanceBanner from "./MaintenanceBanner";
 import { cn } from "@/lib/utils";
 import { DiscoverUIProvider } from "@/contexts/DiscoverUIContext";
 import { LocationConfirmPrompt } from "@/components/location/LocationConfirmPrompt";
+import { isNativeApp, isWebAccountPath } from "@/lib/post-auth-navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Layout = () => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const [scrollToTop, setScrollToTop] = useState(false);
+  const nativeApp = isNativeApp();
+  const webAccountSurface = !nativeApp && isWebAccountPath(location.pathname);
 
-  // Scroll to top when route changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Show/hide scroll to top button
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setScrollToTop(true);
-      } else {
-        setScrollToTop(false);
-      }
+      setScrollToTop(window.scrollY > 300);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Scroll to top function
   const scrollTop = () => {
     window.scrollTo({
       top: 0,
@@ -41,7 +42,6 @@ const Layout = () => {
     });
   };
 
-  // Check if current route is admin or auth page
   const isAdminPage = location.pathname.startsWith("/admin");
   const isAuthPage = [
     "/login",
@@ -54,9 +54,11 @@ const Layout = () => {
     "/auth/confirm",
   ].includes(location.pathname);
   const isImmersiveWizard =
-    location.pathname === "/onboarding" || location.pathname === "/request-event";
+    location.pathname === "/onboarding" ||
+    (nativeApp && location.pathname === "/request-event");
   const isLanding = location.pathname === "/";
-  const isDiscoverPage = location.pathname === "/discover";
+  const isDiscoverPage =
+    location.pathname === "/discover" || location.pathname.startsWith("/discover/");
   const isEventsBrowse =
     location.pathname === "/events" || /^\/events\/[^/]+$/.test(location.pathname);
   const isSharedEventMedia = location.pathname.startsWith("/share/event-media");
@@ -64,31 +66,46 @@ const Layout = () => {
     "/privacy-policy",
     "/terms-of-service",
     "/media-consent",
-    "/faq",
-    "/contact",
-    "/feedback",
   ].includes(location.pathname);
+  const isSupportPage = ["/faq", "/contact", "/feedback"].includes(location.pathname);
+
+  // Authenticated light-web keeps chrome on Events so it stays inside the app shell.
+  const hideEventsChrome = isEventsBrowse && (nativeApp || !isAuthenticated);
+
   const hideChrome =
     isAuthPage ||
-    isDiscoverPage ||
+    (nativeApp && isDiscoverPage) ||
     isLegalPage ||
-    isEventsBrowse ||
+    (nativeApp && isSupportPage) ||
+    (!isAuthenticated && isSupportPage) ||
+    hideEventsChrome ||
     isImmersiveWizard ||
     isSharedEventMedia;
+
+  const showWebAccountNav = !nativeApp && !hideChrome && isAuthenticated;
+  const showFullBottomNav = nativeApp && !hideChrome;
+  const showTopNavbar = nativeApp && !hideChrome;
+  const showWebAccountHeader = webAccountSurface && !hideChrome && isAuthenticated;
+  const showWebAccountFooter = showWebAccountHeader;
 
   return (
     <DiscoverUIProvider>
       <div className="relative flex min-h-screen flex-col bg-background">
-        {!isAuthPage && !isAdminPage && <LocationConfirmPrompt />}
-        {!hideChrome && <Navbar />}
-        {!isAuthPage && !isAdminPage && !isLegalPage && <MaintenanceBanner />}
-        <main className={cn("flex-1", !hideChrome && "pb-20 md:pb-24")}>
+        {!isAuthPage && !isAdminPage && nativeApp && <LocationConfirmPrompt />}
+        {showTopNavbar && <Navbar />}
+        {showWebAccountHeader && <WebAccountHeader />}
+        {!isAuthPage && !isAdminPage && !isLegalPage && !(nativeApp && isSupportPage) && (
+          <MaintenanceBanner />
+        )}
+        <main className={cn("flex-1", (showFullBottomNav || showWebAccountNav) && "pb-4")}>
           <Outlet />
         </main>
-        {!hideChrome && <BottomNav />}
-        {!hideChrome && (isLanding ? <Footer /> : <FooterMinimal />)}
-        
-        {scrollToTop && !isLegalPage && !isEventsBrowse && (
+        {showWebAccountFooter && <WebAccountFooter />}
+        {showWebAccountNav && <WebAccountNav />}
+        {showFullBottomNav && <BottomNav />}
+        {!hideChrome && nativeApp && (isLanding ? <Footer /> : <FooterMinimal />)}
+
+        {scrollToTop && !isLegalPage && !(isEventsBrowse && hideEventsChrome) && (
           <button
             onClick={scrollTop}
             className="fixed bottom-24 right-6 z-40 rounded-full bg-primary p-2 shadow-lg transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:bottom-28 sm:right-10"
