@@ -10,6 +10,7 @@ import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 const ALLOWED_BUCKETS = new Set([
   "media",
   "stories",
+  "stories-media",
   "event-images",
   "event-media",
   "avatars",

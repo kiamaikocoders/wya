@@ -4,6 +4,7 @@ import { AwsClient } from "aws4fetch";
 const ALLOWED_BUCKETS = new Set([
   "media",
   "stories",
+  "stories-media",
   "event-images",
   "event-media",
   "avatars",

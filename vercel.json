@@ -5,6 +5,9 @@
     },
     "api/r2-upload-url.ts": {
       "maxDuration": 30
+    },
+    "api/r2-delete.ts": {
+      "maxDuration": 30
     }
   },
   "headers": [
