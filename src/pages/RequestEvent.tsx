@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
 import { uploadToR2 } from '@/lib/r2-upload';
+import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 interface EventProposal {
   title: string;
@@ -279,7 +280,7 @@ const RequestEvent: React.FC = () => {
           ? 'Proposal sent! Check your email for a confirmation.'
           : 'Proposal sent! We’ll review and follow up shortly.'
       );
-      navigate(isAuthenticated ? '/home' : '/');
+      navigate(isAuthenticated ? getPostLoginPath() : '/');
     } catch (error) {
       console.error('Error submitting proposal:', error);
       toast.error(

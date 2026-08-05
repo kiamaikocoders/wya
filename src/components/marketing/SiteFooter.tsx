@@ -11,6 +11,8 @@ const TIKTOK_URL = 'https://www.tiktok.com/@whereyouat.ke';
 
 type SiteFooterProps = {
   className?: string;
+  /** Override the Home link (e.g. `/account` on light web). */
+  homeHref?: string;
 };
 
 function TikTokIcon({ className }: { className?: string }) {
@@ -22,7 +24,7 @@ function TikTokIcon({ className }: { className?: string }) {
 }
 
 /** Shared footer for landing + legal/help pages (Concept D style). */
-export function SiteFooter({ className }: SiteFooterProps) {
+export function SiteFooter({ className, homeHref = '/' }: SiteFooterProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [email, setEmail] = useState('');
@@ -41,7 +43,7 @@ export function SiteFooter({ className }: SiteFooterProps) {
       <div className="grid w-full gap-10 md:grid-cols-[1.3fr_1fr_1fr_1.3fr] md:gap-8 lg:gap-12">
         <div className="space-y-3.5">
           <Logo
-            href="/"
+            href={homeHref}
             size="md"
             className="[&_img]:!h-14 md:[&_img]:!h-16 [&_img]:!min-w-0 [&>div]:!min-w-0"
           />
@@ -83,7 +85,7 @@ export function SiteFooter({ className }: SiteFooterProps) {
           <p className={cn('text-sm font-semibold', heading)}>Quick Links</p>
           <ul className={cn('mt-3.5 space-y-3 text-[13px]', muted)}>
             <li>
-              <Link to="/" className="hover:text-[#ff6b35]">
+              <Link to={homeHref} className="hover:text-[#ff6b35]">
                 Home
               </Link>
             </li>

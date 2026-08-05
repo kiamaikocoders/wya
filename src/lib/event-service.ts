@@ -90,7 +90,7 @@ export const eventService = {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id,title,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+        'id,title,description,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
       .eq('status', 'approved')
       .is('cancelled_at', null)

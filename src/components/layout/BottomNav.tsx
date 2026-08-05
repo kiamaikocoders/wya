@@ -4,6 +4,7 @@ import { Home, Sparkles, Calendar, CalendarPlus, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useDiscoverUI } from '@/contexts/DiscoverUIContext';
+import { getAuthenticatedHomePath } from '@/lib/post-auth-navigation';
 
 interface NavItem {
   name: string;
@@ -20,7 +21,7 @@ const BottomNav = () => {
   const discoverUI = useDiscoverUI();
   const uiVisible = isDiscoverPage ? discoverUI.uiVisible : true;
   
-  const homePath = isAuthenticated ? '/home' : '/';
+  const homePath = isAuthenticated ? getAuthenticatedHomePath() : '/';
 
   const navItems: NavItem[] = [
     { name: 'Overview', icon: Home, path: homePath },
@@ -31,8 +32,12 @@ const BottomNav = () => {
   ];
   
   const isLinkActive = (path: string) => {
-    if (path === '/' || path === '/home') {
-      return location.pathname === '/' || location.pathname === '/home';
+    if (path === '/' || path === '/home' || path === '/account') {
+      return (
+        location.pathname === '/' ||
+        location.pathname === '/home' ||
+        location.pathname === '/account'
+      );
     }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };

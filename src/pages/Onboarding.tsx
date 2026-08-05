@@ -14,6 +14,7 @@ import {
   onboardingService,
   OnboardingPreferencesPayload,
 } from '@/lib/onboarding-service';
+import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 const stepMeta = [
   {
@@ -150,7 +151,7 @@ const Onboarding: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['onboardingPreferences'] });
       sessionStorage.setItem('onboarding_just_completed', 'true');
       toast.success('Preferences saved! Your feed will adapt immediately.');
-      navigate('/home');
+      navigate(getPostLoginPath());
     },
     onError: (error) => {
       console.error(error);

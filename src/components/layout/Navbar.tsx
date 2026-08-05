@@ -26,13 +26,14 @@ import {
   Home as HomeIcon,
   User,
 } from 'lucide-react';
+import { getAuthenticatedHomePath } from '@/lib/post-auth-navigation';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
 
-  const homeHref = isAuthenticated ? '/home' : '/';
+  const homeHref = isAuthenticated ? getAuthenticatedHomePath() : '/';
   const isOrganizer = isAdmin || user?.user_type === 'organizer';
   const isDiscoverPage = location.pathname === '/discover';
 

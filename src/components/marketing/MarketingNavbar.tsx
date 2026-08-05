@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/ui/Logo";
+import { getAuthenticatedHomePath } from "@/lib/post-auth-navigation";
 
 const navLinks = [
   { href: "#features", label: "Features" },
@@ -17,6 +18,7 @@ const MarketingNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const accountHome = getAuthenticatedHomePath();
 
   useEffect(() => {
     let ticking = false;
@@ -40,7 +42,7 @@ const MarketingNavbar = () => {
 
   const handlePrimaryCta = () => {
     if (isAuthenticated) {
-      navigate("/home");
+      navigate(accountHome);
     } else {
       navigate("/signup");
     }
@@ -67,7 +69,7 @@ const MarketingNavbar = () => {
     >
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
         <Logo 
-          href={isAuthenticated ? "/home" : "/"} 
+          href={isAuthenticated ? accountHome : "/"} 
           size="lg"
           showTagline={false}
           className="flex-row items-center gap-2 min-w-[150px]"
@@ -86,6 +88,9 @@ const MarketingNavbar = () => {
               {link.label}
             </a>
           ))}
+          <Link to="/events" className="transition-colors hover:text-white">
+            Events
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -102,7 +107,7 @@ const MarketingNavbar = () => {
             className="bg-gradient-to-br from-kenya-orange via-amber-400 to-kenya-orange shadow-[0_0_20px_rgba(255,128,0,0.45)] hover:shadow-[0_0_30px_rgba(255,128,0,0.55)] text-kenya-dark"
             onClick={handlePrimaryCta}
           >
-            {isAuthenticated ? "Go to Dashboard" : "Get Started"}
+            {isAuthenticated ? "My account" : "Get Started"}
           </Button>
         </div>
       </div>

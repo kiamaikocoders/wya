@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
 
@@ -58,7 +59,7 @@ const AuthCallback = () => {
             setStatus('success');
             setMessage('Email verified successfully! You can now continue.');
             toast.success('Email verified successfully!');
-            setTimeout(() => navigate('/home'), 1500);
+            setTimeout(() => navigate(getPostLoginPath()), 1500);
             return;
           }
         }
@@ -71,7 +72,7 @@ const AuthCallback = () => {
           setStatus('success');
           setMessage('You are signed in.');
           toast.success('Signed in successfully!');
-          setTimeout(() => navigate('/home'), 1200);
+          setTimeout(() => navigate(getPostLoginPath()), 1200);
           return;
         }
 
@@ -120,7 +121,7 @@ const AuthCallback = () => {
             setStatus('success');
             setMessage('Signed in successfully!');
             toast.success('Signed in successfully!');
-            setTimeout(() => navigate('/home'), 1000);
+            setTimeout(() => navigate(getPostLoginPath()), 1000);
             return;
           }
         }

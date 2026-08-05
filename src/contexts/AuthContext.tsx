@@ -14,6 +14,7 @@ import {
 } from '@/legal/policy-versions';
 import type { AttendeeSignupConsents } from '@/lib/signup-consent';
 import { isUndefinedColumnError } from '@/lib/supabase-schema-compat';
+import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 export interface User {
   id: string;
@@ -357,7 +358,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Navigate after account status check
       const isAdminUser = lockProfile?.username === 'admin';
-      navigate(isAdminUser ? '/admin' : '/home');
+      const postLoginPath = isAdminUser ? '/admin' : getPostLoginPath();
+      navigate(postLoginPath);
       
       // Get user profile for welcome message (non-blocking - run after navigation)
       supabase
@@ -397,7 +399,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setTimeout(() => {
         if (window.location.pathname === '/login') {
           console.log('Backup navigation triggered');
-          window.location.href = isAdminUser ? '/admin' : '/home';
+          window.location.href = postLoginPath;
         }
       }, 300);
     } catch (error: any) {
