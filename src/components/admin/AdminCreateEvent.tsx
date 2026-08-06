@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +34,11 @@ import {
   insertEventTicketTypes,
   lowestTierPrice,
 } from '@/lib/event-ticket-types';
+import {
+  clearAdminCreateEventDraft,
+  loadAdminCreateEventDraft,
+  saveAdminCreateEventDraft,
+} from '@/lib/admin-create-event-draft';
 import {
   RecurrenceFields,
   defaultRecurrenceFormState,
@@ -97,50 +102,146 @@ const fieldClass =
 const surfaceCard =
   'rounded-xl border border-border bg-[hsl(var(--admin-surface))]';
 
+const emptyFormData = {
+  title: '',
+  description: '',
+  category: '',
+  category_id: null as number | null,
+  category_ids: [] as number[],
+  date: '',
+  end_date: '' as string,
+  time: '',
+  location: '',
+  latitude: null as number | null,
+  longitude: null as number | null,
+  location_url: '',
+  image_url: '',
+  price: 0,
+  capacity: 0,
+  tags: [] as string[],
+  performing_artists: [] as string[],
+  ticket_link: '',
+  featured: false,
+  organizer_id: null as string | null,
+  status: 'approved' as 'pending' | 'approved' | 'rejected',
+};
+
 const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<Step>(1);
+  const restoredDraftRef = useRef(false);
+  const skipNextSaveRef = useRef(true);
+
+  const initialDraft = useMemo(() => loadAdminCreateEventDraft(), []);
+
+  const [currentStep, setCurrentStep] = useState<Step>(
+    () => initialDraft?.currentStep ?? 1,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    () => initialDraft?.previewUrl ?? null,
+  );
+  const [galleryUrls, setGalleryUrls] = useState<string[]>(
+    () => initialDraft?.galleryUrls ?? [],
+  );
   const [organizerSearch, setOrganizerSearch] = useState('');
-  const [requireApproval, setRequireApproval] = useState(false);
-  const [useExternalTicket, setUseExternalTicket] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(
+    () => initialDraft?.requireApproval ?? false,
+  );
+  const [useExternalTicket, setUseExternalTicket] = useState(
+    () => initialDraft?.useExternalTicket ?? false,
+  );
   const [addingTag, setAddingTag] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [recurrence, setRecurrence] = useState<RecurrenceFormState>(defaultRecurrenceFormState);
-  const [ticketTiers, setTicketTiers] = useState<TicketTierDraft[]>([
-    createEmptyTicketTier('Regular', 0),
+  const [recurrence, setRecurrence] = useState<RecurrenceFormState>(
+    () => initialDraft?.recurrence ?? defaultRecurrenceFormState(),
+  );
+  const [ticketTiers, setTicketTiers] = useState<TicketTierDraft[]>(
+    () =>
+      initialDraft?.ticketTiers?.length
+        ? initialDraft.ticketTiers
+        : [createEmptyTicketTier('Regular', 0)],
+  );
+
+  const [formData, setFormData] = useState(() => ({
+    ...emptyFormData,
+    ...(initialDraft?.formData ?? {}),
+  }));
+
+  const [tagsInput, setTagsInput] = useState(() => initialDraft?.tagsInput ?? '');
+  const [whatToExpect, setWhatToExpect] = useState(
+    () => initialDraft?.whatToExpect ?? '',
+  );
+
+  useEffect(() => {
+    if (restoredDraftRef.current) return;
+    restoredDraftRef.current = true;
+    if (initialDraft?.formData?.title || initialDraft?.formData?.image_url) {
+      toast.message('Restored your draft', {
+        description: 'Continue where you left off — progress is saved automatically.',
+      });
+    }
+    // Allow autosave after first paint
+    const t = window.setTimeout(() => {
+      skipNextSaveRef.current = false;
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [initialDraft]);
+
+  useEffect(() => {
+    if (skipNextSaveRef.current) return;
+    const handle = window.setTimeout(() => {
+      saveAdminCreateEventDraft({
+        version: 1,
+        savedAt: new Date().toISOString(),
+        currentStep,
+        formData,
+        ticketTiers,
+        recurrence,
+        galleryUrls,
+        previewUrl,
+        requireApproval,
+        useExternalTicket,
+        whatToExpect,
+        tagsInput,
+      });
+    }, 500);
+    return () => window.clearTimeout(handle);
+  }, [
+    currentStep,
+    formData,
+    ticketTiers,
+    recurrence,
+    galleryUrls,
+    previewUrl,
+    requireApproval,
+    useExternalTicket,
+    whatToExpect,
+    tagsInput,
   ]);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    category_id: null as number | null,
-    category_ids: [] as number[],
-    date: '',
-    end_date: '' as string,
-    time: '',
-    location: '',
-    latitude: null as number | null,
-    longitude: null as number | null,
-    location_url: '',
-    image_url: '',
-    price: 0,
-    capacity: 0,
-    tags: [] as string[],
-    performing_artists: [] as string[],
-    ticket_link: '',
-    featured: false,
-    organizer_id: null as string | null,
-    status: 'approved' as 'pending' | 'approved' | 'rejected',
-  });
+  const discardDraftAndClose = () => {
+    onCancel?.();
+  };
 
-  const [tagsInput, setTagsInput] = useState('');
-  const [whatToExpect, setWhatToExpect] = useState('');
+  const persistDraftNow = () => {
+    saveAdminCreateEventDraft({
+      version: 1,
+      savedAt: new Date().toISOString(),
+      currentStep,
+      formData,
+      ticketTiers,
+      recurrence,
+      galleryUrls,
+      previewUrl,
+      requireApproval,
+      useExternalTicket,
+      whatToExpect,
+      tagsInput,
+    });
+    toast.success('Draft saved — you can refresh without losing progress');
+  };
 
   const { data: categoriesData = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
@@ -522,6 +623,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
+      clearAdminCreateEventDraft();
       if (onSuccess) onSuccess();
     },
     onError: (error: any) => {
@@ -1389,7 +1491,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               type="button"
               variant="outline"
               className="rounded-[10px]"
-              onClick={onCancel}
+              onClick={discardDraftAndClose}
             >
               Cancel
             </Button>
@@ -1398,7 +1500,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             type="button"
             variant="outline"
             className="rounded-[10px]"
-            onClick={() => toast.message('Draft saving isn’t available yet — use Publish when ready')}
+            onClick={persistDraftNow}
           >
             Save draft
           </Button>

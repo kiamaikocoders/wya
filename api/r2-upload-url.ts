@@ -162,9 +162,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const signed = await aws.sign(
       new Request(url.toString(), {
         method: "PUT",
+        // Only Content-Type — Cache-Control in the signature often breaks browser CORS preflights.
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
         },
       }),
       { aws: { signQuery: true } },
@@ -180,7 +180,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expiresIn,
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {

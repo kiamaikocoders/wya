@@ -6,6 +6,9 @@
     "api/r2-upload-url.ts": {
       "maxDuration": 30
     },
+    "api/r2-upload.ts": {
+      "maxDuration": 60
+    },
     "api/r2-delete.ts": {
       "maxDuration": 30
     }
