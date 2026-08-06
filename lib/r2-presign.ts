@@ -98,25 +98,31 @@ export async function createR2PresignedUpload(options: {
   const supabaseUrl =
     env.VITE_SUPABASE_URL?.trim() ||
     env.SUPABASE_URL?.trim() ||
+    // Same project URL as the published SPA client (publishable).
     "https://nnlxxbuekqlaqamczwyi.supabase.co";
+  // Anon/publishable key — required to validate JWTs. Prefer env; fall back to the
+  // same public key already shipped in the SPA client so uploads work when only R2_* is set.
   const anonKey =
     env.VITE_SUPABASE_ANON_KEY?.trim() ||
     env.SUPABASE_ANON_KEY?.trim() ||
     env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
-    "";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHh4YnVla3FsYXFhbWN6d3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwMDUzNTksImV4cCI6MjA2MDU4MTM1OX0.SYi79uRnDb-R-n5sMkMmbf4gvRmN9aj_W52vL58LfrI";
 
   const jwt = (options.authorizationHeader || "")
     .replace(/^Bearer\s+/i, "")
     .trim();
 
   let userId: string | null = null;
-  if (jwt && anonKey) {
+  if (jwt) {
     const supabase = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${jwt}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data } = await supabase.auth.getUser(jwt);
+    const { data, error } = await supabase.auth.getUser(jwt);
     if (data.user) userId = data.user.id;
+    else if (error) {
+      console.warn("r2-presign auth.getUser failed", error.message);
+    }
   }
 
   const legacyBucket = String(body.bucket ?? "").trim();
@@ -151,7 +157,15 @@ export async function createR2PresignedUpload(options: {
       (pathOverride.startsWith("proposals/guest/") ||
         folder.startsWith("proposals/guest"));
     if (!guestOk) {
-      return { ok: false, status: 401, body: { error: "Unauthorized" } };
+      return {
+        ok: false,
+        status: 401,
+        body: {
+          error: jwt
+            ? "Invalid or expired session — sign in again and retry"
+            : "Unauthorized — sign in required to upload",
+        },
+      };
     }
   }
 

@@ -76,23 +76,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.VITE_SUPABASE_URL?.trim() ||
       process.env.SUPABASE_URL?.trim() ||
       "https://nnlxxbuekqlaqamczwyi.supabase.co";
+    // Prefer env; fall back to the same public anon key as the SPA client.
     const anonKey =
       process.env.VITE_SUPABASE_ANON_KEY?.trim() ||
       process.env.SUPABASE_ANON_KEY?.trim() ||
       process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
-      "";
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHh4YnVla3FsYXFhbWN6d3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwMDUzNTksImV4cCI6MjA2MDU4MTM1OX0.SYi79uRnDb-R-n5sMkMmbf4gvRmN9aj_W52vL58LfrI";
 
     const authHeader = String(req.headers.authorization || "");
     const jwt = authHeader.replace(/^Bearer\s+/i, "").trim();
 
     let userId: string | null = null;
-    if (jwt && anonKey) {
+    if (jwt) {
       const supabase = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
         auth: { persistSession: false, autoRefreshToken: false },
       });
-      const { data } = await supabase.auth.getUser(jwt);
+      const { data, error } = await supabase.auth.getUser(jwt);
       if (data.user) userId = data.user.id;
+      else if (error) {
+        console.warn("r2-upload-url auth.getUser failed", error.message);
+      }
     }
 
     const body = (req.body || {}) as Record<string, unknown>;
@@ -131,7 +135,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         (pathOverride.startsWith("proposals/guest/") ||
           folder.startsWith("proposals/guest"));
       if (!guestOk) {
-        res.status(401).json({ error: "Unauthorized" });
+        res.status(401).json({
+          error: jwt
+            ? "Invalid or expired session — sign in again and retry"
+            : "Unauthorized — sign in required to upload",
+        });
         return;
       }
     }

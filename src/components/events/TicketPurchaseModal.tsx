@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,14 +8,20 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, MapPin, Music, Ticket, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Music, Ticket, Minus, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ticketService } from '@/lib/ticket-service';
+import {
+  fetchEventTicketTypes,
+  type EventTicketTypeRow,
+} from '@/lib/event-ticket-types';
 import { toast } from 'sonner';
 import type { Event } from '@/types/event.types';
 import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
+import { cn } from '@/lib/utils';
 
 interface TicketPurchaseModalProps {
   open: boolean;
@@ -32,10 +38,53 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
+
+  const { data: ticketTypes = [] } = useQuery({
+    queryKey: ['event-ticket-types', event?.id],
+    queryFn: () => fetchEventTicketTypes(event!.id),
+    enabled: open && !!event?.id,
+  });
+
+  const fallbackTier: EventTicketTypeRow[] = useMemo(() => {
+    if (!event) return [];
+    return [
+      {
+        id: 0,
+        event_id: event.id,
+        name: 'General Admission',
+        description: null,
+        price: event.price || 0,
+        capacity: event.capacity ?? null,
+        sort_order: 0,
+        is_active: true,
+        sale_starts_at: null,
+        sale_ends_at: null,
+      },
+    ];
+  }, [event]);
+
+  const tiers = ticketTypes.length > 0 ? ticketTypes : fallbackTier;
+
+  useEffect(() => {
+    if (!open) {
+      setQuantity(1);
+      setSelectedTierId(null);
+      return;
+    }
+    if (tiers.length > 0) {
+      setSelectedTierId((prev) =>
+        prev != null && tiers.some((t) => t.id === prev) ? prev : tiers[0].id,
+      );
+    }
+  }, [open, tiers]);
 
   if (!event) return null;
 
-  const totalPrice = (event.price || 0) * quantity;
+  const selectedTier =
+    tiers.find((t) => t.id === selectedTierId) || tiers[0] || null;
+  const unitPrice = selectedTier?.price ?? event.price ?? 0;
+  const totalPrice = unitPrice * quantity;
 
   const handlePurchase = async () => {
     if (!isAuthenticated) {
@@ -43,14 +92,20 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
       navigate('/login');
       return;
     }
+    if (!selectedTier) {
+      toast.error('Select a ticket type');
+      return;
+    }
 
     try {
       setIsPurchasing(true);
       await ticketService.purchaseTicket({
         event_id: event.id,
-        ticket_type: 'general',
-        quantity: quantity,
-        payment_method: 'mpesa', // Default to M-Pesa
+        ticket_type: selectedTier.name,
+        ticket_type_id: selectedTier.id > 0 ? selectedTier.id : undefined,
+        unit_price: unitPrice,
+        quantity,
+        payment_method: 'mpesa',
       });
       toast.success('Ticket purchase initiated! Check your phone to complete payment.');
       onClose();
@@ -83,13 +138,10 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
         )}
 
         <div className="space-y-4">
-          {/* Event Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-white/90">
               <Calendar className="h-5 w-5 text-gradient-orange-accent" />
-              <span>
-                {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
-              </span>
+              <span>{format(new Date(event.date), 'EEEE, MMMM d, yyyy')}</span>
             </div>
 
             {event.time && (
@@ -133,15 +185,42 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             )}
           </div>
 
-          {/* Ticket Selection */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-white/90">Choose ticket type</p>
+            {tiers.map((tier) => {
+              const active = selectedTier?.id === tier.id;
+              return (
+                <button
+                  key={tier.id || tier.name}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTierId(tier.id);
+                    setQuantity(1);
+                  }}
+                  className={cn(
+                    'flex w-full items-center justify-between rounded-lg border p-4 text-left transition-colors',
+                    active
+                      ? 'border-kenya-orange/60 bg-gradient-accent/15'
+                      : 'border-white/10 bg-white/5 hover:border-white/25',
+                  )}
+                >
+                  <div>
+                    <p className="font-semibold text-white">{tier.name}</p>
+                    {tier.description ? (
+                      <p className="text-xs text-white/60">{tier.description}</p>
+                    ) : null}
+                  </div>
+                  <p className="text-sm font-semibold text-gradient-orange-accent">
+                    {tier.price > 0 ? `KSh ${Number(tier.price).toLocaleString()}` : 'Free'}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="font-semibold text-white">General Admission</p>
-                <p className="text-sm text-white/70">
-                  {event.price ? `KSh ${event.price.toLocaleString()}` : 'Free'}
-                </p>
-              </div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-semibold text-white">Quantity</p>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
@@ -150,30 +229,29 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
                   disabled={quantity <= 1}
                   className="border-white/20 text-white hover:bg-white/10"
                 >
-                  <X className="h-4 w-4" />
+                  <Minus className="h-4 w-4" />
                 </Button>
                 <span className="w-8 text-center font-semibold">{quantity}</span>
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(quantity + 1)}
-                  disabled={event.capacity ? quantity >= event.capacity : false}
+                  disabled={
+                    selectedTier?.capacity
+                      ? quantity >= selectedTier.capacity
+                      : event.capacity
+                        ? quantity >= event.capacity
+                        : false
+                  }
                   className="border-white/20 text-white hover:bg-white/10"
                 >
-                  +
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-
-            {event.capacity && (
-              <p className="text-xs text-white/60">
-                {event.capacity - quantity} tickets remaining
-              </p>
-            )}
           </div>
 
-          {/* Total */}
-          {event.price && (
+          {unitPrice > 0 && (
             <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
               <p className="text-lg font-semibold text-white">Total</p>
               <p className="text-2xl font-bold text-gradient-orange-accent">
@@ -182,7 +260,6 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
@@ -208,4 +285,3 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
 };
 
 export default TicketPurchaseModal;
-

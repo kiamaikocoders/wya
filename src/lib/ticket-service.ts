@@ -24,6 +24,10 @@ export interface Ticket {
 export interface PurchaseTicketPayload {
   event_id: number;
   ticket_type: string;
+  /** Optional FK to event_ticket_types.id */
+  ticket_type_id?: number;
+  /** When set, used instead of events.price (multi-tier events). */
+  unit_price?: number;
   quantity: number;
   phone_number?: string;
   payment_method: 'mpesa' | 'card' | 'cash';
@@ -104,11 +108,17 @@ export const ticketService = {
         
       if (eventError) throw eventError;
       
+      const unitPrice =
+        purchaseData.unit_price != null && Number.isFinite(purchaseData.unit_price)
+          ? purchaseData.unit_price
+          : eventData.price;
+
       const ticketData = {
         user_id: user.id,
         event_id: purchaseData.event_id,
         ticket_type: purchaseData.ticket_type,
-        price: eventData.price,
+        ticket_type_id: purchaseData.ticket_type_id ?? null,
+        price: unitPrice,
         status: purchaseData.payment_method === 'mpesa' ? 'pending' : 'confirmed',
         reference_code: `TKT-${uuidv4().substring(0, 8).toUpperCase()}`,
         event_title: eventData.title,
