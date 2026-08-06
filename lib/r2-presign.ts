@@ -188,9 +188,9 @@ export async function createR2PresignedUpload(options: {
     const signed = await aws.sign(
       new Request(url.toString(), {
         method: "PUT",
+        // Only Content-Type — extra signed headers often break browser CORS preflights.
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
         },
       }),
       { aws: { signQuery: true } },
@@ -209,7 +209,6 @@ export async function createR2PresignedUpload(options: {
         expiresIn,
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
         },
       },
     };

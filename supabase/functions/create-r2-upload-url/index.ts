@@ -174,7 +174,6 @@ serve(async (req) => {
         method: "PUT",
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
         },
       }),
       { aws: { signQuery: true } },
@@ -193,7 +192,6 @@ serve(async (req) => {
         expiresIn,
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
         },
       }),
       {

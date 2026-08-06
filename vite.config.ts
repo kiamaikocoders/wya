@@ -42,7 +42,8 @@ export default defineConfig(({ mode }) => {
             const pathname = req.url?.split("?")[0] || "";
             if (
               pathname !== "/api/r2-upload-url" &&
-              pathname !== "/api/r2-delete"
+              pathname !== "/api/r2-delete" &&
+              pathname !== "/api/r2-upload"
             ) {
               return next();
             }
@@ -91,6 +92,69 @@ export default defineConfig(({ mode }) => {
                   },
                 });
                 sendJson(result.status, result.body);
+                return;
+              }
+
+              if (pathname === "/api/r2-upload") {
+                const jwt = authorizationHeader.replace(/^Bearer\s+/i, "").trim();
+                if (!jwt) {
+                  sendJson(401, { error: "Unauthorized — sign in required to upload" });
+                  return;
+                }
+
+                const { createClient } = await import("@supabase/supabase-js");
+                const supabaseUrl =
+                  env.VITE_SUPABASE_URL?.trim() ||
+                  env.SUPABASE_URL?.trim() ||
+                  "https://nnlxxbuekqlaqamczwyi.supabase.co";
+                const anonKey =
+                  env.VITE_SUPABASE_ANON_KEY?.trim() ||
+                  env.SUPABASE_ANON_KEY?.trim() ||
+                  env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHh4YnVla3FsYXFhbWN6d3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwMDUzNTksImV4cCI6MjA2MDU4MTM1OX0.SYi79uRnDb-R-n5sMkMmbf4gvRmN9aj_W52vL58LfrI";
+
+                const supabase = createClient(supabaseUrl, anonKey, {
+                  global: { headers: { Authorization: `Bearer ${jwt}` } },
+                  auth: { persistSession: false, autoRefreshToken: false },
+                });
+                const { data: userData, error: userError } =
+                  await supabase.auth.getUser(jwt);
+                if (userError || !userData.user) {
+                  sendJson(401, {
+                    error: "Invalid or expired session — sign in again and retry",
+                  });
+                  return;
+                }
+
+                const legacyBucket = String(body.bucket ?? "").trim();
+                const contentType = String(
+                  body.contentType ?? "application/octet-stream",
+                )
+                  .trim()
+                  .toLowerCase();
+                const fileName = String(body.fileName ?? "").trim();
+                const folder = String(body.folder ?? "").trim();
+                const pathOverride = String(body.path ?? "").trim();
+                const dataBase64 = String(body.dataBase64 ?? "").trim();
+                const objectPath =
+                  pathOverride || [folder, fileName].filter(Boolean).join("/");
+                const key = `${legacyBucket}/${objectPath}`;
+                const buffer = Buffer.from(dataBase64, "base64");
+
+                const { putObjectToR2 } = await import("./lib/r2-put");
+                const put = await putObjectToR2({
+                  env,
+                  key,
+                  contentType,
+                  body: buffer,
+                });
+                sendJson(200, {
+                  publicUrl: put.publicUrl,
+                  key: put.key,
+                  path: objectPath,
+                  fullPath: put.key,
+                  bucket: legacyBucket,
+                });
                 return;
               }
 
