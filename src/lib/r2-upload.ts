@@ -51,9 +51,24 @@ function getR2UploadUrlEndpoint(): string {
 export async function uploadToR2(request: R2UploadRequest): Promise<UploadResult> {
   const url = getR2UploadUrlEndpoint();
 
-  const {
+  let {
     data: { session },
   } = await supabase.auth.getSession();
+
+  // Refresh if the access token is missing or about to expire (common cause of 401 from /api/r2-upload-url).
+  if (!request.allowGuest) {
+    const expiresAt = session?.expires_at ?? 0;
+    const needsRefresh =
+      !session?.access_token || expiresAt * 1000 < Date.now() + 60_000;
+    if (needsRefresh) {
+      const { data: refreshed, error: refreshError } =
+        await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn('r2-upload session refresh failed', refreshError.message);
+      }
+      session = refreshed.session ?? session;
+    }
+  }
 
   if (!session?.access_token && !request.allowGuest) {
     throw new Error('You must be logged in to upload files');

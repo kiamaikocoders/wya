@@ -24,6 +24,16 @@ import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
 import { draftEventDescription, draftWhatToExpect } from '@/lib/admin-ai-analysis';
+import { AddSubcategoryField } from '@/components/admin/AddSubcategoryField';
+import {
+  EventTicketTiersEditor,
+  createEmptyTicketTier,
+  type TicketTierDraft,
+} from '@/components/admin/EventTicketTiersEditor';
+import {
+  insertEventTicketTypes,
+  lowestTierPrice,
+} from '@/lib/event-ticket-types';
 import {
   RecurrenceFields,
   defaultRecurrenceFormState,
@@ -101,6 +111,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   const [addingTag, setAddingTag] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceFormState>(defaultRecurrenceFormState);
+  const [ticketTiers, setTicketTiers] = useState<TicketTierDraft[]>([
+    createEmptyTicketTier('Regular', 0),
+  ]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -147,12 +160,27 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     [categoriesData],
   );
 
+  const mainCategories = useMemo(
+    () => organizedCategories.filter((p) => p.name.toLowerCase() !== 'other'),
+    [organizedCategories],
+  );
+
+  const otherCategoryParent = useMemo(
+    () => organizedCategories.find((p) => p.name.toLowerCase() === 'other') ?? null,
+    [organizedCategories],
+  );
+
   const selectedCategoryNames = useMemo(() => {
     if (!formData.category_ids?.length) return [];
     return formData.category_ids
       .map((id) => categoriesData.find((c) => c.id === id)?.name || null)
       .filter((name): name is string => name !== null);
   }, [formData.category_ids, categoriesData]);
+
+  const syncPriceFromTiers = (tiers: TicketTierDraft[]) => {
+    setTicketTiers(tiers);
+    setFormData((prev) => ({ ...prev, price: lowestTierPrice(tiers) }));
+  };
 
   const toggleCategory = (categoryId: number) => {
     setFormData((prev) => {
@@ -306,6 +334,18 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         }
         return true;
       case 2:
+        if (!ticketTiers.length) {
+          toast.error('Add at least one ticket type');
+          return false;
+        }
+        if (ticketTiers.some((t) => !t.name.trim())) {
+          toast.error('Each ticket type needs a name');
+          return false;
+        }
+        if (ticketTiers.some((t) => !Number.isFinite(t.price) || t.price < 0)) {
+          toast.error('Ticket prices must be zero or greater');
+          return false;
+        }
         return true;
       case 3:
         if (!formData.description.trim()) {
@@ -337,8 +377,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       eventData: any;
       categoryIds: number[];
       recurrence: RecurrenceFormState;
+      ticketTiers: TicketTierDraft[];
     }) => {
-      const { eventData, categoryIds, recurrence: recurrenceState } = vars;
+      const { eventData, categoryIds, recurrence: recurrenceState, ticketTiers: tiers } = vars;
 
       if (recurrenceState.frequency !== 'none') {
         const rule = buildRecurrenceRule(
@@ -374,6 +415,13 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           },
         });
 
+        const eventIds = (result.events || [])
+          .map((e: { id: number }) => e.id)
+          .filter(Boolean);
+        for (const eventId of eventIds) {
+          await insertEventTicketTypes(eventId, tiers);
+        }
+
         return {
           kind: 'series' as const,
           title: eventData.title,
@@ -396,6 +444,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         .single();
 
       if (error) throw error;
+      await insertEventTicketTypes(data.id, tiers);
       return { kind: 'single' as const, event: data };
     },
     onSuccess: async (result, vars) => {
@@ -518,6 +567,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       ...eventDataWithoutCategoryIds,
       category: categoryName,
       category_id: categoryId,
+      price: lowestTierPrice(ticketTiers),
       ticket_link: useExternalTicket ? formData.ticket_link : '',
       date: new Date(formData.date).toISOString(),
       end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
@@ -535,6 +585,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       eventData,
       categoryIds: formData.category_ids,
       recurrence,
+      ticketTiers,
     });
   };
 
@@ -666,7 +717,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                     align="start"
                     className="w-80 max-h-72 overflow-y-auto p-2 sm:w-96"
                   >
-                    {organizedCategories.map((parent) => (
+                    {mainCategories.map((parent) => (
                       <div key={parent.id} className="mb-2 last:mb-0">
                         <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                           {parent.icon ? `${parent.icon} ` : ''}
@@ -691,9 +742,16 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                             <span>{sub.name}</span>
                           </label>
                         ))}
+                        <div className="px-2 pb-1">
+                          <AddSubcategoryField
+                            parentCategoryId={parent.id}
+                            categories={categoriesData}
+                            onCreated={(id) => toggleCategory(id)}
+                          />
+                        </div>
                       </div>
                     ))}
-                    {organizedCategories.length === 0 ? (
+                    {mainCategories.length === 0 ? (
                       <p className="px-2 py-3 text-xs text-muted-foreground">No categories found</p>
                     ) : null}
                   </PopoverContent>
@@ -715,6 +773,46 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                         </button>
                       );
                     })}
+                  </div>
+                ) : null}
+
+                {otherCategoryParent ? (
+                  <div className="mt-2 space-y-2 rounded-[10px] border border-dashed border-border bg-[hsl(var(--admin-surface-2)/0.4)] p-3">
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">Others</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Not in the list above? Add a custom event type under Other — it stays available for future events.
+                      </p>
+                    </div>
+                    {otherCategoryParent.subcategories.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {otherCategoryParent.subcategories.map((sub) => {
+                          const selected = formData.category_ids.includes(sub.id);
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => toggleCategory(sub.id)}
+                              className={cn(
+                                'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                                selected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-[hsl(var(--admin-surface))] text-muted-foreground hover:text-foreground',
+                              )}
+                            >
+                              {sub.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground">No custom types yet.</p>
+                    )}
+                    <AddSubcategoryField
+                      parentCategoryId={otherCategoryParent.id}
+                      categories={categoriesData}
+                      onCreated={(id) => toggleCategory(id)}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -848,26 +946,17 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         return (
           <div className={cn(surfaceCard, 'flex w-full flex-col gap-3.5 p-5')}>
             <h3 className="text-base font-bold text-foreground">Access & pricing</h3>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="price" className="text-xs font-semibold">
-                  Ticket price (KES)
-                </Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={formData.price || ''}
-                  onChange={handleInputChange}
-                  placeholder="0 for free"
-                  className={fieldClass}
-                />
-              </div>
+
+            <EventTicketTiersEditor
+              tiers={ticketTiers}
+              onChange={syncPriceFromTiers}
+              fieldClass={fieldClass}
+            />
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="capacity" className="text-xs font-semibold">
-                  Capacity
+                  Overall capacity
                 </Label>
                 <Input
                   id="capacity"
@@ -1242,7 +1331,18 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 ['Where', formData.location || 'Not set'],
                 [
                   'Price',
-                  formData.price > 0 ? `KES ${formData.price.toLocaleString()}` : 'Free',
+                  ticketTiers.length > 1
+                    ? ticketTiers
+                        .map(
+                          (t) =>
+                            `${t.name.trim() || 'Tier'}: ${
+                              t.price > 0 ? `KES ${t.price.toLocaleString()}` : 'Free'
+                            }`,
+                        )
+                        .join(' · ')
+                    : formData.price > 0
+                      ? `KES ${formData.price.toLocaleString()}`
+                      : 'Free',
                 ],
                 [
                   'Categories',

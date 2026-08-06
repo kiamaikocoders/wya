@@ -121,14 +121,18 @@ export async function deleteR2Object(options: {
     env.VITE_SUPABASE_ANON_KEY?.trim() ||
     env.SUPABASE_ANON_KEY?.trim() ||
     env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
-    "";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ubHh4YnVla3FsYXFhbWN6d3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUwMDUzNTksImV4cCI6MjA2MDU4MTM1OX0.SYi79uRnDb-R-n5sMkMmbf4gvRmN9aj_W52vL58LfrI";
 
   const jwt = (options.authorizationHeader || "")
     .replace(/^Bearer\s+/i, "")
     .trim();
 
-  if (!jwt || !anonKey) {
-    return { ok: false, status: 401, body: { error: "Unauthorized" } };
+  if (!jwt) {
+    return {
+      ok: false,
+      status: 401,
+      body: { error: "Unauthorized — sign in required" },
+    };
   }
 
   const supabase = createClient(supabaseUrl, anonKey, {
@@ -139,7 +143,11 @@ export async function deleteR2Object(options: {
   const { data: userData } = await supabase.auth.getUser(jwt);
   const userId = userData.user?.id;
   if (!userId) {
-    return { ok: false, status: 401, body: { error: "Unauthorized" } };
+    return {
+      ok: false,
+      status: 401,
+      body: { error: "Invalid or expired session — sign in again and retry" },
+    };
   }
 
   let key = "";

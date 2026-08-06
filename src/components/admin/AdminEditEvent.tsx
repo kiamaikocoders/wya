@@ -21,6 +21,16 @@ import { uploadToR2 } from '@/lib/r2-upload';
 import { AdminAiWriteButton } from '@/components/admin/AdminAiAssist';
 import { draftEventDescription } from '@/lib/admin-ai-analysis';
 import {
+  EventTicketTiersEditor,
+  createEmptyTicketTier,
+  type TicketTierDraft,
+} from '@/components/admin/EventTicketTiersEditor';
+import {
+  fetchEventTicketTypes,
+  lowestTierPrice,
+  replaceEventTicketTypes,
+} from '@/lib/event-ticket-types';
+import {
   updateEventWithSeriesScope,
   type SeriesEditScope,
 } from '@/lib/event-series-service';
@@ -72,6 +82,10 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
   const [tagsInput, setTagsInput] = useState('');
   const [artistsInput, setArtistsInput] = useState('');
   const [editScope, setEditScope] = useState<SeriesEditScope>('this');
+  const [ticketTiers, setTicketTiers] = useState<TicketTierDraft[]>([
+    createEmptyTicketTier('Regular', event.price || 0),
+  ]);
+  const [tiersLoaded, setTiersLoaded] = useState(false);
   const isSeriesEvent = Boolean(event.series_id);
 
   // Fetch categories from database
@@ -135,6 +149,43 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       setPreviewUrl(event.image_url);
     }
   }, [event]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await fetchEventTicketTypes(event.id);
+        if (cancelled) return;
+        if (rows.length > 0) {
+          setTicketTiers(
+            rows.map((r) => ({
+              key: `tier-${r.id}`,
+              name: r.name,
+              price: Number(r.price) || 0,
+              capacity: r.capacity ?? '',
+            })),
+          );
+        } else {
+          setTicketTiers([createEmptyTicketTier('Regular', event.price || 0)]);
+        }
+      } catch (err) {
+        console.warn('Failed to load ticket types', err);
+        if (!cancelled) {
+          setTicketTiers([createEmptyTicketTier('Regular', event.price || 0)]);
+        }
+      } finally {
+        if (!cancelled) setTiersLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [event.id, event.price]);
+
+  const syncPriceFromTiers = (tiers: TicketTierDraft[]) => {
+    setTicketTiers(tiers);
+    setFormData((prev) => ({ ...prev, price: lowestTierPrice(tiers) }));
+  };
 
   // Get selected category names for display
   const selectedCategoryNames = useMemo(() => {
@@ -255,20 +306,27 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       eventData: any;
       categoryIds: number[];
       scope: SeriesEditScope;
+      ticketTiers: TicketTierDraft[];
     }) => {
-      const { eventData, categoryIds, scope } = vars;
-      return updateEventWithSeriesScope({
+      const { eventData, categoryIds, scope, ticketTiers: tiers } = vars;
+      const result = await updateEventWithSeriesScope({
         eventId: event.id,
         eventData,
         categoryIds,
         scope: isSeriesEvent ? scope : 'this',
       });
+      // Persist tiers for every occurrence that was updated
+      for (const id of result.updatedIds) {
+        await replaceEventTicketTypes(id, tiers);
+      }
+      return result;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-events-figma'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       queryClient.invalidateQueries({ queryKey: ['event-categories', event.id] });
+      queryClient.invalidateQueries({ queryKey: ['event-ticket-types', event.id] });
       const n = result.updatedIds.length;
       toast.success(
         result.scope === 'this'
@@ -309,6 +367,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       return;
     }
 
+    if (!ticketTiers.length || ticketTiers.some((t) => !t.name.trim())) {
+      toast.error('Each ticket type needs a name');
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Get category ID from first selected category_id
@@ -326,6 +389,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     const eventData = {
       ...eventDataWithoutCategoryIds,
       category_id: categoryId, // Set category_id to first selected category
+      price: lowestTierPrice(ticketTiers),
       date: new Date(formData.date).toISOString(),
       end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
@@ -335,6 +399,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       eventData,
       categoryIds: formData.category_ids,
       scope: editScope,
+      ticketTiers,
     });
   };
 
@@ -645,19 +710,21 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                   onChange={handleInputChange}
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="price">Price (KES)</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={formData.price || ''}
-                  onChange={handleInputChange}
-                  placeholder="0 for free events"
-                />
+            </div>
+
+            {tiersLoaded ? (
+              <EventTicketTiersEditor
+                tiers={ticketTiers}
+                onChange={syncPriceFromTiers}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground">Loading ticket types…</p>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* price field replaced by EventTicketTiersEditor */}
+              <div className="hidden" aria-hidden>
+                <Input id="price" name="price" type="hidden" value={formData.price || 0} readOnly />
               </div>
             </div>
 
