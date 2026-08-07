@@ -17,7 +17,7 @@ export function generateSessionToken(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }
 
-/** Common typos for Kenyan locations; used to improve search results */
+/** Common typos / alternate spellings for Kenyan locations */
 const LOCATION_TYPO_MAP: Record<string, string> = {
   nairoi: 'Nairobi',
   narobi: 'Nairobi',
@@ -28,11 +28,164 @@ const LOCATION_TYPO_MAP: Record<string, string> = {
   eldoret: 'Eldoret',
   malindi: 'Malindi',
   machakos: 'Machakos',
+  'sarit center': 'Sarit Centre',
+  'sarit centre': 'Sarit Centre',
+  sarit: 'Sarit Centre',
+  masshouse: 'Masshouse Ngong Racecourse',
+  'mass house': 'Masshouse Ngong Racecourse',
+  mashouse: 'Masshouse Ngong Racecourse',
 };
+
+/**
+ * Popular Kenyan venues that Mapbox Search Box often misses or misspells.
+ * Matched by alias substring when the user types a related query.
+ */
+const CURATED_KE_VENUES: Array<{
+  aliases: string[];
+  label: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+}> = [
+  {
+    aliases: ['sarit', 'sarit center', 'sarit centre', 'sarit mall'],
+    label: 'Sarit Centre, Westlands, Nairobi',
+    latitude: -1.2607625,
+    longitude: 36.8014196,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['masshouse', 'mass house', 'mashouse', 'masshouse ngong'],
+    label: 'Masshouse, Ngong Racecourse, Ngong Road, Nairobi',
+    latitude: -1.3120613,
+    longitude: 36.7441232,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['ngong racecourse', 'jockey club kenya', 'ngong race course'],
+    label: 'Ngong Racecourse, Ngong Road, Nairobi',
+    latitude: -1.3120613,
+    longitude: 36.7441232,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['two rivers', 'two rivers mall'],
+    label: 'Two Rivers Mall, Nairobi',
+    latitude: -1.2045,
+    longitude: 36.7935,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['garden city', 'garden city mall'],
+    label: 'Garden City Mall, Thika Road, Nairobi',
+    latitude: -1.2308,
+    longitude: 36.8762,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['the alchemist', 'alchemist westlands'],
+    label: 'The Alchemist, Westlands, Nairobi',
+    latitude: -1.2681,
+    longitude: 36.8112,
+    city: 'Nairobi',
+  },
+];
 
 export function tryCorrectLocationTypo(query: string): string {
   const normalized = query.trim().toLowerCase();
   return LOCATION_TYPO_MAP[normalized] || query.trim();
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function queryTokens(query: string): string[] {
+  return normalizeSearchText(query)
+    .split(' ')
+    .filter((t) => t.length > 1);
+}
+
+/**
+ * Score how well a suggestion matches the typed query (higher is better).
+ */
+function scorePlaceMatch(query: string, label: string, secondary?: string): number {
+  const q = normalizeSearchText(query);
+  const hay = normalizeSearchText(`${label} ${secondary || ''}`);
+  if (!q || !hay) return 0;
+
+  let score = 0;
+  if (hay === q) score += 100;
+  if (hay.startsWith(q)) score += 50;
+  if (hay.includes(q)) score += 30;
+
+  const tokens = queryTokens(query);
+  if (tokens.length) {
+    const matched = tokens.filter((t) => hay.includes(t)).length;
+    score += (matched / tokens.length) * 40;
+    // Penalise results that barely share tokens (e.g. "Sarim" for "Sarit Center")
+    if (matched === 0) score -= 40;
+  }
+
+  // Prefer POI-ish labels over bare city/region names when query has venue words
+  if (/\b(mall|centre|center|club|hotel|stadium|market|plaza)\b/i.test(label)) {
+    score += 8;
+  }
+
+  return score;
+}
+
+function curatedMatches(query: string): PlaceSuggestion[] {
+  const q = normalizeSearchText(query);
+  if (q.length < 2) return [];
+
+  return CURATED_KE_VENUES.filter((venue) =>
+    venue.aliases.some((alias) => {
+      const a = normalizeSearchText(alias);
+      if (!a) return false;
+      if (q === a || q.includes(a) || a.startsWith(q)) return true;
+      // Allow partial alias hits only for longer queries (avoid "ma" → Masshouse)
+      if (q.length >= 4 && a.includes(q)) return true;
+      const tokens = queryTokens(q);
+      return tokens.length > 0 && tokens.every((t) => a.includes(t));
+    }),
+  ).map((venue, i) => ({
+    id: `curated-${i}-${venue.label}`,
+    label: venue.label,
+    secondary: 'Popular venue',
+    provider: 'curated' as const,
+    latitude: venue.latitude,
+    longitude: venue.longitude,
+    city: venue.city,
+    country: 'Kenya',
+  }));
+}
+
+function dedupeSuggestions(items: PlaceSuggestion[]): PlaceSuggestion[] {
+  const out: PlaceSuggestion[] = [];
+  for (const item of items) {
+    const labelKey = normalizeSearchText(item.label);
+    const nearDuplicate = out.find((existing) => {
+      if (normalizeSearchText(existing.label) === labelKey) return true;
+      if (
+        Number.isFinite(existing.latitude) &&
+        Number.isFinite(existing.longitude) &&
+        Number.isFinite(item.latitude) &&
+        Number.isFinite(item.longitude)
+      ) {
+        const dLat = Math.abs((existing.latitude as number) - (item.latitude as number));
+        const dLng = Math.abs((existing.longitude as number) - (item.longitude as number));
+        return dLat < 0.0008 && dLng < 0.0008;
+      }
+      return false;
+    });
+    if (!nearDuplicate) out.push(item);
+  }
+  return out;
 }
 
 /**
@@ -85,7 +238,7 @@ export interface PlacePick {
   longitude: number;
   city?: string;
   country?: string;
-  provider?: 'mapbox' | 'photon' | 'nominatim' | 'gps';
+  provider?: 'mapbox' | 'photon' | 'nominatim' | 'gps' | 'curated';
 }
 
 export interface LocationPermissionStatus {
@@ -98,10 +251,10 @@ export type PlaceSuggestion = {
   id: string;
   label: string;
   secondary?: string;
-  provider: 'mapbox' | 'photon' | 'nominatim';
+  provider: 'mapbox' | 'photon' | 'nominatim' | 'curated';
   /** Mapbox Search Box mapbox_id — needs retrieve */
   mapboxId?: string;
-  /** Already-resolved coords (Photon / Nominatim) */
+  /** Already-resolved coords (Photon / Nominatim / curated) */
   latitude?: number;
   longitude?: number;
   city?: string;
@@ -589,7 +742,9 @@ class LocationService {
   }
 
   /**
-   * Unified place search: Mapbox Search Box → Photon → Nominatim.
+   * Unified place search: curated Kenyan venues + Mapbox + Photon + Nominatim.
+   * Always merges providers (Mapbox alone often returns a weak misspelling and
+   * would previously block OSM fallbacks that have the real POI).
    */
   async searchPlaces(
     query: string,
@@ -599,43 +754,62 @@ class LocationService {
     const trimmed = tryCorrectLocationTypo(query) || query.trim();
     if (!trimmed || trimmed.length < 2) return [];
     const limit = options?.limit ?? 8;
+    const originalQuery = query.trim();
 
-    const mapboxRaw = await this.searchLocationsSuggest(trimmed, sessionToken, {
-      country: 'ke',
-      proximity: `${KE_CENTER.lng},${KE_CENTER.lat}`,
-      limit,
+    const curated = dedupeSuggestions([
+      ...curatedMatches(originalQuery),
+      ...curatedMatches(trimmed),
+    ]);
+
+    const [mapboxRaw, photon, nominatim] = await Promise.all([
+      this.searchLocationsSuggest(trimmed, sessionToken, {
+        country: 'ke',
+        proximity: `${KE_CENTER.lng},${KE_CENTER.lat}`,
+        limit,
+      }).catch(() => [] as any[]),
+      this.searchPhoton(trimmed, limit).catch(() => [] as PlaceSuggestion[]),
+      this.searchNominatim(trimmed, limit).catch(() => [] as PlaceSuggestion[]),
+    ]);
+
+    let kenyanMapbox = (mapboxRaw || []).filter((s: any) => {
+      const code = getSuggestionCountryCode(s);
+      return code === 'KE' || code === 'ke';
     });
+    if (kenyanMapbox.length === 0) kenyanMapbox = mapboxRaw || [];
 
-    if (mapboxRaw.length) {
-      let kenyan = mapboxRaw.filter((s: any) => {
-        const code = getSuggestionCountryCode(s);
-        return code === 'KE' || code === 'ke';
-      });
-      if (kenyan.length === 0) kenyan = mapboxRaw;
+    const mapboxSuggestions: PlaceSuggestion[] = kenyanMapbox.map((s: any, i: number) => ({
+      id: s.mapbox_id || `mapbox-${i}`,
+      label: s.name || s.full_address || 'Unknown location',
+      secondary: s.full_address && s.full_address !== s.name ? s.full_address : undefined,
+      provider: 'mapbox' as const,
+      mapboxId: s.mapbox_id,
+      raw: s,
+    }));
 
-      return kenyan.map((s: any, i: number) => ({
-        id: s.mapbox_id || `mapbox-${i}`,
-        label: s.name || s.full_address || 'Unknown location',
-        secondary: s.full_address && s.full_address !== s.name ? s.full_address : undefined,
-        provider: 'mapbox' as const,
-        mapboxId: s.mapbox_id,
-        raw: s,
-      }));
-    }
+    const merged = dedupeSuggestions([
+      ...curated,
+      ...photon,
+      ...nominatim,
+      ...mapboxSuggestions,
+    ]);
 
-    try {
-      const photon = await this.searchPhoton(trimmed, limit);
-      if (photon.length) return photon;
-    } catch (e) {
-      console.warn('Photon search failed:', e);
-    }
+    const ranked = merged
+      .map((item) => ({
+        item,
+        score: scorePlaceMatch(originalQuery, item.label, item.secondary),
+      }))
+      // Prefer curated when scores are close
+      .sort((a, b) => {
+        const curatedBoost = (s: PlaceSuggestion) => (s.provider === 'curated' ? 15 : 0);
+        return (
+          b.score + curatedBoost(b.item) - (a.score + curatedBoost(a.item))
+        );
+      })
+      .filter(({ score, item }) => score > -20 || item.provider === 'curated')
+      .slice(0, limit)
+      .map(({ item }) => item);
 
-    try {
-      return await this.searchNominatim(trimmed, limit);
-    } catch (e) {
-      console.warn('Nominatim search failed:', e);
-      return [];
-    }
+    return ranked;
   }
 
   /** Resolve a suggestion to a PlacePick (retrieves Mapbox details when needed). */

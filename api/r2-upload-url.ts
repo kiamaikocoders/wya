@@ -71,6 +71,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.status(503).json({ error: "R2 is not configured on the server" });
       return;
     }
+    if (accessKeyId.length !== 32) {
+      res.status(503).json({
+        error: `R2_ACCESS_KEY_ID has length ${accessKeyId.length}, should be 32 — fix the Vercel env var (it looks truncated)`,
+      });
+      return;
+    }
 
     const supabaseUrl =
       process.env.VITE_SUPABASE_URL?.trim() ||

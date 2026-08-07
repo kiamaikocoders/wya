@@ -33,6 +33,11 @@ export async function putObjectToR2(options: {
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error("R2 is not configured on the server");
   }
+  if (accessKeyId.length !== 32) {
+    throw new Error(
+      `R2_ACCESS_KEY_ID has length ${accessKeyId.length}, should be 32 — check Vercel env (value may be truncated)`,
+    );
+  }
 
   const aws = new AwsClient({
     accessKeyId,

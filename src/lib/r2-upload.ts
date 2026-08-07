@@ -131,10 +131,12 @@ async function uploadViaServerProxy(
     path?: string;
     fullPath?: string;
     error?: string;
+    detail?: string;
   };
 
   if (!res.ok || !payload.publicUrl) {
-    throw new Error(payload.error || 'Server upload failed');
+    const message = [payload.error, payload.detail].filter(Boolean).join(' — ');
+    throw new Error(message || 'Server upload failed');
   }
 
   return {
