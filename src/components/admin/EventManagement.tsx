@@ -234,12 +234,19 @@ const EventManagement: React.FC = () => {
               }
 
               return (
-                <button
+                <div
                   key={event.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setViewing(event)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setViewing(event);
+                    }
+                  }}
                   className={cn(
-                    'grid w-full grid-cols-1 items-center gap-3 rounded-[10px] border border-border bg-[hsl(var(--admin-surface))] p-3 text-left transition-colors hover:bg-[hsl(var(--admin-surface-2))]',
+                    'grid w-full cursor-pointer grid-cols-1 items-center gap-3 rounded-[10px] border border-border bg-[hsl(var(--admin-surface))] p-3 text-left transition-colors hover:bg-[hsl(var(--admin-surface-2))]',
                     'md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_100px_88px_160px]',
                   )}
                 >
@@ -337,7 +344,7 @@ const EventManagement: React.FC = () => {
                       </button>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
             <AdminPagination
