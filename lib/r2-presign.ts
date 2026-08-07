@@ -94,6 +94,15 @@ export async function createR2PresignedUpload(options: {
       body: { error: "R2 is not configured on the server" },
     };
   }
+  if (accessKeyId.length !== 32) {
+    return {
+      ok: false,
+      status: 503,
+      body: {
+        error: `R2_ACCESS_KEY_ID has length ${accessKeyId.length}, should be 32 — fix the Vercel env var (it looks truncated)`,
+      },
+    };
+  }
 
   const supabaseUrl =
     env.VITE_SUPABASE_URL?.trim() ||
