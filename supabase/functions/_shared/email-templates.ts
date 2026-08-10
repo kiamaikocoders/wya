@@ -599,7 +599,7 @@ export function renderTransactionalTemplate(
           body:
             message ||
             "This is a test email from WYA Admin System. If you received it, email delivery is working.",
-          ctaUrl: link || `${siteUrl}/admin/communications`,
+          ctaUrl: link || `https://admin.wya254.com/admin/communications`,
           ctaLabel: "Open Admin",
           noticeTitle: "NO ACTION NEEDED",
           noticeBody:

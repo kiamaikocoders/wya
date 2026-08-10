@@ -18,6 +18,7 @@ import {
   createEventMediaShareLink,
   fetchEventOrganizerHint,
 } from '@/lib/event-media-share';
+import { getPublicSiteOrigin } from '@/lib/site-origins';
 import { GalleryVideo } from '@/components/event-media/GalleryVideo';
 import {
   Dialog,
@@ -169,7 +170,7 @@ const EventMediaGalleryDashboard: React.FC = () => {
       });
       const fullUrl =
         result.galleryUrl ||
-        `${window.location.origin}${buildPublicEventMediaGalleryPath(result.token)}`;
+        `${getPublicSiteOrigin()}${buildPublicEventMediaGalleryPath(result.token)}`;
       await navigator.clipboard.writeText(fullUrl);
       toast.success('Share link copied', {
         description: `Valid until ${format(new Date(result.expiresAt), 'MMM d, yyyy')}`,

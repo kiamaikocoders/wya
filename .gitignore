@@ -11,6 +11,9 @@ node_modules
 dist
 .env
 mcp-config.env
+# Local MCP overrides may contain PATs — keep secrets out of git
+mcp-config.local.json
+
 supabase/.env.secrets.local
 .tmp_*
 .tmp_mcp_deploy_ghost.json
@@ -49,3 +52,4 @@ android/.idea/
 .env.local
 .env.*.local
 !.env.example
+.env*

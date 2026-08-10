@@ -30,6 +30,7 @@ import {
   type AtlasTab,
 } from '@/lib/admin-atlas';
 import { cn } from '@/lib/utils';
+import { getAdminSiteOrigin } from '@/lib/site-origins';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = locationService.getMapboxToken();
@@ -563,7 +564,7 @@ const AdminAtlas: React.FC = () => {
   };
 
   const shareView = async () => {
-    const url = `${window.location.origin}/admin/maps?tab=${tab}&period=${period}`;
+    const url = `${getAdminSiteOrigin()}/admin/maps?tab=${tab}&period=${period}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success('View link copied');

@@ -12,6 +12,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import AppOnlyRoute from "./components/auth/AppOnlyRoute";
+import { HostGate } from "./components/auth/HostGate";
+import { AdminHostRoutes } from "./components/auth/AdminHostRoutes";
+import { isAdminHost } from "./lib/site-origins";
 import { updateService } from './lib/update-service';
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -127,6 +130,7 @@ const App = () => {
     <TooltipProvider>
       <HelmetProvider>
         <BrowserRouter>
+          <HostGate>
           <ThemeProvider>
             <AuthProvider>
               <OneSignalProvider>
@@ -142,12 +146,15 @@ const App = () => {
                 }
               >
                 <LegalConsentGate />
+                {isAdminHost() ? (
+                  <AdminHostRoutes />
+                ) : (
                 <Routes>
                   <Route element={<MarketingLayout />}>
                     <Route path="/" element={<Landing />} />
                     <Route path="/download" element={<DownloadApp />} />
                   </Route>
-                  {/* Admin console — standalone entry (login → dashboard, no consumer site shell) */}
+                  {/* Local / legacy: admin still at /admin; production www redirects to admin.wya254.com */}
                   <Route
                     path="/admin"
                     element={
@@ -176,7 +183,6 @@ const App = () => {
                     <Route path="audit" element={<AdminAudit />} />
                   </Route>
 
-                  {/* Bookmark alias → same standalone console */}
                   <Route path="/admin-login" element={<Navigate to="/admin" replace />} />
 
                   <Route element={<Layout />}>
@@ -471,6 +477,7 @@ const App = () => {
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>
+                )}
               </Suspense>
               </MaintenanceGate>
               </OfflineGate>
@@ -479,6 +486,7 @@ const App = () => {
               </OneSignalProvider>
             </AuthProvider>
           </ThemeProvider>
+          </HostGate>
         </BrowserRouter>
         <Toaster />
         <Sonner />

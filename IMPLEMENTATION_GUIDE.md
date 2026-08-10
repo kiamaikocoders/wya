@@ -116,11 +116,12 @@ The following services have been created:
 
 ### **Step 3: Environment Configuration**
 ```env
-# Add to your .env file
-SUPABASE_ACCESS_TOKEN=sbp_4c9798f6820f36bfe2fc222b0be7671262a56ad7
+# Local only — never commit real tokens (use mcp-config.env, gitignored)
+SUPABASE_ACCESS_TOKEN=sbp_your_personal_access_token
 SUPABASE_PROJECT_REF=nnlxxbuekqlaqamczwyi
 ```
 
+Create a token at https://supabase.com/dashboard/account/tokens and store it in `mcp-config.env` (gitignored), not in docs or `mcp.json`.
 ### **Step 4: Test Implementation**
 ```typescript
 // Example usage
