@@ -565,7 +565,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         }
 
         try {
-          const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
+          const { data: allUsers } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .neq('username', 'admin')
+            .limit(100);
           if (allUsers && allUsers.length > 0) {
             await Promise.all(
               allUsers.map((userProfile) =>
@@ -592,7 +596,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         toast.success('Event created successfully! Users will be notified.');
       } else {
         try {
-          const { data: allUsers } = await supabase.from('profiles').select('id').limit(100);
+          const { data: allUsers } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .neq('username', 'admin')
+            .limit(100);
           if (allUsers && allUsers.length > 0 && result.firstEventId) {
             await Promise.all(
               allUsers.map((userProfile) =>

@@ -1,3 +1,19 @@
+/** Platform-ops types shown in the admin inbox / bell (not consumer fan-out). */
+export const ADMIN_OPS_NOTIFICATION_TYPES = [
+  'proposal_submitted',
+  'proposal_approved',
+  'proposal_rejected',
+  'admin_action',
+  'app_feedback',
+  'ticket_purchase',
+  'payment',
+  'user_signup',
+  'marketplace_sale',
+  'moderation',
+] as const;
+
+export type AdminOpsNotificationType = (typeof ADMIN_OPS_NOTIFICATION_TYPES)[number];
+
 export interface Notification {
   id: number;
   user_id: string;
@@ -6,6 +22,8 @@ export interface Notification {
     | 'event_cancelled'
     | 'announcement'
     | 'ticket'
+    | 'ticket_purchase'
+    | 'payment'
     | 'system'
     | 'follow'
     | 'message'
@@ -18,6 +36,7 @@ export interface Notification {
     | 'organizer_assigned'
     | 'marketplace_buyer'
     | 'marketplace_seller'
+    | 'marketplace_sale'
     | 'media_share'
     | 'dsar_export'
     | 'account_deleted'
@@ -26,7 +45,9 @@ export interface Notification {
     | 'feedback_reply'
     | 'app_feedback'
     | 'survey_invite'
-    | 'story_like';
+    | 'story_like'
+    | 'user_signup'
+    | 'moderation';
   title: string;
   message: string;
   read: boolean;
@@ -36,6 +57,11 @@ export interface Notification {
   resource_uuid?: string;
   link?: string;
   data?: Record<string, any> | null;
+}
+
+/** Whether a notification belongs in the admin ops inbox. */
+export function isAdminOpsNotificationType(type: string): boolean {
+  return (ADMIN_OPS_NOTIFICATION_TYPES as readonly string[]).includes(type);
 }
 
 export interface CreateNotificationData {

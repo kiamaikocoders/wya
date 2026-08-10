@@ -6,7 +6,6 @@ import {
   AdminFilterSelect,
   AdminKpiRow,
   AdminListRow,
-  AdminOutlinePill,
   AdminPageShell,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
@@ -16,7 +15,10 @@ import {
   AnalyticsChartCard,
   AnalyticsHeaderActions,
   AnalyticsKpiCard,
+  AnalyticsPeriodBar,
+  formatAnalyticsPeriodLabel,
   formatCompact,
+  type AnalyticsCustomRange,
   type AnalyticsPeriod,
 } from '@/components/admin/analytics/analytics-ui';
 import { loadSponsorAnalytics } from '@/lib/admin-analytics';
@@ -26,14 +28,16 @@ import { cn } from '@/lib/utils';
 const SponsorAnalytics: React.FC = () => {
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<AnalyticsPeriod>('30d');
+  const [customRange, setCustomRange] = useState<AnalyticsCustomRange | null>(null);
   const [selectedSponsor, setSelectedSponsor] = useState<string>('all');
   const [eventFilter, setEventFilter] = useState('all');
   const [zoneFilter, setZoneFilter] = useState('all');
   const aiRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['admin-sponsor-analytics-v2', period],
-    queryFn: () => loadSponsorAnalytics(period),
+    queryKey: ['admin-sponsor-analytics-v2', period, customRange],
+    queryFn: () => loadSponsorAnalytics(period, { customRange }),
+    enabled: period !== 'custom' || !!customRange,
   });
 
   const detail = selectedSponsor !== 'all' ? data?.detail[selectedSponsor] : null;
@@ -43,11 +47,7 @@ const SponsorAnalytics: React.FC = () => {
       : data?.sponsors.find((s) => s.id === selectedSponsor)?.name || 'Sponsor';
 
   const onPeriod = (p: AnalyticsPeriod) => {
-    if (p === 'custom') {
-      toast.message('Custom range coming soon — using 30d');
-      setPeriod('30d');
-      return;
-    }
+    if (p !== 'custom') setCustomRange(null);
     setPeriod(p);
   };
 
@@ -103,33 +103,35 @@ const SponsorAnalytics: React.FC = () => {
       }
       toolbar={
         selectedSponsor === 'all' ? (
-          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              {(['7d', '30d', '90d'] as const).map((id) => (
-                <AdminOutlinePill key={id} active={period === id} onClick={() => onPeriod(id)}>
-                  {id}
-                </AdminOutlinePill>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <AdminFilterSelect
-                value={eventFilter}
-                onChange={setEventFilter}
-                options={[{ value: 'all', label: 'Event: All' }]}
-                className="h-9 min-w-[132px]"
-              />
-              <AdminFilterSelect
-                value={zoneFilter}
-                onChange={setZoneFilter}
-                options={[{ value: 'all', label: 'Zone: All' }]}
-                className="h-9 min-w-[132px]"
-              />
-            </div>
-          </div>
+          <AnalyticsPeriodBar
+            period={period}
+            onPeriod={onPeriod}
+            customRange={customRange}
+            onCustomRange={setCustomRange}
+            comparePrior={false}
+            onComparePrior={() => undefined}
+            showComparePrior={false}
+            extraFilters={
+              <>
+                <AdminFilterSelect
+                  value={eventFilter}
+                  onChange={setEventFilter}
+                  options={[{ value: 'all', label: 'Event: All' }]}
+                  className="h-9 min-w-[132px]"
+                />
+                <AdminFilterSelect
+                  value={zoneFilter}
+                  onChange={setZoneFilter}
+                  options={[{ value: 'all', label: 'Zone: All' }]}
+                  className="h-9 min-w-[132px]"
+                />
+              </>
+            }
+          />
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              {period} · {selectedName}
+              {formatAnalyticsPeriodLabel(period, customRange)} · {selectedName}
             </p>
             <button
               type="button"

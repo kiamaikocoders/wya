@@ -246,34 +246,7 @@ serve(async (req) => {
         }
       }
 
-      // Notify admin inbox that a proposal needs review
-      try {
-        const { data: admins } = await admin
-          .from("profiles")
-          .select("id")
-          .eq("username", "admin");
-        if (admins?.length) {
-          await admin.from("notifications").insert(
-            admins.map((a) => ({
-              user_id: a.id,
-              type: "proposal_submitted",
-              title: "New event proposal",
-              message: `"${title}" is awaiting review.`,
-              resource_id: inserted.id,
-              resource_type: "proposal",
-              link: "/admin/proposals",
-              data: {
-                proposal_id: inserted.id,
-                proposal_title: title,
-                contact_email: contactEmail,
-              },
-              read: false,
-            }))
-          );
-        }
-      } catch (e) {
-        console.warn("admin proposal notify failed", e);
-      }
+      // Admin inbox notify is handled by trg_admin_notify_proposal (DB trigger).
 
       return json({
         ok: true,

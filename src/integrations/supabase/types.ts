@@ -1172,6 +1172,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      notify_admins: {
+        Args: {
+          p_type: string
+          p_title: string
+          p_message: string
+          p_link?: string | null
+          p_resource_type?: string | null
+          p_resource_id?: number | null
+          p_resource_uuid?: string | null
+          p_data?: Json | null
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

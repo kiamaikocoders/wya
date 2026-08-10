@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import LocationPicker from '@/components/maps/LocationPicker';
+import { TwoFactorSettings } from '@/components/auth/TwoFactorSettings';
 import {
   getPushSubscriptionStatus,
   isOneSignalSupported,
@@ -215,7 +216,6 @@ const Settings: React.FC = () => {
         organizer_content_sharing_opt_in: settings.organizer_content_sharing_opt_in,
         media_consent: settings.media_recording_promotional_consent,
         profile_visibility: settings.profile_visibility,
-        two_factor_auth: settings.two_factor_auth,
         phone: settings.phone.trim() || null,
         date_of_birth: settings.date_of_birth || null,
         location: settings.location.trim() || undefined,
@@ -658,17 +658,9 @@ const Settings: React.FC = () => {
                     <option value="private">Private</option>
                   </select>
                 </div>
-                <div className="flex items-center justify-between opacity-60">
-                  <div>
-                    <Label className="text-white">Two-factor authentication</Label>
-                    <p className="text-sm text-text-white/70">Coming soon</p>
-                  </div>
-                  <Switch
-                    checked={settings.two_factor_auth}
-                    disabled
-                    onCheckedChange={(checked) => setSettings({ ...settings, two_factor_auth: checked })}
-                  />
-                </div>
+                {user?.id ? (
+                  <TwoFactorSettings userId={user.id} variant="dark" layout="row" />
+                ) : null}
               </CardContent>
             </Card>
 

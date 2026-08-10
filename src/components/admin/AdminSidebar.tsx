@@ -121,7 +121,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isMobileOpen, onMobileToggl
 
   const { data: unreadNotifications = 0 } = useQuery({
     queryKey: ['admin-notifications-unread', user?.id],
-    queryFn: () => (user ? notificationService.getUnreadCount(user.id) : 0),
+    queryFn: () => (user ? notificationService.getAdminOpsUnreadCount(user.id) : 0),
     enabled: !!user?.id,
     refetchInterval: 30_000,
   });

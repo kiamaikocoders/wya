@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { companion } from '@/lib/companion-theme';
 import { cn } from '@/lib/utils';
+import { TwoFactorSettings } from '@/components/auth/TwoFactorSettings';
 
 const ANDROID_APK_URL = '/downloads/wya-app.apk';
 const IOS_DOWNLOAD_URL = '/download';
@@ -300,16 +301,20 @@ const WebSettings = () => {
               <SettingsRow
                 icon="🔐"
                 title="Two-factor auth"
-                description="Add an extra layer of security"
+                description={
+                  twoFactor
+                    ? 'Authenticator app is protecting your account'
+                    : 'Add an authenticator app for sign-in codes'
+                }
                 trailing={
-                  <OrangeSwitch
-                    checked={twoFactor}
-                    disabled={savingToggle}
-                    onCheckedChange={(checked) => {
-                      setTwoFactor(checked);
-                      void persistProfilePrefs({ two_factor_auth: checked });
-                    }}
-                  />
+                  user?.id ? (
+                    <TwoFactorSettings
+                      userId={user.id}
+                      layout="switchOnly"
+                      disabled={savingToggle}
+                      onStatusChange={setTwoFactor}
+                    />
+                  ) : null
                 }
               />
             </div>

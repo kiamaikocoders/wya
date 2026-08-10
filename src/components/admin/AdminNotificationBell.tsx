@@ -6,14 +6,15 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  adminOpsNotificationsQueryKey,
   notificationService,
-  notificationsQueryKey,
 } from '@/lib/notification/notification-service';
+import { isAdminOpsNotificationType } from '@/lib/notification/types';
 import { supabase } from '@/lib/supabase';
 import { playNotificationSound } from '@/lib/sounds';
 
 /**
- * Admin header bell → /admin/notifications?tab=inbox. Chimes on new inserts.
+ * Admin header bell → /admin/notifications?tab=inbox. Chimes on new ops inserts.
  */
 export function AdminNotificationBell({ className }: { className?: string }) {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export function AdminNotificationBell({ className }: { className?: string }) {
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ['admin-notifications-unread', user?.id],
-    queryFn: () => (user ? notificationService.getUnreadCount(user.id) : 0),
+    queryFn: () => (user ? notificationService.getAdminOpsUnreadCount(user.id) : 0),
     enabled: isAuthenticated && !!user?.id,
     refetchInterval: 30_000,
   });
@@ -43,12 +44,14 @@ export function AdminNotificationBell({ className }: { className?: string }) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const row = payload.new as { title?: string; message?: string };
+          const row = payload.new as { title?: string; message?: string; type?: string };
+          if (!row.type || !isAdminOpsNotificationType(row.type)) return;
+
           playNotificationSound();
           toast.success(row.title || 'New notification', {
             description: row.message,
           });
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-ops-notifications'] });
           queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
         }
       )
@@ -61,7 +64,7 @@ export function AdminNotificationBell({ className }: { className?: string }) {
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['admin-ops-notifications'] });
           queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
         }
       )
@@ -72,10 +75,10 @@ export function AdminNotificationBell({ className }: { className?: string }) {
     };
   }, [user?.id, queryClient]);
 
-  // Keep inbox list warm so the page matches the badge immediately.
+  // Keep ops inbox list warm so the page matches the badge immediately.
   useQuery({
-    queryKey: notificationsQueryKey(user?.id),
-    queryFn: () => (user ? notificationService.getUserNotifications(user.id) : []),
+    queryKey: adminOpsNotificationsQueryKey(user?.id),
+    queryFn: () => (user ? notificationService.getAdminOpsNotifications(user.id) : []),
     enabled: isAuthenticated && !!user?.id,
     refetchInterval: 30_000,
   });

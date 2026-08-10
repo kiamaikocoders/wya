@@ -200,10 +200,13 @@ function bumpAreaDemand(
  * Uses check-ins + tickets for intensity, payments + ticket prices for GMV,
  * consented coords + location/onboarding text for demand aggregates.
  */
-export async function loadAdminAtlas(period: AnalyticsPeriod): Promise<AtlasBundle> {
+export async function loadAdminAtlas(
+  period: AnalyticsPeriod,
+  opts?: { customRange?: AnalyticsCustomRange | null }
+): Promise<AtlasBundle> {
   const now = new Date();
-  const current = periodWindow(period);
-  const prior = periodWindow(period, true);
+  const current = periodWindow(period, false, opts?.customRange);
+  const prior = periodWindow(period, true, opts?.customRange);
   const weeks = buildWeeks(8);
 
   const [
