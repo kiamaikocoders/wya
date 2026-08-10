@@ -22,6 +22,7 @@ import {
   PLATFORM_TABS,
   formatCompact,
   formatKesCompact,
+  type AnalyticsCustomRange,
   type AnalyticsPeriod,
   type PlatformTab,
 } from '@/components/admin/analytics/analytics-ui';
@@ -32,6 +33,7 @@ import { useAdminSectionTab } from '@/components/admin/AdminSubnavLayout';
 const Analytics: React.FC = () => {
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<AnalyticsPeriod>('30d');
+  const [customRange, setCustomRange] = useState<AnalyticsCustomRange | null>(null);
   const [comparePrior, setComparePrior] = useState(true);
   const [excludeGhosts, setExcludeGhosts] = useState(true);
   const [city, setCity] = useState('all');
@@ -43,8 +45,10 @@ const Analytics: React.FC = () => {
   const aiRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['admin-platform-analytics', period, excludeGhosts],
-    queryFn: () => loadPlatformAnalytics(period, { excludeGhosts }),
+    queryKey: ['admin-platform-analytics', period, customRange, excludeGhosts],
+    queryFn: () =>
+      loadPlatformAnalytics(period, { excludeGhosts, customRange }),
+    enabled: period !== 'custom' || !!customRange,
   });
 
   const cityOptions = useMemo(() => {
@@ -64,11 +68,7 @@ const Analytics: React.FC = () => {
   }, [data]);
 
   const onPeriod = (p: AnalyticsPeriod) => {
-    if (p === 'custom') {
-      toast.message('Custom range coming soon — using 30d for now');
-      setPeriod('30d');
-      return;
-    }
+    if (p !== 'custom') setCustomRange(null);
     setPeriod(p);
   };
 
@@ -122,6 +122,8 @@ const Analytics: React.FC = () => {
         <AnalyticsPeriodBar
           period={period}
           onPeriod={onPeriod}
+          customRange={customRange}
+          onCustomRange={setCustomRange}
           comparePrior={comparePrior}
           onComparePrior={setComparePrior}
           excludeGhosts={excludeGhosts}

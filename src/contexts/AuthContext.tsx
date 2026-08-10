@@ -49,6 +49,10 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  /** True when password succeeded but authenticator code is still required. */
+  mfaRequired: boolean;
+  completeMfaLogin: () => Promise<void>;
+  cancelMfaLogin: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   refreshAuth: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -72,6 +76,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [pendingMfaUserId, setPendingMfaUserId] = useState<string | null>(null);
+  const [pendingMfaEmail, setPendingMfaEmail] = useState<string | null>(null);
+  const [pendingMfaIsAdmin, setPendingMfaIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   // Refresh authentication state from Supabase
@@ -290,6 +298,77 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
+  const finishLoginNavigation = async (opts: {
+    userId: string;
+    email: string;
+    isAdminUser: boolean;
+  }) => {
+    try {
+      const { flushPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
+      const flushed = await flushPendingSignupAvatar(opts.userId, opts.email);
+      if (flushed?.publicUrl) {
+        setUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                avatar_url: flushed.publicUrl,
+                profile_picture: flushed.publicUrl,
+                ...(flushed.displayName
+                  ? { full_name: flushed.displayName, name: flushed.displayName }
+                  : {}),
+              }
+            : prev
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to flush pending signup avatar on login:', err);
+    }
+
+    if (opts.isAdminUser && !isLocalDevHost()) {
+      window.location.assign(adminConsoleUrl('/admin'));
+      return;
+    }
+    const postLoginPath = opts.isAdminUser ? '/admin' : getPostLoginPath();
+    navigate(postLoginPath);
+
+    supabase
+      .from('profiles')
+      .select('full_name, last_login')
+      .eq('id', opts.userId)
+      .single()
+      .then(({ data: profile }) => {
+        const userName = profile?.full_name || opts.email.split('@')[0];
+        const isReturningUser = !!profile?.last_login;
+
+        if (isReturningUser) {
+          onboardingNotifications.sendWelcomeBackNotification(opts.userId, userName).catch((err) => {
+            console.warn('Welcome back notification failed:', err);
+          });
+        } else {
+          onboardingNotifications.sendWelcomeNotification(opts.userId, userName).catch((err) => {
+            console.warn('Welcome notification failed:', err);
+          });
+          setTimeout(() => {
+            onboardingNotifications.initializeOnboarding(opts.userId, userName).catch((err) => {
+              console.warn('Onboarding initialization failed:', err);
+            });
+          }, 1000);
+        }
+
+        toast.success(`Welcome back, ${userName}! 👋`);
+      })
+      .catch((err) => {
+        console.warn('Profile fetch failed, showing generic welcome:', err);
+        toast.success('Welcome back! 👋');
+      });
+
+    setTimeout(() => {
+      if (window.location.pathname === '/login') {
+        window.location.href = postLoginPath;
+      }
+    }, 300);
+  };
+
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
@@ -335,78 +414,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      // Flush signup avatar if email confirm skipped AuthCallback
-      try {
-        const { flushPendingSignupAvatar } = await import('@/lib/pending-signup-avatar');
-        const flushed = await flushPendingSignupAvatar(data.user.id, email);
-        if (flushed?.publicUrl) {
-          setUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  avatar_url: flushed.publicUrl,
-                  profile_picture: flushed.publicUrl,
-                  ...(flushed.displayName
-                    ? { full_name: flushed.displayName, name: flushed.displayName }
-                    : {}),
-                }
-              : prev
-          );
-        }
-      } catch (err) {
-        console.warn('Failed to flush pending signup avatar on login:', err);
-      }
-
-      // Navigate after account status check
       const isAdminUser = lockProfile?.username === 'admin';
-      if (isAdminUser && !isLocalDevHost()) {
-        window.location.assign(adminConsoleUrl('/admin'));
+
+      const { needsMfaChallenge } = await import('@/lib/mfa-service');
+      if (await needsMfaChallenge()) {
+        setPendingMfaUserId(data.user.id);
+        setPendingMfaEmail(email);
+        setPendingMfaIsAdmin(isAdminUser);
+        setMfaRequired(true);
         return;
       }
-      const postLoginPath = isAdminUser ? '/admin' : getPostLoginPath();
-      navigate(postLoginPath);
-      
-      // Get user profile for welcome message (non-blocking - run after navigation)
-      supabase
-        .from('profiles')
-        .select('full_name, last_login')
-        .eq('id', data.user.id)
-        .single()
-        .then(({ data: profile }) => {
-          const userName = profile?.full_name || email.split('@')[0];
-          const isReturningUser = !!profile?.last_login;
 
-          // Send welcome notification (non-blocking)
-          if (isReturningUser) {
-            onboardingNotifications.sendWelcomeBackNotification(data.user.id, userName).catch(err => {
-              console.warn('Welcome back notification failed:', err);
-            });
-          } else {
-            onboardingNotifications.sendWelcomeNotification(data.user.id, userName).catch(err => {
-              console.warn('Welcome notification failed:', err);
-            });
-            // Initialize onboarding
-            setTimeout(() => {
-              onboardingNotifications.initializeOnboarding(data.user.id, userName).catch(err => {
-                console.warn('Onboarding initialization failed:', err);
-              });
-            }, 1000);
-          }
-
-          toast.success(`Welcome back, ${userName}! 👋`);
-        })
-        .catch(err => {
-          console.warn('Profile fetch failed, showing generic welcome:', err);
-          toast.success('Welcome back! 👋');
-        });
-      
-      // Backup navigation using window.location after short delay
-      setTimeout(() => {
-        if (window.location.pathname === '/login') {
-          console.log('Backup navigation triggered');
-          window.location.href = postLoginPath;
-        }
-      }, 300);
+      await finishLoginNavigation({
+        userId: data.user.id,
+        email,
+        isAdminUser,
+      });
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Login failed');
@@ -414,6 +437,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } finally {
       setLoading(false);
     }
+  };
+
+  const completeMfaLogin = async () => {
+    if (!pendingMfaUserId || !pendingMfaEmail) {
+      throw new Error('No pending MFA login');
+    }
+    setLoading(true);
+    try {
+      const userId = pendingMfaUserId;
+      const email = pendingMfaEmail;
+      const isAdminUser = pendingMfaIsAdmin;
+      setMfaRequired(false);
+      setPendingMfaUserId(null);
+      setPendingMfaEmail(null);
+      setPendingMfaIsAdmin(false);
+      await finishLoginNavigation({ userId, email, isAdminUser });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cancelMfaLogin = async () => {
+    setMfaRequired(false);
+    setPendingMfaUserId(null);
+    setPendingMfaEmail(null);
+    setPendingMfaIsAdmin(false);
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
   };
 
   const adminLogin = async (email: string, password: string) => {
@@ -566,6 +618,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await supabase.auth.signOut();
       setUser(null);
       setIsAdmin(false);
+      setMfaRequired(false);
+      setPendingMfaUserId(null);
+      setPendingMfaEmail(null);
+      setPendingMfaIsAdmin(false);
       toast.success('Logged out successfully');
       navigate('/');
     } catch (error) {
@@ -733,8 +789,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     adminLogin,
     logout,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !mfaRequired,
     isAdmin,
+    mfaRequired,
+    completeMfaLogin,
+    cancelMfaLogin,
     updateUser,
     refreshAuth,
     forgotPassword,

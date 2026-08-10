@@ -36,8 +36,8 @@ import { BroadcastLocationPicker } from '@/components/admin/BroadcastLocationPic
 import { draftNotificationBody } from '@/lib/admin-ai-analysis';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+  adminOpsNotificationsQueryKey,
   notificationService,
-  notificationsQueryKey,
 } from '@/lib/notification/notification-service';
 import type { Notification } from '@/lib/notification/types';
 import { cn } from '@/lib/utils';
@@ -110,8 +110,8 @@ const NotificationsPanel: React.FC = () => {
   const [sending, setSending] = useState(false);
 
   const inboxQuery = useQuery({
-    queryKey: notificationsQueryKey(user?.id),
-    queryFn: () => (user ? notificationService.getUserNotifications(user.id) : []),
+    queryKey: adminOpsNotificationsQueryKey(user?.id),
+    queryFn: () => (user ? notificationService.getAdminOpsNotifications(user.id) : []),
     enabled: !!user?.id,
     refetchInterval: 30_000,
   });
@@ -137,7 +137,7 @@ const NotificationsPanel: React.FC = () => {
   const recent = (announcementsQuery.data ?? []).slice(0, 8);
 
   const invalidateInbox = () => {
-    void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    void queryClient.invalidateQueries({ queryKey: ['admin-ops-notifications'] });
     void queryClient.invalidateQueries({ queryKey: ['admin-notifications-unread'] });
   };
 
@@ -152,7 +152,7 @@ const NotificationsPanel: React.FC = () => {
   const markAll = useMutation({
     mutationFn: () => {
       if (!user) throw new Error('Not signed in');
-      return notificationService.markAllAsRead(user.id);
+      return notificationService.markAllAdminOpsAsRead(user.id);
     },
     onSuccess: () => {
       toast.success('All notifications marked as read');
@@ -211,7 +211,7 @@ const NotificationsPanel: React.FC = () => {
       title="Notifications"
       subtitle={
         tab === 'inbox'
-          ? 'Your admin inbox · same count as the header bell'
+          ? 'Platform ops · tickets, payments, signups, feedback, proposals, moderation'
           : 'Push status · broadcast compose · recent platform notices'
       }
       icon={Bell}
@@ -272,7 +272,7 @@ const NotificationsPanel: React.FC = () => {
 
           <AdminSectionPanel
             title="Inbox"
-            description="Proposals, feedback, system actions, and anything addressed to your admin account."
+            description="Tickets, payments, signups, feedback, proposals, marketplace, and moderation — same count as the header bell."
           >
             {inboxQuery.isLoading ? (
               <div className="flex justify-center py-10">

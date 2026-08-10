@@ -14,6 +14,7 @@ import {
   AnalyticsKpiCard,
   AnalyticsPeriodBar,
   formatCompact,
+  type AnalyticsCustomRange,
   type AnalyticsPeriod,
 } from '@/components/admin/analytics/analytics-ui';
 import { useAdminSectionTab } from '@/components/admin/AdminSubnavLayout';
@@ -406,6 +407,7 @@ const AdminAtlas: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState<AnalyticsPeriod>('7d');
+  const [customRange, setCustomRange] = useState<AnalyticsCustomRange | null>(null);
   const [comparePrior, setComparePrior] = useState(true);
   const [city, setCity] = useState('all');
   const [status, setStatus] = useState('all');
@@ -416,8 +418,9 @@ const AdminAtlas: React.FC = () => {
   const [selected, setSelected] = useState<MapSelection>(null);
 
   const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
-    queryKey: ['admin-atlas', period],
-    queryFn: () => loadAdminAtlas(period),
+    queryKey: ['admin-atlas', period, customRange],
+    queryFn: () => loadAdminAtlas(period, { customRange }),
+    enabled: period !== 'custom' || !!customRange,
     retry: 1,
   });
 
@@ -501,11 +504,7 @@ const AdminAtlas: React.FC = () => {
   }, [filteredEvents, view]);
 
   const onPeriod = (p: AnalyticsPeriod) => {
-    if (p === 'custom') {
-      toast.message('Custom range coming soon — using 7d for now');
-      setPeriod('7d');
-      return;
-    }
+    if (p !== 'custom') setCustomRange(null);
     setPeriod(p);
   };
 
@@ -627,6 +626,8 @@ const AdminAtlas: React.FC = () => {
         <AnalyticsPeriodBar
           period={period}
           onPeriod={onPeriod}
+          customRange={customRange}
+          onCustomRange={setCustomRange}
           comparePrior={comparePrior}
           onComparePrior={setComparePrior}
           city={city}

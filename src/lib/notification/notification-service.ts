@@ -1,10 +1,20 @@
 
 import { supabase } from '../supabase';
-import type { CreateNotificationData, Notification, NotificationSettings } from './types';
+import {
+  ADMIN_OPS_NOTIFICATION_TYPES,
+  type CreateNotificationData,
+  type Notification,
+  type NotificationSettings,
+} from './types';
 
 /** React Query key for a user's notification inbox (shared by consumer + admin bells). */
 export function notificationsQueryKey(userId: string | undefined) {
   return ['notifications', userId] as const;
+}
+
+/** React Query key for the admin ops inbox (filtered platform alerts). */
+export function adminOpsNotificationsQueryKey(userId: string | undefined) {
+  return ['admin-ops-notifications', userId] as const;
 }
 
 function isRlsInsertError(error: unknown): boolean {
@@ -132,10 +142,28 @@ export const notificationService = {
 
   /**
    * Fan-out an in-app notification to every admin profile (`username = 'admin'`).
+   * Prefers the SECURITY DEFINER `notify_admins` RPC (works under RLS).
    */
   notifyAdmins: async (
     notification: Omit<CreateNotificationData, 'user_id'>
   ): Promise<number> => {
+    try {
+      const { data, error } = await supabase.rpc('notify_admins', {
+        p_type: notification.type,
+        p_title: notification.title,
+        p_message: notification.message,
+        p_link: notification.link ?? null,
+        p_resource_type: notification.resource_type ?? null,
+        p_resource_id: notification.resource_id ?? null,
+        p_resource_uuid: notification.resource_uuid ?? null,
+        p_data: notification.data ?? null,
+      });
+      if (error) throw error;
+      return typeof data === 'number' ? data : Number(data) || 0;
+    } catch (rpcError) {
+      console.warn('notify_admins RPC unavailable, falling back to per-admin create:', rpcError);
+    }
+
     const { data: admins, error } = await supabase
       .from('profiles')
       .select('id')
@@ -157,6 +185,54 @@ export const notificationService = {
     );
 
     return results.filter((r) => r.status === 'fulfilled').length;
+  },
+
+  /** Admin ops inbox: proposals, feedback, tickets, payments, signups, etc. */
+  getAdminOpsNotifications: async (userId: string): Promise<Notification[]> => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .in('type', [...ADMIN_OPS_NOTIFICATION_TYPES])
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching admin ops notifications:', error);
+      throw error;
+    }
+
+    return mapNotificationRows(data);
+  },
+
+  /** Unread count for admin bell / sidebar (ops types only). */
+  getAdminOpsUnreadCount: async (userId: string): Promise<number> => {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('read', false)
+      .in('type', [...ADMIN_OPS_NOTIFICATION_TYPES]);
+
+    if (error) {
+      console.error('Error counting admin ops notifications:', error);
+      throw error;
+    }
+    return count ?? 0;
+  },
+
+  /** Mark all unread admin-ops notifications as read. */
+  markAllAdminOpsAsRead: async (userId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', userId)
+      .eq('read', false)
+      .in('type', [...ADMIN_OPS_NOTIFICATION_TYPES]);
+
+    if (error) {
+      console.error('Error marking admin ops notifications as read:', error);
+      throw error;
+    }
   },
 
   createNotification: async (notification: CreateNotificationData): Promise<number | null> => {

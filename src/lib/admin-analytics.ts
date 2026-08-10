@@ -1,21 +1,64 @@
 import { supabase } from '@/integrations/supabase/client';
 import { adminService } from '@/lib/admin-service';
 import { adminPlatformService } from '@/lib/admin-platform-service';
-import type { AnalyticsPeriod } from '@/components/admin/analytics/analytics-ui';
+import type {
+  AnalyticsCustomRange,
+  AnalyticsPeriod,
+} from '@/components/admin/analytics/analytics-ui';
 
-export function periodDays(period: AnalyticsPeriod): number {
-  if (period === '7d') return 7;
-  if (period === '90d') return 90;
-  return 30;
+/** Length of a preset period in milliseconds (custom uses the provided range). */
+export function periodMs(
+  period: AnalyticsPeriod,
+  customRange?: AnalyticsCustomRange | null
+): number {
+  if (period === 'custom' && customRange) {
+    const start = new Date(customRange.startIso).getTime();
+    const end = new Date(customRange.endIso).getTime();
+    return Math.max(end - start, 60_000);
+  }
+  if (period === '12h') return 12 * 60 * 60 * 1000;
+  if (period === '24h') return 24 * 60 * 60 * 1000;
+  if (period === '7d') return 7 * 24 * 60 * 60 * 1000;
+  if (period === '90d') return 90 * 24 * 60 * 60 * 1000;
+  return 30 * 24 * 60 * 60 * 1000;
 }
 
-export function periodWindow(period: AnalyticsPeriod, prior = false) {
-  const days = periodDays(period);
-  const end = new Date();
-  if (prior) end.setDate(end.getDate() - days);
-  const start = new Date(end);
-  start.setDate(start.getDate() - days);
-  return { start: start.toISOString(), end: end.toISOString(), days };
+/** Fractional days — used for chart label density. */
+export function periodDays(
+  period: AnalyticsPeriod,
+  customRange?: AnalyticsCustomRange | null
+): number {
+  return periodMs(period, customRange) / (24 * 60 * 60 * 1000);
+}
+
+export function periodWindow(
+  period: AnalyticsPeriod,
+  prior = false,
+  customRange?: AnalyticsCustomRange | null
+) {
+  const ms = periodMs(period, customRange);
+  let end: Date;
+  let start: Date;
+
+  if (period === 'custom' && customRange) {
+    end = new Date(customRange.endIso);
+    start = new Date(customRange.startIso);
+    if (prior) {
+      const span = Math.max(end.getTime() - start.getTime(), 60_000);
+      end = new Date(start.getTime());
+      start = new Date(start.getTime() - span);
+    }
+  } else {
+    end = new Date();
+    if (prior) end = new Date(end.getTime() - ms);
+    start = new Date(end.getTime() - ms);
+  }
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+    days: Math.max(ms / (24 * 60 * 60 * 1000), 1 / 24),
+  };
 }
 
 export function pctDelta(current: number, prior: number): number | null {
@@ -167,10 +210,10 @@ function weekLabels(n: number) {
 
 export async function loadPlatformAnalytics(
   period: AnalyticsPeriod,
-  opts: { excludeGhosts: boolean }
+  opts: { excludeGhosts: boolean; customRange?: AnalyticsCustomRange | null }
 ): Promise<PlatformAnalyticsBundle> {
-  const current = periodWindow(period, false);
-  const prior = periodWindow(period, true);
+  const current = periodWindow(period, false, opts.customRange);
+  const prior = periodWindow(period, true, opts.customRange);
   const labels = weekLabels(Math.min(8, Math.max(4, Math.ceil(current.days / 7))));
 
   const [userStats, eventStats, finance, marketplaceStats] = await Promise.all([
@@ -638,9 +681,10 @@ export type SponsorAnalyticsBundle = {
 };
 
 export async function loadSponsorAnalytics(
-  period: AnalyticsPeriod
+  period: AnalyticsPeriod,
+  opts?: { customRange?: AnalyticsCustomRange | null }
 ): Promise<SponsorAnalyticsBundle> {
-  const current = periodWindow(period, false);
+  const current = periodWindow(period, false, opts?.customRange);
   const labels = weekLabels(6);
 
   const { data: sponsors } = await supabase

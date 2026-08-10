@@ -19,8 +19,46 @@ import {
   AdminPrimaryPill,
   AdminSectionPanel,
 } from '@/components/admin/AdminPageShell';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-export type AnalyticsPeriod = '7d' | '30d' | '90d' | 'custom';
+export type AnalyticsPeriod = '12h' | '24h' | '7d' | '30d' | '90d' | 'custom';
+
+/** Absolute window used when period === 'custom'. */
+export type AnalyticsCustomRange = {
+  startIso: string;
+  endIso: string;
+};
+
+export function formatAnalyticsPeriodLabel(
+  period: AnalyticsPeriod,
+  customRange?: AnalyticsCustomRange | null
+): string {
+  if (period === 'custom' && customRange) {
+    const start = new Date(customRange.startIso);
+    const end = new Date(customRange.endIso);
+    const fmt = (d: Date) =>
+      d.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    return `${fmt(start)} → ${fmt(end)}`;
+  }
+  return period;
+}
+
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fromDatetimeLocalValue(value: string): Date | null {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 export const PLATFORM_TABS = [
   'overview',
@@ -169,6 +207,8 @@ export function AnalyticsKpiCard({
 export function AnalyticsPeriodBar({
   period,
   onPeriod,
+  customRange,
+  onCustomRange,
   comparePrior,
   onComparePrior,
   excludeGhosts,
@@ -180,9 +220,12 @@ export function AnalyticsPeriodBar({
   cityOptions,
   categoryOptions,
   extraFilters,
+  showComparePrior = true,
 }: {
   period: AnalyticsPeriod;
   onPeriod: (p: AnalyticsPeriod) => void;
+  customRange?: AnalyticsCustomRange | null;
+  onCustomRange?: (range: AnalyticsCustomRange) => void;
   comparePrior: boolean;
   onComparePrior: (v: boolean) => void;
   excludeGhosts?: boolean;
@@ -194,25 +237,143 @@ export function AnalyticsPeriodBar({
   cityOptions?: { value: string; label: string }[];
   categoryOptions?: { value: string; label: string }[];
   extraFilters?: ReactNode;
+  showComparePrior?: boolean;
 }) {
+  const [customOpen, setCustomOpen] = React.useState(false);
+  const now = React.useMemo(() => new Date(), [customOpen]);
+  const defaultEnd = toDatetimeLocalValue(now);
+  const defaultStart = toDatetimeLocalValue(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+  const [draftStart, setDraftStart] = React.useState(defaultStart);
+  const [draftEnd, setDraftEnd] = React.useState(defaultEnd);
+  const [draftError, setDraftError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!customOpen) return;
+    if (customRange) {
+      setDraftStart(toDatetimeLocalValue(new Date(customRange.startIso)));
+      setDraftEnd(toDatetimeLocalValue(new Date(customRange.endIso)));
+    } else {
+      const end = new Date();
+      const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+      setDraftStart(toDatetimeLocalValue(start));
+      setDraftEnd(toDatetimeLocalValue(end));
+    }
+    setDraftError(null);
+  }, [customOpen, customRange]);
+
+  const applyHours = (hours: number) => {
+    const end = new Date();
+    const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
+    onCustomRange?.({ startIso: start.toISOString(), endIso: end.toISOString() });
+    onPeriod('custom');
+    setCustomOpen(false);
+  };
+
+  const applyDraft = () => {
+    const start = fromDatetimeLocalValue(draftStart);
+    const end = fromDatetimeLocalValue(draftEnd);
+    if (!start || !end) {
+      setDraftError('Pick a valid start and end time');
+      return;
+    }
+    if (end.getTime() <= start.getTime()) {
+      setDraftError('End must be after start');
+      return;
+    }
+    if (end.getTime() - start.getTime() > 365 * 24 * 60 * 60 * 1000) {
+      setDraftError('Range cannot exceed 365 days');
+      return;
+    }
+    onCustomRange?.({ startIso: start.toISOString(), endIso: end.toISOString() });
+    onPeriod('custom');
+    setCustomOpen(false);
+  };
+
+  const periodPills: Array<[Exclude<AnalyticsPeriod, 'custom'>, string]> = [
+    ['12h', '12h'],
+    ['24h', '24h'],
+    ['7d', '7d'],
+    ['30d', '30d'],
+    ['90d', '90d'],
+  ];
+
   return (
     <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        {(
-          [
-            ['7d', '7d'],
-            ['30d', '30d'],
-            ['90d', '90d'],
-            ['custom', 'Custom'],
-          ] as const
-        ).map(([id, label]) => (
+        {periodPills.map(([id, label]) => (
           <AdminOutlinePill key={id} active={period === id} onClick={() => onPeriod(id)}>
             {label}
           </AdminOutlinePill>
         ))}
-        <AdminOutlinePill active={comparePrior} onClick={() => onComparePrior(!comparePrior)}>
-          Compare prior
-        </AdminOutlinePill>
+        <Popover open={customOpen} onOpenChange={setCustomOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'inline-flex max-w-[220px] items-center justify-center truncate rounded-full px-3 py-2 text-xs font-medium transition-colors',
+                period === 'custom'
+                  ? 'bg-primary font-semibold text-primary-foreground'
+                  : 'border border-border bg-[hsl(var(--admin-surface))] text-foreground hover:bg-[hsl(var(--admin-surface-2))]'
+              )}
+            >
+              {period === 'custom' && customRange
+                ? formatAnalyticsPeriodLabel('custom', customRange)
+                : 'Custom'}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[320px] space-y-3 p-3">
+            <div>
+              <p className="text-xs font-semibold text-foreground">Custom range</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Quick windows or an exact from → to range.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                [12, '12h'],
+                [24, '24h'],
+                [48, '48h'],
+                [72, '72h'],
+              ].map(([hours, label]) => (
+                <AdminOutlinePill key={label} onClick={() => applyHours(Number(hours))}>
+                  Last {label}
+                </AdminOutlinePill>
+              ))}
+            </div>
+            <div className="space-y-2">
+              <label className="block space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground">From</span>
+                <Input
+                  type="datetime-local"
+                  value={draftStart}
+                  onChange={(e) => setDraftStart(e.target.value)}
+                  className="h-9"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground">To</span>
+                <Input
+                  type="datetime-local"
+                  value={draftEnd}
+                  onChange={(e) => setDraftEnd(e.target.value)}
+                  className="h-9"
+                />
+              </label>
+              {draftError ? (
+                <p className="text-[11px] text-destructive">{draftError}</p>
+              ) : null}
+            </div>
+            <div className="flex justify-end gap-2">
+              <AdminOutlinePill onClick={() => setCustomOpen(false)}>Cancel</AdminOutlinePill>
+              <AdminPrimaryPill onClick={applyDraft}>Apply</AdminPrimaryPill>
+            </div>
+          </PopoverContent>
+        </Popover>
+        {showComparePrior ? (
+          <AdminOutlinePill active={comparePrior} onClick={() => onComparePrior(!comparePrior)}>
+            Compare prior
+          </AdminOutlinePill>
+        ) : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {onCity && cityOptions ? (
