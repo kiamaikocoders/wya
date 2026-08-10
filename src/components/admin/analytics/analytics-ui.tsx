@@ -569,7 +569,7 @@ export function AnalyticsRankedList({
   deepLink,
 }: {
   title: string;
-  rows: Array<{ title: string; meta?: string; value: string }>;
+  rows: Array<{ title: string; meta?: string; value: string; imageUrl?: string | null }>;
   deepLink?: { to: string; label: string };
 }) {
   return (
@@ -578,20 +578,43 @@ export function AnalyticsRankedList({
         {rows.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">No data in range.</p>
         ) : (
-          rows.map((row) => (
-            <div
-              key={row.title}
-              className="flex items-center gap-2 rounded-xl bg-[hsl(var(--admin-surface))] px-3 py-2.5"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-semibold text-foreground">{row.title}</div>
-                {row.meta ? (
-                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.meta}</div>
-                ) : null}
+          rows.map((row) => {
+            const initials = row.title
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((w) => w[0]?.toUpperCase() ?? '')
+              .join('');
+            return (
+              <div
+                key={row.title}
+                className="flex items-center gap-3 rounded-xl bg-[hsl(var(--admin-surface))] px-3 py-2.5"
+              >
+                <div className="relative h-11 w-[4.5rem] shrink-0 overflow-hidden rounded-lg border border-border bg-[hsl(var(--admin-surface-2))]">
+                  {row.imageUrl ? (
+                    <img
+                      src={row.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/35 to-primary/10 text-[11px] font-bold tracking-wide text-foreground">
+                      {initials || 'EV'}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-semibold text-foreground">{row.title}</div>
+                  {row.meta ? (
+                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{row.meta}</div>
+                  ) : null}
+                </div>
+                <div className="shrink-0 text-[12px] font-semibold text-foreground">{row.value}</div>
               </div>
-              <div className="shrink-0 text-[12px] font-semibold text-foreground">{row.value}</div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
       {deepLink ? (

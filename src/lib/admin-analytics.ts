@@ -111,7 +111,7 @@ export type PlatformAnalyticsBundle = {
     ghostStoryPct: number | null;
     usersSeries: Array<{ label: string; value: number; prior?: number }>;
     revenueSeries: Array<{ label: string; value: number; prior?: number }>;
-    topEvents: Array<{ title: string; value: string; meta?: string }>;
+    topEvents: Array<{ title: string; value: string; meta?: string; imageUrl?: string | null }>;
     topCities: Array<{ title: string; value: string }>;
     sparks: Record<string, number[]>;
   };
@@ -132,7 +132,7 @@ export type PlatformAnalyticsBundle = {
     fillRate: number | null;
     timeToApproveHours: number | null;
     pipelineSeries: Array<{ label: string; value: number }>;
-    topByFill: Array<{ title: string; value: string }>;
+    topByFill: Array<{ title: string; value: string; meta?: string; imageUrl?: string | null }>;
     categories: Array<{ name: string; value: number }>;
   };
   revenue: {
@@ -277,7 +277,7 @@ export async function loadPlatformAnalytics(
   const now = new Date();
   const { data: upcomingEvents } = await supabase
     .from('events')
-    .select('id, title, date, capacity, status, location, category')
+    .select('id, title, date, capacity, status, location, category, image_url')
     .gte('date', now.toISOString().slice(0, 10))
     .eq('status', 'approved')
     .order('date', { ascending: true })
@@ -334,7 +334,7 @@ export async function loadPlatformAnalytics(
   const { data: eventTitles } = topEventIds.length
     ? await supabase
         .from('events')
-        .select('id, title, capacity, location, category')
+        .select('id, title, capacity, location, category, image_url')
         .in(
           'id',
           topEventIds.map(([id]) => id)
@@ -346,6 +346,7 @@ export async function loadPlatformAnalytics(
     title: titleMap.get(id)?.title || `Event #${id}`,
     value: `KES ${Math.round(rev / 1000)}k`,
     meta: titleMap.get(id)?.location || undefined,
+    imageUrl: (titleMap.get(id) as { image_url?: string | null } | undefined)?.image_url ?? null,
   }));
 
   const cityCounts = new Map<string, number>();
@@ -439,6 +440,8 @@ export async function loadPlatformAnalytics(
     return {
       title: e.title,
       value: fill != null ? `${fill}% fill` : '—',
+      meta: e.location || undefined,
+      imageUrl: e.image_url ?? null,
     };
   });
 
@@ -531,8 +534,8 @@ export async function loadPlatformAnalytics(
       topByFill: fillSamples.length
         ? fillSamples
         : [
-            { title: 'Rooftop Sundowner', value: '92% fill' },
-            { title: 'Afro Night CBD', value: '78% fill' },
+            { title: 'Rooftop Sundowner', value: '92% fill', imageUrl: null },
+            { title: 'Afro Night CBD', value: '78% fill', imageUrl: null },
           ],
       categories: [...catMap.entries()].map(([name, value]) => ({
         name,
