@@ -19,6 +19,7 @@ import {
   type SeededEvent,
 } from './figmaSeededEvents';
 import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
+import { isEventInMapDateWindow } from '@/lib/event-map-window';
 
 type SortKey = 'latest' | 'soonest' | 'price-low' | 'price-high';
 type ViewMode = 'grid' | 'map';
@@ -419,10 +420,18 @@ const EventsPage = () => {
               isDark ? 'border-[#21262d]' : 'border-[#e8ecf0]'
             )}
           >
-            {events.some((e) => e.latitude != null && e.longitude != null) ? (
+            {events.some(
+              (e) =>
+                isEventInMapDateWindow(e) &&
+                typeof e.latitude === 'number' &&
+                typeof e.longitude === 'number' &&
+                Number.isFinite(e.latitude) &&
+                Number.isFinite(e.longitude),
+            ) ? (
               <EventMap
                 events={events.filter(
                   (e) =>
+                    isEventInMapDateWindow(e) &&
                     typeof e.latitude === 'number' &&
                     typeof e.longitude === 'number' &&
                     Number.isFinite(e.latitude) &&
@@ -434,7 +443,7 @@ const EventsPage = () => {
               />
             ) : (
               <div className={cn('flex min-h-[480px] items-center justify-center text-sm', muted)}>
-                No mapped venues in this filter set.
+                No mapped events from the last 30 days or upcoming.
               </div>
             )}
           </div>

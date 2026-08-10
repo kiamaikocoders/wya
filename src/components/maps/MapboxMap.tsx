@@ -7,6 +7,7 @@ import type { Event } from '@/types/event.types';
 import { MapPin, Navigation, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { locationService } from '@/lib/location-service';
+import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -74,6 +75,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const plottedEvents = useMemo(
     () =>
       events
+        .filter((event) => isEventInMapDateWindow(event))
         .map(event => {
           const coords = getCoordinates(event);
           if (!coords) return null;
