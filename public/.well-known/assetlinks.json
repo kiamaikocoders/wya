@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "space.manus.wya.app.t20260416221412",
+      "sha256_cert_fingerprints": [
+        "4F:C3:50:41:38:37:C2:6B:E4:7A:4C:7C:55:48:47:19:9D:D5:C1:0E:65:C4:A9:EB:DA:B7:85:AC:45:41:F9:6A"
+      ]
+    }
+  }
+]

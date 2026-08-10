@@ -9,8 +9,9 @@ import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
 
-/** Product scheme only — do not hand off via legacy Manus scheme. */
-const NATIVE_SCHEMES = ['wya'] as const;
+/** Product scheme + Android Intent URL (preserves ?code= better than bare wya://). */
+const ANDROID_PACKAGE = 'space.manus.wya.app.t20260416221412';
+const PRODUCT_SCHEME = 'wya';
 
 async function applyPendingAvatar(userId: string, email?: string | null) {
   try {
@@ -26,7 +27,15 @@ function buildNativeDeepLink(search: string, hash: string): string[] {
   const h = hash.startsWith('#') ? hash.slice(1) : hash;
   const combined = [q, h].filter(Boolean).join('&');
   const suffix = combined ? `?${combined}` : '';
-  return NATIVE_SCHEMES.map((scheme) => `${scheme}://auth/callback${suffix}`);
+  const pathAndQuery = `auth/callback${suffix}`;
+  const custom = `${PRODUCT_SCHEME}://${pathAndQuery}`;
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  if (!isAndroid) {
+    return [custom];
+  }
+  // Chrome Intent: package-targeted open keeps the query string more reliably.
+  const intent = `intent://${pathAndQuery}#Intent;scheme=${PRODUCT_SCHEME};package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(`https://www.wya254.com/download`)};end`;
+  return [intent, custom];
 }
 
 /**
@@ -261,15 +270,16 @@ const AuthCallback = () => {
             <CardDescription className="text-text-white/70">{message}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col space-y-2">
-            {nativeLinks.map((href) => (
+            {nativeLinks.map((href, i) => (
               <Button
-                key={href}
+                key={`${i}-${href.slice(0, 48)}`}
                 onClick={() => {
                   window.location.href = href;
                 }}
                 className="w-full bg-gradient-accent hover:bg-opacity-90"
+                variant={i === 0 ? 'default' : 'outline'}
               >
-                Open in WYA app
+                {i === 0 ? 'Open in WYA app' : 'Try alternate open'}
               </Button>
             ))}
             <Button
@@ -280,8 +290,8 @@ const AuthCallback = () => {
               Continue in browser
             </Button>
             <p className="text-xs text-text-white/60 text-center pt-2">
-              If the app opened without signing you in, tap Open in WYA app again. Use a fresh
-              confirmation email if the link was already used.
+              Keep this tab open until the app opens. If you land on Welcome, tap Open in WYA app
+              again — do not reuse an old confirmation email.
             </p>
           </CardContent>
         </Card>
