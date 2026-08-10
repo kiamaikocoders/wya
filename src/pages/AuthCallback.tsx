@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,9 @@ import { toast } from 'sonner';
 import { getPostLoginPath } from '@/lib/post-auth-navigation';
 
 type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
+
+/** Product scheme only — do not hand off via legacy Manus scheme. */
+const NATIVE_SCHEMES = ['wya'] as const;
 
 async function applyPendingAvatar(userId: string, email?: string | null) {
   try {
@@ -18,12 +21,36 @@ async function applyPendingAvatar(userId: string, email?: string | null) {
   }
 }
 
+function buildNativeDeepLink(search: string, hash: string): string[] {
+  const q = search.startsWith('?') ? search.slice(1) : search;
+  const h = hash.startsWith('#') ? hash.slice(1) : hash;
+  const combined = [q, h].filter(Boolean).join('&');
+  const suffix = combined ? `?${combined}` : '';
+  return NATIVE_SCHEMES.map((scheme) => `${scheme}://auth/callback${suffix}`);
+}
+
+/**
+ * Native app signup uses /auth/confirm as emailRedirectTo. Do not consume the PKCE
+ * code in the browser — forward it into the installed app which holds the verifier.
+ */
+function shouldHandoffToNativeApp(pathname: string, searchParams: URLSearchParams): boolean {
+  if (pathname.includes('/auth/confirm')) return true;
+  if (searchParams.get('app') === 'wya' || searchParams.get('native') === '1') return true;
+  return false;
+}
+
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const location = useLocation();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'open_app'>('loading');
   const [message, setMessage] = useState('');
   const [callbackType, setCallbackType] = useState<CallbackType>('unknown');
+
+  const nativeLinks = useMemo(
+    () => buildNativeDeepLink(location.search || '', location.hash || ''),
+    [location.search, location.hash],
+  );
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -37,7 +64,7 @@ const AuthCallback = () => {
           setCallbackType('signup');
         } else if (type === 'recovery') {
           setCallbackType('recovery');
-          if (token) {
+          if (token && !shouldHandoffToNativeApp(location.pathname, searchParams)) {
             navigate(`/reset-password?token=${token}&type=recovery`);
             return;
           }
@@ -47,6 +74,19 @@ const AuthCallback = () => {
           setCallbackType('email_change');
         } else if (type === 'invite') {
           setCallbackType('invite');
+        }
+
+        // Native bridge: open the app with the same query (PKCE code) — do not exchange here.
+        // Exchanging in the browser would burn the one-time code; the native client holds the PKCE verifier.
+        if (
+          shouldHandoffToNativeApp(location.pathname, searchParams) &&
+          (code || location.hash.includes('access_token') || token || tokenHash)
+        ) {
+          setStatus('open_app');
+          setMessage('Opening the WYA app to finish setup…');
+          // Immediate attempt; user can tap the button if the OS blocks auto-open.
+          window.location.href = nativeLinks[0];
+          return;
         }
 
         // PKCE / modern confirm links: ?code=...
@@ -159,7 +199,7 @@ const AuthCallback = () => {
     };
 
     handleAuthCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, location.pathname, location.hash, nativeLinks]);
 
   const getTitle = () => {
     switch (callbackType) {
@@ -204,6 +244,46 @@ const AuthCallback = () => {
               Please wait while we verify your request...
             </CardDescription>
           </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (status === 'open_app') {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-promo animate-fade-in">
+        <Card className="w-full max-w-md bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30 border-gradient-purple-medium/30">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-gradient-accent/20 rounded-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-gradient-orange-accent animate-spin" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">Open WYA</CardTitle>
+            <CardDescription className="text-text-white/70">{message}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col space-y-2">
+            {nativeLinks.map((href) => (
+              <Button
+                key={href}
+                onClick={() => {
+                  window.location.href = href;
+                }}
+                className="w-full bg-gradient-accent hover:bg-opacity-90"
+              >
+                Open in WYA app
+              </Button>
+            ))}
+            <Button
+              onClick={() => navigate('/login')}
+              variant="outline"
+              className="w-full border-gradient-purple-medium/30 text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
+            >
+              Continue in browser
+            </Button>
+            <p className="text-xs text-text-white/60 text-center pt-2">
+              If the app opened without signing you in, tap Open in WYA app again. Use a fresh
+              confirmation email if the link was already used.
+            </p>
+          </CardContent>
         </Card>
       </div>
     );
