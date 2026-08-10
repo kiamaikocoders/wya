@@ -589,9 +589,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
               <div className="space-y-2 md:col-span-2">
                 <Label>Location</Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Search for a location in Kenya. This pins the event on the map.
+                  Search a Kenyan venue, or type the name and drop a pin if it does not appear in
+                  search. You can edit the venue name before Confirm.
                 </p>
                 <LocationPicker
+                  allowCustomVenueName
                   onLocationSelect={(loc) => {
                     setFormData(prev => ({
                       ...prev,

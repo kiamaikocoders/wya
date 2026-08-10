@@ -89,6 +89,67 @@ const CURATED_KE_VENUES: Array<{
     longitude: 36.8112,
     city: 'Nairobi',
   },
+  // Hospitality POIs Mapbox/OSM often miss or keep under old trade names
+  {
+    aliases: [
+      'alloys',
+      'alloys bar',
+      'alloys bar and lounge',
+      'alloys sarit',
+      'alloy bar',
+    ],
+    label: 'Alloys Bar and Lounge, Sarit Centre, Westlands, Nairobi',
+    latitude: -1.2607625,
+    longitude: 36.8014196,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['kenrail', 'kenrail towers', 'ken rail towers'],
+    label: 'Kenrail Towers, Ring Road Parklands, Nairobi',
+    latitude: -1.2610509,
+    longitude: 36.8042602,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['koda', 'koda kenrail', 'koda bar'],
+    label: 'Koda, Kenrail Towers, Parklands, Nairobi',
+    latitude: -1.2610509,
+    longitude: 36.8042602,
+    city: 'Nairobi',
+  },
+  {
+    aliases: ['the muze', 'muze kenrail', 'muze'],
+    label: 'The Muze, Kenrail Towers, Parklands, Nairobi',
+    latitude: -1.2610509,
+    longitude: 36.8042602,
+    city: 'Nairobi',
+  },
+  {
+    aliases: [
+      'saddle and boot',
+      'saddle & boot',
+      'the saddle and boot',
+      'saddle boot ngong',
+    ],
+    label: 'The Saddle and Boot, Ngong Racecourse, Nairobi',
+    latitude: -1.3120613,
+    longitude: 36.7441232,
+    city: 'Nairobi',
+  },
+  {
+    aliases: [
+      'geco cafe',
+      'geco café',
+      'geco coffee',
+      'geco kilimani',
+      'geco pro wrapp',
+      'geco wrap',
+    ],
+    label: 'Geco Cafe, Kilimani, Nairobi',
+    latitude: -1.2930725,
+    longitude: 36.7621693,
+    city: 'Nairobi',
+  },
 ];
 
 export function tryCorrectLocationTypo(query: string): string {
@@ -132,7 +193,7 @@ function scorePlaceMatch(query: string, label: string, secondary?: string): numb
   }
 
   // Prefer POI-ish labels over bare city/region names when query has venue words
-  if (/\b(mall|centre|center|club|hotel|stadium|market|plaza)\b/i.test(label)) {
+  if (/\b(mall|centre|center|club|hotel|stadium|market|plaza|bar|lounge|cafe|café|restaurant)\b/i.test(label)) {
     score += 8;
   }
 
@@ -153,8 +214,8 @@ function curatedMatches(query: string): PlaceSuggestion[] {
       const tokens = queryTokens(q);
       return tokens.length > 0 && tokens.every((t) => a.includes(t));
     }),
-  ).map((venue, i) => ({
-    id: `curated-${i}-${venue.label}`,
+  ).map((venue) => ({
+    id: `curated-${normalizeSearchText(venue.label)}`,
     label: venue.label,
     secondary: 'Popular venue',
     provider: 'curated' as const,

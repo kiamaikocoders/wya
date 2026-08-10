@@ -3,6 +3,7 @@ import Map, { Marker, Popup, NavigationControl, ViewState } from 'react-map-gl/m
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { MapPin, Search, Navigation, Check, Loader2 } from 'lucide-react';
 import {
   locationService,
@@ -42,6 +43,11 @@ interface LocationPickerProps {
    * Default true for event pinning; signup/settings should pass false.
    */
   showMap?: boolean;
+  /**
+   * Event flows: keep a custom venue label even when map search/OSM names are stale.
+   * Default true for `mode="event"`.
+   */
+  allowCustomVenueName?: boolean;
   className?: string;
 }
 
@@ -55,12 +61,13 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   mode = 'event',
   compact = false,
   showMap = true,
+  allowCustomVenueName = mode === 'event',
   className,
 }) => {
   const defaultTitle = mode === 'event' ? 'Select Event Location' : 'Set Your Location';
   const defaultDescription = showMap
     ? mode === 'event'
-      ? 'Click on the map or search to set the event location.'
+      ? 'Search for a venue, or type its name and drop a pin if it is missing from search.'
       : 'Set your location to receive personalized event recommendations near you.'
     : 'Search for your area, pick a suggestion, or use My Location.';
 
@@ -84,8 +91,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   );
 
   const [searchQuery, setSearchQuery] = useState(initialLocation?.address || '');
+  const [venueName, setVenueName] = useState(initialLocation?.address || '');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<PlaceSuggestion[]>([]);
+  const [searchedEmpty, setSearchedEmpty] = useState(false);
   const [sessionToken, setSessionToken] = useState<string>(generateSessionToken());
   const [locating, setLocating] = useState(false);
   const suggestRequestId = useRef(0);
@@ -98,6 +107,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       address: initialLocation.address,
     });
     setSearchQuery(initialLocation.address || '');
+    setVenueName(initialLocation.address || '');
     setViewState((prev) => ({
       ...prev,
       longitude: initialLocation.longitude,
@@ -110,12 +120,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     (pick: PickedLocation, commit: boolean) => {
       setSelectedLocation(pick);
       setSearchQuery(pick.address);
+      setVenueName(pick.address);
       setViewState({
         longitude: pick.longitude,
         latitude: pick.latitude,
         zoom: 14,
       });
       setSearchResults([]);
+      setSearchedEmpty(false);
       if (commit || !showMap) {
         onLocationSelect(pick);
       }
@@ -128,6 +140,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       const trimmed = query.trim();
       if (trimmed.length < 2) {
         setSearchResults([]);
+        setSearchedEmpty(false);
         return;
       }
 
@@ -145,16 +158,21 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
         if (suggestions.length === 0) {
           setSearchResults([]);
+          setSearchedEmpty(true);
           if (opts?.autoSelectFirst) {
-            toast.error('No locations found. Try a different search term.');
+            toast.message(
+              showMap && allowCustomVenueName
+                ? 'No matches — drop a pin on the map to use this venue name.'
+                : 'No locations found. Try a different search term.',
+            );
           }
           return;
         }
 
+        setSearchedEmpty(false);
         setSearchResults(suggestions);
 
         if (opts?.autoSelectFirst && !showMap) {
-          // Search button on search-only: keep list open so user can pick
           toast.success(`${suggestions.length} place${suggestions.length === 1 ? '' : 's'} found`);
         }
       } catch (error) {
@@ -162,18 +180,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         console.error('Search error:', error);
         toast.error('Failed to search location. Please try again.');
         setSearchResults([]);
+        setSearchedEmpty(false);
       } finally {
         if (idAtStart === suggestRequestId.current) setIsSearching(false);
       }
     },
-    [sessionToken, showMap],
+    [sessionToken, showMap, allowCustomVenueName],
   );
 
   // Typeahead while typing (search-only and map modes)
   useEffect(() => {
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
-      if (!trimmed) setSearchResults([]);
+      if (!trimmed) {
+        setSearchResults([]);
+        setSearchedEmpty(false);
+      }
       return;
     }
     // Don't re-suggest when query already matches a confirmed selection
@@ -206,30 +228,38 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const handleMapClick = useCallback(
     async (event: any) => {
       const { lng, lat } = event.lngLat;
+      const typedName = searchQuery.trim();
+      const preferCustom =
+        allowCustomVenueName && typedName.length >= 2 && typedName !== selectedLocation?.address;
+
       try {
         const address = await locationService.reverseGeocode(lat, lng);
+        const reverseLabel = address.address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         applyPick(
           {
             latitude: lat,
             longitude: lng,
-            address: address.address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            address: preferCustom ? typedName : reverseLabel,
             city: address.city,
             country: address.country,
           },
           false,
         );
+        if (preferCustom) {
+          toast.message('Pin set — confirm with your venue name, or edit it below.');
+        }
       } catch {
         applyPick(
           {
             latitude: lat,
             longitude: lng,
-            address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+            address: preferCustom ? typedName : `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
           },
           false,
         );
       }
     },
-    [applyPick],
+    [applyPick, allowCustomVenueName, searchQuery, selectedLocation?.address],
   );
 
   const handleConfirm = useCallback(
@@ -242,10 +272,19 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         toast.error('Please select a location');
         return;
       }
-      onLocationSelect(selectedLocation);
+      const name = (allowCustomVenueName ? venueName : selectedLocation.address).trim();
+      if (!name) {
+        toast.error('Please enter a venue name');
+        return;
+      }
+      const pick = { ...selectedLocation, address: name };
+      setSelectedLocation(pick);
+      setSearchQuery(name);
+      setVenueName(name);
+      onLocationSelect(pick);
       toast.success('Location selected!');
     },
-    [selectedLocation, onLocationSelect],
+    [selectedLocation, onLocationSelect, allowCustomVenueName, venueName],
   );
 
   const handleUseCurrentLocation = useCallback(
@@ -259,10 +298,14 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         const location = await locationService.getCurrentLocation(true);
         if (!location) return;
 
+        const typedName = searchQuery.trim();
         const pick: PickedLocation = {
           latitude: location.latitude,
           longitude: location.longitude,
-          address: location.address || location.city || 'Current Location',
+          address:
+            allowCustomVenueName && typedName.length >= 2
+              ? typedName
+              : location.address || location.city || 'Current Location',
           city: location.city,
           country: location.country,
         };
@@ -275,19 +318,27 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         setLocating(false);
       }
     },
-    [applyPick],
+    [applyPick, allowCustomVenueName, searchQuery],
   );
 
   const handleQueryChange = (value: string) => {
     setSearchQuery(value);
+    if (allowCustomVenueName) setVenueName(value);
     if (!value.trim()) {
       setSelectedLocation(null);
       setSearchResults([]);
+      setSearchedEmpty(false);
       onLocationClear?.();
     } else if (selectedLocation && value.trim() !== selectedLocation.address.trim()) {
-      // Editing after a pick — clear stale coords until they pick again
-      setSelectedLocation(null);
-      onLocationClear?.();
+      // Editing search after a pick — keep pin, wait for re-confirm with new name
+      // Only clear coords when wiping the field (handled above).
+    }
+  };
+
+  const handleVenueNameChange = (value: string) => {
+    setVenueName(value);
+    if (selectedLocation) {
+      setSelectedLocation({ ...selectedLocation, address: value });
     }
   };
 
@@ -379,14 +430,28 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 className="flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted/60"
               >
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span className="leading-snug">{suggestion.label}</span>
+                <span className="leading-snug">
+                  {suggestion.label}
+                  {suggestion.secondary ? (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {suggestion.secondary}
+                    </span>
+                  ) : null}
+                </span>
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      {selectedLocation && (
+      {searchedEmpty && allowCustomVenueName && showMap && searchQuery.trim().length >= 2 ? (
+        <p className="rounded-lg border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          No search matches for <span className="font-medium text-foreground">{searchQuery.trim()}</span>
+          . Tap the map to drop a pin — we will keep this as the venue name.
+        </p>
+      ) : null}
+
+      {selectedLocation && !allowCustomVenueName && (
         <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span>
@@ -434,7 +499,10 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
                 closeOnClick={false}
               >
                 <div className="p-2">
-                  <p className="text-sm font-semibold">{selectedLocation.address}</p>
+                  <p className="text-sm font-semibold">
+                    {(allowCustomVenueName ? venueName : selectedLocation.address) ||
+                      selectedLocation.address}
+                  </p>
                 </div>
               </Popup>
             )}
@@ -448,18 +516,37 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
       {selectedLocation && (
         <div className="rounded-lg border border-border bg-muted/40 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="mb-2 flex items-center gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-primary" />
-                <p className="font-medium">Selected Location</p>
+                <p className="font-medium">Selected location</p>
               </div>
-              <p className="text-sm text-muted-foreground">{selectedLocation.address}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              {allowCustomVenueName ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="venue-display-name" className="text-xs font-semibold">
+                    Venue name
+                  </Label>
+                  <Input
+                    id="venue-display-name"
+                    value={venueName}
+                    onChange={(e) => handleVenueNameChange(e.target.value)}
+                    placeholder="e.g. Alloys Bar and Lounge, Sarit"
+                    className="h-10"
+                    autoComplete="off"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Shown on the event even if map data uses an older trade name.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{selectedLocation.address}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
                 {selectedLocation.latitude.toFixed(6)}, {selectedLocation.longitude.toFixed(6)}
               </p>
             </div>
-            <Button type="button" onClick={(e) => handleConfirm(e)} size="sm">
+            <Button type="button" onClick={(e) => handleConfirm(e)} size="sm" className="shrink-0">
               <Check className="mr-1 h-4 w-4" />
               Confirm
             </Button>

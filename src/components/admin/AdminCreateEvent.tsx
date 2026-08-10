@@ -984,7 +984,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             <div className={cn(surfaceCard, 'flex flex-col gap-2.5 p-4')}>
               <Label className="text-xs font-semibold">Location *</Label>
               <p className="text-xs text-muted-foreground">
-                Search, use GPS, or tap the map — then Confirm.
+                Search a venue, or type its name and tap the map if search misses it — then Confirm.
               </p>
               <LocationPicker
                 mode="event"
@@ -992,6 +992,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 height={440}
                 title=""
                 description=""
+                allowCustomVenueName
                 onLocationSelect={(loc) => {
                   setFormData((prev) => ({
                     ...prev,
