@@ -12,14 +12,24 @@ This project follows strict security protocols. Configure the following for prod
 Do **not** use wildcard `*` for CORS. Set an allowlist:
 
 - **Env (all Edge Functions)**: `ALLOWED_ORIGINS` — comma-separated list of allowed origins. Include production and local dev, e.g.  
-  `https://www.wya254.com,https://wya254.com,http://localhost:8080,http://localhost:5173`
+  `https://www.wya254.com,https://wya254.com,https://admin.wya254.com,http://localhost:8080,http://localhost:5173`
 
-Supabase stores this as **one** project secret: **Dashboard → Project Settings → Edge Functions → Secrets** → `ALLOWED_ORIGINS`. Every function that checks CORS against this variable uses the **same** value—no per-function duplicate. Add **every origin** where your SPA runs (production, preview/staging, local Vite ports such as `http://localhost:5173`). If an origin is missing, browser calls from that site to `*.supabase.co/functions/v1/...` will fail CORS.
+Supabase stores this as **one** project secret: **Dashboard → Project Settings → Edge Functions → Secrets** → `ALLOWED_ORIGINS`. Every function that checks CORS against this variable uses the **same** value—no per-function duplicate. Add **every origin** where your SPA runs (production consumer, **admin subdomain**, preview/staging, local Vite ports such as `http://localhost:5173`). If an origin is missing, browser calls from that site to `*.supabase.co/functions/v1/...` will fail CORS.
 
 Functions that rely on `ALLOWED_ORIGINS` include (non-exhaustive): `request-password-reset`, `admin-get-ghost-user-ids`, `delete-my-account`, `mpesa`, `process-ghost-actions`, **`create-event-media-share`**, **`public-event-media-gallery`**, and others that mirror the same pattern.
 
-- **`create-event-media-share`**: Admin copies a share link from the dashboard; the **admin app origin** must be in `ALLOWED_ORIGINS` (same as other admin Edge calls).
-- **`public-event-media-gallery`**: The **shared gallery page** loads on your main app (`/share/event-media/...`) and the browser requests this function **cross-origin** from that same app origin—so that origin must also appear in `ALLOWED_ORIGINS` (typically the same list you already use for production + localhost).
+- **`create-event-media-share`**: Admin copies a share link from the dashboard on **`https://admin.wya254.com`**; that admin origin must be in `ALLOWED_ORIGINS`. Gallery URLs themselves should use the public site (`PUBLIC_SITE_URL` / `https://www.wya254.com`).
+- **`public-event-media-gallery`**: The **shared gallery page** loads on the main app (`www` `/share/event-media/...`) and the browser requests this function **cross-origin** from that same app origin—so that origin must also appear in `ALLOWED_ORIGINS`.
+
+## Domains
+
+| Host | Role |
+|------|------|
+| `https://www.wya254.com` | Consumer app (events, auth, shares) |
+| `https://admin.wya254.com` | Admin console only (`/admin/*`) |
+| `https://cdn.wya254.com` | Media CDN |
+
+Client env (optional overrides): `VITE_PUBLIC_SITE_URL`, `VITE_ADMIN_SITE_URL`.
 
 ## Redirect URLs (Open Redirect Prevention)
 
@@ -51,9 +61,12 @@ The admin dashboard no longer calls `auth.admin.listUsers()` from the client (th
 
 | Variable | Where | Purpose |
 |----------|--------|---------|
-| `ALLOWED_ORIGINS` | Edge Functions | CORS allowlist (comma-separated), e.g. `https://www.wya254.com` |
+| `ALLOWED_ORIGINS` | Edge Functions | CORS allowlist (comma-separated), e.g. `https://www.wya254.com,https://admin.wya254.com` |
+| `VITE_PUBLIC_SITE_URL` | Client build | Consumer origin (default `https://www.wya254.com`) |
+| `VITE_ADMIN_SITE_URL` | Client build | Admin origin (default `https://admin.wya254.com`) |
 | `VITE_ALLOWED_REDIRECT_ORIGINS` | Client build | Password reset redirect allowlist |
 | `VITE_SUPABASE_URL` | Client build | Supabase base URL (password reset + admin ghost IDs) |
 | `SUPABASE_ANON_KEY` | request-password-reset, admin-get-ghost-user-ids | Auth recover + JWT verification |
 | `REDIRECT_URL` | request-password-reset function | Optional reset link redirect |
 | `MPESA_CALLBACK_SECRET` | mpesa-callback function | Optional callback URL secret |
+| `PUBLIC_SITE_URL` | create-event-media-share | Public gallery base URL |

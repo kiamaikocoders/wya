@@ -62,6 +62,7 @@ import {
 } from '@/lib/admin-platform-service';
 import { useListPagination } from '@/hooks/use-list-pagination';
 import { cn } from '@/lib/utils';
+import { getPublicSiteOrigin } from '@/lib/site-origins';
 
 type CommsTab = 'broadcast' | 'templates' | 'delivery' | 'provider';
 
@@ -333,12 +334,13 @@ const CommunicationsPanel: React.FC = () => {
   };
 
   const withPreviewVars = (html: string) => {
-    const site = typeof window !== 'undefined' ? window.location.origin : 'https://www.wya254.com';
+    const site = getPublicSiteOrigin();
     const email = user?.email || 'you@example.com';
     // Dead / wrong production hosts baked into older templates — rewrite so
-    // logo + hero images load from the app origin during admin preview.
+    // logo + hero images load from the public site during admin preview.
     let out = html
       .replace(/https?:\/\/(?:www\.)?whereyouat\.ke/gi, site)
+      .replace(/https?:\/\/admin\.wya254\.com/gi, site)
       .replace(/https?:\/\/(?:www\.)?wya254\.com/gi, site);
     const pairs: Array<[RegExp, string]> = [
       [/\{\{\s*\.ConfirmationURL\s*\}\}/g, `${site}/auth/confirm?token=preview`],

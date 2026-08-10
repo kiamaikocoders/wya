@@ -1,0 +1,12 @@
+# Keep Vercel CLI uploads lean (CLI respects .vercelignore + .gitignore)
+android
+ios
+.vite
+.git
+.archive
+docs
+*.apk
+*.aab
+*.keystore
+supabase/.temp
+agent-transcripts

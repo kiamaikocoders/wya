@@ -56,6 +56,8 @@ Key client variables (see `.env.example` for the full list):
 | `VITE_ONESIGNAL_APP_ID` | Web push App ID |
 | `VITE_ONESIGNAL_SAFARI_WEB_ID` | Safari web push ID |
 | `VITE_ALLOWED_REDIRECT_ORIGINS` | Allowed auth redirect origins |
+| `VITE_PUBLIC_SITE_URL` | Consumer site origin (`https://www.wya254.com`) |
+| `VITE_ADMIN_SITE_URL` | Admin console origin (`https://admin.wya254.com`) |
 | `VITE_AI_PROXY_BASE_URL` | Optional origin for `/api/ai` if not same-host |
 
 Server-only (Vercel / Edge Functions — **not** `VITE_`):

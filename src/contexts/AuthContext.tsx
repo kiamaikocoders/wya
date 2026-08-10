@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
+import { adminConsoleUrl, getAdminSiteOrigin, isLocalDevHost } from '@/lib/site-origins';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
@@ -358,6 +359,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Navigate after account status check
       const isAdminUser = lockProfile?.username === 'admin';
+      if (isAdminUser && !isLocalDevHost()) {
+        window.location.assign(adminConsoleUrl('/admin'));
+        return;
+      }
       const postLoginPath = isAdminUser ? '/admin' : getPostLoginPath();
       navigate(postLoginPath);
       
@@ -432,7 +437,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setIsAdmin(true);
       toast.success('Admin login successful!');
-      navigate('/admin');
+      if (!isLocalDevHost() && window.location.origin !== getAdminSiteOrigin()) {
+        window.location.assign(adminConsoleUrl('/admin'));
+      } else {
+        navigate('/admin');
+      }
     } catch (error: any) {
       console.error('Admin login error:', error);
       toast.error(error.message || 'Admin login failed');
