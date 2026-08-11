@@ -1,10 +1,11 @@
 /**
  * Vercel Serverless — upload a file to R2 via the server (same-origin).
  * Used when browser PUT to the R2 signed URL fails (CORS / network "Failed to fetch").
+ * Self-contained (same pattern as api/r2-upload-url.ts) for reliable Vercel bundling.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { putObjectToR2 } from "../lib/r2-put";
+import { AwsClient } from "aws4fetch";
 
 export const config = {
   api: {
@@ -28,7 +29,8 @@ const ALLOWED_BUCKETS = new Set([
   "uploads",
 ]);
 
-const MAX_BYTES = 4 * 1024 * 1024;
+/** Keep under Vercel body limit after base64 (~4.5MB JSON ≈ ~3.3MB binary). */
+const MAX_BYTES = 3 * 1024 * 1024;
 
 function setCors(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -46,6 +48,65 @@ function sanitizeSegment(value: string): string {
     .map((part) => part.trim())
     .filter((part) => part && part !== "." && part !== "..")
     .join("/");
+}
+
+async function putObjectToR2(options: {
+  key: string;
+  contentType: string;
+  body: Buffer;
+}): Promise<{ publicUrl: string; key: string }> {
+  const { key, contentType, body } = options;
+  const accountId = process.env.R2_ACCOUNT_ID?.trim() || "";
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim() || "";
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim() || "";
+  const bucket = process.env.R2_BUCKET?.trim() || "wya-media";
+  const endpoint =
+    process.env.R2_ENDPOINT?.trim() ||
+    (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : "");
+  const publicBase = (
+    process.env.R2_PUBLIC_BASE_URL?.trim() || "https://cdn.wya254.com"
+  ).replace(/\/$/, "");
+
+  if (!accessKeyId || !secretAccessKey || !endpoint) {
+    throw new Error("R2 is not configured on the server");
+  }
+  if (accessKeyId.length !== 32) {
+    throw new Error(
+      `R2_ACCESS_KEY_ID has length ${accessKeyId.length}, should be 32 — check Vercel env (value may be truncated)`,
+    );
+  }
+
+  const aws = new AwsClient({
+    accessKeyId,
+    secretAccessKey,
+    service: "s3",
+    region: "auto",
+  });
+
+  const url = `${endpoint}/${bucket}/${key}`;
+  const signed = await aws.sign(
+    new Request(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+      body,
+    }),
+  );
+
+  const putRes = await fetch(signed);
+  if (!putRes.ok) {
+    const detail = await putRes.text().catch(() => "");
+    throw new Error(
+      `R2 put failed (${putRes.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`,
+    );
+  }
+
+  return {
+    key,
+    publicUrl: `${publicBase}/${key}`,
+  };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -127,7 +188,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const put = await putObjectToR2({
-      env: process.env,
       key,
       contentType,
       body: buffer,

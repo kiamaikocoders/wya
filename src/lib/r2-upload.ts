@@ -126,17 +126,27 @@ async function uploadViaServerProxy(
     }),
   });
 
-  const payload = (await res.json().catch(() => ({}))) as {
+  const rawText = await res.text().catch(() => '');
+  let payload: {
     publicUrl?: string;
     path?: string;
     fullPath?: string;
     error?: string;
     detail?: string;
-  };
+  } = {};
+  try {
+    payload = rawText ? (JSON.parse(rawText) as typeof payload) : {};
+  } catch {
+    payload = {};
+  }
 
   if (!res.ok || !payload.publicUrl) {
     const message = [payload.error, payload.detail].filter(Boolean).join(' — ');
-    throw new Error(message || 'Server upload failed');
+    const fallback =
+      rawText && !message
+        ? `Server upload failed (${res.status}): ${rawText.slice(0, 180)}`
+        : `Server upload failed (${res.status})`;
+    throw new Error(message || fallback);
   }
 
   return {
@@ -146,9 +156,15 @@ async function uploadViaServerProxy(
   };
 }
 
+/** Matches api/r2-upload.ts MAX_BYTES (Vercel JSON body limit after base64). */
+const SERVER_UPLOAD_MAX_BYTES = 3 * 1024 * 1024;
+
 /**
  * Request a short-lived R2 PUT URL and upload the file directly to Cloudflare.
  * Falls back to a same-origin server upload if the browser cannot reach R2.
+ *
+ * When R2 bucket CORS is missing, browser PUT fails; prefer server upload for
+ * authenticated files that fit the serverless body limit.
  */
 export async function uploadToR2(request: R2UploadRequest): Promise<UploadResult> {
   const url = getR2UploadUrlEndpoint();
@@ -162,6 +178,28 @@ export async function uploadToR2(request: R2UploadRequest): Promise<UploadResult
   const fileName =
     request.fileName ||
     (request.file instanceof File ? request.file.name : `upload-${Date.now()}`);
+
+  const canServerUpload =
+    Boolean(session?.access_token) &&
+    request.file.size > 0 &&
+    request.file.size <= SERVER_UPLOAD_MAX_BYTES;
+
+  // Prefer same-origin upload while R2 CORS is unset / flaky (admin.wya254.com PUT → 403).
+  if (canServerUpload && session?.access_token) {
+    try {
+      return await uploadViaServerProxy(
+        request,
+        session.access_token,
+        contentType,
+        fileName,
+      );
+    } catch (serverError) {
+      console.warn(
+        'Server R2 upload failed, trying direct signed PUT',
+        serverError,
+      );
+    }
+  }
 
   let payload: PresignResponse;
   try {
