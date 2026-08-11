@@ -274,7 +274,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       const { publicUrl } = await uploadToR2({
         bucket: 'event-images',
         file: prepared,
-        path: `event-images/${fileName}`,
+        path: fileName,
         contentType: prepared.type || 'image/jpeg',
       });
 
