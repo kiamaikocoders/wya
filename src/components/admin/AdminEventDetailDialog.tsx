@@ -18,13 +18,17 @@ type Props = {
   onCancelOccurrence?: (id: number) => void;
   onRestoreOccurrence?: (id: number) => void;
   onCancelFuture?: (id: number) => void;
+  onDelete?: (id: number) => void;
 };
 
 function formatWhen(event: AdminEvent): string {
   try {
     const d = format(parseISO(event.date), 'EEEE, d MMM yyyy');
-    const t = event.time?.slice(0, 5);
-    return t ? `${d} · ${t}` : d;
+    const start = event.time?.slice(0, 5);
+    const end = event.end_time?.slice(0, 5);
+    if (start && end) return `${d} · ${start} – ${end}`;
+    if (start) return `${d} · ${start}`;
+    return d;
   } catch {
     return event.date || '—';
   }
@@ -48,6 +52,7 @@ export function AdminEventDetailDialog({
   onCancelOccurrence,
   onRestoreOccurrence,
   onCancelFuture,
+  onDelete,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -71,7 +76,9 @@ export function AdminEventDetailDialog({
   });
 
   const expectLines = useMemo(() => {
-    // AdminEvent does not always ship performing_artists; fall back to description bullets if any.
+    if (event?.performing_artists?.length) {
+      return event.performing_artists.slice(0, 8);
+    }
     const desc = event?.description || '';
     const lines = desc
       .split('\n')
@@ -79,7 +86,7 @@ export function AdminEventDetailDialog({
       .filter(Boolean)
       .slice(0, 4);
     return lines.length > 1 ? lines : [];
-  }, [event?.description]);
+  }, [event?.description, event?.performing_artists]);
 
   if (!open || !event) return null;
 
@@ -227,7 +234,7 @@ export function AdminEventDetailDialog({
               {expectLines.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold tracking-[1.2px] text-muted-foreground">
-                    WHAT TO EXPECT
+                    {event.performing_artists?.length ? 'PERFORMING ARTISTS' : 'WHAT TO EXPECT'}
                   </p>
                   <div className="rounded-xl border border-border bg-[hsl(var(--admin-surface))] px-3.5 py-2.5 text-xs leading-[18px] text-foreground">
                     {expectLines.map((line) => (
@@ -343,6 +350,15 @@ export function AdminEventDetailDialog({
                     onClick={() => onEdit(event)}
                   >
                     Edit event
+                  </button>
+                ) : null}
+                {event.status !== 'pending' && onDelete ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-[10px] border border-[hsl(var(--admin-error)/0.4)] bg-[hsl(var(--admin-error)/0.1)] py-3 text-sm font-semibold text-[hsl(var(--admin-error))]"
+                    onClick={() => onDelete(event.id)}
+                  >
+                    {event.is_recurring ? 'Delete entire series' : 'Delete event'}
                   </button>
                 ) : null}
               </div>

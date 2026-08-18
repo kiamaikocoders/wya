@@ -36,6 +36,12 @@ export function getDeleteMyAccountUrl(): string {
   return base ? `${base}/functions/v1/delete-my-account` : "";
 }
 
+/** Admin: permanently delete any user (RPC + auth user removal). */
+export function getAdminDeleteUserUrl(): string {
+  const base = getSupabaseFunctionsBaseUrl();
+  return base ? `${base}/functions/v1/admin-delete-user` : "";
+}
+
 /** Admin JWT: create a time-limited share token for the event media gallery. */
 export function getCreateEventMediaShareUrl(): string {
   const base = getSupabaseFunctionsBaseUrl();

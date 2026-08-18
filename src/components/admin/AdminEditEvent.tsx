@@ -66,6 +66,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     date: event.date ? new Date(event.date).toISOString().split('T')[0] : '',
     end_date: event.end_date ? String(event.end_date).slice(0, 10) : '',
     time: event.time || '',
+    end_time: (event as { end_time?: string | null }).end_time || '',
     location: event.location || '',
     latitude: (event as any).latitude ?? null,
     longitude: (event as any).longitude ?? null,
@@ -74,7 +75,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     price: event.price || 0,
     capacity: event.capacity || 0,
     tags: [] as string[],
-    performing_artists: [] as string[],
+    performing_artists: ((event as { performing_artists?: string[] }).performing_artists ?? []) as string[],
     ticket_link: (event as any).ticket_link || '',
     featured: event.featured || false,
   });
@@ -393,6 +394,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       date: new Date(formData.date).toISOString(),
       end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
       time: formData.time && formData.time.trim() ? formData.time.trim() : undefined,
+      end_time: formData.end_time && formData.end_time.trim() ? formData.end_time.trim() : null,
     };
     
     updateEventMutation.mutate({
@@ -703,12 +705,22 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">Start time</Label>
                 <Input
                   id="time"
                   name="time"
                   type="time"
                   value={formData.time}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end_time">End time</Label>
+                <Input
+                  id="end_time"
+                  name="end_time"
+                  type="time"
+                  value={formData.end_time}
                   onChange={handleInputChange}
                 />
               </div>

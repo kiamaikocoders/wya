@@ -75,6 +75,7 @@ export interface AdminEvent {
   date: string;
   end_date?: string | null;
   time?: string;
+  end_time?: string | null;
   location: string;
   location_url?: string | null;
   image_url?: string;
@@ -98,6 +99,7 @@ export interface AdminEvent {
   series?: AdminEventSeriesInfo | null;
   is_recurring?: boolean;
   cancelled_at?: string | null;
+  performing_artists?: string[];
 }
 
 export interface AdminEventStats {
@@ -607,7 +609,7 @@ export const adminService = {
     if (error) throw error;
   },
 
-  /** Soft-delete: anonymizes profile and sets account_status deleted. Does not remove auth.users (use Supabase Dashboard / service role for full removal). */
+  /** Soft-delete: anonymizes profile and sets account_status deleted. Does not remove auth.users. */
   softDeleteUserAccount: async (userId: string, reason?: string): Promise<void> => {
     const { error } = await supabase.rpc('admin_soft_delete_user', {
       p_target: userId,
@@ -659,6 +661,9 @@ export const adminService = {
         query = query.eq('status', status);
       }
 
+      // One row per recurring series (first occurrence) — avoids 14 duplicate admin rows
+      query = query.or('series_id.is.null,series_index.eq.0,series_index.is.null');
+
       // Apply sorting
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -704,18 +709,10 @@ export const adminService = {
         .filter((id): id is string => Boolean(id));
       const seriesMap = await getEventSeriesByIds(seriesIds);
 
-      // Pending queue: one row per series (first occurrence) so admins review the request once
       const rawRows = data || [];
-      const rowsForStatus =
-        status === 'pending'
-          ? rawRows.filter(
-              (e: { series_id?: string | null; series_index?: number | null }) =>
-                !e.series_id || e.series_index === 0 || e.series_index == null,
-            )
-          : rawRows;
 
       // Transform data
-      const events: AdminEvent[] = rowsForStatus.map((event: any) => {
+      const events: AdminEvent[] = rawRows.map((event: any) => {
         const organizer = event.organizer_id ? organizerMap.get(event.organizer_id) : null;
         const seriesRow = event.series_id ? seriesMap.get(event.series_id) : null;
         const activeTotal = seriesRow
@@ -751,6 +748,7 @@ export const adminService = {
           date: event.date,
           end_date: event.end_date ?? null,
           time: event.time,
+          end_time: event.end_time ?? null,
           location: event.location,
           location_url: event.location_url ?? null,
           image_url: event.image_url,
@@ -774,6 +772,7 @@ export const adminService = {
           series: seriesInfo,
           is_recurring: Boolean(seriesInfo),
           cancelled_at: event.cancelled_at ?? null,
+          performing_artists: event.performing_artists ?? [],
         };
       });
 
@@ -910,59 +909,45 @@ export const adminService = {
     }
   },
 
-  deleteEvent: async (eventId: number): Promise<void> => {
+  deleteEvent: async (eventId: number): Promise<{ deletedCount: number }> => {
     try {
-      // Determine whether the current user is an admin according to RLS setup.
-      // NOTE: RLS admin checks currently use `profiles.username = 'admin'`.
-      const { data: authUserData } = await supabase.auth.getUser();
-      const authUser = authUserData?.user ?? null;
-
-      const { data: profile } = authUser
-        ? await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', authUser.id)
-            .maybeSingle()
-        : { data: null };
-
-      const isAdmin = profile?.username === 'admin';
-
-      // Confirm the event exists (select policy is open, so this helps produce a useful error).
-      const { data: existingEvent, error: existingError } = await supabase
-        .from('events')
-        .select('id')
-        .eq('id', eventId)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (!existingEvent) {
-        throw new Error(`Event not found (id=${eventId}).`);
-      }
-
-      const { data, error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', eventId)
-        // Return deleted rows so we can detect "0 rows deleted" as a failure.
-        .select('id');
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        if (isAdmin) {
-          throw new Error(
-            `Delete was blocked (id=${eventId}). Your account appears to be admin, but RLS did not allow the DELETE.`
-          );
-        }
-
-        throw new Error(
-          `You are not authorized to delete this event (id=${eventId}). Admin deletes require profiles.username = "admin".`
-        );
-      }
+      const { deleteEventOrSeries } = await import('./event-series-service');
+      return await deleteEventOrSeries(eventId);
     } catch (error) {
       console.error('Error deleting event:', error);
       throw error;
+    }
+  },
+
+  /** Permanently removes a user from Supabase Auth and deletes app data (admin only). */
+  hardDeleteUserAccount: async (userId: string): Promise<void> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('Not signed in');
+    }
+
+    const { getAdminDeleteUserUrl } = await import('./supabase-functions-url');
+    const url = getAdminDeleteUserUrl();
+    if (!url) {
+      throw new Error(
+        'Hard delete is not configured (missing VITE_SUPABASE_URL or admin-delete-user function).',
+      );
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId }),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error((body as { error?: string }).error || 'Failed to permanently delete user');
     }
   },
 
