@@ -150,6 +150,21 @@ const EventManagement: React.FC = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminService.deleteEvent(id),
+    onSuccess: (result, id) => {
+      const ev = events.find((e) => e.id === id) || (viewing?.id === id ? viewing : null);
+      toast.success(
+        ev?.is_recurring
+          ? `Series deleted · ${result.deletedCount} date${result.deletedCount === 1 ? '' : 's'} removed`
+          : 'Event deleted',
+      );
+      setViewing(null);
+      invalidateEvents();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const stats = statsQuery.data;
   const events = eventsQuery.data?.data ?? [];
   const total = eventsQuery.data?.total ?? 0;
@@ -228,7 +243,15 @@ const EventManagement: React.FC = () => {
             {events.map((event) => {
               let when = '—';
               try {
-                when = format(parseISO(event.date), 'MMM d');
+                if (event.is_recurring && event.series) {
+                  const first = format(parseISO(event.date), 'MMM d');
+                  const last = event.series.until_date
+                    ? format(parseISO(event.series.until_date), 'MMM d')
+                    : `${event.series.occurrence_total} dates`;
+                  when = `${first} → ${last}`;
+                } else {
+                  when = format(parseISO(event.date), 'MMM d');
+                }
               } catch {
                 when = event.date?.slice(0, 10) || '—';
               }
@@ -387,6 +410,15 @@ const EventManagement: React.FC = () => {
             )
           ) {
             cancelFutureMutation.mutate(id);
+          }
+        }}
+        onDelete={(id) => {
+          const ev = viewing;
+          const msg = ev?.is_recurring
+            ? `Permanently delete "${ev.title}" and all ${ev.series?.occurrence_total ?? ''} dates? This cannot be undone.`
+            : `Permanently delete "${ev?.title ?? 'this event'}"? This cannot be undone.`;
+          if (window.confirm(msg)) {
+            deleteMutation.mutate(id);
           }
         }}
       />

@@ -117,7 +117,7 @@ export const eventService = {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id,title,description,date,end_date,time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+        'id,title,description,date,end_date,time,end_time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
       )
       .eq('status', 'approved')
       .is('cancelled_at', null)
@@ -180,7 +180,7 @@ export const eventService = {
       let query = supabase
         .from('events')
         .select(
-          'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
+          'id,title,description,date,end_date,time,end_time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
           { count: 'exact' }
         )
         .eq('status', 'approved')
@@ -475,7 +475,7 @@ export const eventService = {
       const { data, error } = await supabase
         .from('events')
 .select(
-        'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
+        'id,title,description,date,end_date,time,end_time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,ticket_link'
         )
         .eq('id', id)
         .single();
@@ -496,7 +496,7 @@ export const eventService = {
       const { data, error } = await supabase
         .from('events')
         .select(
-          'id,title,description,date,end_date,time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists'
+          'id,title,description,date,end_date,time,end_time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists'
         )
         .in('id', ids);
 

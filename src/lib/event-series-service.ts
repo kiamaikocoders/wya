@@ -41,6 +41,7 @@ export type EventOccurrencePayload = {
   organizer_id?: string | null;
   status?: 'pending' | 'approved' | 'rejected';
   time?: string | null;
+  end_time?: string | null;
 };
 
 export type CreateSeriesResult = {
@@ -66,6 +67,7 @@ export async function createEventSeriesWithOccurrences(options: {
   }
 
   const timeOfDay = event.time?.trim() || '18:00:00';
+  const endTimeOfDay = event.end_time?.trim() || null;
   const status = event.status || 'approved';
 
   const { data: series, error: seriesError } = await (supabase as any)
@@ -108,6 +110,7 @@ export async function createEventSeriesWithOccurrences(options: {
       organizer_id: event.organizer_id ?? null,
       status,
       time: timeOfDay,
+      end_time: endTimeOfDay,
       date: new Date(`${day}T12:00:00`).toISOString(),
       end_date: end,
       series_id: series.id,
@@ -212,6 +215,7 @@ const SERIES_SHARED_FIELDS = [
   'ticket_link',
   'featured',
   'time',
+  'end_time',
 ] as const;
 
 /** Date fields only ever apply to the current occurrence. */
@@ -454,4 +458,81 @@ export async function rejectEventOrSeries(eventId: number): Promise<void> {
     .update({ status: 'rejected' })
     .eq('id', eventId);
   if (updateError) throw updateError;
+}
+
+/**
+ * Permanently delete an event, or an entire series when the event belongs to one.
+ */
+export async function deleteEventOrSeries(eventId: number): Promise<{ deletedCount: number }> {
+  const { data: event, error } = await (supabase as any)
+    .from('events')
+    .select('id, title, series_id')
+    .eq('id', eventId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!event) {
+    throw new Error(`Event not found (id=${eventId}).`);
+  }
+
+  if (event.series_id) {
+    const { data: deleted, error: delError } = await (supabase as any)
+      .from('events')
+      .delete()
+      .eq('series_id', event.series_id)
+      .select('id');
+
+    if (delError) throw delError;
+    if (!deleted?.length) {
+      throw new Error('Delete was blocked. You may not have permission to delete this series.');
+    }
+
+    const { error: seriesError } = await (supabase as any)
+      .from('event_series')
+      .delete()
+      .eq('id', event.series_id);
+
+    if (seriesError) throw seriesError;
+
+    try {
+      const { notifyEventTicketHolders } = await import('./email/product-email');
+      await notifyEventTicketHolders({
+        eventId: event.id,
+        eventTitle: event.title,
+        type: 'event_cancelled',
+        title: 'Event series removed',
+        message: `"${event.title}" and all its dates have been removed.`,
+      });
+    } catch (e) {
+      console.warn('Series delete notify failed', e);
+    }
+
+    return { deletedCount: deleted.length };
+  }
+
+  try {
+    const { notifyEventTicketHolders } = await import('./email/product-email');
+    await notifyEventTicketHolders({
+      eventId: event.id,
+      eventTitle: event.title,
+      type: 'event_cancelled',
+      title: 'Event cancelled',
+      message: `"${event.title}" has been cancelled.`,
+    });
+  } catch (e) {
+    console.warn('Event delete notify failed', e);
+  }
+
+  const { data: deleted, error: delError } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId)
+    .select('id');
+
+  if (delError) throw delError;
+  if (!deleted?.length) {
+    throw new Error('Delete was blocked. You may not have permission to delete this event.');
+  }
+
+  return { deletedCount: 1 };
 }

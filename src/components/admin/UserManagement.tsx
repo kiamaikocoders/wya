@@ -95,6 +95,16 @@ const UserManagement: React.FC = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const hardDeleteMutation = useMutation({
+    mutationFn: (id: string) => adminService.hardDeleteUserAccount(id),
+    onSuccess: (_d, id) => {
+      toast.success('User permanently deleted');
+      invalidateUsers();
+      if (viewing?.id === id) setViewing(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const roleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: 'attendee' | 'admin' }) =>
       adminService.updateUserRole(id, role),
@@ -119,6 +129,7 @@ const UserManagement: React.FC = () => {
     activateMutation.isPending ||
     banMutation.isPending ||
     softDeleteMutation.isPending ||
+    hardDeleteMutation.isPending ||
     roleMutation.isPending;
 
   // Keep popup in sync after list refetch
@@ -297,6 +308,7 @@ const UserManagement: React.FC = () => {
         onActivate={() => viewing && activateMutation.mutate(viewing.id)}
         onBan={() => viewing && banMutation.mutate(viewing.id)}
         onSoftDelete={() => viewing && softDeleteMutation.mutate(viewing.id)}
+        onHardDelete={() => viewing && hardDeleteMutation.mutate(viewing.id)}
         onOpenProfile={() => {
           if (!viewing) return;
           navigate(`/users/${viewing.id}`);

@@ -56,6 +56,7 @@ type Props = {
   onActivate: () => void;
   onBan: () => void;
   onSoftDelete: () => void;
+  onHardDelete: () => void;
   onOpenProfile: () => void;
 };
 
@@ -72,6 +73,7 @@ export function AdminUserDetailDialog({
   onActivate,
   onBan,
   onSoftDelete,
+  onHardDelete,
   onOpenProfile,
 }: Props) {
   const [roleDraft, setRoleDraft] = useState<'attendee' | 'admin'>('attendee');
@@ -361,13 +363,26 @@ export function AdminUserDetailDialog({
               disabled={busy || isAdminUser}
               onClick={() => {
                 const ok = window.confirm(
-                  `Soft-delete ${user.name || user.username}? Profile will be anonymized. This cannot be undone from here.`
+                  `Soft-delete ${user.name || user.username}? Profile will be anonymized. Auth login remains until a full delete.`,
                 );
                 if (ok) onSoftDelete();
               }}
               className="rounded-full border border-destructive/40 bg-destructive/10 px-3.5 py-2 text-xs font-semibold text-destructive disabled:opacity-50"
             >
               Soft delete
+            </button>
+            <button
+              type="button"
+              disabled={busy || isAdminUser}
+              onClick={() => {
+                const ok = window.confirm(
+                  `Permanently delete ${user.name || user.username} from Supabase? All app data and the auth account will be removed. This cannot be undone.`,
+                );
+                if (ok) onHardDelete();
+              }}
+              className="rounded-full border border-destructive bg-destructive px-3.5 py-2 text-xs font-semibold text-destructive-foreground disabled:opacity-50"
+            >
+              Delete permanently
             </button>
           </div>
         </div>

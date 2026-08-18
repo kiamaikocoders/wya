@@ -111,6 +111,7 @@ const emptyFormData = {
   date: '',
   end_date: '' as string,
   time: '',
+  end_time: '',
   location: '',
   latitude: null as number | null,
   longitude: null as number | null,
@@ -170,6 +171,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
   }));
 
   const [tagsInput, setTagsInput] = useState(() => initialDraft?.tagsInput ?? '');
+  const [artistsInput, setArtistsInput] = useState('');
   const [whatToExpect, setWhatToExpect] = useState(
     () => initialDraft?.whatToExpect ?? '',
   );
@@ -324,11 +326,23 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
   const syncWhatToExpect = (text: string) => {
     setWhatToExpect(text);
-    const lines = text
-      .split('\n')
-      .map((l) => l.replace(/^[\s•\-]+/, '').trim())
-      .filter(Boolean);
-    setFormData((prev) => ({ ...prev, performing_artists: lines }));
+  };
+
+  const handleAddArtist = () => {
+    if (artistsInput.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        performing_artists: [...prev.performing_artists, artistsInput.trim()],
+      }));
+      setArtistsInput('');
+    }
+  };
+
+  const handleRemoveArtist = (artistToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      performing_artists: prev.performing_artists.filter((artist) => artist !== artistToRemove),
+    }));
   };
 
   const handleAddTag = () => {
@@ -513,6 +527,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             organizer_id: eventData.organizer_id || null,
             status: 'approved',
             time: eventData.time,
+            end_time: eventData.end_time,
           },
         });
 
@@ -682,6 +697,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       date: new Date(formData.date).toISOString(),
       end_date: formData.end_date && formData.end_date >= formData.date ? formData.end_date : null,
       time: formData.time && formData.time.trim() ? formData.time.trim() : '18:00:00',
+      end_time: formData.end_time && formData.end_time.trim() ? formData.end_time.trim() : null,
       latitude: formData.latitude,
       longitude: formData.longitude,
       location_url:
@@ -703,7 +719,10 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     if (!formData.date) return 'Not set';
     try {
       const d = format(parseISO(formData.date.length === 10 ? `${formData.date}T12:00:00` : formData.date), 'MMM d, yyyy');
-      const base = formData.time ? `${d} · ${formData.time.slice(0, 5)}` : d;
+      const start = formData.time ? formData.time.slice(0, 5) : null;
+      const end = formData.end_time ? formData.end_time.slice(0, 5) : null;
+      const base =
+        start && end ? `${d} · ${start} – ${end}` : start ? `${d} · ${start}` : d;
       if (recurrence.frequency === 'none') return base;
       try {
         const rule = buildRecurrenceRule(recurrence, formData.date, formData.end_date || null);
@@ -959,18 +978,33 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="time" className="text-xs font-semibold">
-                  Start time
-                </Label>
-                <Input
-                  id="time"
-                  name="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={handleInputChange}
-                  className={fieldClass}
-                />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="time" className="text-xs font-semibold">
+                    Start time
+                  </Label>
+                  <Input
+                    id="time"
+                    name="time"
+                    type="time"
+                    value={formData.time}
+                    onChange={handleInputChange}
+                    className={fieldClass}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="end_time" className="text-xs font-semibold">
+                    End time
+                  </Label>
+                  <Input
+                    id="end_time"
+                    name="end_time"
+                    type="time"
+                    value={formData.end_time}
+                    onChange={handleInputChange}
+                    className={fieldClass}
+                  />
+                </div>
               </div>
 
               <RecurrenceFields
@@ -1268,6 +1302,45 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   rows={4}
                   className="rounded-[10px] border-border bg-[hsl(var(--admin-surface-2))] text-xs"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="artists" className="text-xs font-semibold">
+                  Performing artists
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="artists"
+                    value={artistsInput}
+                    onChange={(e) => setArtistsInput(e.target.value)}
+                    placeholder="Add performing artist name"
+                    className={fieldClass}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddArtist();
+                      }
+                    }}
+                  />
+                  <Button type="button" variant="outline" onClick={handleAddArtist}>
+                    Add
+                  </Button>
+                </div>
+                {formData.performing_artists.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.performing_artists.map((artist) => (
+                      <button
+                        key={artist}
+                        type="button"
+                        onClick={() => handleRemoveArtist(artist)}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary"
+                      >
+                        {artist}
+                        <X className="h-3 w-3" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div className="space-y-2">

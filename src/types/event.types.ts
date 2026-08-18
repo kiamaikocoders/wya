@@ -8,6 +8,7 @@ export interface Event {
   date: string;
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time (HH:MM:SS format)
+  end_time?: string | null; // Optional event end time (HH:MM:SS format)
   location: string;
   location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url: string;
@@ -30,6 +31,7 @@ export interface CreateEventPayload {
   date: string;
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time
+  end_time?: string | null; // Optional event end time
   location: string;
   location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url?: string;
