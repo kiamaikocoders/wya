@@ -228,14 +228,7 @@ const App = () => {
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     <Route path="/auth/confirm" element={<AuthCallback />} />
                     <Route path="/email-confirmation-pending" element={<EmailConfirmationPending />} />
-                    <Route
-                      path="/request-event"
-                      element={
-                        <AppOnlyRoute featureLabel="Event requests and hosting">
-                          <RequestEvent />
-                        </AppOnlyRoute>
-                      }
-                    />
+                    <Route path="/request-event" element={<RequestEvent />} />
                     <Route
                       path="/create-event"
                       element={

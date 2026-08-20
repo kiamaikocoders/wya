@@ -40,7 +40,7 @@ export function WebOnboardingSplitShell({
       )}
 
       <div className="relative flex min-h-[calc(100vh-66px)] w-full flex-col lg:flex-row lg:min-h-[min(900px,calc(100vh-66px))]">
-        <section className="relative hidden min-h-[280px] overflow-hidden lg:flex lg:w-[36%] lg:min-h-[inherit] xl:w-[520px] xl:shrink-0">
+        <section className="relative hidden min-h-[280px] overflow-hidden lg:flex lg:w-[50%] lg:min-h-[inherit] xl:w-[700px] xl:shrink-0">
           <img src={heroSrc} alt={heroAlt} className="absolute inset-0 size-full object-cover" />
           <div className="absolute inset-0 bg-[rgba(13,17,23,0.55)]" />
           <div className="relative z-10 flex h-full w-full flex-col justify-between px-10 pb-12 pt-10">
