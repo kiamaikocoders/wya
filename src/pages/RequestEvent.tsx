@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Logo from '@/components/ui/Logo';
 import { ModeToggle } from '@/components/ui/mode-toggle';
-import { GetAppModal } from '@/components/marketing/GetAppModal';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWebAuthTheme } from '@/components/auth/webAuthTheme';
@@ -115,7 +114,6 @@ const RequestEvent: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [appModalOpen, setAppModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [proposal, setProposal] = useState<EventProposal>({
     title: '',
@@ -322,13 +320,6 @@ const RequestEvent: React.FC = () => {
         </div>
         <div className="flex items-center gap-2.5">
           <ModeToggle />
-          <button
-            type="button"
-            onClick={() => setAppModalOpen(true)}
-            className="rounded-full bg-[#ff6b35] px-4 py-2 text-xs font-semibold text-white hover:bg-[#ff6b35]/90"
-          >
-            Get the app
-          </button>
         </div>
       </header>
 
@@ -707,7 +698,6 @@ const RequestEvent: React.FC = () => {
       </WebOnboardingSplitShell>
 
       <SiteFooter className="mt-auto shrink-0" />
-      <GetAppModal open={appModalOpen} onClose={() => setAppModalOpen(false)} />
     </div>
   );
 };
