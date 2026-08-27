@@ -1,5 +1,6 @@
 // Location service: Mapbox (primary) + Photon + Nominatim fallbacks
 import { toast } from 'sonner';
+import { KE_VENUES } from '@/data/ke-venues';
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 
@@ -34,123 +35,22 @@ const LOCATION_TYPO_MAP: Record<string, string> = {
   masshouse: 'Masshouse Ngong Racecourse',
   'mass house': 'Masshouse Ngong Racecourse',
   mashouse: 'Masshouse Ngong Racecourse',
+  kengeles: "Kengele's Lavington Green",
+  "kengele's": "Kengele's Lavington Green",
+  ncai: 'Nairobi Contemporary Art Institute',
+  baobox: 'Baobox Westlands',
+  'bao box': 'Baobox Westlands',
+  solograno: 'SoloGrano Gigiri',
+  'solo grano': 'SoloGrano Gigiri',
+  kahoffee: 'Kahoffee House Muthaiga',
+  covo: 'Covo Hurlingham',
 };
 
 /**
  * Popular Kenyan venues that Mapbox Search Box often misses or misspells.
- * Matched by alias substring when the user types a related query.
+ * Matched by alias / name substring when the user types a related query.
  */
-const CURATED_KE_VENUES: Array<{
-  aliases: string[];
-  label: string;
-  latitude: number;
-  longitude: number;
-  city: string;
-}> = [
-  {
-    aliases: ['sarit', 'sarit center', 'sarit centre', 'sarit mall'],
-    label: 'Sarit Centre, Westlands, Nairobi',
-    latitude: -1.2607625,
-    longitude: 36.8014196,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['masshouse', 'mass house', 'mashouse', 'masshouse ngong'],
-    label: 'Masshouse, Ngong Racecourse, Ngong Road, Nairobi',
-    latitude: -1.3120613,
-    longitude: 36.7441232,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['ngong racecourse', 'jockey club kenya', 'ngong race course'],
-    label: 'Ngong Racecourse, Ngong Road, Nairobi',
-    latitude: -1.3120613,
-    longitude: 36.7441232,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['two rivers', 'two rivers mall'],
-    label: 'Two Rivers Mall, Nairobi',
-    latitude: -1.2045,
-    longitude: 36.7935,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['garden city', 'garden city mall'],
-    label: 'Garden City Mall, Thika Road, Nairobi',
-    latitude: -1.2308,
-    longitude: 36.8762,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['the alchemist', 'alchemist westlands'],
-    label: 'The Alchemist, Westlands, Nairobi',
-    latitude: -1.2681,
-    longitude: 36.8112,
-    city: 'Nairobi',
-  },
-  // Hospitality POIs Mapbox/OSM often miss or keep under old trade names
-  {
-    aliases: [
-      'alloys',
-      'alloys bar',
-      'alloys bar and lounge',
-      'alloys sarit',
-      'alloy bar',
-    ],
-    label: 'Alloys Bar and Lounge, Sarit Centre, Westlands, Nairobi',
-    latitude: -1.2607625,
-    longitude: 36.8014196,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['kenrail', 'kenrail towers', 'ken rail towers'],
-    label: 'Kenrail Towers, Ring Road Parklands, Nairobi',
-    latitude: -1.2610509,
-    longitude: 36.8042602,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['koda', 'koda kenrail', 'koda bar'],
-    label: 'Koda, Kenrail Towers, Parklands, Nairobi',
-    latitude: -1.2610509,
-    longitude: 36.8042602,
-    city: 'Nairobi',
-  },
-  {
-    aliases: ['the muze', 'muze kenrail', 'muze'],
-    label: 'The Muze, Kenrail Towers, Parklands, Nairobi',
-    latitude: -1.2610509,
-    longitude: 36.8042602,
-    city: 'Nairobi',
-  },
-  {
-    aliases: [
-      'saddle and boot',
-      'saddle & boot',
-      'the saddle and boot',
-      'saddle boot ngong',
-    ],
-    label: 'The Saddle and Boot, Ngong Racecourse, Nairobi',
-    latitude: -1.3120613,
-    longitude: 36.7441232,
-    city: 'Nairobi',
-  },
-  {
-    aliases: [
-      'geco cafe',
-      'geco café',
-      'geco coffee',
-      'geco kilimani',
-      'geco pro wrapp',
-      'geco wrap',
-    ],
-    label: 'Geco Cafe, Kilimani, Nairobi',
-    latitude: -1.2930725,
-    longitude: 36.7621693,
-    city: 'Nairobi',
-  },
-];
+const CURATED_KE_VENUES = KE_VENUES;
 
 export function tryCorrectLocationTypo(query: string): string {
   const normalized = query.trim().toLowerCase();
@@ -204,17 +104,16 @@ function curatedMatches(query: string): PlaceSuggestion[] {
   const q = normalizeSearchText(query);
   if (q.length < 2) return [];
 
-  return CURATED_KE_VENUES.filter((venue) =>
-    venue.aliases.some((alias) => {
-      const a = normalizeSearchText(alias);
+  return CURATED_KE_VENUES.filter((venue) => {
+    const haystacks = [venue.name, venue.label, ...venue.aliases].map(normalizeSearchText);
+    return haystacks.some((a) => {
       if (!a) return false;
       if (q === a || q.includes(a) || a.startsWith(q)) return true;
-      // Allow partial alias hits only for longer queries (avoid "ma" → Masshouse)
       if (q.length >= 4 && a.includes(q)) return true;
       const tokens = queryTokens(q);
       return tokens.length > 0 && tokens.every((t) => a.includes(t));
-    }),
-  ).map((venue) => ({
+    });
+  }).map((venue) => ({
     id: `curated-${normalizeSearchText(venue.label)}`,
     label: venue.label,
     secondary: 'Popular venue',

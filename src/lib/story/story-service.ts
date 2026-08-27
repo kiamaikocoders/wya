@@ -7,6 +7,7 @@ import {
   LegalReconsentRequiredForPostingError,
   MediaConsentRequiredForPostingError,
 } from '@/lib/posting-guard';
+import { publicDisplayName } from '@/lib/display-name';
 import type { Story, StoryComment, CreateStoryDto, CreateStoryCommentDto } from './types';
 
 const STORY_PUBLIC_COLUMNS = `
@@ -96,7 +97,7 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: publicDisplayName(profileMap[item.user_id]),
         user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
@@ -180,7 +181,7 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: publicDisplayName(profileMap[item.user_id]),
         user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
@@ -292,7 +293,7 @@ export const storyService = {
           likes_count: item.likes_count || 0,
           comments_count: item.comments_count || 0,
           created_at: item.created_at,
-          user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+          user_name: publicDisplayName(profileMap[item.user_id]),
           user_image: profileMap[item.user_id]?.avatar_url || null,
           hashtags: item.hashtags,
           status: item.status,
@@ -367,7 +368,7 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.full_name || profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: publicDisplayName(profileMap[item.user_id]),
         user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
@@ -408,7 +409,7 @@ export const storyService = {
       // Fetch profiles separately
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, full_name, avatar_url')
         .in('id', userIds);
       
       // Create a map of user_id to profile data
@@ -429,7 +430,7 @@ export const storyService = {
         likes_count: item.likes_count || 0,
         comments_count: item.comments_count || 0,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: publicDisplayName(profileMap[item.user_id]),
         user_image: profileMap[item.user_id]?.avatar_url || null,
         hashtags: item.hashtags,
         status: item.status,
@@ -472,7 +473,7 @@ export const storyService = {
       // Fetch the author's profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, full_name, avatar_url')
         .eq('id', data.user_id)
         .single();
 
@@ -487,7 +488,7 @@ export const storyService = {
         likes_count: data.likes_count || 0,
         comments_count: data.comments_count || 0,
         created_at: data.created_at,
-        user_name: profile?.username || 'Unknown User',
+        user_name: publicDisplayName(profile),
         user_image: profile?.avatar_url || null,
         hashtags: data.hashtags,
         status: data.status,
@@ -553,7 +554,7 @@ export const storyService = {
       // Fetch the user's profile to include in the response
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -561,7 +562,7 @@ export const storyService = {
       
       return {
         ...data,
-        user_name: profile?.username || 'Unknown User',
+        user_name: publicDisplayName(profile),
         user_image: profile?.avatar_url || null
       };
     } catch (error) {
@@ -625,7 +626,7 @@ export const storyService = {
       // Fetch the user's profile to include in the response
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, full_name, avatar_url')
         .eq('id', data.user_id)
         .single();
 
@@ -633,7 +634,7 @@ export const storyService = {
       
       return {
         ...data,
-        user_name: profile?.username || 'Unknown User',
+        user_name: publicDisplayName(profile),
         user_image: profile?.avatar_url || null
       };
     } catch (error) {
@@ -714,7 +715,7 @@ export const storyService = {
       // Fetch profiles separately
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, full_name, avatar_url')
         .in('id', userIds);
       
       // Create a map of user_id to profile data
@@ -730,7 +731,7 @@ export const storyService = {
         story_id: item.story_id!,
         content: item.content,
         created_at: item.created_at,
-        user_name: profileMap[item.user_id]?.username || 'Unknown User',
+        user_name: publicDisplayName(profileMap[item.user_id]),
         user_image: profileMap[item.user_id]?.avatar_url || null
       }));
     } catch (error) {
@@ -791,7 +792,7 @@ export const storyService = {
       // Fetch the user's profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('username, avatar_url')
+        .select('username, full_name, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -799,7 +800,7 @@ export const storyService = {
       
       return {
         ...comment,
-        user_name: profile?.username || 'Unknown User',
+        user_name: publicDisplayName(profile),
         user_image: profile?.avatar_url || null
       };
     } catch (error) {
