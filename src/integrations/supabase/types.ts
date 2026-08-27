@@ -256,18 +256,21 @@ export type Database = {
           follower_id: string | null
           following_id: string | null
           id: string
+          status: string
         }
         Insert: {
           created_at?: string | null
           follower_id?: string | null
           following_id?: string | null
           id?: string
+          status?: string
         }
         Update: {
           created_at?: string | null
           follower_id?: string | null
           following_id?: string | null
           id?: string
+          status?: string
         }
         Relationships: [
           {

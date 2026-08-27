@@ -15,6 +15,7 @@ interface UserCardProps {
   avatar?: string;
   bio?: string;
   isFollowing: boolean;
+  isPending?: boolean;
   onFollow: () => void;
   onUnfollow: () => void;
   onMessage: () => void;
@@ -27,6 +28,7 @@ const UserCard: React.FC<UserCardProps> = ({
   avatar,
   bio,
   isFollowing,
+  isPending = false,
   onFollow,
   onUnfollow,
   onMessage,
@@ -74,7 +76,7 @@ const UserCard: React.FC<UserCardProps> = ({
       return;
     }
     setIsFollowLoading(true);
-    if (isFollowing) {
+    if (isFollowing || isPending) {
       followService.unfollowUser(id).then(() => {
         onUnfollow();
         setIsFollowLoading(false);
@@ -140,7 +142,7 @@ const UserCard: React.FC<UserCardProps> = ({
             className={cn(
               'flex-1 py-3 h-auto rounded-2xl font-bold text-sm flex items-center justify-center gap-2',
               'shadow-lg active:scale-95 transition-transform',
-              isFollowing
+              isFollowing || isPending
                 ? 'bg-muted text-muted-foreground hover:bg-muted/90 border border-border'
                 : 'bg-gradient-to-r from-primary to-orange-400 text-white shadow-orange-500/20 hover:opacity-90'
             )}
@@ -148,12 +150,17 @@ const UserCard: React.FC<UserCardProps> = ({
             {isFollowing ? (
               <>
                 <Check className="h-5 w-5" />
-                {isFollowLoading ? 'Updating...' : 'Following'}
+                {isFollowLoading ? 'Updating...' : 'Friends'}
+              </>
+            ) : isPending ? (
+              <>
+                <Check className="h-5 w-5" />
+                {isFollowLoading ? 'Updating...' : 'Requested'}
               </>
             ) : (
               <>
                 <UserPlus className="h-5 w-5" />
-                {isFollowLoading ? 'Following...' : 'Follow'}
+                {isFollowLoading ? 'Sending...' : 'Follow'}
               </>
             )}
           </Button>

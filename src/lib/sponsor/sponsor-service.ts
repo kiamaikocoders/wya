@@ -56,6 +56,26 @@ export const sponsorService = {
       throw error;
     }
   },
+
+  attachEventSponsors: async (
+    eventIds: number[],
+    sponsorIds: number[],
+  ): Promise<void> => {
+    const uniqueEventIds = [...new Set(eventIds.filter((id) => Number.isFinite(id)))];
+    const uniqueSponsorIds = [...new Set(sponsorIds.filter((id) => Number.isFinite(id)))];
+    if (uniqueEventIds.length === 0 || uniqueSponsorIds.length === 0) return;
+
+    const rows = uniqueEventIds.flatMap((event_id) =>
+      uniqueSponsorIds.map((sponsor_id, index) => ({
+        event_id,
+        sponsor_id,
+        sponsorship_type: index === 0 ? 'title' : 'partner',
+      })),
+    );
+
+    const { error } = await supabase.from('event_sponsors').insert(rows);
+    if (error) throw error;
+  },
   
   // Get sponsor zone (singular)
   getSponsorZone: async (sponsorId: number): Promise<SponsorZone | null> => {

@@ -26,17 +26,16 @@ export const followNotifications = {
 
       const followerName = followerProfile?.full_name || followerProfile?.username || 'Someone';
       const followedName = followedProfile?.full_name || followedProfile?.username || 'this user';
-      const followerIdentifier = followerProfile?.username || currentUserUuid;
 
       // Send notification to the followed user
       const notificationData = {
         user_id: followingUuid,
         type: 'follow' as const,
-        title: 'New Follower',
-        message: `${followerName} started following you`,
+        title: 'Friend request',
+        message: `${followerName} wants to be friends`,
         resource_type: 'user',
         resource_uuid: currentUserUuid,
-        link: `/users/${followerIdentifier}`,
+        link: '/friend-requests',
         data: {
           follower_id: currentUserUuid,
           follower_name: followerName,
@@ -45,7 +44,7 @@ export const followNotifications = {
 
       await notificationService.createNotification(notificationData);
       console.log('Follow notification sent successfully');
-      toast.success(`You are now following ${followedName}`);
+      toast.success(`Request sent to ${followedName}`);
     } catch (notifError) {
       console.error('Error sending follow notification:', notifError);
       toast.error('Follow saved, but the user was not notified. Check notification setup.');

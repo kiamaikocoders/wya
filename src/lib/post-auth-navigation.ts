@@ -62,6 +62,7 @@ export function isAppOnlyPath(pathname: string): boolean {
     '/analytics',
     '/surveys',
     '/users',
+    '/friend-requests',
     '/sponsors',
     '/share/event-media',
   ];

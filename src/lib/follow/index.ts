@@ -12,22 +12,26 @@ export const followService = {
       throw new Error('You must be logged in to follow users');
     }
 
-    const success = await followOperations.followUser(followingId);
-    
-    if (success) {
-      // Send notification after successful follow
+    const created = await followOperations.followUser(followingId);
+
+    if (created) {
       await followNotifications.sendFollowNotification(followingId, currentUser.user.id);
     }
-    
-    return success;
+
+    return true;
   },
 
   unfollowUser: followOperations.unfollowUser,
+  acceptFollow: followOperations.acceptFollow,
+  declineFollow: followOperations.declineFollow,
   getFollowers: followQueries.getFollowers,
   getFollowing: followQueries.getFollowing,
   isFollowing: followQueries.isFollowing,
+  getFollowRelation: followQueries.getFollowRelation,
+  getOutgoingPendingIds: followQueries.getOutgoingPendingIds,
+  getIncomingRequests: followQueries.getIncomingRequests,
+  countIncomingRequests: followQueries.countIncomingRequests,
   canMessage: messagingPermissions.canMessage
 };
 
-// Export types
-export type { Follow } from './types';
+export type { Follow, FollowRelation, FollowRequestProfile } from './types';
