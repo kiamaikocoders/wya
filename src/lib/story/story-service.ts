@@ -515,6 +515,11 @@ export const storyService = {
         return null;
       }
 
+      if (!storyData.event_id) {
+        toast.error('Pick an event for this story');
+        return null;
+      }
+
       await assertUserMayPostUserGeneratedContent(user.id);
 
       // Extract hashtags from content if present

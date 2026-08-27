@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { eventServiceExtensions } from './event-service-extensions';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import type { EventQueryOptions, EventQueryResponse } from '@/pages/events/types';
+import { keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 import { notifyEventTicketHolders } from './email/product-email';
 import { notificationService } from './notification/notification-service';
 
@@ -32,6 +33,7 @@ export interface Event {
   longitude?: number;
   performing_artists?: string[]; // Array of performing artist names
   ticket_link?: string | null; // External URL for ticket purchase (admin create event)
+  series_id?: string | null;
 }
 
 export interface CreateEventPayload {
@@ -117,7 +119,7 @@ export const eventService = {
     const { data, error } = await supabase
       .from('events')
       .select(
-        'id,title,description,date,end_date,time,end_time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists'
+        'id,title,description,date,end_date,time,end_time,location,location_url,image_url,price,category,featured,tags,latitude,longitude,performing_artists,series_id'
       )
       .eq('status', 'approved')
       .is('cancelled_at', null)
@@ -130,7 +132,7 @@ export const eventService = {
       throw error;
     }
 
-    return data || [];
+    return keepNextOccurrencePerSeries(data || []);
   },
 
   queryEvents: async (options: EventQueryOptions): Promise<EventQueryResponse> => {
@@ -180,7 +182,7 @@ export const eventService = {
       let query = supabase
         .from('events')
         .select(
-          'id,title,description,date,end_date,time,end_time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists',
+          'id,title,description,date,end_date,time,end_time,location,location_url,image_url,capacity,price,category,organizer_id,featured,created_at,updated_at,tags,latitude,longitude,performing_artists,series_id',
           { count: 'exact' }
         )
         .eq('status', 'approved')
@@ -297,7 +299,7 @@ export const eventService = {
       const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
 
       return {
-        events: data || [],
+        events: keepNextOccurrencePerSeries(data || []),
         totalCount,
         totalPages,
         page: safePage,

@@ -24,19 +24,29 @@ export const followOperations = {
         .maybeSingle();
 
       if (existingFollow) {
-        toast.info('You are already following this user');
+        toast.info('You already sent a request or follow this person');
         return true;
       }
 
       // Insert follow relationship
       const { error } = await supabase
         .from('follows')
-        .insert({ 
+        .insert({
           follower_id: currentUser.user.id,
-          following_id: followingUuid 
+          following_id: followingUuid,
+          status: 'pending',
         });
 
-      if (error) throw error;
+      if (error && /status/i.test(error.message)) {
+        const retry = await supabase.from('follows').insert({
+          follower_id: currentUser.user.id,
+          following_id: followingUuid,
+        });
+        if (retry.error) throw retry.error;
+      } else if (error) {
+        throw error;
+      }
+      toast.success('Friend request sent');
       return true;
     } catch (error) {
       console.error('Error following user:', error);
@@ -71,5 +81,25 @@ export const followOperations = {
       toast.error('Failed to unfollow user');
       throw error;
     }
-  }
+  },
+
+  acceptFollow: async (followerId: string): Promise<boolean> => {
+    try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user) {
+        throw new Error('You must be logged in');
+      }
+      const { error } = await supabase
+        .from('follows')
+        .update({ status: 'accepted' })
+        .match({ follower_id: followerId, following_id: currentUser.user.id });
+      if (error) throw error;
+      toast.success('Friend request accepted');
+      return true;
+    } catch (error) {
+      console.error('Error accepting follow:', error);
+      toast.error('Failed to accept request');
+      throw error;
+    }
+  },
 };

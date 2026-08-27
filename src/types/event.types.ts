@@ -22,6 +22,7 @@ export interface Event {
   latitude?: number;
   longitude?: number;
   performing_artists?: string[]; // Array of performing artist names
+  series_id?: string | null;
 }
 
 export interface CreateEventPayload {

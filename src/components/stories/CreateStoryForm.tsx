@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
@@ -16,6 +17,7 @@ import { toast } from 'sonner';
 import { CreateStoryDto } from '@/lib/story/types';
 import { prepareMediaForUpload } from '@/lib/media-upload-prepare';
 import { uploadToR2 } from '@/lib/r2-upload';
+import { eventService } from '@/lib/event-service';
 
 interface CreateStoryFormProps {
   eventId?: number;
@@ -26,8 +28,16 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
   const [isUploading, setIsUploading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pickedEventId, setPickedEventId] = useState<number | undefined>(eventId);
   const queryClient = useQueryClient();
   const { runWithPostingConsent } = useMediaConsentPosting();
+
+  const eventsQuery = useQuery({
+    queryKey: ['story-event-picker'],
+    queryFn: () => eventService.getHomeFeedEvents(40),
+    enabled: eventId == null,
+    staleTime: 60_000,
+  });
 
   const form = useForm<{
     content: string;
@@ -85,8 +95,13 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
       try {
         const storyData: CreateStoryDto = {
           content: values.content,
-          event_id: eventId
+          event_id: eventId ?? pickedEventId
         };
+        if (!storyData.event_id) {
+          toast.error('Pick an event for this story');
+          setIsPosting(false);
+          return;
+        }
 
         if (values.media_file && values.media_file.length > 0) {
           const url = await handleImageUpload(values.media_file[0]);
@@ -120,6 +135,21 @@ const CreateStoryForm: React.FC<CreateStoryFormProps> = ({ eventId, onSuccess })
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {eventId == null ? (
+          <select
+            className="h-11 w-full rounded-md border border-white/20 bg-black/20 px-3 text-sm text-white"
+            value={pickedEventId ?? ''}
+            onChange={(e) => setPickedEventId(e.target.value ? Number(e.target.value) : undefined)}
+            required
+          >
+            <option value="">Select an event…</option>
+            {(eventsQuery.data ?? []).map((event) => (
+              <option key={event.id} value={event.id}>
+                {event.title}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <FormField
           control={form.control}
           name="content"

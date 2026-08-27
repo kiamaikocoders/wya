@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { getSeededEvent, type SeededEvent } from '@/pages/events/figmaSeededEvents';
 import { formatEventPrice, resolveCategoryImage } from '@/pages/events/conceptDUtils';
+import { publicHostLabel } from '@/lib/display-name';
 import MapView from '@/components/ui/MapView';
 import { googleMapsDirectionsUrl, googleMapsSearchUrl } from '@/lib/location-service';
 
@@ -108,9 +109,8 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
         about: liveEvent.description || '',
         expect: (liveEvent.tags || []).slice(0, 4),
         tags: liveEvent.tags || [],
-        organizerName:
-          organizerQuery.data?.full_name || organizerQuery.data?.username || 'WYA Organizer',
-        organizerMeta: 'Verified organizer',
+        organizerName: publicHostLabel(liveEvent.location, 'WYA'),
+        organizerMeta: 'Venue host',
         organizerAvatar: organizerQuery.data?.avatar_url,
         sponsors: apiSponsors,
         priceLabel,
@@ -528,7 +528,7 @@ function mapSeeded(seeded: SeededEvent) {
     about: seeded.description || '',
     expect: seeded.expect || (seeded.tags || []).slice(0, 4),
     tags: seeded.tags || [],
-    organizerName: seeded.organizerName || 'WYA Organizer',
+        organizerName: seeded.organizerName || publicHostLabel(seeded.location, 'WYA'),
     organizerMeta: seeded.organizerMeta || 'Verified organizer',
     organizerAvatar: undefined as string | undefined,
     sponsors: (seeded.sponsors || []).map((s) => ({

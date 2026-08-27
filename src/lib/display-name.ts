@@ -13,3 +13,11 @@ export function publicDisplayName(
   if (handle.includes('@')) return handle.split('@')[0] || fallback;
   return handle || fallback;
 }
+
+/** Venue / host shown on event cards. Internal owner can stay WYA. */
+export function publicHostLabel(location?: string | null, fallback = 'WYA'): string {
+  const loc = location?.trim();
+  if (!loc) return fallback;
+  const venue = loc.split(',')[0]?.trim();
+  return venue || fallback;
+}
