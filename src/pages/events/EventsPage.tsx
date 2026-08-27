@@ -420,32 +420,20 @@ const EventsPage = () => {
               isDark ? 'border-[#21262d]' : 'border-[#e8ecf0]'
             )}
           >
-            {events.some(
-              (e) =>
-                isEventInMapDateWindow(e) &&
-                typeof e.latitude === 'number' &&
-                typeof e.longitude === 'number' &&
-                Number.isFinite(e.latitude) &&
-                Number.isFinite(e.longitude),
-            ) ? (
-              <EventMap
-                events={events.filter(
-                  (e) =>
-                    isEventInMapDateWindow(e) &&
-                    typeof e.latitude === 'number' &&
-                    typeof e.longitude === 'number' &&
-                    Number.isFinite(e.latitude) &&
-                    Number.isFinite(e.longitude)
-                )}
-                height="min(78vh, 900px)"
-                className="rounded-[20px] shadow-none"
-                onEventClick={(ev) => openEvent(ev.id)}
-              />
-            ) : (
-              <div className={cn('flex min-h-[480px] items-center justify-center text-sm', muted)}>
-                No mapped events from the last 30 days or upcoming.
-              </div>
-            )}
+            <EventMap
+              events={events.filter(
+                (e) =>
+                  isEventInMapDateWindow(e) &&
+                  typeof e.latitude === 'number' &&
+                  typeof e.longitude === 'number' &&
+                  Number.isFinite(e.latitude) &&
+                  Number.isFinite(e.longitude)
+              )}
+              height="min(78vh, 900px)"
+              className="rounded-[20px] shadow-none"
+              onEventClick={(ev) => openEvent(ev.id)}
+              showPlaces
+            />
           </div>
         ) : events.length === 0 ? (
           <div className={cn('mx-6 rounded-[20px] border px-6 py-16 text-center', card)}>
