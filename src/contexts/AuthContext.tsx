@@ -681,7 +681,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       const redirectTo = getAllowedPasswordResetRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        ...(redirectTo ? { redirectTo } : {}),
+        redirectTo,
       });
       if (error) throw error;
       toast.success('Password reset email sent! Check your inbox.');

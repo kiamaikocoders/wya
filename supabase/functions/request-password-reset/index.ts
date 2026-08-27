@@ -101,9 +101,9 @@ serve(async (req) => {
       );
     }
 
-    const redirectUrl = Deno.env.get("REDIRECT_URL") ?? "";
+    const redirectUrl = Deno.env.get("REDIRECT_URL") || "https://www.wya254.com/auth/confirm";
     const recoverBody: { email: string; redirect_to?: string } = { email: normalizedEmail };
-    if (redirectUrl) recoverBody.redirect_to = redirectUrl;
+    recoverBody.redirect_to = redirectUrl;
 
     const authRes = await fetch(`${supabaseUrl}/auth/v1/recover`, {
       method: "POST",
