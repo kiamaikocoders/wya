@@ -20,6 +20,7 @@ import {
 } from './figmaSeededEvents';
 import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
+import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 
 type SortKey = 'latest' | 'soonest' | 'price-low' | 'price-high';
 type ViewMode = 'grid' | 'map';
@@ -78,7 +79,8 @@ const EventsPage = () => {
     const fromDb = (dbEventsQuery.data ?? [])
       .filter((e) => !seededIds.has(e.id))
       .map(toBrowseEvent);
-    return [...FIGMA_SEEDED_EVENTS, ...fromDb];
+    const merged = [...FIGMA_SEEDED_EVENTS.filter(isEventUpcoming), ...fromDb];
+    return keepNextOccurrencePerSeries(merged);
   }, [dbEventsQuery.data]);
 
   useEffect(() => {
@@ -152,7 +154,7 @@ const EventsPage = () => {
 
   const featuredEvents = useMemo(() => {
     if (category || weekendOnly || search) return [];
-    const seededFeatured = FIGMA_SEEDED_EVENTS.filter((e) => e.featured);
+    const seededFeatured = FIGMA_SEEDED_EVENTS.filter((e) => e.featured && isEventUpcoming(e));
     const seededIds = new Set(seededFeatured.map((e) => e.id));
     const fromCatalog = events.filter((e) => e.featured && !seededIds.has(e.id));
     // Seeded featured first (original order), then other featured — cap for a snappy carousel.

@@ -47,6 +47,7 @@ export function toBrowseEvent(event: Event): SeededEvent {
     location_url: event.location_url,
     image_url: event.image_url || resolveCategoryImage(event.category),
     organizer_id: event.organizer_id,
+    series_id: event.series_id,
     created_at: event.created_at,
     price: event.price,
     featured: event.featured ?? event.is_featured ?? false,

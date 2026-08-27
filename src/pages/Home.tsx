@@ -21,7 +21,7 @@ import { onboardingNotifications } from '@/lib/onboarding-notifications';
 import { onboardingService } from '@/lib/onboarding-service';
 import type { Event } from '@/types/event.types';
 import { format } from 'date-fns';
-import { differenceInHours } from 'date-fns';
+import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -100,14 +100,11 @@ const Home: React.FC = () => {
     
     // If no trending from content, show featured or upcoming events
     if (trendingFromContent.length === 0) {
-      const featured = events.filter(e => e.featured).slice(0, 3);
+      const featured = events.filter(e => e.featured && isEventUpcoming(e)).slice(0, 3);
       if (featured.length > 0) return featured;
       
       // Show upcoming events sorted by date
-      const upcoming = [...events]
-        .filter(e => new Date(e.date) >= new Date())
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3);
+      const upcoming = keepNextOccurrencePerSeries(events).slice(0, 3);
       return upcoming;
     }
 
@@ -130,33 +127,27 @@ const Home: React.FC = () => {
   }, [stories, events]);
   
   const featuredEvents = useMemo(() => {
-    // Prefer events with recent posts, then featured events, then any upcoming events
-    if (eventsWithRecentPosts.length > 0) {
-      return eventsWithRecentPosts;
+    const upcoming = keepNextOccurrencePerSeries(events);
+    const recentUpcoming = eventsWithRecentPosts.filter(isEventUpcoming);
+    if (recentUpcoming.length > 0) {
+      return recentUpcoming;
     }
-    
-    const featured = events.filter((event) => event.featured);
+
+    const featured = upcoming.filter((event) => event.featured);
     if (featured.length > 0) {
       return featured;
     }
-    
-    // Fallback to upcoming events
-    return events
-      .filter(e => new Date(e.date) >= new Date())
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 8);
+
+    return upcoming.slice(0, 8);
   }, [eventsWithRecentPosts, events]);
 
   const filteredEvents = useMemo(() => {
-    // Filter upcoming events only
-    const upcomingEvents = events.filter(e => new Date(e.date) >= new Date());
-    
+    const upcomingEvents = keepNextOccurrencePerSeries(events);
+
     if (!selectedCategory) {
-      // Show upcoming events sorted by date
-      return upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      return upcomingEvents;
     }
-    
-    // Filter by category
+
     return upcomingEvents.filter(
       (event) => event.category?.toLowerCase() === selectedCategory.toLowerCase()
     );
