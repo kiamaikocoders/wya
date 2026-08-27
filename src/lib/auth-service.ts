@@ -256,7 +256,7 @@ export const authService = {
       }
       const redirectTo = getAllowedPasswordResetRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        ...(redirectTo ? { redirectTo } : {}),
+        redirectTo,
       });
       if (error) throw error;
     } catch (error) {

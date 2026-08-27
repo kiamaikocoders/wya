@@ -6,12 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPostLoginPath } from '@/lib/post-auth-navigation';
+import { buildNativeAuthDeepLinks, isMobileAuthUserAgent } from '@/lib/native-auth-handoff';
 
 type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
-
-/** Product scheme + Android Intent URL (preserves ?code= better than bare wya://). */
-const ANDROID_PACKAGE = 'space.manus.wya.app.t20260416221412';
-const PRODUCT_SCHEME = 'wya';
 
 async function applyPendingAvatar(userId: string, email?: string | null) {
   try {
@@ -22,31 +19,21 @@ async function applyPendingAvatar(userId: string, email?: string | null) {
   }
 }
 
-function buildNativeDeepLink(search: string, hash: string): string[] {
-  const q = search.startsWith('?') ? search.slice(1) : search;
-  const h = hash.startsWith('#') ? hash.slice(1) : hash;
-  const combined = [q, h].filter(Boolean).join('&');
-  const suffix = combined ? `?${combined}` : '';
-  const pathAndQuery = `auth/callback${suffix}`;
-  const custom = `${PRODUCT_SCHEME}://${pathAndQuery}`;
-  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
-  if (!isAndroid) {
-    return [custom];
-  }
-  // Chrome Intent: package-targeted open keeps the query string more reliably.
-  const intent = `intent://${pathAndQuery}#Intent;scheme=${PRODUCT_SCHEME};package=${ANDROID_PACKAGE};S.browser_fallback_url=${encodeURIComponent(`https://www.wya254.com/download`)};end`;
-  return [intent, custom];
-}
-
-/**
- * Native app signup uses /auth/confirm as emailRedirectTo. Do not consume the PKCE
- * code in the browser — forward it into the installed app which holds the verifier.
- */
-function shouldHandoffToNativeApp(pathname: string, searchParams: URLSearchParams): boolean {
+function shouldHandoffToNativeApp(
+  pathname: string,
+  searchParams: URLSearchParams,
+  type: string,
+): boolean {
   if (pathname.includes('/auth/confirm')) return true;
   if (searchParams.get('app') === 'wya' || searchParams.get('native') === '1') return true;
+  if (type === 'recovery' && isMobileAuthUserAgent()) return true;
   return false;
 }
+
+const capturedAuthLocation =
+  typeof window !== 'undefined'
+    ? { search: window.location.search, hash: window.location.hash }
+    : { search: '', hash: '' };
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -57,7 +44,11 @@ const AuthCallback = () => {
   const [callbackType, setCallbackType] = useState<CallbackType>('unknown');
 
   const nativeLinks = useMemo(
-    () => buildNativeDeepLink(location.search || '', location.hash || ''),
+    () =>
+      buildNativeAuthDeepLinks(
+        location.search || capturedAuthLocation.search,
+        location.hash || capturedAuthLocation.hash,
+      ),
     [location.search, location.hash],
   );
 
@@ -73,7 +64,7 @@ const AuthCallback = () => {
           setCallbackType('signup');
         } else if (type === 'recovery') {
           setCallbackType('recovery');
-          if (token && !shouldHandoffToNativeApp(location.pathname, searchParams)) {
+          if (token && !shouldHandoffToNativeApp(location.pathname, searchParams, type)) {
             navigate(`/reset-password?token=${token}&type=recovery`);
             return;
           }
@@ -88,7 +79,7 @@ const AuthCallback = () => {
         // Native bridge: open the app with the same query (PKCE code) — do not exchange here.
         // Exchanging in the browser would burn the one-time code; the native client holds the PKCE verifier.
         if (
-          shouldHandoffToNativeApp(location.pathname, searchParams) &&
+          shouldHandoffToNativeApp(location.pathname, searchParams, type) &&
           (code || location.hash.includes('access_token') || token || tokenHash)
         ) {
           setStatus('open_app');
@@ -113,6 +104,14 @@ const AuthCallback = () => {
           if (error) throw error;
           if (data.user) {
             await applyPendingAvatar(data.user.id, data.user.email);
+            if (type === 'recovery') {
+              setCallbackType('recovery');
+              setStatus('success');
+              setMessage('Identity verified. Set a new password…');
+              toast.success('You can now set a new password.');
+              setTimeout(() => navigate('/reset-password'), 800);
+              return;
+            }
             setCallbackType((prev) => (prev === 'unknown' ? 'signup' : prev));
             setStatus('success');
             setMessage('Email verified successfully! You can now continue.');
@@ -126,6 +125,13 @@ const AuthCallback = () => {
         const { data: existing } = await supabase.auth.getSession();
         if (existing.session?.user && !token && !tokenHash) {
           await applyPendingAvatar(existing.session.user.id, existing.session.user.email);
+          if (type === 'recovery') {
+            setCallbackType('recovery');
+            setStatus('success');
+            setMessage('Identity verified. Set a new password…');
+            setTimeout(() => navigate('/reset-password'), 800);
+            return;
+          }
           setCallbackType((prev) => (prev === 'unknown' ? 'signup' : prev));
           setStatus('success');
           setMessage('You are signed in.');
@@ -227,6 +233,8 @@ const AuthCallback = () => {
         return 'Signing In';
       case 'email_change':
         return 'Verifying Email Change';
+      case 'recovery':
+        return 'Resetting Password';
       case 'invite':
         return 'Accepting Invitation';
       default:
@@ -242,6 +250,8 @@ const AuthCallback = () => {
         return 'Signed In';
       case 'email_change':
         return 'Email Changed';
+      case 'recovery':
+        return 'Ready to Reset';
       case 'invite':
         return 'Invitation Accepted';
       default:
@@ -292,7 +302,17 @@ const AuthCallback = () => {
               </Button>
             ))}
             <Button
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                const isRecovery =
+                  callbackType === 'recovery' || searchParams.get('type') === 'recovery';
+                if (isRecovery) {
+                  navigate(
+                    `/reset-password${location.search || capturedAuthLocation.search}${location.hash || capturedAuthLocation.hash}`,
+                  );
+                  return;
+                }
+                navigate('/login');
+              }}
               variant="outline"
               className="w-full border-gradient-purple-medium/30 text-white hover:bg-gradient-to-br from-gradient-purple-medium/50 to-gradient-purple-bright/30-dark"
             >
