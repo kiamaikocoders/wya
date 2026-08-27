@@ -17,7 +17,8 @@ export const messagingPermissions = {
         .select('id')
         .match({ 
           follower_id: currentUser.user.id,
-          following_id: targetUserId 
+          following_id: targetUserId,
+          status: 'accepted',
         })
         .maybeSingle();
 
@@ -29,7 +30,8 @@ export const messagingPermissions = {
         .select('id')
         .match({ 
           follower_id: targetUserId,
-          following_id: currentUser.user.id 
+          following_id: currentUser.user.id,
+          status: 'accepted',
         })
         .maybeSingle();
 

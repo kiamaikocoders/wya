@@ -29,6 +29,7 @@ interface ProfileHeaderProps {
   };
   isCurrentUser: boolean;
   isFollowing?: boolean;
+  isPending?: boolean;
   onFollow?: () => void;
   onUnfollow?: () => void;
   onEdit?: () => void;
@@ -43,6 +44,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   stats,
   isCurrentUser,
   isFollowing = false,
+  isPending = false,
   onFollow,
   onUnfollow,
   onEdit,
@@ -132,13 +134,18 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         ) : (
           <>
             <Button
-              onClick={isFollowing ? onUnfollow : onFollow}
+              onClick={isFollowing || isPending ? onUnfollow : onFollow}
               className="flex-1 bg-gradient-to-r from-kenya-orange to-amber-500 text-white font-semibold py-3 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
             >
               {isFollowing ? (
                 <>
                   <Check className="h-5 w-5" />
-                  Following
+                  Friends
+                </>
+              ) : isPending ? (
+                <>
+                  <Check className="h-5 w-5" />
+                  Requested
                 </>
               ) : (
                 <>
@@ -169,6 +176,16 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <Link to="/settings" className="flex items-center justify-center gap-2">
               <Settings className="h-4 w-4" />
               Settings & privacy
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="flex-1 rounded-full border-orange-500/40 bg-orange-500/10 py-2.5 text-sm font-semibold text-orange-600 dark:text-orange-400"
+          >
+            <Link to="/friend-requests" className="flex items-center justify-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Friend requests
             </Link>
           </Button>
           <Button

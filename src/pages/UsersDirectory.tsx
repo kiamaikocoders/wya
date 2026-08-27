@@ -85,6 +85,18 @@ const UsersDirectory = () => {
     enabled: !!currentUser,
   });
 
+  const { data: pendingOutgoing = [] } = useQuery({
+    queryKey: ['outgoing-pending', currentUser?.id],
+    queryFn: () => followService.getOutgoingPendingIds(currentUser?.id || ''),
+    enabled: !!currentUser,
+  });
+
+  const { data: incomingCount = 0 } = useQuery({
+    queryKey: ['friend-request-count', currentUser?.id],
+    queryFn: () => followService.countIncomingRequests(currentUser?.id || ''),
+    enabled: !!currentUser,
+  });
+
   const { data: followers = [] } = useQuery({
     queryKey: ['followers', currentUser?.id],
     queryFn: () => followService.getFollowers(currentUser?.id || ''),
@@ -174,6 +186,7 @@ const UsersDirectory = () => {
     mutationFn: followService.followUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['following', currentUser?.id] });
+      queryClient.invalidateQueries({ queryKey: ['outgoing-pending', currentUser?.id] });
     },
   });
 
@@ -181,6 +194,7 @@ const UsersDirectory = () => {
     mutationFn: followService.unfollowUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['following', currentUser?.id] });
+      queryClient.invalidateQueries({ queryKey: ['outgoing-pending', currentUser?.id] });
     },
   });
 
@@ -226,7 +240,21 @@ const UsersDirectory = () => {
       <main className="relative z-10 flex-1 px-6 pb-28 overflow-y-auto">
         <div className="flex items-center gap-4 mb-6 pt-2">
           <BackButton fallbackHref={returnTo || '/profile'} className="h-10 w-10 rounded-xl border border-border bg-card shrink-0" />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Users Directory</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex-1">People</h1>
+          {currentUser ? (
+            <Button
+              variant="outline"
+              className="relative h-10 shrink-0 rounded-xl px-3"
+              onClick={() => navigate('/friend-requests')}
+            >
+              Requests
+              {incomingCount > 0 ? (
+                <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+                  {incomingCount > 9 ? '9+' : incomingCount}
+                </span>
+              ) : null}
+            </Button>
+          ) : null}
         </div>
 
         {/* Search bar with filter button */}
@@ -389,6 +417,7 @@ const UsersDirectory = () => {
                   avatar={user.avatar_url}
                   bio={user.bio}
                   isFollowing={following.includes(user.id)}
+                  isPending={pendingOutgoing.includes(user.id)}
                   onFollow={() => handleFollow(user.id)}
                   onUnfollow={() => handleUnfollow(user.id)}
                   onMessage={() => handleMessage(user.id)}

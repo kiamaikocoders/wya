@@ -45,9 +45,9 @@ const UserProfile: React.FC = () => {
     enabled: !!profileId,
   });
 
-  const { data: isFollowing = false } = useQuery({
-    queryKey: ['isFollowing', authUser?.id, profileId],
-    queryFn: () => followService.isFollowing(profileId || ''),
+  const { data: followRelation = 'none' } = useQuery({
+    queryKey: ['followRelation', authUser?.id, profileId],
+    queryFn: () => followService.getFollowRelation(profileId || ''),
     enabled: !!authUser?.id && !!profileId && authUser.id !== profileId,
   });
 
@@ -139,7 +139,7 @@ const UserProfile: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followers', profileId] });
       queryClient.invalidateQueries({ queryKey: ['following', profileId] });
-      queryClient.invalidateQueries({ queryKey: ['isFollowing', authUser?.id, profileId] });
+      queryClient.invalidateQueries({ queryKey: ['followRelation', authUser?.id, profileId] });
     },
   });
 
@@ -151,7 +151,7 @@ const UserProfile: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followers', profileId] });
       queryClient.invalidateQueries({ queryKey: ['following', profileId] });
-      queryClient.invalidateQueries({ queryKey: ['isFollowing', authUser?.id, profileId] });
+      queryClient.invalidateQueries({ queryKey: ['followRelation', authUser?.id, profileId] });
     },
   });
 
@@ -193,7 +193,8 @@ const UserProfile: React.FC = () => {
             eventsAttended: eventsAttendedCount,
           }}
           isCurrentUser={authUser?.id === profile.id}
-          isFollowing={isFollowing}
+          isFollowing={followRelation === 'accepted'}
+          isPending={followRelation === 'pending'}
           onFollow={() => followMutation.mutate()}
           onUnfollow={() => unfollowMutation.mutate()}
           onMessage={() => {

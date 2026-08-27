@@ -51,6 +51,7 @@ import {
 } from '@/lib/recurrence';
 import { createEventSeriesWithOccurrences } from '@/lib/event-series-service';
 import { useAuth } from '@/contexts/AuthContext';
+import { sponsorService } from '@/lib/sponsor/sponsor-service';
 
 interface Category {
   id: number;
@@ -172,6 +173,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
   const [tagsInput, setTagsInput] = useState(() => initialDraft?.tagsInput ?? '');
   const [artistsInput, setArtistsInput] = useState('');
+  const [sponsorIds, setSponsorIds] = useState<number[]>(
+    () => initialDraft?.sponsorIds ?? [],
+  );
   const [whatToExpect, setWhatToExpect] = useState(
     () => initialDraft?.whatToExpect ?? '',
   );
@@ -207,6 +211,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         useExternalTicket,
         whatToExpect,
         tagsInput,
+        sponsorIds,
       });
     }, 500);
     return () => window.clearTimeout(handle);
@@ -221,6 +226,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
     useExternalTicket,
     whatToExpect,
     tagsInput,
+    sponsorIds,
   ]);
 
   const discardDraftAndClose = () => {
@@ -241,6 +247,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       useExternalTicket,
       whatToExpect,
       tagsInput,
+      sponsorIds,
     });
     toast.success('Draft saved — you can refresh without losing progress');
   };
@@ -311,6 +318,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         role: 'all',
         status: 'all',
       }),
+  });
+
+  const { data: sponsorsCatalog = [] } = useQuery({
+    queryKey: ['admin-sponsors-catalog'],
+    queryFn: () => sponsorService.getSponsors(),
   });
 
   const progressPct = Math.round((currentStep / 4) * 100);
@@ -493,8 +505,19 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       categoryIds: number[];
       recurrence: RecurrenceFormState;
       ticketTiers: TicketTierDraft[];
+      sponsorIds: number[];
     }) => {
-      const { eventData, categoryIds, recurrence: recurrenceState, ticketTiers: tiers } = vars;
+      const { eventData, categoryIds, recurrence: recurrenceState, ticketTiers: tiers, sponsorIds: selectedSponsors } = vars;
+
+      const attachSponsors = async (eventIds: number[]) => {
+        if (!selectedSponsors.length) return;
+        try {
+          await sponsorService.attachEventSponsors(eventIds, selectedSponsors);
+        } catch (sponsorError) {
+          console.error('Failed to attach sponsors:', sponsorError);
+          toast.error('Event created, but sponsors failed to save');
+        }
+      };
 
       if (recurrenceState.frequency !== 'none') {
         const rule = buildRecurrenceRule(
@@ -537,6 +560,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         for (const eventId of eventIds) {
           await insertEventTicketTypes(eventId, tiers);
         }
+        await attachSponsors(eventIds);
 
         return {
           kind: 'series' as const,
@@ -561,6 +585,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
       if (error) throw error;
       await insertEventTicketTypes(data.id, tiers);
+      await attachSponsors([data.id]);
       return { kind: 'single' as const, event: data };
     },
     onSuccess: async (result, vars) => {
@@ -712,6 +737,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
       categoryIds: formData.category_ids,
       recurrence,
       ticketTiers,
+      sponsorIds,
     });
   };
 
@@ -1343,6 +1369,47 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 ) : null}
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Sponsors</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Optional. First selected is title sponsor.
+                </p>
+                {sponsorsCatalog.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No sponsors in the catalog yet.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {sponsorsCatalog.map((sponsor) => {
+                      const selected = sponsorIds.includes(sponsor.id);
+                      const title = selected && sponsorIds[0] === sponsor.id;
+                      return (
+                        <button
+                          key={sponsor.id}
+                          type="button"
+                          onClick={() =>
+                            setSponsorIds((prev) =>
+                              prev.includes(sponsor.id)
+                                ? prev.filter((id) => id !== sponsor.id)
+                                : [...prev, sponsor.id],
+                            )
+                          }
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold',
+                            selected
+                              ? 'border-primary bg-primary/15 text-primary'
+                              : 'border-border text-muted-foreground',
+                          )}
+                        >
+                          {sponsor.name}
+                          {title ? (
+                            <span className="text-[10px] uppercase tracking-wide">Title</span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-xs font-semibold">Tags</Label>
                 <div className="flex flex-wrap gap-2">
@@ -1531,6 +1598,15 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 [
                   'Categories',
                   selectedCategoryNames.length ? selectedCategoryNames.join(' · ') : 'Not set',
+                ],
+                [
+                  'Sponsors',
+                  sponsorIds.length
+                    ? sponsorsCatalog
+                        .filter((s) => sponsorIds.includes(s.id))
+                        .map((s) => s.name)
+                        .join(' · ') || `${sponsorIds.length} selected`
+                    : 'None',
                 ],
               ] as const
             ).map(([label, value]) => (

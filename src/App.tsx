@@ -88,6 +88,7 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const ContactSupport = lazy(() => import("./pages/ContactSupport"));
 const CreateEvent = lazy(() => import("./pages/CreateEvent"));
 const UsersDirectory = lazy(() => import("./pages/UsersDirectory"));
+const FriendRequests = lazy(() => import("./pages/FriendRequests"));
 const SponsorsPage = lazy(() => import("./pages/SponsorsPage"));
 const SponsorZone = lazy(() => import("./pages/SponsorZone"));
 const DiscoverPage = lazy(() => import("./pages/DiscoverPage"));
@@ -446,6 +447,16 @@ const App = () => {
                         <AppOnlyRoute featureLabel="Member directory">
                           <UsersDirectory />
                         </AppOnlyRoute>
+                      }
+                    />
+                    <Route
+                      path="/friend-requests"
+                      element={
+                        <ProtectedRoute>
+                          <AppOnlyRoute featureLabel="Friend requests">
+                            <FriendRequests />
+                          </AppOnlyRoute>
+                        </ProtectedRoute>
                       }
                     />
 

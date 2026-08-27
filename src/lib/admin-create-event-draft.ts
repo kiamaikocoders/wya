@@ -38,6 +38,7 @@ export type AdminCreateEventDraft = {
   useExternalTicket: boolean;
   whatToExpect: string;
   tagsInput: string;
+  sponsorIds?: number[];
 };
 
 /**
