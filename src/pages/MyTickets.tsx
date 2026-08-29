@@ -104,7 +104,7 @@ const MyTickets = () => {
           {upcomingTickets.length === 0 ? (
             <EmptyTickets
               title="No upcoming tickets"
-              description="Browse events and grab a ticket for your next night out."
+              description="Browse events and grab a ticket for your next outing."
               showBrowse
             />
           ) : (

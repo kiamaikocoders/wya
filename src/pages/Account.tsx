@@ -90,7 +90,7 @@ const Account = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-black/70" />
         <div className="absolute bottom-8 left-6 right-6 sm:left-8">
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">Find your next night out</h1>
+          <h1 className="text-3xl font-bold text-white sm:text-4xl">Find the event for you</h1>
           <p className="mt-2 max-w-xl text-sm text-[#e6edf3] sm:text-base">
             Events, tickets, and stories across Nairobi &amp; beyond
           </p>
@@ -120,7 +120,7 @@ const Account = () => {
       <section className="mt-8">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className={cn('text-lg font-semibold', companion.heading)}>Happening soon</h2>
-          <Link to="/" className={cn('text-sm font-medium hover:underline', companion.accent)}>
+          <Link to="/events" className={cn('text-sm font-medium hover:underline', companion.accent)}>
             Browse all
           </Link>
         </div>
@@ -144,7 +144,7 @@ const Account = () => {
           >
             <p className={cn('text-sm', companion.muted)}>No upcoming events right now.</p>
             <Button asChild className={cn('mt-4', companion.accentBtn)}>
-              <Link to="/">Browse events</Link>
+              <Link to="/events">Browse events</Link>
             </Button>
           </div>
         ) : (

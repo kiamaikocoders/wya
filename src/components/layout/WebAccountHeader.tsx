@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Home', path: '/account' },
+  { label: 'Events', path: '/events' },
   { label: 'Tickets', path: '/tickets' },
   { label: 'Alerts', path: '/notifications' },
 ] as const;
@@ -40,6 +41,9 @@ const WebAccountHeader = () => {
   const isActive = (path: string) => {
     if (path === '/account') {
       return location.pathname === '/account' || location.pathname === '/home';
+    }
+    if (path === '/events') {
+      return location.pathname === '/events' || location.pathname.startsWith('/events/');
     }
     if (path === '/tickets') {
       return location.pathname === '/tickets' || location.pathname.startsWith('/tickets/');
