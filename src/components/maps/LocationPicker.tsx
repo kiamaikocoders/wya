@@ -10,10 +10,32 @@ import {
   generateSessionToken,
   type PlaceSuggestion,
 } from '@/lib/location-service';
+import { KE_VENUES } from '@/data/ke-venues';
 import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = locationService.getMapboxToken();
+
+function findCuratedVenue(name: string) {
+  const q = name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (q.length < 2) return null;
+  return (
+    KE_VENUES.find((venue) => {
+      const haystacks = [venue.name, venue.label, ...venue.aliases].map((v) =>
+        v
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      );
+      return haystacks.some((a) => a === q || a.startsWith(q) || q.startsWith(a) || a.includes(q));
+    }) ?? null
+  );
+}
 
 type PickedLocation = {
   address: string;
@@ -277,10 +299,20 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         toast.error('Please enter a venue name');
         return;
       }
-      const pick = { ...selectedLocation, address: name };
+      // Prefer curated venue coordinates when the confirmed name matches a known place,
+      // so a typed label cannot ship with an unrelated map pin.
+      const curated = findCuratedVenue(name);
+      const pick = {
+        ...selectedLocation,
+        address: curated?.label || name,
+        latitude: curated?.latitude ?? selectedLocation.latitude,
+        longitude: curated?.longitude ?? selectedLocation.longitude,
+        city: curated?.city || selectedLocation.city,
+        country: selectedLocation.country || 'Kenya',
+      };
       setSelectedLocation(pick);
-      setSearchQuery(name);
-      setVenueName(name);
+      setSearchQuery(pick.address);
+      setVenueName(pick.address);
       onLocationSelect(pick);
       toast.success('Location selected!');
     },

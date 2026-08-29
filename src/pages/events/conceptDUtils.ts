@@ -99,14 +99,7 @@ export function countEventsByVibe(
     const key = v.key.toLowerCase();
     const count = events.filter((e) => {
       const cat = (e.category || '').toLowerCase();
-      if (key === 'jazz') {
-        return (
-          cat === 'music' &&
-          ((e.title || '').toLowerCase().includes('jazz') ||
-            (e.tags || []).some((t) => /jazz/i.test(t)))
-        );
-      }
-      return cat === key || cat.includes(key);
+      return cat === key || cat.includes(key) || key.includes(cat);
     }).length;
     return { ...v, count };
   });

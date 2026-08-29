@@ -66,11 +66,14 @@ const stepMeta = [
 ] as const;
 
 const categoryOptions = [
-  'Music',
-  'Food & Drink',
+  'Music & Entertainment',
+  'Food & Nightlife',
   'Arts & Culture',
-  'Nightlife',
-  'Business',
+  'Business & Networking',
+  'Health & Wellness',
+  'Sports & Outdoor',
+  'Fashion & Lifestyle',
+  'Gaming & Tech',
   'Other',
 ] as const;
 

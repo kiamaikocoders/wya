@@ -14,11 +14,8 @@ import { cn } from '@/lib/utils';
 import { eventService } from '@/lib/event-service';
 import { isNativeApp } from '@/lib/post-auth-navigation';
 import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
-import {
-  FIGMA_SEEDED_EVENTS,
-  type SeededEvent,
-} from './figmaSeededEvents';
 import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
+import type { SeededEvent } from './figmaSeededEvents';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 
@@ -27,10 +24,21 @@ type ViewMode = 'grid' | 'map';
 
 const PAGE_SIZE = 12;
 
+/** Parent category chips aligned with admin create-event taxonomy. */
+const CATEGORY_CHIPS = [
+  'Music & Entertainment',
+  'Food & Nightlife',
+  'Arts & Culture',
+  'Business & Networking',
+  'Health & Wellness',
+  'Sports & Outdoor',
+  'Fashion & Lifestyle',
+  'Gaming & Tech',
+] as const;
+
 /**
- * Figma 15 — Events Concept D (Hybrid).
- * Keeps Figma-seeded events and merges every event from the database.
- * Default order: latest first (earliest last). Grid is paginated.
+ * Public events browse — live DB events only (no Figma seed catalog).
+ * Default order: soonest first. Grid is paginated.
  * When authenticated on web, embeds in the light-web shell (no marketing header/footer).
  */
 const EventsPage = () => {
@@ -45,7 +53,7 @@ const EventsPage = () => {
   const [navSearch, setNavSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [weekendOnly, setWeekendOnly] = useState(false);
-  const [sort, setSort] = useState<SortKey>('latest');
+  const [sort, setSort] = useState<SortKey>('soonest');
   const [view, setView] = useState<ViewMode>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [appModalOpen, setAppModalOpen] = useState(false);
@@ -66,8 +74,8 @@ const EventsPage = () => {
         endDate: null,
         page: 1,
         pageSize: 500,
-        sort: 'latest',
-        includePast: true,
+        sort: 'soonest',
+        includePast: false,
       });
       return result.events;
     },
@@ -75,12 +83,10 @@ const EventsPage = () => {
   });
 
   const catalog = useMemo(() => {
-    const seededIds = new Set(FIGMA_SEEDED_EVENTS.map((e) => e.id));
     const fromDb = (dbEventsQuery.data ?? [])
-      .filter((e) => !seededIds.has(e.id))
+      .filter(isEventUpcoming)
       .map(toBrowseEvent);
-    const merged = [...FIGMA_SEEDED_EVENTS.filter(isEventUpcoming), ...fromDb];
-    return keepNextOccurrencePerSeries(merged);
+    return keepNextOccurrencePerSeries(fromDb);
   }, [dbEventsQuery.data]);
 
   useEffect(() => {
@@ -102,9 +108,6 @@ const EventsPage = () => {
   };
 
   const events = useMemo(() => {
-    const seededIds = new Set(FIGMA_SEEDED_EVENTS.map((e) => e.id));
-    const seededOrder = new Map(FIGMA_SEEDED_EVENTS.map((e, i) => [e.id, i]));
-
     let list = [...catalog];
     const q = search.trim().toLowerCase();
     if (q) {
@@ -117,15 +120,11 @@ const EventsPage = () => {
       );
     }
     if (category) {
-      if (category === 'Jazz') {
-        list = list.filter(
-          (e) =>
-            e.category.toLowerCase() === 'music' &&
-            (e.title.toLowerCase().includes('jazz') || e.tags.some((t) => /jazz/i.test(t)))
-        );
-      } else {
-        list = list.filter((e) => e.category.toLowerCase() === category.toLowerCase());
-      }
+      const needle = category.toLowerCase();
+      list = list.filter((e) => {
+        const cat = e.category.toLowerCase();
+        return cat === needle || cat.includes(needle) || needle.includes(cat);
+      });
     }
     if (weekendOnly) {
       list = list.filter((e) => {
@@ -134,31 +133,22 @@ const EventsPage = () => {
       });
     }
 
-    const seeded = list
-      .filter((e) => seededIds.has(e.id))
-      .sort((a, b) => (seededOrder.get(a.id) ?? 0) - (seededOrder.get(b.id) ?? 0));
-    const rest = list.filter((e) => !seededIds.has(e.id));
-    rest.sort((a, b) => {
+    list.sort((a, b) => {
       if (sort === 'price-low') return (a.price ?? 0) - (b.price ?? 0);
       if (sort === 'price-high') return (b.price ?? 0) - (a.price ?? 0);
-      if (sort === 'soonest') return a.date.localeCompare(b.date);
-      // latest (default): earliest last
-      return b.date.localeCompare(a.date);
+      if (sort === 'latest') return b.date.localeCompare(a.date);
+      // soonest (default): nearest date first
+      return a.date.localeCompare(b.date);
     });
 
-    // Keep Figma-seeded events first (original page-1 order), then DB events.
-    return [...seeded, ...rest];
+    return list;
   }, [catalog, search, category, weekendOnly, sort]);
 
   const vibeCounts = useMemo(() => countEventsByVibe(catalog), [catalog]);
 
   const featuredEvents = useMemo(() => {
     if (category || weekendOnly || search) return [];
-    const seededFeatured = FIGMA_SEEDED_EVENTS.filter((e) => e.featured && isEventUpcoming(e));
-    const seededIds = new Set(seededFeatured.map((e) => e.id));
-    const fromCatalog = events.filter((e) => e.featured && !seededIds.has(e.id));
-    // Seeded featured first (original order), then other featured — cap for a snappy carousel.
-    return [...seededFeatured, ...fromCatalog].slice(0, 8);
+    return events.filter((e) => e.featured).slice(0, 8);
   }, [events, category, weekendOnly, search]);
 
   const featuredIds = useMemo(
@@ -207,7 +197,7 @@ const EventsPage = () => {
     setSearch(navSearch.trim());
   };
 
-  const chips = ['Music', 'Nightlife', 'Food', 'Arts', 'Comedy'] as const;
+  const chips = CATEGORY_CHIPS;
   const isLoading = dbEventsQuery.isLoading;
 
   return (
@@ -285,7 +275,7 @@ const EventsPage = () => {
             TONIGHT IN NAIROBI
           </p>
           <h1 className="max-w-[720px] text-[32px] font-extrabold leading-tight text-white sm:text-[40px]">
-            Find the night that finds you
+            Find the event for you
           </h1>
           <p className="text-[15px] text-[#e6edf3]">
             {catalog.length.toLocaleString()} events · Music, food, rooftops & more
@@ -345,8 +335,8 @@ const EventsPage = () => {
               onChange={(e) => setSort(e.target.value as SortKey)}
               className={cn('rounded-full border px-3.5 py-2 text-xs outline-none', pillIdle)}
             >
-              <option value="latest">Latest (earliest last)</option>
-              <option value="soonest">Soonest</option>
+              <option value="soonest">Date: soonest first</option>
+              <option value="latest">Date: newest first</option>
               <option value="price-low">Price: Low</option>
               <option value="price-high">Price: High</option>
             </select>
@@ -568,7 +558,7 @@ const EventsPage = () => {
               Category
             </p>
             <div className="mb-6 flex flex-wrap gap-2">
-              {['Music', 'Nightlife', 'Food', 'Arts', 'Comedy', 'Jazz'].map((c) => (
+              {CATEGORY_CHIPS.map((c) => (
                 <button
                   key={c}
                   type="button"
