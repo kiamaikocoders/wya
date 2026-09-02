@@ -85,9 +85,11 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
       const apiSponsors = (sponsorsQuery.data ?? [])
         .filter((es) => es.sponsor)
         .map((es) => ({
+          id: es.sponsor!.id,
           name: es.sponsor!.name,
           type: String(es.sponsorship_type || es.sponsor!.partnership_level || 'partner'),
           logo: es.sponsor!.logo_url as string | undefined,
+          websiteUrl: es.sponsor!.website_url as string | undefined,
           cardClass: undefined as string | undefined,
           nameClass: undefined as string | undefined,
           typeClass: undefined as string | undefined,
@@ -383,12 +385,22 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
                       <div className="grid grid-cols-3 gap-2.5">
                         {view.sponsors.map((s) => {
                           const branded = Boolean(s.cardClass);
+                          const Wrapper = s.websiteUrl ? 'a' : 'div';
+                          const wrapperProps = s.websiteUrl
+                            ? {
+                                href: s.websiteUrl,
+                                target: '_blank' as const,
+                                rel: 'noopener noreferrer',
+                              }
+                            : {};
                           return (
-                            <div
+                            <Wrapper
                               key={s.name}
+                              {...wrapperProps}
                               className={cn(
                                 'flex min-h-[124px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-xl px-2 py-3',
                                 branded ? s.cardClass : cn('border', card),
+                                s.websiteUrl && 'cursor-pointer transition-opacity hover:opacity-90',
                               )}
                             >
                               {s.logo ? (
@@ -418,7 +430,7 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
                               <p className={cn('text-center text-[10px]', s.typeClass || muted)}>
                                 {s.type}
                               </p>
-                            </div>
+                            </Wrapper>
                           );
                         })}
                       </div>

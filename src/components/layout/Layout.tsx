@@ -68,8 +68,8 @@ const Layout = () => {
   ].includes(location.pathname);
   const isSupportPage = ["/faq", "/contact", "/feedback"].includes(location.pathname);
 
-  // Events browse/detail use the public marketing chrome (landing already covers discovery).
-  const hideEventsChrome = isEventsBrowse;
+  // Logged-in users keep account nav on /events so they can browse without getting trapped.
+  const hideEventsChrome = isEventsBrowse && !isAuthenticated;
 
   // Support pages ship their own Legal shell header/footer — hide app chrome to avoid duplicates.
   const hideChrome =
