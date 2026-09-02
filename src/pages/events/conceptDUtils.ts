@@ -1,5 +1,6 @@
 import { format, parseISO, isValid, nextSaturday, nextSunday, startOfDay, endOfDay } from 'date-fns';
 import type { Event } from '@/types/event.types';
+import { eventMatchesParentCategory } from '@/lib/event-category-parents';
 import { FIGMA_VIBE_COUNTS, type SeededEvent } from './figmaSeededEvents';
 
 export const VIBE_CATEGORIES = FIGMA_VIBE_COUNTS.map((v) => ({
@@ -96,11 +97,7 @@ export function countEventsByVibe(
   events: Array<{ category?: string | null; title?: string; tags?: string[] }>
 ) {
   return FIGMA_VIBE_COUNTS.map((v) => {
-    const key = v.key.toLowerCase();
-    const count = events.filter((e) => {
-      const cat = (e.category || '').toLowerCase();
-      return cat === key || cat.includes(key) || key.includes(cat);
-    }).length;
+    const count = events.filter((e) => eventMatchesParentCategory(e.category, v.key)).length;
     return { ...v, count };
   });
 }

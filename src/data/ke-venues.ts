@@ -432,11 +432,12 @@ export const KE_VENUES: KeVenue[] = [
     id: 'tamu-zaituni',
     name: 'Tamu Zaituni',
     aliases: ['tamu zaituni', 'tamu', 'zaituni', 'tamu experience'],
-    label: 'Tamu Zaituni, Westlands, Nairobi',
-    area: 'Westlands',
+    label: 'Tamu Zaituni, Masshouse, Ngong Racecourse, Nairobi',
+    area: 'Ngong Racecourse',
     city: 'Nairobi',
-    latitude: -1.2681,
-    longitude: 36.8112,
+    // Hosted at Masshouse — distinct from The Alchemist (Westlands)
+    latitude: -1.3120613,
+    longitude: 36.7441232,
   },
   {
     id: 'paper-cafe',

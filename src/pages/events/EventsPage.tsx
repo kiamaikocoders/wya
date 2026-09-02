@@ -16,6 +16,7 @@ import { isNativeApp } from '@/lib/post-auth-navigation';
 import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
 import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
 import type { SeededEvent } from './figmaSeededEvents';
+import { eventMatchesParentCategory } from '@/lib/event-category-parents';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 
@@ -120,11 +121,7 @@ const EventsPage = () => {
       );
     }
     if (category) {
-      const needle = category.toLowerCase();
-      list = list.filter((e) => {
-        const cat = e.category.toLowerCase();
-        return cat === needle || cat.includes(needle) || needle.includes(cat);
-      });
+      list = list.filter((e) => eventMatchesParentCategory(e.category, category));
     }
     if (weekendOnly) {
       list = list.filter((e) => {
