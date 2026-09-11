@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Analytics } from "@vercel/analytics/react";
 import { OneSignalProvider } from "@/components/onesignal/OneSignalProvider";
+import { FirebaseMessagingProvider } from "@/components/firebase/FirebaseMessagingProvider";
 import { AppErrorBoundary } from "@/components/status/AppErrorBoundary";
 import { OfflineGate } from "@/components/status/OfflineGate";
 import { MaintenanceGate } from "@/components/status/MaintenanceGate";
@@ -135,6 +136,7 @@ const App = () => {
           <ThemeProvider>
             <AuthProvider>
               <OneSignalProvider>
+              <FirebaseMessagingProvider>
               <MediaConsentPostingProvider>
               <AppErrorBoundary>
               <OfflineGate>
@@ -487,6 +489,7 @@ const App = () => {
               </OfflineGate>
               </AppErrorBoundary>
               </MediaConsentPostingProvider>
+              </FirebaseMessagingProvider>
               </OneSignalProvider>
             </AuthProvider>
           </ThemeProvider>

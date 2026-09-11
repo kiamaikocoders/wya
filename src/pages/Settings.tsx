@@ -30,11 +30,11 @@ import LocationPicker from '@/components/maps/LocationPicker';
 import { TwoFactorSettings } from '@/components/auth/TwoFactorSettings';
 import {
   getPushSubscriptionStatus,
-  isOneSignalSupported,
   subscribeToPushNotifications,
   syncPushSubscriptionWithPreference,
   type PushSubscriptionStatus,
-} from '@/lib/onesignal';
+} from '@/lib/push';
+import { isFcmSupported } from '@/lib/fcm';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -121,19 +121,12 @@ const Settings: React.FC = () => {
       } else if (result.reason === 'dismissed') {
         toast.message('Click Allow when your browser asks for notification permission.');
       } else if (result.reason === 'sdk_not_ready') {
-        const initError = pushStatus?.initError ?? (await refreshPushStatus()).initError;
-        if (initError && /not configured for web push/i.test(initError)) {
-          toast.error(
-            'Web push is not set up in OneSignal yet. In the OneSignal dashboard: Settings → Platforms → Web → Custom Code, set Site URL to http://localhost:8080, enable “Treat HTTP localhost as HTTPS”, and set the service worker path to /push/onesignal/.'
-          );
-        } else {
-          toast.error(
-            'OneSignal is still loading or blocked. Disable ad blockers for localhost, refresh, then try again.'
-          );
-        }
+        toast.error(
+          'Push is still loading. Disable ad blockers for this site, refresh, then try again.'
+        );
       } else if (result.reason === 'opt_in_failed') {
         toast.error(
-          'Browser allowed notifications but push setup failed. Check OneSignal dashboard Site URL is http://localhost:8080'
+          'Browser allowed notifications but Firebase could not register this device. Check the web push certificate in Firebase Cloud Messaging.'
         );
       } else {
         toast.error('Push notifications are not supported in this browser.');
@@ -183,7 +176,7 @@ const Settings: React.FC = () => {
   }, [profile]);
 
   useEffect(() => {
-    if (!user?.id || !profile || !isOneSignalSupported()) return;
+    if (!user?.id || !profile || !isFcmSupported()) return;
 
     void refreshPushStatus().then((status) => {
       const wantsPush = profile.push_notifications ?? true;
@@ -497,18 +490,7 @@ const Settings: React.FC = () => {
                     }}
                   />
                 </div>
-                {isOneSignalSupported() && pushStatus && !pushStatus.webPushConfigured && (
-                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
-                    <p className="text-sm text-white font-medium">Web push needs OneSignal setup</p>
-                    <p className="text-xs text-text-white/70">
-                      In OneSignal: Settings → Platforms → Web → Custom Code. Site URL:{' '}
-                      <code className="text-amber-200">{window.location.origin}</code>. Service worker:{' '}
-                      <code className="text-amber-200">/push/onesignal/OneSignalSDKWorker.js</code>.
-                      Enable “Treat HTTP localhost as HTTPS” for local dev.
-                    </p>
-                  </div>
-                )}
-                {isOneSignalSupported() && !pushStatus?.active && (
+                {isFcmSupported() && !pushStatus?.active && (
                   <div className="rounded-lg border border-kenya-orange/40 bg-kenya-orange/10 p-4 space-y-3">
                     <p className="text-sm text-white">
                       Turn on browser push so you get alerts when WYA is in the background.

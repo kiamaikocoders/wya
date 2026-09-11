@@ -8,6 +8,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isFcmConfigured, sendFcmToTokens } from "../_shared/fcm.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -46,8 +47,9 @@ serve(async (req) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  if (!oneSignalAppId || !oneSignalApiKey) {
-    console.error("send-push-notification: OneSignal secrets not configured");
+  const fcmReady = isFcmConfigured();
+  if ((!oneSignalAppId || !oneSignalApiKey) && !fcmReady) {
+    console.error("send-push-notification: no push provider configured");
     return jsonResponse({ error: "Push service not configured" }, 503);
   }
 
@@ -100,48 +102,69 @@ serve(async (req) => {
     const siteOrigin = req.headers.get("Origin");
     const launchUrl = resolveLaunchUrl(link, siteOrigin);
 
-    const oneSignalBody = {
-      app_id: oneSignalAppId,
-      target_channel: "push",
-      headings: { en: title },
-      contents: { en: message },
-      include_aliases: {
-        external_id: [user_id],
-      },
-      url: launchUrl,
-      data: {
-        link: link ?? "/notifications",
-        notification_id,
-        type,
-      },
-    };
-
-    const pushRes = await fetch("https://api.onesignal.com/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        Authorization: `Key ${oneSignalApiKey}`,
-      },
-      body: JSON.stringify(oneSignalBody),
-    });
-
-    const pushData = await pushRes.json().catch(() => ({}));
-
-    if (!pushRes.ok) {
-      console.error("send-push-notification: OneSignal API error", pushRes.status, pushData);
-      return jsonResponse(
-        {
-          error: "Failed to send push notification",
-          details: pushData?.errors ?? pushData,
+    let onesignal: Record<string, unknown> | null = null;
+    if (oneSignalAppId && oneSignalApiKey) {
+      const pushRes = await fetch("https://api.onesignal.com/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Authorization: `Key ${oneSignalApiKey}`,
         },
-        502
-      );
+        body: JSON.stringify({
+          app_id: oneSignalAppId,
+          target_channel: "push",
+          headings: { en: title },
+          contents: { en: message },
+          include_aliases: { external_id: [user_id] },
+          url: launchUrl,
+          data: {
+            link: link ?? "/notifications",
+            notification_id,
+            type,
+          },
+        }),
+      });
+      const pushData = await pushRes.json().catch(() => ({}));
+      if (!pushRes.ok) {
+        console.error("send-push-notification: OneSignal API error", pushRes.status, pushData);
+        onesignal = { sent: false, error: "push_failed", details: pushData?.errors ?? pushData };
+      } else {
+        onesignal = { sent: true, id: pushData?.id ?? null, recipients: pushData?.recipients ?? null };
+      }
+    }
+
+    let fcm: Record<string, unknown> | null = null;
+    if (fcmReady) {
+      const { data: tokenRows } = await supabase
+        .from("push_tokens")
+        .select("token")
+        .eq("user_id", user_id);
+      const tokens = (tokenRows || []).map((row: { token: string }) => row.token).filter(Boolean);
+      const fcmResult = await sendFcmToTokens({
+        tokens,
+        title,
+        message,
+        link: launchUrl,
+        type,
+        notificationId: notification_id,
+      });
+      if (fcmResult.removed.length) {
+        await supabase.from("push_tokens").delete().in("token", fcmResult.removed);
+      }
+      fcm = fcmResult;
+    }
+
+    const delivered = Boolean(
+      (onesignal && onesignal.sent) || (fcm && typeof fcm.sent === "number" && fcm.sent > 0),
+    );
+    if (!delivered && onesignal?.error && !fcmReady) {
+      return jsonResponse({ error: "Failed to send push notification", details: onesignal }, 502);
     }
 
     return jsonResponse({
-      success: true,
-      id: pushData?.id ?? null,
-      recipients: pushData?.recipients ?? null,
+      success: delivered || Boolean(fcm?.skipped === "no_tokens"),
+      onesignal,
+      fcm,
     });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error("Unknown error");

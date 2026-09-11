@@ -11,6 +11,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendNotificationEmail } from "../_shared/resend.ts";
+import { sendFcmToTokens } from "../_shared/fcm.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -135,6 +136,50 @@ async function sendOneSignalPush(params: {
   return { sent: true };
 }
 
+async function sendFcmPush(params: {
+  user_id: string;
+  title: string;
+  message: string;
+  link?: string;
+  notification_id?: number;
+  type?: string;
+  siteOrigin: string | null;
+  serviceClient: ReturnType<typeof createClient>;
+}): Promise<{ sent: boolean; skipped?: string; error?: string; recipients?: number }> {
+  const { data: profile } = await params.serviceClient
+    .from("profiles")
+    .select("push_notifications")
+    .eq("id", params.user_id)
+    .maybeSingle();
+
+  if (profile?.push_notifications === false) {
+    return { sent: false, skipped: "push_disabled" };
+  }
+
+  const { data: rows } = await params.serviceClient
+    .from("push_tokens")
+    .select("token")
+    .eq("user_id", params.user_id);
+
+  const tokens = (rows || []).map((row: { token: string }) => row.token).filter(Boolean);
+  const result = await sendFcmToTokens({
+    tokens,
+    title: params.title,
+    message: params.message,
+    link: resolveLaunchUrl(params.link, params.siteOrigin),
+    type: params.type,
+    notificationId: params.notification_id,
+  });
+
+  if (result.removed.length) {
+    await params.serviceClient.from("push_tokens").delete().in("token", result.removed);
+  }
+
+  if (result.skipped) return { sent: false, skipped: result.skipped };
+  if (result.error) return { sent: false, error: result.error };
+  return { sent: result.sent > 0, recipients: result.sent };
+}
+
 const TEST_NOTIFICATIONS: Array<Omit<NotificationPayload, "user_id">> = [
   {
     type: "follow",
@@ -231,7 +276,7 @@ serve(async (req) => {
         if (inserted?.id != null) {
           created.push(inserted.id);
           if (sendPush) {
-            await sendOneSignalPush({
+            const pushArgs = {
               user_id: targetUserId,
               title: sample.title!,
               message: sample.message!,
@@ -240,7 +285,9 @@ serve(async (req) => {
               type: sample.type,
               siteOrigin,
               serviceClient,
-            });
+            };
+            await sendOneSignalPush(pushArgs);
+            await sendFcmPush(pushArgs);
           }
         }
       }
@@ -287,7 +334,7 @@ serve(async (req) => {
 
     let pushResult: Record<string, unknown> | null = null;
     if (sendPush && inserted?.id != null) {
-      const result = await sendOneSignalPush({
+      const pushArgs = {
         user_id,
         title,
         message,
@@ -296,8 +343,12 @@ serve(async (req) => {
         type,
         siteOrigin,
         serviceClient,
-      });
-      pushResult = result;
+      };
+      const [onesignal, fcm] = await Promise.all([
+        sendOneSignalPush(pushArgs),
+        sendFcmPush(pushArgs),
+      ]);
+      pushResult = { onesignal, fcm };
     }
 
     let emailResult: Record<string, unknown> | null = null;

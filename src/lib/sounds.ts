@@ -3,7 +3,8 @@
  * Place like.wav and notification-chime.mp3 in public/sounds/
  */
 
-import { isOneSignalSupported, subscribeToPushNotifications } from '@/lib/onesignal';
+import { isFcmSupported } from '@/lib/fcm';
+import { subscribeToPushNotifications } from '@/lib/push';
 
 const LIKE_SOUND_PATH = '/sounds/like.wav';
 /** Short alert chime (also mirrored as notification.mp3). */
@@ -60,7 +61,7 @@ export function playNotificationSound(): void {
 
 /** Request browser / OneSignal push permission. Call from a user gesture (click). */
 export async function requestNotificationPermission(userId?: string): Promise<NotificationPermission | 'default'> {
-  if (isOneSignalSupported() && userId) {
+  if ((isFcmSupported() || typeof Notification !== 'undefined') && userId) {
     const result = await subscribeToPushNotifications(userId);
     if (result.ok) return 'granted';
     if (result.reason === 'denied') return 'denied';
@@ -83,7 +84,7 @@ export async function requestNotificationPermission(userId?: string): Promise<No
 /** Whether we can show browser notifications. */
 export function canShowNotifications(): boolean {
   if (typeof window === 'undefined') return false;
-  if (isOneSignalSupported()) {
+  if (isFcmSupported()) {
     return 'Notification' in window && Notification.permission === 'granted';
   }
   return 'Notification' in window && Notification.permission === 'granted';

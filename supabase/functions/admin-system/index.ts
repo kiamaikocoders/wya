@@ -254,6 +254,9 @@ serve(async (req) => {
         Deno.env.get("ONESIGNAL_APP_ID") && Deno.env.get("ONESIGNAL_REST_API_KEY")
           ? "Healthy"
           : "Not configured";
+      const fcm = (Deno.env.get("FIREBASE_SERVICE_ACCOUNT") ?? Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON") ?? "").trim()
+        ? "Healthy"
+        : "Not configured";
 
       const marketplaceTables = await admin
         .from("marketplace_listings")
@@ -269,7 +272,8 @@ serve(async (req) => {
             auth: authStatus,
             storage,
             email,
-            push: onesignal,
+            push: onesignal === "Healthy" || fcm === "Healthy" ? "Healthy" : "Not configured",
+            fcm,
             marketplace,
           },
           metrics: {
