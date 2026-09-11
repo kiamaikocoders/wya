@@ -633,7 +633,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
           console.warn('Failed to send event notifications:', notifError);
         }
 
-        toast.success('Event created successfully! Users will be notified.');
+        toast.success(`Event created · ${whenLabel} · ${formData.location || 'venue set'}`);
       } else {
         try {
           const { data: allUsers } = await supabase
@@ -671,6 +671,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
 
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['events-browse-all'] });
       clearAdminCreateEventDraft();
       if (onSuccess) onSuccess();
     },
@@ -1052,7 +1053,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
             <div className={cn(surfaceCard, 'flex flex-col gap-2.5 p-4')}>
               <Label className="text-xs font-semibold">Location *</Label>
               <p className="text-xs text-muted-foreground">
-                Search a venue, or type its name and tap the map if search misses it — then Confirm.
+                Search a venue and confirm the pin. The map pin is the location — no separate typed address.
               </p>
               <LocationPicker
                 mode="event"
@@ -1060,7 +1061,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 height={440}
                 title=""
                 description=""
-                allowCustomVenueName
+                allowCustomVenueName={false}
                 onLocationSelect={(loc) => {
                   setFormData((prev) => ({
                     ...prev,
@@ -1092,23 +1093,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               />
               <p className="text-[11px] text-muted-foreground">
                 {formData.location && formData.latitude != null
-                  ? `Confirm a pin before continuing · ${formData.location}`
+                  ? `Pin confirmed · ${formData.location}`
                   : 'Confirm a pin before continuing'}
               </p>
-              <div className="space-y-1.5 pt-1">
-                <Label htmlFor="location_url" className="text-xs font-semibold">
-                  Manual maps link (optional)
-                </Label>
-                <Input
-                  id="location_url"
-                  name="location_url"
-                  value={formData.location_url}
-                  onChange={handleInputChange}
-                  placeholder="Paste Google / Apple Maps link"
-                  inputMode="url"
-                  className={fieldClass}
-                />
-              </div>
             </div>
           </div>
         );

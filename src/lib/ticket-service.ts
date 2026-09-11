@@ -102,11 +102,22 @@ export const ticketService = {
       // First get event details
       const { data: eventData, error: eventError } = await supabase
         .from('events')
-        .select('title, date, price')
+        .select('title, date, end_date, price')
         .eq('id', purchaseData.event_id)
         .single();
         
       if (eventError) throw eventError;
+
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Africa/Nairobi',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+      const lastDay = (eventData.end_date || eventData.date || '').toString().slice(0, 10);
+      if (lastDay && lastDay < today) {
+        throw new Error('Tickets are no longer on sale for this event');
+      }
       
       const unitPrice =
         purchaseData.unit_price != null && Number.isFinite(purchaseData.unit_price)

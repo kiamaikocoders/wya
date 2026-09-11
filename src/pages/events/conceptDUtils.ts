@@ -1,7 +1,7 @@
 import { nextSaturday, nextSunday, startOfDay, endOfDay } from 'date-fns';
 import type { Event } from '@/types/event.types';
 import { eventMatchesParentCategory } from '@/lib/event-category-parents';
-import { formatEventDateLabel as formatCalendarDate, formatEventTimeLabel } from '@/lib/event-datetime';
+import { formatEventDateLabel as formatCalendarDate, formatEventTimeRange } from '@/lib/event-datetime';
 import { resolveEventPin } from '@/lib/event-pin';
 import { FIGMA_VIBE_COUNTS, type SeededEvent } from './figmaSeededEvents';
 
@@ -21,7 +21,7 @@ export function formatEventDateLabel(date?: string | null): string {
 
 export function formatEventMeta(event: Event): string {
   const datePart = formatCalendarDate(event.date);
-  const timePart = formatEventTimeLabel(event.time);
+  const timePart = formatEventTimeRange(event.time, event.end_time);
   const place = event.location?.split(',')[0]?.trim() || event.location || 'Kenya';
   return [datePart, timePart, place].filter(Boolean).join('  ·  ');
 }
@@ -60,7 +60,7 @@ export function toBrowseEvent(event: Event): SeededEvent {
     longitude: pin?.longitude,
     performing_artists: event.performing_artists,
     dateLabel: formatCalendarDate(event.date),
-    timeLabel: formatEventTimeLabel(event.time) || undefined,
+    timeLabel: formatEventTimeRange(event.time, event.end_time) || undefined,
     ticketLabel: formatEventPrice(event.price),
   };
 }

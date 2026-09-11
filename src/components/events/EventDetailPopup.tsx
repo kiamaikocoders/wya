@@ -105,7 +105,7 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
         category: liveEvent.category,
         featured: Boolean(liveEvent.featured || liveEvent.is_featured),
         cover: liveEvent.image_url || resolveCategoryImage(liveEvent.category),
-        dateTime: formatEventDateTimeLabel(liveEvent.date, liveEvent.time),
+        dateTime: formatEventDateTimeLabel(liveEvent.date, liveEvent.time, liveEvent.end_time),
         venue: liveEvent.location || 'Venue TBA',
         tickets: priceLabel === 'Free' ? 'Free entry' : `From ${priceLabel}`,
         attendance: liveEvent.capacity

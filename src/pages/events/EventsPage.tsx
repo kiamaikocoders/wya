@@ -333,8 +333,8 @@ const EventsPage = () => {
               onChange={(e) => setSort(e.target.value as SortKey)}
               className={cn('rounded-full border px-3.5 py-2 text-xs outline-none', pillIdle)}
             >
-              <option value="soonest">Date: soonest first</option>
-              <option value="latest">Date: newest first</option>
+              <option value="soonest">Soonest — next upcoming date</option>
+              <option value="latest">Latest — furthest upcoming date</option>
               <option value="price-low">Price: Low</option>
               <option value="price-high">Price: High</option>
             </select>

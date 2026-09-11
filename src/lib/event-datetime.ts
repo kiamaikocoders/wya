@@ -28,9 +28,13 @@ export function formatEventTimeLabel(time?: string | null): string {
   return format(new Date(2000, 0, 1, clock.hours, clock.minutes), 'h:mm a');
 }
 
-export function formatEventDateTimeLabel(date?: string | null, time?: string | null): string {
+export function formatEventDateTimeLabel(
+  date?: string | null,
+  time?: string | null,
+  endTime?: string | null,
+): string {
   const day = formatEventDateLabel(date, 'EEE · d MMM');
-  const clock = formatEventTimeLabel(time);
+  const clock = formatEventTimeRange(time, endTime);
   return clock ? `${day}  ·  ${clock}` : day;
 }
 
