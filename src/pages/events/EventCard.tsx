@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { Calendar, MapPin, Ticket, User, ExternalLink } from 'lucide-react';
+import { Calendar, Clock, MapPin, Ticket, User, ExternalLink } from 'lucide-react';
 import type { Event } from '@/types/event.types';
 import { cn } from '@/lib/utils';
+import { formatEventTimeLabel } from '@/lib/event-datetime';
 
 type EventCardProps = {
   event: Event;
@@ -97,6 +98,12 @@ const EventCard = memo(({ event, variant = 'grid' }: EventCardProps) => {
               <Calendar className="h-4 w-4 text-gradient-orange-accent" />
               <span>{formatDate(event.date)}</span>
             </div>
+            {formatEventTimeLabel(event.time) && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gradient-orange-accent" />
+                <span>{formatEventTimeLabel(event.time)}</span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gradient-orange-accent" />
               {hasLocationText ? (

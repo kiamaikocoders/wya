@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Event } from '@/types/event.types';
 import { MapPin, Navigation, Calendar, Clock, Store } from 'lucide-react';
-import { format } from 'date-fns';
 import { locationService } from '@/lib/location-service';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { KE_VENUES, eventsAtVenue, type KeVenue } from '@/data/ke-venues';
+import { formatEventDateLabel, formatEventTimeLabel } from '@/lib/event-datetime';
+import { resolveEventPin } from '@/lib/event-pin';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -31,30 +32,9 @@ type MapboxMapProps = {
   showPlaces?: boolean;
 };
 
-const cityCoordinates: Record<string, { longitude: number; latitude: number }> = {
-  nairobi: { longitude: 36.8219, latitude: -1.2921 },
-  mombasa: { longitude: 39.6682, latitude: -4.0435 },
-  kisumu: { longitude: 34.7617, latitude: -0.0917 },
-  nakuru: { longitude: 36.0667, latitude: -0.2833 },
-  eldoret: { longitude: 35.2698, latitude: 0.5143 },
-  malindi: { longitude: 40.1169, latitude: -3.2192 },
-  machakos: { longitude: 37.2620, latitude: -1.5177 },
-};
-
 const getCoordinates = (event: Event) => {
-  if (typeof event.longitude === 'number' && typeof event.latitude === 'number') {
-    return { longitude: event.longitude, latitude: event.latitude };
-  }
-
-  const match = Object.entries(cityCoordinates).find(([key]) =>
-    event.location?.toLowerCase().includes(key)
-  );
-
-  if (match) {
-    return match[1];
-  }
-
-  return null;
+  const pin = resolveEventPin(event);
+  return pin ? { longitude: pin.longitude, latitude: pin.latitude } : null;
 };
 
 const MapboxMap: React.FC<MapboxMapProps> = ({ 
@@ -218,11 +198,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
                             )}
                           >
                             <Calendar className="h-3 w-3 shrink-0" />
-                            <span>{format(new Date(event.date), 'MMM dd, yyyy')}</span>
-                            {event.time && (
+                            <span>{formatEventDateLabel(event.date, 'MMM d, yyyy')}</span>
+                            {formatEventTimeLabel(event.time) && (
                               <>
                                 <Clock className="ml-2 h-3 w-3 shrink-0" />
-                                <span>{event.time.substring(0, 5)}</span>
+                                <span>{formatEventTimeLabel(event.time)}</span>
                               </>
                             )}
                           </div>

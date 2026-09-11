@@ -10,7 +10,6 @@ import { useMediaConsentPosting } from '@/contexts/MediaConsentPostingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Users, Link2, Share2, ImagePlus, Loader2, Heart, HeartOff, MessageSquare, Clock, ExternalLink } from 'lucide-react';
-import { format, parse } from 'date-fns';
 import { StoryModal } from '@/components/StoryModal';
 import { ParagraphizedDescription } from '@/components/common/ParagraphizedDescription';
 import EventSponsorsSection from '@/components/sponsors/EventSponsorsSection';
@@ -37,11 +36,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatDate } from '@/utils/event-utils';
 import { useEvents } from '@/hooks/use-events';
 import BackButton from '@/components/navigation/BackButton';
 import MapView from '@/components/ui/MapView';
 import { Capacitor } from '@capacitor/core';
+import { formatEventDateLabel, formatEventTimeRange } from '@/lib/event-datetime';
+import { resolveEventPin } from '@/lib/event-pin';
 
 const EventDetails: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -196,23 +196,16 @@ const EventDetails: React.FC = () => {
                 <Calendar size={16} />
                 <span>
                   {event.end_date && event.end_date !== event.date.slice(0, 10)
-                    ? `${format(new Date(event.date), 'EEEE, MMM d')} – ${format(new Date(event.end_date), 'MMM d, yyyy')}`
-                    : format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
+                    ? `${formatEventDateLabel(event.date, 'EEEE, MMM d')} – ${formatEventDateLabel(event.end_date, 'MMM d, yyyy')}`
+                    : formatEventDateLabel(event.date, 'EEEE, MMMM d, yyyy')}
                 </span>
               </div>
+              {formatEventTimeRange(event.time, event.end_time) && (
               <div className="flex items-center gap-2">
                 <Clock size={16} />
-                <span>
-                  {event.time 
-                    ? (() => {
-                        const [hours, minutes] = event.time.split(':');
-                        const date = new Date();
-                        date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
-                        return format(date, 'h:mm a');
-                      })()
-                    : format(new Date(event.date), 'h:mm a')}
-                </span>
+                <span>{formatEventTimeRange(event.time, event.end_time)}</span>
               </div>
+              )}
               <div className="flex items-center gap-2">
                 <MapPin size={16} />
                 <span>{event.location}</span>
@@ -310,23 +303,16 @@ const EventDetails: React.FC = () => {
                     <span className="text-text-white/70">Date</span>
                     <span>
                       {event.end_date && event.end_date !== event.date.slice(0, 10)
-                        ? `${format(new Date(event.date), 'MMM d')} – ${format(new Date(event.end_date), 'MMM d, yyyy')}`
-                        : format(new Date(event.date), 'MMM d, yyyy')}
+                        ? `${formatEventDateLabel(event.date, 'MMM d')} – ${formatEventDateLabel(event.end_date, 'MMM d, yyyy')}`
+                        : formatEventDateLabel(event.date, 'MMM d, yyyy')}
                     </span>
                   </div>
+                  {formatEventTimeRange(event.time, event.end_time) && (
                   <div className="flex justify-between">
                     <span className="text-text-white/70">Time</span>
-                    <span>
-                      {event.time 
-                        ? (() => {
-                            const [hours, minutes] = event.time.split(':');
-                            const date = new Date();
-                            date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
-                            return format(date, 'h:mm a');
-                          })()
-                        : format(new Date(event.date), 'h:mm a')}
-                    </span>
+                    <span>{formatEventTimeRange(event.time, event.end_time)}</span>
                   </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-text-white/70">Venue</span>
                     <span className="text-right">{event.location}</span>
@@ -393,8 +379,8 @@ const EventDetails: React.FC = () => {
                 <CardContent className="p-0">
                   <MapView
                     location={event.location || 'Event location'}
-                    latitude={event.latitude}
-                    longitude={event.longitude}
+                    latitude={resolveEventPin(event)?.latitude}
+                    longitude={resolveEventPin(event)?.longitude}
                     className="h-48"
                     interactive
                   />

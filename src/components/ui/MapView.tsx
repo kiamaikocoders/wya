@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MapPin, Map } from 'lucide-react';
 import { locationService } from '@/lib/location-service';
+import { parseCoord } from '@/lib/event-pin';
 
 const MAPBOX_TOKEN = locationService.getMapboxToken();
 
@@ -26,18 +27,20 @@ const MapView: React.FC<MapViewProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const hasCoords = typeof latitude === 'number' && typeof longitude === 'number';
+  const lat = parseCoord(latitude);
+  const lng = parseCoord(longitude);
+  const hasCoords = lat != null && lng != null;
   const encodedLocation = encodeURIComponent(location);
 
   const staticMapUrl = hasCoords
-    ? `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+ff6b35(${longitude},${latitude})/${longitude},${latitude},14,0,0/600x300@2x?access_token=${MAPBOX_TOKEN}`
+    ? `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-l+ff6b35(${lng},${lat})/${lng},${lat},14,0,0/600x300@2x?access_token=${MAPBOX_TOKEN}`
     : null;
 
   useEffect(() => {
     if (!interactive || !mapContainerRef.current) return;
 
     const mapContainer = mapContainerRef.current;
-    const query = hasCoords ? `${latitude},${longitude}` : encodedLocation;
+    const query = hasCoords ? `${lat},${lng}` : encodedLocation;
 
     const handleClick = () => {
       window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
@@ -45,10 +48,10 @@ const MapView: React.FC<MapViewProps> = ({
 
     mapContainer.addEventListener('click', handleClick);
     return () => mapContainer.removeEventListener('click', handleClick);
-  }, [interactive, encodedLocation, hasCoords, latitude, longitude]);
+  }, [interactive, encodedLocation, hasCoords, lat, lng]);
 
   const openGoogleMaps = () => {
-    const query = hasCoords ? `${latitude},${longitude}` : encodedLocation;
+    const query = hasCoords ? `${lat},${lng}` : encodedLocation;
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
   };
 

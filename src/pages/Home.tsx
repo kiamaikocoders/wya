@@ -22,6 +22,7 @@ import { onboardingService } from '@/lib/onboarding-service';
 import type { Event } from '@/types/event.types';
 import { format } from 'date-fns';
 import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
+import { formatEventTimeLabel } from '@/lib/event-datetime';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -258,10 +259,10 @@ const Home: React.FC = () => {
                                   {featuredEvent.location}
                                 </span>
                               </div>
-                              {featuredEvent.time && (
+                              {formatEventTimeLabel(featuredEvent.time) && (
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  <span>{featuredEvent.time.slice(0, 5)}</span>
+                                  <span>{formatEventTimeLabel(featuredEvent.time)}</span>
                                 </div>
                               )}
                               {featuredEvent.performing_artists && featuredEvent.performing_artists.length > 0 && (
@@ -453,10 +454,10 @@ const Home: React.FC = () => {
                                     {featuredEvent.location}
                                   </span>
                                 </div>
-                                {featuredEvent.time && (
+                                {formatEventTimeLabel(featuredEvent.time) && (
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    <span>{featuredEvent.time.slice(0, 5)}</span>
+                                    <span>{formatEventTimeLabel(featuredEvent.time)}</span>
                                   </div>
                                 )}
                                 {featuredEvent.performing_artists && featuredEvent.performing_artists.length > 0 && (
@@ -708,7 +709,7 @@ const Home: React.FC = () => {
                     <Clock className="h-4 w-4" />
                     <span>
                       {format(new Date(event.date), 'MMM d, yyyy')}
-                      {event.time && ` • ${event.time.slice(0, 5)}`}
+                      {formatEventTimeLabel(event.time) && ` • ${formatEventTimeLabel(event.time)}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-white/70">

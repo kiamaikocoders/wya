@@ -15,6 +15,7 @@ export interface Event {
   date: string;
   end_date?: string | null; // Last day of event (YYYY-MM-DD), null for single-day
   time?: string; // Optional event start time (HH:MM:SS format)
+  end_time?: string | null;
   location: string;
   location_url?: string | null; // Optional maps link (Google/Apple/Mapbox/etc.)
   image_url?: string;

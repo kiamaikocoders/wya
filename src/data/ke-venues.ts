@@ -751,6 +751,49 @@ export const KE_VENUES: KeVenue[] = [
   },
 ];
 
+function normalizeVenueText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const CITY_ONLY_HEADS = new Set([
+  'nairobi',
+  'mombasa',
+  'kisumu',
+  'nakuru',
+  'eldoret',
+  'malindi',
+  'machakos',
+  'kenya',
+]);
+
+/** Strict first-segment / alias match — never city-only ("Nairobi"). */
+export function findKeVenueByLocation(location?: string | null): KeVenue | null {
+  const raw = (location || '').trim();
+  if (!raw) return null;
+  const head = normalizeVenueText(raw.split(',')[0] || '');
+  const full = normalizeVenueText(raw);
+  if (head.length < 4 || CITY_ONLY_HEADS.has(head)) return null;
+
+  let best: { venue: KeVenue; score: number } | null = null;
+  for (const venue of KE_VENUES) {
+    const names = [venue.name, ...venue.aliases]
+      .map(normalizeVenueText)
+      .filter((name) => name.length >= 4);
+    for (const name of names) {
+      let score = 0;
+      if (head === name || full === name) score = 100 + name.length;
+      else if (head.startsWith(name)) score = 80 + name.length;
+      else if (full.startsWith(name)) score = 70 + name.length;
+      if (score > (best?.score ?? 0)) best = { venue, score };
+    }
+  }
+  return best && best.score >= 80 ? best.venue : null;
+}
+
 export function eventsAtVenue<
   T extends { location?: string | null; latitude?: number | null; longitude?: number | null },
 >(events: T[], venue: KeVenue): T[] {

@@ -19,6 +19,7 @@ import type { SeededEvent } from './figmaSeededEvents';
 import { eventMatchesParentCategory } from '@/lib/event-category-parents';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
+import { resolveEventPin } from '@/lib/event-pin';
 
 type SortKey = 'latest' | 'soonest' | 'price-low' | 'price-high';
 type ViewMode = 'grid' | 'map';
@@ -411,12 +412,7 @@ const EventsPage = () => {
           >
             <EventMap
               events={events.filter(
-                (e) =>
-                  isEventInMapDateWindow(e) &&
-                  typeof e.latitude === 'number' &&
-                  typeof e.longitude === 'number' &&
-                  Number.isFinite(e.latitude) &&
-                  Number.isFinite(e.longitude)
+                (e) => isEventInMapDateWindow(e) && Boolean(resolveEventPin(e))
               )}
               height="min(78vh, 900px)"
               className="rounded-[20px] shadow-none"
@@ -691,7 +687,9 @@ function FeaturedEventsCarousel({
                   {event.title}
                 </h3>
                 <p className={cn('text-sm whitespace-pre', muted)}>
-                  {event.dateLabel}  ·  {event.location.split(',')[0]}  ·  {event.ticketLabel}
+                  {[event.dateLabel, event.timeLabel, event.location.split(',')[0], event.ticketLabel]
+                    .filter(Boolean)
+                    .join('  ·  ')}
                 </p>
                 <span className="rounded-[10px] bg-[#ff6b35] px-[18px] py-3 text-sm font-semibold text-white">
                   Get tickets
@@ -783,7 +781,7 @@ function SeedCard({
         </p>
         <h3 className={cn('line-clamp-1 text-[15px] font-semibold', heading)}>{event.title}</h3>
         <p className={cn('text-xs whitespace-pre', muted)}>
-          {event.dateLabel}  ·  {event.location.split(',')[0]}
+          {[event.dateLabel, event.timeLabel, event.location.split(',')[0]].filter(Boolean).join('  ·  ')}
         </p>
         <div className="flex items-center justify-between pt-1">
           <p className={cn('text-[13px] font-bold', heading)}>{event.ticketLabel}</p>

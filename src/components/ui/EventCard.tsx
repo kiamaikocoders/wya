@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar, MapPin, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import type { Event } from '@/types/event.types';
+import { formatEventTimeLabel } from '@/lib/event-datetime';
 
 export interface EventCardProps {
   id: string;
@@ -96,6 +97,12 @@ const EventCard: React.FC<EventCardProps> = (props) => {
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
               <span className="truncate">{formattedDate}</span>
             </div>
+            {formatEventTimeLabel(event?.time) && (
+              <div className="flex items-center text-xs sm:text-sm text-text-white/70">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{formatEventTimeLabel(event?.time)}</span>
+              </div>
+            )}
             <div className="flex items-center text-xs sm:text-sm text-text-white/70">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
               <span className="truncate">{eventLocation}</span>

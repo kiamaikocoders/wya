@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, Music, Ticket, Minus, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatEventTimeLabel } from '@/lib/event-datetime';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -144,10 +145,10 @@ const TicketPurchaseModal: React.FC<TicketPurchaseModalProps> = ({
               <span>{format(new Date(event.date), 'EEEE, MMMM d, yyyy')}</span>
             </div>
 
-            {event.time && (
+            {formatEventTimeLabel(event.time) && (
               <div className="flex items-center gap-3 text-white/90">
                 <Clock className="h-5 w-5 text-gradient-orange-accent" />
-                <span>{event.time.slice(0, 5)}</span>
+                <span>{formatEventTimeLabel(event.time)}</span>
               </div>
             )}
 

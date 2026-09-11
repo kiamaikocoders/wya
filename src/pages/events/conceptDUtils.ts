@@ -1,6 +1,8 @@
-import { format, parseISO, isValid, nextSaturday, nextSunday, startOfDay, endOfDay } from 'date-fns';
+import { nextSaturday, nextSunday, startOfDay, endOfDay } from 'date-fns';
 import type { Event } from '@/types/event.types';
 import { eventMatchesParentCategory } from '@/lib/event-category-parents';
+import { formatEventDateLabel as formatCalendarDate, formatEventTimeLabel } from '@/lib/event-datetime';
+import { resolveEventPin } from '@/lib/event-pin';
 import { FIGMA_VIBE_COUNTS, type SeededEvent } from './figmaSeededEvents';
 
 export const VIBE_CATEGORIES = FIGMA_VIBE_COUNTS.map((v) => ({
@@ -14,16 +16,14 @@ export function formatEventPrice(price?: number | null): string {
 }
 
 export function formatEventDateLabel(date?: string | null): string {
-  if (!date) return 'Date TBA';
-  const raw = date.includes('T') ? date : `${date.slice(0, 10)}T12:00:00`;
-  const d = parseISO(raw);
-  return isValid(d) ? format(d, 'EEE · d MMM') : date.slice(0, 10);
+  return formatCalendarDate(date);
 }
 
 export function formatEventMeta(event: Event): string {
-  const datePart = formatEventDateLabel(event.date);
+  const datePart = formatCalendarDate(event.date);
+  const timePart = formatEventTimeLabel(event.time);
   const place = event.location?.split(',')[0]?.trim() || event.location || 'Kenya';
-  return `${datePart}  ·  ${place}`;
+  return [datePart, timePart, place].filter(Boolean).join('  ·  ');
 }
 
 export function formatFeaturedMeta(event: Event): string {
@@ -35,6 +35,8 @@ export function toBrowseEvent(event: Event): SeededEvent {
   const dateIso = event.date?.includes('T')
     ? event.date.slice(0, 10)
     : (event.date || '').slice(0, 10);
+
+  const pin = resolveEventPin(event);
 
   return {
     id: event.id,
@@ -54,10 +56,11 @@ export function toBrowseEvent(event: Event): SeededEvent {
     featured: event.featured ?? event.is_featured ?? false,
     tags: event.tags || [],
     capacity: event.capacity,
-    latitude: event.latitude,
-    longitude: event.longitude,
+    latitude: pin?.latitude,
+    longitude: pin?.longitude,
     performing_artists: event.performing_artists,
-    dateLabel: formatEventDateLabel(event.date),
+    dateLabel: formatCalendarDate(event.date),
+    timeLabel: formatEventTimeLabel(event.time) || undefined,
     ticketLabel: formatEventPrice(event.price),
   };
 }

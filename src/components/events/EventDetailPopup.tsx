@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { getSeededEvent, type SeededEvent } from '@/pages/events/figmaSeededEvents';
 import { formatEventPrice, resolveCategoryImage } from '@/pages/events/conceptDUtils';
+import { formatEventDateTimeLabel } from '@/lib/event-datetime';
+import { resolveEventPin } from '@/lib/event-pin';
 import { publicHostLabel } from '@/lib/display-name';
 import MapView from '@/components/ui/MapView';
 import { googleMapsDirectionsUrl, googleMapsSearchUrl } from '@/lib/location-service';
@@ -96,13 +98,14 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
           logoClass: undefined as string | undefined,
         }))
         .slice(0, 3);
+      const pin = resolveEventPin(liveEvent);
       return {
         title: liveEvent.title,
         subtitle: `${place} · ${liveEvent.category || 'Live event'} · Ages 18+`,
         category: liveEvent.category,
         featured: Boolean(liveEvent.featured || liveEvent.is_featured),
         cover: liveEvent.image_url || resolveCategoryImage(liveEvent.category),
-        dateTime: liveEvent.date,
+        dateTime: formatEventDateTimeLabel(liveEvent.date, liveEvent.time),
         venue: liveEvent.location || 'Venue TBA',
         tickets: priceLabel === 'Free' ? 'Free entry' : `From ${priceLabel}`,
         attendance: liveEvent.capacity
@@ -117,16 +120,17 @@ export function EventDetailPopup({ eventId, open, onClose }: EventDetailPopupPro
         sponsors: apiSponsors,
         priceLabel,
         ticketLink: (liveEvent as { ticket_link?: string }).ticket_link,
-        latitude: liveEvent.latitude ?? null,
-        longitude: liveEvent.longitude ?? null,
+        latitude: pin?.latitude ?? null,
+        longitude: pin?.longitude ?? null,
         location_url: liveEvent.location_url ?? null,
       };
     }
     if (useSeeded && seeded) {
+      const pin = resolveEventPin(seeded);
       return {
         ...mapSeeded(seeded),
-        latitude: seeded.latitude ?? null,
-        longitude: seeded.longitude ?? null,
+        latitude: pin?.latitude ?? null,
+        longitude: pin?.longitude ?? null,
         location_url: seeded.location_url ?? null,
       };
     }
@@ -532,7 +536,7 @@ function mapSeeded(seeded: SeededEvent) {
     category: seeded.category,
     featured: Boolean(seeded.featured),
     cover: seeded.image_url || resolveCategoryImage(seeded.category),
-    dateTime: seeded.timeLabel || seeded.dateLabel,
+    dateTime: formatEventDateTimeLabel(seeded.date, seeded.time),
     venue: seeded.location,
     tickets: seeded.ticketLabel,
     attendance:
