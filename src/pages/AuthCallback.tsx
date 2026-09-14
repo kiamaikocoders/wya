@@ -19,15 +19,28 @@ async function applyPendingAvatar(userId: string, email?: string | null) {
   }
 }
 
+const PENDING_WEB_RECOVERY_KEY = 'wya_pending_password_recovery';
+
 function shouldHandoffToNativeApp(
   pathname: string,
   searchParams: URLSearchParams,
   type: string,
 ): boolean {
-  if (pathname.includes('/auth/confirm')) return true;
   if (searchParams.get('app') === 'wya' || searchParams.get('native') === '1') return true;
-  if (type === 'recovery' && isMobileAuthUserAgent()) return true;
+  if (!isMobileAuthUserAgent()) return false;
+  if (pathname.includes('/auth/confirm')) return true;
+  if (type === 'recovery') return true;
   return false;
+}
+
+function consumePendingWebRecovery(): boolean {
+  try {
+    const pending = sessionStorage.getItem(PENDING_WEB_RECOVERY_KEY);
+    if (pending) sessionStorage.removeItem(PENDING_WEB_RECOVERY_KEY);
+    return pending === '1';
+  } catch {
+    return false;
+  }
 }
 
 const capturedAuthLocation =
@@ -100,11 +113,17 @@ const AuthCallback = () => {
 
         // PKCE / modern confirm links: ?code=...
         if (code) {
+          let recovered = type === 'recovery' || consumePendingWebRecovery();
+          const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'PASSWORD_RECOVERY') recovered = true;
+          });
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          authSub.subscription.unsubscribe();
           if (error) throw error;
           if (data.user) {
             await applyPendingAvatar(data.user.id, data.user.email);
-            if (type === 'recovery') {
+            if (recovered || type === 'recovery') {
               setCallbackType('recovery');
               setStatus('success');
               setMessage('Identity verified. Set a new password…');
@@ -125,7 +144,7 @@ const AuthCallback = () => {
         const { data: existing } = await supabase.auth.getSession();
         if (existing.session?.user && !token && !tokenHash) {
           await applyPendingAvatar(existing.session.user.id, existing.session.user.email);
-          if (type === 'recovery') {
+          if (type === 'recovery' || consumePendingWebRecovery()) {
             setCallbackType('recovery');
             setStatus('success');
             setMessage('Identity verified. Set a new password…');

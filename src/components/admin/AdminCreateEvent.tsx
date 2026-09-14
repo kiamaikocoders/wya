@@ -52,6 +52,7 @@ import {
 import { createEventSeriesWithOccurrences } from '@/lib/event-series-service';
 import { useAuth } from '@/contexts/AuthContext';
 import { sponsorService } from '@/lib/sponsor/sponsor-service';
+import { AdminEventSponsorsField } from '@/components/admin/AdminEventSponsorsField';
 
 interface Category {
   id: number;
@@ -874,7 +875,7 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                     className="w-80 max-h-72 overflow-y-auto p-2 sm:w-96"
                   >
                     {mainCategories.map((parent) => (
-                      <div key={parent.id} className="mb-2 last:mb-0">
+                      <div key={`${parent.id}-${parent.name}`} className="mb-2 last:mb-0">
                         <p className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                           {parent.icon ? `${parent.icon} ` : ''}
                           {parent.name}
@@ -1008,7 +1009,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="time" className="text-xs font-semibold">
-                    Start time
+                    {formData.end_date && formData.end_date !== formData.date
+                      ? 'First day start'
+                      : 'Start time'}
                   </Label>
                   <Input
                     id="time"
@@ -1021,7 +1024,9 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="end_time" className="text-xs font-semibold">
-                    End time
+                    {formData.end_date && formData.end_date !== formData.date
+                      ? 'Last day end'
+                      : 'End time'}
                   </Label>
                   <Input
                     id="end_time"
@@ -1033,6 +1038,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   />
                 </div>
               </div>
+              {formData.end_date && formData.end_date !== formData.date ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Multi-day: start time is day one, end time is when the last day wraps.
+                </p>
+              ) : null}
 
               <RecurrenceFields
                 value={recurrence}
@@ -1182,7 +1192,16 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                   </button>
                 ) : null}
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Search by name or email. This person is shown as the host on the event card.
+              </p>
             </div>
+
+            <AdminEventSponsorsField
+              sponsorIds={sponsorIds}
+              onChange={setSponsorIds}
+              catalog={sponsorsCatalog}
+            />
 
             <div className="flex flex-col gap-2.5">
               {(
@@ -1356,46 +1375,11 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
                 ) : null}
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Sponsors</Label>
-                <p className="text-[11px] text-muted-foreground">
-                  Optional. First selected is title sponsor.
-                </p>
-                {sponsorsCatalog.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No sponsors in the catalog yet.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {sponsorsCatalog.map((sponsor) => {
-                      const selected = sponsorIds.includes(sponsor.id);
-                      const title = selected && sponsorIds[0] === sponsor.id;
-                      return (
-                        <button
-                          key={sponsor.id}
-                          type="button"
-                          onClick={() =>
-                            setSponsorIds((prev) =>
-                              prev.includes(sponsor.id)
-                                ? prev.filter((id) => id !== sponsor.id)
-                                : [...prev, sponsor.id],
-                            )
-                          }
-                          className={cn(
-                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold',
-                            selected
-                              ? 'border-primary bg-primary/15 text-primary'
-                              : 'border-border text-muted-foreground',
-                          )}
-                        >
-                          {sponsor.name}
-                          {title ? (
-                            <span className="text-[10px] uppercase tracking-wide">Title</span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <AdminEventSponsorsField
+                sponsorIds={sponsorIds}
+                onChange={setSponsorIds}
+                catalog={sponsorsCatalog}
+              />
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold">Tags</Label>

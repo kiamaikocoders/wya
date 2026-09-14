@@ -35,6 +35,8 @@ import {
   type SeriesEditScope,
 } from '@/lib/event-series-service';
 import { cn } from '@/lib/utils';
+import { sponsorService } from '@/lib/sponsor/sponsor-service';
+import { AdminEventSponsorsField } from '@/components/admin/AdminEventSponsorsField';
 
 interface Category {
   id: number;
@@ -87,7 +89,27 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
     createEmptyTicketTier('Regular', event.price || 0),
   ]);
   const [tiersLoaded, setTiersLoaded] = useState(false);
+  const [sponsorIds, setSponsorIds] = useState<number[]>([]);
   const isSeriesEvent = Boolean(event.series_id);
+
+  const { data: sponsorsCatalog = [] } = useQuery({
+    queryKey: ['admin-sponsors-catalog'],
+    queryFn: () => sponsorService.getSponsors(),
+  });
+
+  const { data: existingEventSponsors = [] } = useQuery({
+    queryKey: ['event-sponsors', event.id],
+    queryFn: () => sponsorService.getEventSponsors(Number(event.id)),
+  });
+
+  useEffect(() => {
+    if (!existingEventSponsors.length) return;
+    setSponsorIds(
+      existingEventSponsors
+        .map((row) => row.sponsor_id)
+        .filter((id): id is number => Number.isFinite(id)),
+    );
+  }, [existingEventSponsors]);
 
   // Fetch categories from database
   const { data: categoriesData = [] } = useQuery<Category[]>({
@@ -320,6 +342,14 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       for (const id of result.updatedIds) {
         await replaceEventTicketTypes(id, tiers);
       }
+      try {
+        for (const id of result.updatedIds) {
+          await sponsorService.replaceEventSponsors(id, sponsorIds);
+        }
+      } catch (sponsorError) {
+        console.error('Failed to save sponsors:', sponsorError);
+        toast.error('Event updated, but sponsors failed to save');
+      }
       return result;
     },
     onSuccess: (result) => {
@@ -328,6 +358,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
       queryClient.invalidateQueries({ queryKey: ['admin-event-stats'] });
       queryClient.invalidateQueries({ queryKey: ['event-categories', event.id] });
       queryClient.invalidateQueries({ queryKey: ['event-ticket-types', event.id] });
+      queryClient.invalidateQueries({ queryKey: ['event-sponsors', event.id] });
       const n = result.updatedIds.length;
       toast.success(
         result.scope === 'this'
@@ -538,7 +569,7 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                 ) : null}
                 <Accordion type="multiple" className="w-full border rounded-lg">
                   {organizedCategories.map((parentCategory) => (
-                    <AccordionItem key={parentCategory.id} value={`parent-${parentCategory.id}`} className="border-b">
+                    <AccordionItem key={`${parentCategory.id}-${parentCategory.name}`} value={`parent-${parentCategory.id}-${parentCategory.name}`} className="border-b">
                       <AccordionTrigger className="px-4 py-3 hover:no-underline">
                         <div className="flex items-center gap-2">
                           {parentCategory.icon && <span>{parentCategory.icon}</span>}
@@ -705,7 +736,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="time">Start time</Label>
+                <Label htmlFor="time">
+                  {formData.end_date && formData.end_date !== formData.date
+                    ? 'First day start'
+                    : 'Start time'}
+                </Label>
                 <Input
                   id="time"
                   name="time"
@@ -715,7 +750,11 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end_time">End time</Label>
+                <Label htmlFor="end_time">
+                  {formData.end_date && formData.end_date !== formData.date
+                    ? 'Last day end'
+                    : 'End time'}
+                </Label>
                 <Input
                   id="end_time"
                   name="end_time"
@@ -955,6 +994,12 @@ const AdminEditEvent: React.FC<AdminEditEventProps> = ({ event, onSuccess, onCan
                 </div>
               )}
             </div>
+
+            <AdminEventSponsorsField
+              sponsorIds={sponsorIds}
+              onChange={setSponsorIds}
+              catalog={sponsorsCatalog}
+            />
           </div>
 
           {/* Form Actions */}

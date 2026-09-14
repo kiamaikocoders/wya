@@ -36,6 +36,18 @@ export function organizeEventCategoryParents<
           a.order_index - b.order_index || a.name.localeCompare(b.name),
       );
 
+    if (/^food\s*(&|and)\s*nightlife$/i.test(canonical.name)) {
+      const nightlifeSubs = subcategories.filter((c) =>
+        /pub crawl|mixology|cocktail|club|nightlife|dj night/i.test(c.name),
+      );
+      const foodSubs = subcategories.filter(
+        (c) => !/pub crawl|mixology|cocktail|club|nightlife|dj night/i.test(c.name),
+      );
+      result.push({ ...canonical, name: 'Food', subcategories: foodSubs });
+      result.push({ ...canonical, name: 'Nightlife', subcategories: nightlifeSubs });
+      continue;
+    }
+
     result.push({
       ...canonical,
       subcategories,

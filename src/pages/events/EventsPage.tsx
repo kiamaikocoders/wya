@@ -16,7 +16,7 @@ import { isNativeApp } from '@/lib/post-auth-navigation';
 import { getPageWindow, useListPagination } from '@/hooks/use-list-pagination';
 import { countEventsByVibe, toBrowseEvent } from './conceptDUtils';
 import type { SeededEvent } from './figmaSeededEvents';
-import { eventMatchesParentCategory } from '@/lib/event-category-parents';
+import { EVENT_PARENT_CATEGORIES, eventMatchesParentCategory } from '@/lib/event-category-parents';
 import { isEventInMapDateWindow } from '@/lib/event-map-window';
 import { isEventUpcoming, keepNextOccurrencePerSeries } from '@/lib/event-upcoming';
 import { resolveEventPin } from '@/lib/event-pin';
@@ -27,16 +27,7 @@ type ViewMode = 'grid' | 'map';
 const PAGE_SIZE = 12;
 
 /** Parent category chips aligned with admin create-event taxonomy. */
-const CATEGORY_CHIPS = [
-  'Music & Entertainment',
-  'Food & Nightlife',
-  'Arts & Culture',
-  'Business & Networking',
-  'Health & Wellness',
-  'Sports & Outdoor',
-  'Fashion & Lifestyle',
-  'Gaming & Tech',
-] as const;
+const CATEGORY_CHIPS = EVENT_PARENT_CATEGORIES;
 
 /**
  * Public events browse — live DB events only (no Figma seed catalog).

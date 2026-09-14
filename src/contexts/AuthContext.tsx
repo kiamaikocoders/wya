@@ -680,6 +680,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return;
       }
       const redirectTo = getAllowedPasswordResetRedirectUrl();
+      try {
+        sessionStorage.setItem('wya_pending_password_recovery', '1');
+      } catch {
+        /* ignore */
+      }
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });

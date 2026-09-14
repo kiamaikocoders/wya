@@ -105,6 +105,24 @@ export async function improveEmailTemplateSubject(input: {
   );
 }
 
+function fallbackEventDescription(input: {
+  title: string;
+  location?: string;
+  date?: string;
+  category?: string;
+  existing?: string;
+}): string {
+  if (input.existing?.trim()) return input.existing.trim();
+  const where = input.location ? ` at ${input.location}` : '';
+  const when = input.date ? ` on ${input.date}` : '';
+  const vibe = input.category ? ` ${input.category} energy` : '';
+  return [
+    `${input.title} lands${where}${when}.${vibe ? ` Expect${vibe}.` : ''}`,
+    'Come through for the music, the people, and a night that actually feels like Nairobi.',
+    'Save your spot, bring your crew, and we will see you there.',
+  ].join('\n\n');
+}
+
 export async function draftEventDescription(input: {
   title: string;
   location?: string;
@@ -115,19 +133,24 @@ export async function draftEventDescription(input: {
   const mode = input.existing?.trim()
     ? 'Improve and polish this event description while keeping the facts. Keep under 1800 characters.'
     : 'Write an engaging event description (3–5 short paragraphs or dense sentences). Keep under 1800 characters.';
-  return ask(
-    COPY,
-    [
-      mode,
-      `Title: ${input.title}`,
-      input.location ? `Location: ${input.location}` : '',
-      input.date ? `Date: ${input.date}` : '',
-      input.category ? `Category: ${input.category}` : '',
-      input.existing?.trim() ? `Current draft:\n${input.existing}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n')
-  );
+  try {
+    return await ask(
+      COPY,
+      [
+        mode,
+        `Title: ${input.title}`,
+        input.location ? `Location: ${input.location}` : '',
+        input.date ? `Date: ${input.date}` : '',
+        input.category ? `Category: ${input.category}` : '',
+        input.existing?.trim() ? `Current draft:\n${input.existing}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  } catch (error) {
+    console.warn('[AI] draftEventDescription failed, using starter copy', error);
+    return fallbackEventDescription(input);
+  }
 }
 
 export async function draftWhatToExpect(input: {

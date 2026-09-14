@@ -34,7 +34,8 @@ export const FIGMA_SEEDED_EVENTS: SeededEvent[] = [];
 /** Parent category rail — matches admin create-event taxonomy. */
 export const FIGMA_VIBE_COUNTS: { key: string; count: number; image: string }[] = [
   { key: 'Music & Entertainment', count: 0, image: '/events/vibe-music.png' },
-  { key: 'Food & Nightlife', count: 0, image: '/events/vibe-nightlife.png' },
+  { key: 'Food', count: 0, image: '/events/vibe-nightlife.png' },
+  { key: 'Nightlife', count: 0, image: '/events/vibe-nightlife.png' },
   { key: 'Arts & Culture', count: 0, image: '/events/vibe-arts.png' },
   { key: 'Business & Networking', count: 0, image: '/events/vibe-tech.jpg' },
   { key: 'Health & Wellness', count: 0, image: '/events/vibe-wellness.jpg' },

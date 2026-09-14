@@ -76,6 +76,39 @@ export const sponsorService = {
     const { error } = await supabase.from('event_sponsors').insert(rows);
     if (error) throw error;
   },
+
+  createSponsor: async (input: {
+    name: string;
+    logo_url?: string | null;
+    website_url?: string | null;
+  }): Promise<Sponsor> => {
+    const name = input.name.trim();
+    if (!name) throw new Error('Sponsor name is required');
+
+    const { data, error } = await supabase
+      .from('sponsors')
+      .insert({
+        name,
+        logo_url: input.logo_url?.trim() || '',
+        website_url: input.website_url?.trim() || null,
+        partnership_level: 'partner',
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data as Sponsor;
+  },
+
+  replaceEventSponsors: async (eventId: number, sponsorIds: number[]): Promise<void> => {
+    if (!Number.isFinite(eventId)) return;
+    const { error: deleteError } = await supabase
+      .from('event_sponsors')
+      .delete()
+      .eq('event_id', eventId);
+    if (deleteError) throw deleteError;
+    await sponsorService.attachEventSponsors([eventId], sponsorIds);
+  },
   
   // Get sponsor zone (singular)
   getSponsorZone: async (sponsorId: number): Promise<SponsorZone | null> => {

@@ -310,22 +310,22 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'studio18',
     name: 'Studio18',
-    aliases: ['studio18', 'studio 18', 'studio eighteen'],
-    label: 'Studio18, Westlands, Nairobi',
-    area: 'Westlands',
+    aliases: ['studio18', 'studio 18', 'studio eighteen', 'studio 18 kenya'],
+    label: 'Studio18, Parklands Road, Westlands, Nairobi',
+    area: 'Parklands',
     city: 'Nairobi',
-    latitude: -1.2648,
-    longitude: 36.8092,
+    latitude: -1.2618,
+    longitude: 36.8124,
   },
   {
     id: '254-beer-district',
     name: '254 Beer District',
-    aliases: ['254 beer district', 'beer district', '254 brewing'],
-    label: '254 Beer District, Westlands, Nairobi',
+    aliases: ['254 beer district', 'beer district', '254 brewing', 'the beer district'],
+    label: '254 Beer District, Delta Towers Clubhouse, Waiyaki Way, Westlands, Nairobi',
     area: 'Westlands',
     city: 'Nairobi',
-    latitude: -1.265,
-    longitude: 36.8055,
+    latitude: -1.2615,
+    longitude: 36.8008,
   },
   {
     id: 'kengeles',
@@ -340,12 +340,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'soho',
     name: 'Soho',
-    aliases: ['soho', 'soho kilimani', "soho's bar", 'soho nairobi'],
-    label: 'Soho, Kilimani, Nairobi',
+    aliases: ['soho', 'soho kilimani', "soho's bar", 'soho nairobi', 'soho adlife'],
+    label: 'Soho, Mezzanine, Adlife Plaza, Kilimani, Nairobi',
     area: 'Kilimani',
     city: 'Nairobi',
-    latitude: -1.2915,
-    longitude: 36.7895,
+    latitude: -1.29477,
+    longitude: 36.78724,
   },
   {
     id: 'cheche-books',
@@ -370,12 +370,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'dijo',
     name: 'Dijo',
-    aliases: ['dijo', 'dijo nairobi', 'dijo rooftop'],
-    label: 'Dijo, Westlands, Nairobi',
+    aliases: ['dijo', 'dijo nairobi', 'dijo rooftop', 'dijo mandrake'],
+    label: 'Dijo, rooftop The Mandrake, Ring Road, Westlands, Nairobi',
     area: 'Westlands',
     city: 'Nairobi',
-    latitude: -1.2662,
-    longitude: 36.8058,
+    latitude: -1.26566,
+    longitude: 36.80083,
   },
   {
     id: 'ncai',
@@ -420,13 +420,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'ibiza',
     name: 'Ibiza',
-    aliases: ['ibiza', 'ibiza nairobi', 'ibiza club', 'ibiza yaya', 'club ibiza'],
-    label: 'Ibiza, Argwings Kodhek Road, Kilimani, Nairobi',
-    area: 'Kilimani',
+    aliases: ['ibiza', 'ibiza nairobi', 'ibiza club', 'ibiza 254', 'club ibiza', 'ibiza lavington'],
+    label: 'Ibiza, 5th Floor, Lavington Mall, James Gichuru Road, Nairobi',
+    area: 'Lavington',
     city: 'Nairobi',
-    // Club Ibiza Nairobi (near Yaya Centre / Argwings Kodhek)
-    latitude: -1.29295,
-    longitude: 36.78755,
+    latitude: -1.27993,
+    longitude: 36.76991,
   },
   {
     id: 'tamu-zaituni',
@@ -438,16 +437,6 @@ export const KE_VENUES: KeVenue[] = [
     // Hosted at Masshouse — distinct from The Alchemist (Westlands)
     latitude: -1.3120613,
     longitude: 36.7441232,
-  },
-  {
-    id: 'paper-cafe',
-    name: 'Paper Cafe',
-    aliases: ['paper cafe', 'paper café', 'paper cafe westlands'],
-    label: 'Paper Cafe, Waiyaki Slip Road, Westlands, Nairobi',
-    area: 'Westlands',
-    city: 'Nairobi',
-    latitude: -1.26105,
-    longitude: 36.79115,
   },
   {
     id: 'national-art-gallery',
@@ -472,12 +461,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'the-canteen',
     name: 'The Canteen',
-    aliases: ['the canteen', 'canteen nairobi'],
-    label: 'The Canteen, Nairobi',
-    area: 'Westlands',
+    aliases: ['the canteen', 'canteen nairobi', 'the canteen gedi'],
+    label: 'The Canteen, Gedi Road, Lavington, Nairobi',
+    area: 'Lavington',
     city: 'Nairobi',
-    latitude: -1.2618,
-    longitude: 36.8065,
+    latitude: -1.27986,
+    longitude: 36.77019,
   },
   {
     id: 'red-room',
@@ -552,12 +541,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'jalgua',
     name: 'Jalgua',
-    aliases: ['jalgua', 'jal gua'],
-    label: 'Jalgua, Nairobi',
-    area: 'Westlands',
+    aliases: ['jalgua', 'jal gua', 'jal gua cafe', 'jalgua kenyatta market'],
+    label: 'Jalgua, Stall E8, Kenyatta Market, Mtongwe Road, Nairobi',
+    area: 'Kenyatta Market',
     city: 'Nairobi',
-    latitude: -1.267,
-    longitude: 36.802,
+    latitude: -1.30675,
+    longitude: 36.80155,
   },
   {
     id: 'kahoffee',
@@ -603,11 +592,11 @@ export const KE_VENUES: KeVenue[] = [
     id: 'nubian-gallery',
     name: 'Nubian Gallery',
     aliases: ['nubian gallery', 'nubian art gallery'],
-    label: 'Nubian Gallery, Westlands, Nairobi',
+    label: 'Nubian Art Gallery, Stellato Mall, 31 Muthithi Road, Westlands, Nairobi',
     area: 'Westlands',
     city: 'Nairobi',
-    latitude: -1.2645,
-    longitude: 36.8068,
+    latitude: -1.2638,
+    longitude: 36.8062,
   },
   {
     id: 'banana-hill-art-gallery',
@@ -632,12 +621,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: '213',
     name: '213',
-    aliases: ['213', '213 nairobi', '213 bar', '213 lounge'],
-    label: '213, Westlands, Nairobi',
-    area: 'Westlands',
+    aliases: ['213', '213 nairobi', '213 bar', '213 lounge', '213 lavington', 'club 213'],
+    label: '213, Lavington Shopping Centre, James Gichuru & Isaac Gathanju, Nairobi',
+    area: 'Lavington',
     city: 'Nairobi',
-    latitude: -1.2675,
-    longitude: 36.8058,
+    latitude: -1.2802,
+    longitude: 36.7704,
   },
   {
     id: 'covo-thika-road',
@@ -712,12 +701,12 @@ export const KE_VENUES: KeVenue[] = [
   {
     id: 'cuban-code',
     name: 'Cuban Code',
-    aliases: ['cuban code', 'cubancode', 'cuban code muthangari'],
-    label: 'Cuban Code, Muthangari Road, Nairobi',
-    area: 'Lavington',
+    aliases: ['cuban code', 'cubancode', 'cuban code muthangari', 'cuban code africa house'],
+    label: 'Cuban Code, Africa House, Muthangari Road, Nairobi',
+    area: 'Muthangari',
     city: 'Nairobi',
-    latitude: -1.2705,
-    longitude: 36.7895,
+    latitude: -1.2688,
+    longitude: 36.7862,
   },
   {
     id: 'cin-cin-bar',
@@ -770,28 +759,42 @@ const CITY_ONLY_HEADS = new Set([
   'kenya',
 ]);
 
-/** Strict first-segment / alias match — never city-only ("Nairobi"). */
+function nameLongEnough(name: string): boolean {
+  return name.length >= 4 || /^\d{3,}$/.test(name);
+}
+
+function textContainsName(hay: string, name: string): boolean {
+  if (!nameLongEnough(name)) return false;
+  return (
+    hay === name ||
+    hay.startsWith(`${name} `) ||
+    hay.endsWith(` ${name}`) ||
+    hay.includes(` ${name} `)
+  );
+}
+
+/** First-segment / alias match — never city-only ("Nairobi"). */
 export function findKeVenueByLocation(location?: string | null): KeVenue | null {
   const raw = (location || '').trim();
   if (!raw) return null;
   const head = normalizeVenueText(raw.split(',')[0] || '');
   const full = normalizeVenueText(raw);
-  if (head.length < 4 || CITY_ONLY_HEADS.has(head)) return null;
+  if (!nameLongEnough(head) || CITY_ONLY_HEADS.has(head)) return null;
 
   let best: { venue: KeVenue; score: number } | null = null;
   for (const venue of KE_VENUES) {
     const names = [venue.name, ...venue.aliases]
       .map(normalizeVenueText)
-      .filter((name) => name.length >= 4);
+      .filter(nameLongEnough);
     for (const name of names) {
       let score = 0;
       if (head === name || full === name) score = 100 + name.length;
-      else if (head.startsWith(name)) score = 80 + name.length;
-      else if (full.startsWith(name)) score = 70 + name.length;
+      else if (head.startsWith(name) || textContainsName(head, name)) score = 80 + name.length;
+      else if (full.startsWith(name) || textContainsName(full, name)) score = 70 + name.length;
       if (score > (best?.score ?? 0)) best = { venue, score };
     }
   }
-  return best && best.score >= 80 ? best.venue : null;
+  return best && best.score >= 70 ? best.venue : null;
 }
 
 export function eventsAtVenue<
