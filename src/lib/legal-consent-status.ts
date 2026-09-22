@@ -4,6 +4,7 @@ import {
   PRIVACY_POLICY_VERSION,
 } from '@/legal/policy-versions';
 import type { Profile } from '@/lib/user-service';
+import { bootLocation, isPasswordRecoveryLanding } from '@/lib/auth-recovery';
 
 /** Matches primary DB admin check (username = 'admin'); exempt from media posting gate like ghost accounts. */
 export function isPrimaryAdminProfile(profile: Profile | null | undefined): boolean {
@@ -52,6 +53,7 @@ const SKIP_PREFIXES = [
 ] as const;
 
 export function shouldSkipLegalConsentGate(pathname: string): boolean {
+  if (isPasswordRecoveryLanding(bootLocation.search, bootLocation.hash)) return true;
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
   return SKIP_PREFIXES.some((p) => pathname === p || pathname.startsWith(p));
 }

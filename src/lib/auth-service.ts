@@ -3,6 +3,7 @@
 import { supabase } from './supabase';
 import { getAllowedPasswordResetRedirectUrl } from './get-redirect-url';
 import { getRequestPasswordResetUrl } from './supabase-functions-url';
+import { markPendingWebRecovery } from './auth-recovery';
 import { toast } from 'sonner';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -240,12 +241,14 @@ export const authService = {
   // Request password reset: uses rate-limited Edge Function if VITE_SUPABASE_URL set, else Supabase Auth (redirectTo allowlist only)
   forgotPassword: async (email: string): Promise<void> => {
     try {
+      markPendingWebRecovery();
+      const redirectTo = getAllowedPasswordResetRedirectUrl();
       const rateLimitedUrl = getRequestPasswordResetUrl();
       if (rateLimitedUrl) {
         const res = await fetch(rateLimitedUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
+          body: JSON.stringify({ email: email.trim(), redirectTo }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -254,7 +257,6 @@ export const authService = {
         }
         return;
       }
-      const redirectTo = getAllowedPasswordResetRedirectUrl();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
       });

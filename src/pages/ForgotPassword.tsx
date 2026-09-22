@@ -49,7 +49,8 @@ const ForgotPassword = () => {
           </p>
           <div className={cn('w-full rounded-[10px] px-3.5 py-3 text-left', t.inset)}>
             <p className={cn('text-xs leading-[18px]', t.muted)}>
-              Click the link in the email to reset your password. The link expires in 1 hour.
+              Open the link to set a new password on this website. After you save it, sign in to
+              the WYA app with the same email and password. The link expires in 1 hour.
             </p>
           </div>
           <button
@@ -76,7 +77,8 @@ const ForgotPassword = () => {
         <Logo href="/" size="sm" className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0" />
         <h1 className={cn('text-[26px] font-bold', t.heading)}>Forgot Password</h1>
         <p className={cn('text-sm leading-[22px]', t.muted)}>
-          Enter your email and we&apos;ll send a link to reset your password.
+          Enter your email and we&apos;ll send a link. You&apos;ll set the new password on this
+          website, then sign in to the WYA app with it.
         </p>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3.5">

@@ -1,3 +1,5 @@
+// Capture email-link query/hash before supabase-js can strip them.
+import '@/lib/auth-recovery'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'

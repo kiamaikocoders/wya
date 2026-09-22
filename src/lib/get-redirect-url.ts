@@ -1,7 +1,12 @@
 /**
  * Allowed redirect origins for auth (e.g. password reset).
  * Email clients cannot open custom schemes, so this always points at the HTTPS
- * bridge page (exact Supabase allow-list path, no query string).
+ * reset page (exact Supabase allow-list path, no query string).
+ *
+ * `/reset-password` is intentional: `/auth/confirm` is claimed by Android App
+ * Links and previously opened the native app with a PKCE verifier the browser
+ * does not have. Password reset completes on the website; users then sign in
+ * to the app with the new password.
  */
 import { PUBLIC_SITE_ORIGIN } from '@/lib/site-origins';
 
@@ -24,7 +29,7 @@ function allowedOrigins(): string[] {
 }
 
 /** Exact path listed in Supabase Auth redirect URLs. Do not append query params. */
-export const PASSWORD_RESET_CALLBACK_PATH = '/auth/confirm';
+export const PASSWORD_RESET_CALLBACK_PATH = '/reset-password';
 
 export function getAllowedPasswordResetRedirectUrl(): string {
   const canonical = `${PUBLIC_SITE_ORIGIN}${PASSWORD_RESET_CALLBACK_PATH}`;

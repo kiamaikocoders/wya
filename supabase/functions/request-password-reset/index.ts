@@ -3,6 +3,9 @@
  * Call this instead of supabase.auth.resetPasswordForEmail from the client.
  * Set ALLOWED_ORIGINS (CORS), SUPABASE_ANON_KEY (to call Auth recover), and optionally
  * REDIRECT_URL for the reset link (must be in Supabase Auth redirect allowlist).
+ *
+ * Recovery emails always redirect to the public website so the user can set a
+ * new password in the browser, then sign in to the native app with it.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -11,6 +14,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const maxAttemptsPerHour = 3;
+const DEFAULT_REDIRECT = "https://www.wya254.com/reset-password";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
@@ -21,12 +25,42 @@ const getAllowedOrigin = (requestOrigin: string | null): string | null => {
 
 const corsHeadersFor = (origin: string | null) => ({
   ...(origin ? { "Access-Control-Allow-Origin": origin } : {}),
-  "Access-Control-Allow-Headers": "content-type",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 });
 
 function isValidEmail(email: unknown): email is string {
   return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function isAllowedResetRedirect(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.search || parsed.hash) return false;
+    const host = parsed.hostname;
+    const path = parsed.pathname;
+    const okHost =
+      host === "www.wya254.com" ||
+      host === "wya254.com" ||
+      host === "localhost" ||
+      host === "127.0.0.1";
+    const okPath = path === "/reset-password" || path === "/auth/confirm" || path === "/auth/callback";
+    if (host === "localhost" || host === "127.0.0.1") {
+      return okPath && (parsed.protocol === "http:" || parsed.protocol === "https:");
+    }
+    return okHost && okPath && parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function pickRedirect(candidate: unknown): string {
+  if (typeof candidate === "string" && isAllowedResetRedirect(candidate)) {
+    return candidate;
+  }
+  const fromEnv = Deno.env.get("REDIRECT_URL")?.trim();
+  if (fromEnv && isAllowedResetRedirect(fromEnv)) return fromEnv;
+  return DEFAULT_REDIRECT;
 }
 
 serve(async (req) => {
@@ -101,7 +135,7 @@ serve(async (req) => {
       );
     }
 
-    const redirectUrl = Deno.env.get("REDIRECT_URL") || "https://www.wya254.com/auth/confirm";
+    const redirectUrl = pickRedirect(body?.redirectTo ?? body?.redirect_to);
     const recoverBody: { email: string; redirect_to?: string } = { email: normalizedEmail };
     recoverBody.redirect_to = redirectUrl;
 

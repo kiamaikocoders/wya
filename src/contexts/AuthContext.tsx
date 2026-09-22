@@ -7,6 +7,7 @@ import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
 import { adminConsoleUrl, getAdminSiteOrigin, isLocalDevHost } from '@/lib/site-origins';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
+import { markPendingWebRecovery, RESET_PASSWORD_PATH } from '@/lib/auth-recovery';
 import { onboardingNotifications } from '@/lib/onboarding-notifications';
 import {
   ATTENDEE_TERMS_VERSION,
@@ -214,6 +215,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.id);
+        if (event === 'PASSWORD_RECOVERY' && typeof window !== 'undefined') {
+          const path = window.location.pathname;
+          if (!path.startsWith(RESET_PASSWORD_PATH) && !path.startsWith('/auth/')) {
+            navigate(RESET_PASSWORD_PATH, { replace: true });
+          }
+        }
         if (session) {
           // Check if this is a new user (SIGNED_UP event)
           if (event === 'SIGNED_UP') {
@@ -663,12 +670,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const forgotPassword = async (email: string) => {
     setLoading(true);
     try {
+      markPendingWebRecovery();
+      const redirectTo = getAllowedPasswordResetRedirectUrl();
       const rateLimitedUrl = getRequestPasswordResetUrl();
       if (rateLimitedUrl) {
         const res = await fetch(rateLimitedUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
+          body: JSON.stringify({ email: email.trim(), redirectTo }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -678,12 +687,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
         toast.success('If an account exists, you will receive a reset link.');
         return;
-      }
-      const redirectTo = getAllowedPasswordResetRedirectUrl();
-      try {
-        sessionStorage.setItem('wya_pending_password_recovery', '1');
-      } catch {
-        /* ignore */
       }
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,

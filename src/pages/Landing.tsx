@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { getPostLoginPath } from '@/lib/post-auth-navigation';
+import { bootLocation, isPasswordRecoveryLanding } from '@/lib/auth-recovery';
 
 const METRICS = [
   { value: '12K+', label: 'Attendees' },
@@ -118,6 +119,11 @@ const Landing = () => {
   const [appModalOpen, setAppModalOpen] = useState(false);
 
   useEffect(() => {
+    const search = window.location.search || bootLocation.search;
+    const hash = window.location.hash || bootLocation.hash;
+    if (isPasswordRecoveryLanding(search, hash) || isPasswordRecoveryLanding(bootLocation.search, bootLocation.hash)) {
+      return;
+    }
     if (!loading && isAuthenticated) {
       navigate(getPostLoginPath(), { replace: true });
     }

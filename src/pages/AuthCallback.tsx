@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPostLoginPath } from '@/lib/post-auth-navigation';
 import { buildNativeAuthDeepLinks, isMobileAuthUserAgent } from '@/lib/native-auth-handoff';
+import { consumePendingWebRecovery } from '@/lib/auth-recovery';
 
 type CallbackType = 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'invite' | 'unknown';
 
@@ -19,34 +20,24 @@ async function applyPendingAvatar(userId: string, email?: string | null) {
   }
 }
 
-const PENDING_WEB_RECOVERY_KEY = 'wya_pending_password_recovery';
+const capturedAuthLocation =
+  typeof window !== 'undefined'
+    ? { search: window.location.search, hash: window.location.hash }
+    : { search: '', hash: '' };
 
 function shouldHandoffToNativeApp(
   pathname: string,
   searchParams: URLSearchParams,
   type: string,
 ): boolean {
+  // Password reset completes on the website. Native PKCE verifiers are not
+  // available in the browser, and auto-opening the app dumped users on `/`.
+  if (type === 'recovery') return false;
   if (searchParams.get('app') === 'wya' || searchParams.get('native') === '1') return true;
   if (!isMobileAuthUserAgent()) return false;
   if (pathname.includes('/auth/confirm')) return true;
-  if (type === 'recovery') return true;
   return false;
 }
-
-function consumePendingWebRecovery(): boolean {
-  try {
-    const pending = sessionStorage.getItem(PENDING_WEB_RECOVERY_KEY);
-    if (pending) sessionStorage.removeItem(PENDING_WEB_RECOVERY_KEY);
-    return pending === '1';
-  } catch {
-    return false;
-  }
-}
-
-const capturedAuthLocation =
-  typeof window !== 'undefined'
-    ? { search: window.location.search, hash: window.location.hash }
-    : { search: '', hash: '' };
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -77,8 +68,12 @@ const AuthCallback = () => {
           setCallbackType('signup');
         } else if (type === 'recovery') {
           setCallbackType('recovery');
-          if (token && !shouldHandoffToNativeApp(location.pathname, searchParams, type)) {
-            navigate(`/reset-password?token=${token}&type=recovery`);
+          if ((token || tokenHash) && !code) {
+            const next = new URLSearchParams();
+            if (tokenHash) next.set('token_hash', tokenHash);
+            else if (token) next.set('token', token);
+            next.set('type', 'recovery');
+            navigate(`/reset-password?${next.toString()}`);
             return;
           }
         } else if (type === 'magiclink') {
@@ -113,7 +108,7 @@ const AuthCallback = () => {
 
         // PKCE / modern confirm links: ?code=...
         if (code) {
-          let recovered = type === 'recovery' || consumePendingWebRecovery();
+          let recovered = type === 'recovery' || (!type && consumePendingWebRecovery());
           const { data: authSub } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'PASSWORD_RECOVERY') recovered = true;
           });
@@ -144,7 +139,7 @@ const AuthCallback = () => {
         const { data: existing } = await supabase.auth.getSession();
         if (existing.session?.user && !token && !tokenHash) {
           await applyPendingAvatar(existing.session.user.id, existing.session.user.email);
-          if (type === 'recovery' || consumePendingWebRecovery()) {
+          if (type === 'recovery' || (!type && consumePendingWebRecovery())) {
             setCallbackType('recovery');
             setStatus('success');
             setMessage('Identity verified. Set a new password…');
@@ -220,6 +215,22 @@ const AuthCallback = () => {
             setMessage('Email changed successfully!');
             toast.success('Email changed successfully!');
             setTimeout(() => navigate('/settings'), 2000);
+            return;
+          }
+        }
+
+        if ((token || tokenHash) && type === 'recovery') {
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash || token,
+            type: 'recovery',
+          });
+          if (error) throw error;
+          if (data.user) {
+            setCallbackType('recovery');
+            setStatus('success');
+            setMessage('Identity verified. Set a new password…');
+            toast.success('You can now set a new password.');
+            setTimeout(() => navigate('/reset-password'), 800);
             return;
           }
         }

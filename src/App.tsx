@@ -13,6 +13,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import AppOnlyRoute from "./components/auth/AppOnlyRoute";
 import { HostGate } from "./components/auth/HostGate";
+import { AuthLinkRedirect } from "./components/auth/AuthLinkRedirect";
 import { AdminHostRoutes } from "./components/auth/AdminHostRoutes";
 import { isAdminHost } from "./lib/site-origins";
 import { updateService } from './lib/update-service';
@@ -133,6 +134,7 @@ const App = () => {
       <HelmetProvider>
         <BrowserRouter>
           <HostGate>
+          <AuthLinkRedirect />
           <ThemeProvider>
             <AuthProvider>
               <OneSignalProvider>

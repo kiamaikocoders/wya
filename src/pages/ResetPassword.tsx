@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,12 +7,52 @@ import Logo from '@/components/ui/Logo';
 import { WebAuthOverlayShell } from '@/components/auth/WebAuthOverlayShell';
 import { useWebAuthTheme } from '@/components/auth/webAuthTheme';
 import { cn } from '@/lib/utils';
-import { buildNativeAuthDeepLinks, isMobileAuthUserAgent } from '@/lib/native-auth-handoff';
+import { bootLocation, paramsFromAuthUrl } from '@/lib/auth-recovery';
 
 const capturedResetLocation =
   typeof window !== 'undefined'
-    ? { search: window.location.search, hash: window.location.hash }
+    ? { search: window.location.search || bootLocation.search, hash: window.location.hash || bootLocation.hash }
     : { search: '', hash: '' };
+
+async function establishRecoverySession(): Promise<boolean> {
+  const params = paramsFromAuthUrl(capturedResetLocation.search, capturedResetLocation.hash);
+
+  for (let i = 0; i < 10; i += 1) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session) return true;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+
+  const code = params.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return true;
+  }
+
+  const tokenHash = params.get('token_hash') || params.get('token');
+  const type = params.get('type') || 'recovery';
+  if (tokenHash && (type === 'recovery' || type === 'email' || !params.get('type'))) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: 'recovery',
+    });
+    if (!error) return true;
+  }
+
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (!error) return true;
+  }
+
+  return false;
+}
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -23,99 +63,19 @@ const ResetPassword = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [showHandoff, setShowHandoff] = useState(false);
-
-  const nativeLinks = useMemo(
-    () => buildNativeAuthDeepLinks(capturedResetLocation.search, capturedResetLocation.hash),
-    [],
-  );
 
   useEffect(() => {
-    const params = new URLSearchParams(
-      capturedResetLocation.search.startsWith('?')
-        ? capturedResetLocation.search.slice(1)
-        : capturedResetLocation.search,
-    );
-    const hashParams = new URLSearchParams(
-      capturedResetLocation.hash.startsWith('#')
-        ? capturedResetLocation.hash.slice(1)
-        : capturedResetLocation.hash,
-    );
-    const hasLink =
-      Boolean(params.get('code')) ||
-      Boolean(hashParams.get('access_token')) ||
-      Boolean(params.get('token')) ||
-      capturedResetLocation.hash.includes('access_token');
-    const mobile = isMobileAuthUserAgent();
-
-    if (mobile && hasLink) {
-      setShowHandoff(true);
-      if (nativeLinks[0]) {
-        window.location.href = nativeLinks[0];
-      }
-    }
-
-    const establishSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setHasSession(true);
-        setChecking(false);
-        return;
-      }
-      if (mobile && hasLink) {
-        // Keep the PKCE code unused so the app can exchange it.
-        setChecking(false);
-        return;
-      }
-      const code = params.get('code') || hashParams.get('code');
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!error) {
-          setHasSession(true);
-          setChecking(false);
-          return;
-        }
-      }
-      toast.error('Invalid or expired reset link. Please request a new password reset.');
-      setTimeout(() => navigate('/forgot-password'), 2000);
+    const run = async () => {
+      const ok = await establishRecoverySession();
+      setHasSession(ok);
       setChecking(false);
-    };
-
-    void establishSession();
-  }, [navigate, nativeLinks]);
-
-  const continueOnWeb = async () => {
-    const params = new URLSearchParams(
-      capturedResetLocation.search.startsWith('?')
-        ? capturedResetLocation.search.slice(1)
-        : capturedResetLocation.search,
-    );
-    const hashParams = new URLSearchParams(
-      capturedResetLocation.hash.startsWith('#')
-        ? capturedResetLocation.hash.slice(1)
-        : capturedResetLocation.hash,
-    );
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session) {
-      setHasSession(true);
-      setShowHandoff(false);
-      return;
-    }
-    const code = params.get('code') || hashParams.get('code');
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (!error) {
-        setHasSession(true);
-        setShowHandoff(false);
-        return;
+      if (!ok) {
+        toast.error('Invalid or expired reset link. Please request a new password reset.');
+        setTimeout(() => navigate('/forgot-password'), 2200);
       }
-    }
-    toast.error('This reset link is invalid or expired.');
-  };
+    };
+    void run();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,7 +98,6 @@ const ResetPassword = () => {
       setIsSuccess(true);
       toast.success('Password reset successfully!');
       await supabase.auth.signOut();
-      setTimeout(() => navigate('/login'), 2000);
     } catch (error: unknown) {
       console.error('Reset password failed:', error);
       const message =
@@ -171,39 +130,16 @@ const ResetPassword = () => {
             <CheckCircle2 className="size-6 text-emerald-500" />
           </div>
           <h1 className={cn('text-[26px] font-bold', t.heading)}>Password Reset Successful</h1>
-          <p className={cn('text-sm', t.muted)}>You can now sign in with your new password.</p>
-          <button type="button" onClick={() => navigate('/login')} className={t.primaryBtn}>
-            Go to Login
-          </button>
-        </div>
-      </WebAuthOverlayShell>
-    );
-  }
-
-  if (showHandoff && !hasSession) {
-    return (
-      <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
-        <div className="flex w-full flex-col items-center gap-3.5 text-center">
-          <Logo href="/" size="sm" className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0" />
-          <h1 className={cn('text-[26px] font-bold', t.heading)}>Open the WYA app</h1>
           <p className={cn('text-sm leading-[22px]', t.muted)}>
-            Finish resetting your password in the app. If it does not open, tap the button below.
+            You can sign in on this website or open the WYA app and use the same email and new
+            password.
           </p>
-          {nativeLinks.slice(0, 2).map((href, i) => (
-            <button
-              key={`${i}-${href.slice(0, 40)}`}
-              type="button"
-              className={t.primaryBtn}
-              onClick={() => {
-                window.location.href = href;
-              }}
-            >
-              {i === 0 ? 'Open WYA app' : 'Try another app link'}
-            </button>
-          ))}
-          <button type="button" className={t.outlineBtn} onClick={() => void continueOnWeb()}>
-            Set password here instead
+          <button type="button" onClick={() => navigate('/login')} className={t.primaryBtn}>
+            Sign in on the website
           </button>
+          <Link to="/download" className={t.outlineBtn}>
+            Open the WYA app
+          </Link>
         </div>
       </WebAuthOverlayShell>
     );
@@ -214,7 +150,7 @@ const ResetPassword = () => {
       <WebAuthOverlayShell backgroundSrc="/auth/overlay-venue.png">
         <div className="flex flex-col items-center gap-3 text-center">
           <h1 className={cn('text-[26px] font-bold', t.heading)}>Invalid Reset Link</h1>
-          <p className={cn('text-sm', t.muted)}>Redirecting to forgot password…</p>
+          <p className={cn('text-sm', t.muted)}>Redirecting so you can request a new link…</p>
         </div>
       </WebAuthOverlayShell>
     );
@@ -225,7 +161,9 @@ const ResetPassword = () => {
       <div className="flex flex-col items-start gap-3.5">
         <Logo href="/" size="sm" className="[&_img]:!h-[34px] [&_img]:!min-w-0 [&>div]:!min-w-0" />
         <h1 className={cn('text-[26px] font-bold', t.heading)}>Reset Password</h1>
-        <p className={cn('text-sm leading-[22px]', t.muted)}>Enter your new password below.</p>
+        <p className={cn('text-sm leading-[22px]', t.muted)}>
+          Enter a new password. After you save it, sign in to the WYA app with the same credentials.
+        </p>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3.5">
           <div className="space-y-2">
@@ -268,7 +206,7 @@ const ResetPassword = () => {
                 Resetting…
               </span>
             ) : (
-              'Reset Password'
+              'Save new password'
             )}
           </button>
         </form>
