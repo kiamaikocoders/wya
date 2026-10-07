@@ -29,24 +29,6 @@ export type FaqItem = {
   answer: string;
 };
 
-export const landingMetrics: Metric[] = [
-  {
-    label: "Attendees Served",
-    value: "12K+",
-    description: "Kenyan event-goers connected through WYA",
-  },
-  {
-    label: "Organizers",
-    value: "350+",
-    description: "Local creators, venues, and partners onboard",
-  },
-  {
-    label: "Cities Covered",
-    value: "20+",
-    description: "From Nairobi, Kisumu, to coastal experiences",
-  },
-];
-
 export const landingFeatures: Feature[] = [
   {
     title: "Discover Events",

@@ -11,9 +11,9 @@ import { getPostLoginPath } from '@/lib/post-auth-navigation';
 import { bootLocation, isPasswordRecoveryLanding } from '@/lib/auth-recovery';
 
 const METRICS = [
-  { value: '12K+', label: 'Attendees' },
-  { value: '350+', label: 'Organizers' },
-  { value: '20+', label: 'Cities' },
+  { value: '1K', label: 'Attendees' },
+  { value: '50', label: 'Organizers' },
+  { value: '5', label: 'Cities' },
   { value: 'Tonight', label: 'Live events' },
 ] as const;
 
