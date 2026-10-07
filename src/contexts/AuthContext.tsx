@@ -3,7 +3,6 @@ import React, { createContext, useState, useEffect, useContext, ReactNode } from
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ADMIN_CREDENTIALS } from '@/lib/admin-credentials';
 import { adminConsoleUrl, getAdminSiteOrigin, isLocalDevHost } from '@/lib/site-origins';
 import { getAllowedPasswordResetRedirectUrl } from '@/lib/get-redirect-url';
 import { getRequestPasswordResetUrl } from '@/lib/supabase-functions-url';
@@ -478,10 +477,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const adminLogin = async (email: string, password: string) => {
     setLoading(true);
     try {
-      if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
-        throw new Error('Invalid admin credentials');
-      }
-
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -489,10 +484,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (error) throw error;
 
-      await supabase
+      const { data: profile } = await supabase
         .from('profiles')
-        .update({ username: 'admin' })
-        .eq('id', data.user.id);
+        .select('username')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (profile?.username !== 'admin') {
+        await supabase.auth.signOut();
+        throw new Error('Unauthorized: Admin access required');
+      }
 
       setIsAdmin(true);
       toast.success('Admin login successful!');
