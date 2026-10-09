@@ -255,18 +255,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               .rpc('get_my_profile')
               .select('last_login')
               .single()
-              .then(({ data: profile }) => {
-                setLastLoginTime(profile?.last_login || null);
-              })
-              .catch(err => console.warn('Failed to fetch last_login:', err));
+              .then(
+                ({ data: profile }) => {
+                  setLastLoginTime(profile?.last_login || null);
+                },
+                (err) => console.warn('Failed to fetch last_login:', err)
+              );
             
             // Update last login time (non-blocking)
             supabase
               .from('profiles')
               .update({ last_login: new Date().toISOString() })
               .eq('id', session.user.id)
-              .then(() => {}) // Execute the query
-              .catch(err => console.warn('Failed to update last_login:', err));
+              .then(
+                () => {},
+                (err) => console.warn('Failed to update last_login:', err)
+              );
           }
 
           // Don't fetch profile here to avoid deadlock
@@ -338,10 +342,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const postLoginPath = opts.isAdminUser ? '/admin' : getPostLoginPath();
     navigate(postLoginPath);
 
-    supabase
-      .rpc('get_my_profile')
-      .select('full_name, last_login')
-      .single()
+    Promise.resolve(supabase.rpc('get_my_profile').select('full_name, last_login').single())
       .then(({ data: profile }) => {
         const userName = profile?.full_name || opts.email.split('@')[0];
         const isReturningUser = !!profile?.last_login;

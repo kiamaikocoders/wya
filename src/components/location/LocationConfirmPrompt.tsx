@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 
 /**
  * One-time toast for users with seeded profile locations.
@@ -33,7 +34,7 @@ export function LocationConfirmPrompt() {
       const place = (data.location || '').trim() || 'your area';
 
       const clearPrompt = async (opts?: { keep?: boolean }) => {
-        const updates: Record<string, unknown> = {
+        const updates: TablesUpdate<'profiles'> = {
           location_confirm_needed: false,
           updated_at: new Date().toISOString(),
         };

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { adminProfiles } from './profile-columns';
 import { getAdminGhostUserIdsUrl } from './supabase-functions-url';
 import { isUndefinedColumnError } from './supabase-schema-compat';
 import { storageService } from './storage-service';
@@ -215,8 +216,7 @@ export const adminService = {
       const adminIdSet = new Set(adminIds);
 
       const buildProfilesQuery = (withAccountStatusFilters: boolean) => {
-        let q = supabase
-          .rpc('admin_profiles', {}, { count: 'exact' })
+        let q = adminProfiles({ count: 'exact' })
           .select('*')
           .or('is_ghost.is.null,is_ghost.eq.false');
         if (withAccountStatusFilters) {
@@ -404,8 +404,7 @@ export const adminService = {
       ): Promise<number> => {
         let n = baseCount;
         if (ghostUserIds.size === 0) return n;
-        let strayQ = supabase
-          .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        let strayQ = adminProfiles({ count: 'exact', head: true })
           .select('*')
           .in('id', [...ghostUserIds])
           .or(nonGhostOr);
@@ -417,15 +416,13 @@ export const adminService = {
         return n - (stray ?? 0);
       };
 
-      const { count: totalNonGhost, error: totalErr } = await supabase
-        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+      const { count: totalNonGhost, error: totalErr } = await adminProfiles({ count: 'exact', head: true })
         .select('*')
         .or(nonGhostOr);
       if (totalErr) throw totalErr;
       const totalUsers = await subtractStrayEmailGhosts(totalNonGhost ?? 0);
 
-      const { count: allProfilesCount, error: allProfilesErr } = await supabase
-        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+      const { count: allProfilesCount, error: allProfilesErr } = await adminProfiles({ count: 'exact', head: true })
         .select('*');
       if (allProfilesErr) throw allProfilesErr;
       const totalRegisteredProfiles = allProfilesCount ?? 0;
@@ -450,8 +447,7 @@ export const adminService = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { count: activeNonGhost, error: activeErr } = await supabase
-        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+      const { count: activeNonGhost, error: activeErr } = await adminProfiles({ count: 'exact', head: true })
         .select('*')
         .or(nonGhostOr)
         .gte('updated_at', thirtyDaysAgo.toISOString());
@@ -467,8 +463,7 @@ export const adminService = {
       startOfMonth.setHours(0, 0, 0, 0);
       const monthStartIso = startOfMonth.toISOString();
 
-      const { count: newNonGhost, error: newErr } = await supabase
-        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+      const { count: newNonGhost, error: newErr } = await adminProfiles({ count: 'exact', head: true })
         .select('*')
         .or(nonGhostOr)
         .gte('created_at', monthStartIso);

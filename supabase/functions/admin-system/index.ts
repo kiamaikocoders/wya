@@ -169,7 +169,7 @@ async function resolveAnnouncementRecipients(
     return matched;
   }
 
-  // all | attendees (attendees ≈ everyone except username admin)
+  // all | attendees (attendees ≈ everyone except platform admins)
   let q = admin
     .from("profiles")
     .select("id")

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { adminProfiles } from './profile-columns';
 import { toast } from 'sonner';
 
 export interface GhostPersonaGroup {
@@ -351,8 +352,7 @@ export const ghostService = {
       if (ghostError) {
         console.error('Error fetching ghost users for statistics:', ghostError);
         // Fallback to count query
-        const { count: ghostCount } = await supabase
-          .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        const { count: ghostCount } = await adminProfiles({ count: 'exact', head: true })
           .select('*')
           .eq('is_ghost', true);
         

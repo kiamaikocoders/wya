@@ -51,9 +51,10 @@ export const profileService = {
 
   updateProfile: async (userId: string, updates: Partial<Profile>): Promise<Profile | null> => {
     try {
+      const { name: _name, followers_count: _followers, following_count: _following, ...columns } = updates;
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(columns)
         .eq('id', userId)
         .select(PUBLIC_PROFILE_COLUMNS)
         .single();

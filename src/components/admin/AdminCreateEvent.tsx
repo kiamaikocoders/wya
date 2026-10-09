@@ -129,6 +129,15 @@ const emptyFormData = {
   status: 'approved' as 'pending' | 'approved' | 'rejected',
 };
 
+async function fetchNewEventRecipientIds(): Promise<string[]> {
+  const [{ data: profiles }, { data: admins }] = await Promise.all([
+    supabase.from('profiles').select('id').limit(100),
+    supabase.from('admin_users').select('user_id'),
+  ]);
+  const adminIds = new Set((admins ?? []).map((a) => a.user_id));
+  return (profiles ?? []).map((p) => p.id).filter((id) => !adminIds.has(id));
+}
+
 const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -606,16 +615,12 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         }
 
         try {
-          const { data: allUsers } = await supabase
-            .from('profiles')
-            .select('id, username')
-            .neq('username', 'admin')
-            .limit(100);
-          if (allUsers && allUsers.length > 0) {
+          const recipientIds = await fetchNewEventRecipientIds();
+          if (recipientIds.length > 0) {
             await Promise.all(
-              allUsers.map((userProfile) =>
+              recipientIds.map((recipientId) =>
                 notificationService.createNotification({
-                  user_id: userProfile.id,
+                  user_id: recipientId,
                   type: 'new_event',
                   title: '🎉 New Event Posted!',
                   message: `"${data.title}" was just posted. Check it out!`,
@@ -637,16 +642,12 @@ const AdminCreateEvent: React.FC<AdminCreateEventProps> = ({ onSuccess, onCancel
         toast.success(`Event created · ${whenLabel} · ${formData.location || 'venue set'}`);
       } else {
         try {
-          const { data: allUsers } = await supabase
-            .from('profiles')
-            .select('id, username')
-            .neq('username', 'admin')
-            .limit(100);
-          if (allUsers && allUsers.length > 0 && result.firstEventId) {
+          const recipientIds = await fetchNewEventRecipientIds();
+          if (recipientIds.length > 0 && result.firstEventId) {
             await Promise.all(
-              allUsers.map((userProfile) =>
+              recipientIds.map((recipientId) =>
                 notificationService.createNotification({
-                  user_id: userProfile.id,
+                  user_id: recipientId,
                   type: 'new_event',
                   title: '🎉 New Event Series!',
                   message: `"${result.title}" (${result.summary}) was just posted.`,
