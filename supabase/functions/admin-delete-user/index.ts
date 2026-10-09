@@ -1,10 +1,11 @@
 /**
  * Admin: permanently delete a user (app data via delete_user_data + auth user removal).
- * Auth: Bearer JWT of profiles.username === 'admin'.
+ * Auth: Bearer JWT of a platform admin (public.admin_users).
  * Body: { user_id: string }
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isPlatformAdmin } from "../_shared/admin.ts";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "").split(",").map((o) => o.trim()).filter(Boolean);
@@ -67,13 +68,7 @@ serve(async (req) => {
       });
     }
 
-    const { data: adminProfile } = await adminClient
-      .from("profiles")
-      .select("username")
-      .eq("id", adminUserData.user.id)
-      .maybeSingle();
-
-    if (!adminProfile || adminProfile.username !== "admin") {
+    if (!(await isPlatformAdmin(adminClient, adminUserData.user.id))) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 403,
@@ -96,13 +91,7 @@ serve(async (req) => {
       });
     }
 
-    const { data: targetProfile } = await adminClient
-      .from("profiles")
-      .select("username")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (targetProfile?.username === "admin") {
+    if (await isPlatformAdmin(adminClient, userId)) {
       return new Response(JSON.stringify({ error: "Cannot delete the admin account" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,

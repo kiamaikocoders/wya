@@ -14,6 +14,7 @@ import {
   getResendApiKey,
 } from "../_shared/resend.ts";
 import { renderTransactionalTemplate } from "../_shared/email-templates.ts";
+import { isPlatformAdmin } from "../_shared/admin.ts";
 
 const getAllowedOrigin = (requestOrigin: string | null): string | null => {
   const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
@@ -127,13 +128,7 @@ serve(async (req) => {
       });
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("username")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.username !== "admin") {
+    if (!(await isPlatformAdmin(supabaseAdmin, user.id))) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

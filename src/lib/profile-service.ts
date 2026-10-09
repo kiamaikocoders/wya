@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PUBLIC_PROFILE_COLUMNS } from "@/lib/profile-columns";
 
 export interface Profile {
   id: string;
@@ -21,7 +22,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PUBLIC_PROFILE_COLUMNS)
         .eq('id', userId)
         .single();
 
@@ -54,7 +55,7 @@ export const profileService = {
         .from('profiles')
         .update(updates)
         .eq('id', userId)
-        .select()
+        .select(PUBLIC_PROFILE_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -81,7 +82,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PUBLIC_PROFILE_COLUMNS)
         .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
         .limit(10);
 
@@ -108,7 +109,7 @@ export const profileService = {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PUBLIC_PROFILE_COLUMNS)
         .in('id', ids);
 
       if (error) throw error;
@@ -132,7 +133,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PUBLIC_PROFILE_COLUMNS)
         .eq('username', username)
         .single();
 

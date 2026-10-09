@@ -2,11 +2,12 @@
  * Admin invite user by email (Supabase Auth inviteUserByEmail).
  * Uses Auth invite template (emails/invite-user.html) via Resend SMTP.
  *
- * Auth: admin JWT (profiles.username === 'admin')
+ * Auth: admin JWT (public.admin_users)
  * Body: { email: string, redirectTo?: string }
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isPlatformAdmin } from "../_shared/admin.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -38,12 +39,7 @@ serve(async (req) => {
   const { data: userData, error: userErr } = await authClient.auth.getUser(authHeader.slice(7));
   if (userErr || !userData.user) return json({ error: "Unauthorized" }, 401);
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("username")
-    .eq("id", userData.user.id)
-    .maybeSingle();
-  if (profile?.username !== "admin") return json({ error: "Forbidden" }, 403);
+  if (!(await isPlatformAdmin(admin, userData.user.id))) return json({ error: "Forbidden" }, 403);
 
   const body = await req.json().catch(() => ({}));
   const email = String(body.email ?? "").trim().toLowerCase();

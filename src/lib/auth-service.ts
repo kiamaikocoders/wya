@@ -97,14 +97,9 @@ export const authService = {
       
       if (error) throw error;
       
-      // Check if user has admin role in profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('id', data.user.id)
-        .single();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
       
-      if (profile?.username !== 'admin') {
+      if (adminFlag !== true) {
         // Sign out the user if they're not an admin
         await supabase.auth.signOut();
         throw new Error('Unauthorized: Admin access required');
@@ -127,11 +122,14 @@ export const authService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
       
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, avatar_url, bio, created_at')
-        .eq('id', user.id)
-        .single();
+      const [{ data: profile }, { data: adminFlag }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url, bio, created_at')
+          .eq('id', user.id)
+          .single(),
+        supabase.rpc('is_admin'),
+      ]);
       
       if (!profile) return null;
       
@@ -139,7 +137,7 @@ export const authService = {
         id: user.id,
         name: profile.full_name || '',
         email: user.email || '',
-        user_type: profile.username === 'admin' ? 'admin' : 'attendee',
+        user_type: adminFlag === true ? 'admin' : 'attendee',
         created_at: profile.created_at,
         bio: profile.bio,
         profile_picture: profile.avatar_url,
@@ -179,13 +177,9 @@ export const authService = {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
       
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', session.user.id)
-        .single();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
       
-      return profile?.username === 'admin';
+      return adminFlag === true;
     } catch (error) {
       console.error('Error checking admin status:', error);
       throw error;
@@ -215,17 +209,20 @@ export const authService = {
       toast.success('Profile updated successfully');
       
       // Return updated user
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, avatar_url, bio, created_at')
-        .eq('id', user.id)
-        .single();
+      const [{ data: profile }, { data: adminFlag }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, username, avatar_url, bio, created_at')
+          .eq('id', user.id)
+          .single(),
+        supabase.rpc('is_admin'),
+      ]);
       
       return {
         id: user.id,
         name: profile?.full_name || '',
         email: user.email || '',
-        user_type: profile?.username === 'admin' ? 'admin' : 'attendee',
+        user_type: adminFlag === true ? 'admin' : 'attendee',
         created_at: profile?.created_at,
         bio: profile?.bio,
         profile_picture: profile?.avatar_url

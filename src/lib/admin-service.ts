@@ -17,6 +17,16 @@ import {
 } from './event-series-service';
 import { formatRecurrenceSummary } from './recurrence';
 
+/** Platform admin user ids (admins can read all of `admin_users`). */
+async function fetchAdminIds(): Promise<string[]> {
+  const { data, error } = await supabase.from('admin_users').select('user_id');
+  if (error) {
+    console.error('fetchAdminIds:', error.message);
+    return [];
+  }
+  return (data ?? []).map((row: { user_id: string }) => row.user_id);
+}
+
 export type ProfileAccountStatus = 'active' | 'suspended' | 'banned' | 'deleted';
 
 export interface AdminUser {
@@ -150,17 +160,10 @@ export const adminService = {
         return { success: false, message: 'No authenticated user' };
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
 
-      if (!profile || profile.username !== 'admin') {
-        return { 
-          success: false, 
-          message: `Not an admin. Current username: ${profile?.username || 'not found'}` 
-        };
+      if (adminFlag !== true) {
+        return { success: false, message: 'Not an admin.' };
       }
 
       // Test RPC with a single user ID (the current admin)
@@ -208,10 +211,13 @@ export const adminService = {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
+      const adminIds = await fetchAdminIds();
+      const adminIdSet = new Set(adminIds);
+
       const buildProfilesQuery = (withAccountStatusFilters: boolean) => {
         let q = supabase
-          .from('profiles')
-          .select('*', { count: 'exact' })
+          .rpc('admin_profiles', {}, { count: 'exact' })
+          .select('*')
           .or('is_ghost.is.null,is_ghost.eq.false');
         if (withAccountStatusFilters) {
           if (status === 'active') {
@@ -227,9 +233,9 @@ export const adminService = {
         }
         if (role !== 'all') {
           if (role === 'admin') {
-            q = q.eq('username', 'admin');
-          } else {
-            q = q.neq('username', 'admin');
+            q = q.in('id', adminIds.length ? adminIds : ['00000000-0000-0000-0000-000000000000']);
+          } else if (adminIds.length) {
+            q = q.not('id', 'in', `(${adminIds.join(',')})`);
           }
         }
         q = q.order(sortBy, { ascending: sortOrder === 'asc' });
@@ -318,7 +324,7 @@ export const adminService = {
       // Transform data
       const users: AdminUser[] = (data || []).map(profile => {
         const userRole: 'attendee' | 'organizer' | 'admin' = 
-          profile.username === 'admin' ? 'admin' :
+          adminIdSet.has(profile.id) ? 'admin' :
           (eventsCreatedMap.get(profile.id) || 0) > 0 ? 'organizer' : 'attendee';
 
         const acct = (profile as { account_status?: ProfileAccountStatus }).account_status ?? 'active';
@@ -399,8 +405,8 @@ export const adminService = {
         let n = baseCount;
         if (ghostUserIds.size === 0) return n;
         let strayQ = supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .rpc('admin_profiles', {}, { count: 'exact', head: true })
+          .select('*')
           .in('id', [...ghostUserIds])
           .or(nonGhostOr);
         if (options?.fromIso && options?.dateField) {
@@ -412,24 +418,21 @@ export const adminService = {
       };
 
       const { count: totalNonGhost, error: totalErr } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        .select('*')
         .or(nonGhostOr);
       if (totalErr) throw totalErr;
       const totalUsers = await subtractStrayEmailGhosts(totalNonGhost ?? 0);
 
       const { count: allProfilesCount, error: allProfilesErr } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        .select('*');
       if (allProfilesErr) throw allProfilesErr;
       const totalRegisteredProfiles = allProfilesCount ?? 0;
       const ghostUsersCount = Math.max(0, totalRegisteredProfiles - Math.max(0, totalUsers));
 
       // Get admins
-      const { count: admins } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('username', 'admin');
+      const admins = (await fetchAdminIds()).length;
 
       // Get organizers (users who created events)
       const { data: organizerIds } = await supabase
@@ -448,8 +451,8 @@ export const adminService = {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const { count: activeNonGhost, error: activeErr } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        .select('*')
         .or(nonGhostOr)
         .gte('updated_at', thirtyDaysAgo.toISOString());
       if (activeErr) throw activeErr;
@@ -465,8 +468,8 @@ export const adminService = {
       const monthStartIso = startOfMonth.toISOString();
 
       const { count: newNonGhost, error: newErr } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .rpc('admin_profiles', {}, { count: 'exact', head: true })
+        .select('*')
         .or(nonGhostOr)
         .gte('created_at', monthStartIso);
       if (newErr) throw newErr;
@@ -505,7 +508,7 @@ export const adminService = {
 
   updateUserRole: async (userId: string, role: 'attendee' | 'organizer' | 'admin'): Promise<void> => {
     /**
-     * Platform admin is keyed off profiles.username = 'admin' (unique).
+     * Platform admin is a row in admin_users, managed by the admin_set_user_role RPC.
      * Organizer is derived from hosting events — not a persisted role flag.
      */
     if (role === 'organizer') {
@@ -514,72 +517,11 @@ export const adminService = {
       );
     }
 
-    const slugify = (raw: string) =>
-      raw
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 24) || 'user';
-
-    const uniqueUsername = async (seed: string, excludeId: string): Promise<string> => {
-      const base = slugify(seed);
-      for (let i = 0; i < 12; i++) {
-        const candidate = i === 0 ? base : `${base}-${i + 1}`;
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', candidate)
-          .maybeSingle();
-        if (!data || data.id === excludeId) return candidate;
-      }
-      return `${base}-${Date.now().toString(36).slice(-4)}`;
-    };
-
-    const { data: target, error: targetError } = await supabase
-      .from('profiles')
-      .select('id, username, full_name')
-      .eq('id', userId)
-      .single();
-    if (targetError) throw targetError;
-
-    if (role === 'admin') {
-      if (target.username === 'admin') return;
-
-      const { data: currentAdmin } = await supabase
-        .from('profiles')
-        .select('id, username, full_name')
-        .eq('username', 'admin')
-        .maybeSingle();
-
-      if (currentAdmin && currentAdmin.id !== userId) {
-        const demoted = await uniqueUsername(
-          currentAdmin.full_name || 'former-admin',
-          currentAdmin.id
-        );
-        const { error: demoteError } = await supabase
-          .from('profiles')
-          .update({ username: demoted })
-          .eq('id', currentAdmin.id);
-        if (demoteError) throw demoteError;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: 'admin' })
-        .eq('id', userId);
-      if (error) throw error;
-      return;
-    }
-
-    // attendee / member — revoke admin if needed
-    if (target.username === 'admin') {
-      const demoted = await uniqueUsername(target.full_name || 'user', userId);
-      const { error } = await supabase
-        .from('profiles')
-        .update({ username: demoted })
-        .eq('id', userId);
-      if (error) throw error;
-    }
+    const { error } = await supabase.rpc('admin_set_user_role', {
+      p_target: userId,
+      p_role: role,
+    });
+    if (error) throw error;
   },
 
   suspendUser: async (userId: string, reason?: string): Promise<void> => {
@@ -1114,15 +1056,14 @@ export const adminService = {
 
   bulkUpdateUserRoles: async (userIds: string[], role: 'attendee' | 'organizer' | 'admin'): Promise<void> => {
     try {
-      if (role === 'admin') {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ username: 'admin' })
-          .in('id', userIds);
-
+      if (role === 'organizer') return;
+      for (const userId of userIds) {
+        const { error } = await supabase.rpc('admin_set_user_role', {
+          p_target: userId,
+          p_role: role,
+        });
         if (error) throw error;
       }
-      // For other roles, we'd need a roles table in production
     } catch (error) {
       console.error('Error bulk updating user roles:', error);
       throw error;
@@ -1140,7 +1081,7 @@ export const adminService = {
     try {
       // Get all ghost user IDs
       const { data: ghostUsers, error: ghostError } = await supabase
-        .from('profiles')
+        .rpc('admin_profiles')
         .select('id')
         .eq('is_ghost', true);
 
@@ -1256,13 +1197,9 @@ export const adminService = {
         throw new Error('You must be logged in to update stories');
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
 
-      if (!profile || profile.username !== 'admin') {
+      if (adminFlag !== true) {
         throw new Error('Only admins can update ghost stories');
       }
 
@@ -1344,13 +1281,9 @@ export const adminService = {
         throw new Error('You must be logged in to delete stories');
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
 
-      if (!profile || profile.username !== 'admin') {
+      if (adminFlag !== true) {
         throw new Error('Only admins can delete ghost stories');
       }
 

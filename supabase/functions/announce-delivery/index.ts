@@ -1,6 +1,6 @@
 /**
  * Broadcast delivery fan-out: email (Resend) + push (OneSignal).
- * verify_jwt = false — custom admin JWT check (username === 'admin').
+ * verify_jwt = false — custom admin JWT check (public.admin_users).
  *
  * POST body:
  *   {
@@ -13,6 +13,7 @@
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isPlatformAdmin, listPlatformAdminIds } from "../_shared/admin.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -67,13 +68,7 @@ async function requireAdmin(req: Request) {
   } = await authClient.auth.getUser(token);
   if (userError || !user) return { error: "Unauthorized", status: 401 as const };
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.username !== "admin") {
+  if (!(await isPlatformAdmin(admin, user.id))) {
     return { error: "Forbidden", status: 403 as const };
   }
 
@@ -125,8 +120,7 @@ async function resolveRecipients(
   const { audience, locations, limit } = opts;
 
   if (audience === "admins") {
-    const { data } = await admin.from("profiles").select("id").eq("username", "admin");
-    return (data ?? []).map((r) => r.id).slice(0, limit);
+    return (await listPlatformAdminIds(admin)).slice(0, limit);
   }
 
   if (audience === "organizers") {
@@ -181,12 +175,13 @@ async function resolveRecipients(
 
   const { data, error } = await admin
     .from("profiles")
-    .select("id, username")
+    .select("id")
     .or("is_ghost.is.null,is_ghost.eq.false")
     .limit(limit * 2);
   if (error) throw error;
+  const adminIds = audience === "attendees" ? new Set(await listPlatformAdminIds(admin)) : null;
   return (data ?? [])
-    .filter((r) => (audience === "attendees" ? r.username !== "admin" : true))
+    .filter((r) => !adminIds?.has(r.id))
     .map((r) => r.id)
     .slice(0, limit);
 }

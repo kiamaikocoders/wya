@@ -244,9 +244,8 @@ class OnboardingNotifications {
   async sendNearbyEventsNotification(userId: string): Promise<void> {
     // Prefer saved profile location when user consented
     const { data: profile } = await supabase
-      .from('profiles')
+      .rpc('get_my_profile')
       .select('latitude, longitude, location_consent')
-      .eq('id', userId)
       .maybeSingle();
 
     if (profile && profile.location_consent === false) {

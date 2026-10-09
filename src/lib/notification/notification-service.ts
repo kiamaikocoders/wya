@@ -55,11 +55,7 @@ async function dispatchViaEdgeFunction(
 }
 
 async function dispatchPushNotification(payload: {
-  user_id: string;
-  title: string;
-  message: string;
-  link?: string;
-  notification_id?: number;
+  notification_id: number;
   type?: string;
 }): Promise<void> {
   try {
@@ -141,8 +137,8 @@ export const notificationService = {
   },
 
   /**
-   * Fan-out an in-app notification to every admin profile (`username = 'admin'`).
-   * Prefers the SECURITY DEFINER `notify_admins` RPC (works under RLS).
+   * Fan-out an in-app notification to every platform admin (`admin_users`).
+   * Admins use the `notify_admins` RPC; everyone else goes through dispatch-notification.
    */
   notifyAdmins: async (
     notification: Omit<CreateNotificationData, 'user_id'>
@@ -160,31 +156,20 @@ export const notificationService = {
       });
       if (error) throw error;
       return typeof data === 'number' ? data : Number(data) || 0;
-    } catch (rpcError) {
-      console.warn('notify_admins RPC unavailable, falling back to per-admin create:', rpcError);
+    } catch {
+      // Non-admins cannot call notify_admins directly.
     }
 
-    const { data: admins, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', 'admin');
-
+    const { data, error } = await supabase.functions.invoke('dispatch-notification', {
+      body: { ...notification, to_admins: true },
+    });
     if (error) {
-      console.error('Error loading admin recipients:', error);
-      throw error;
+      console.error('Error notifying admins:', error);
+      throw new Error(error.message);
     }
-    if (!admins?.length) return 0;
-
-    const results = await Promise.allSettled(
-      admins.map((admin) =>
-        notificationService.createNotification({
-          ...notification,
-          user_id: admin.id,
-        })
-      )
-    );
-
-    return results.filter((r) => r.status === 'fulfilled').length;
+    const payload = data as { delivered?: number; error?: string } | null;
+    if (payload?.error) throw new Error(payload.error);
+    return payload?.delivered ?? 0;
   },
 
   /** Admin ops inbox: proposals, feedback, tickets, payments, signups, etc. */
@@ -247,18 +232,22 @@ export const notificationService = {
     }
 
     try {
-      const { error } = await supabase.from('notifications').insert({
-        user_id,
-        type,
-        title,
-        message,
-        resource_id,
-        resource_type,
-        resource_uuid,
-        link,
-        data,
-        read: false,
-      });
+      const { data: inserted, error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id,
+          type,
+          title,
+          message,
+          resource_id,
+          resource_type,
+          resource_uuid,
+          link,
+          data,
+          read: false,
+        })
+        .select('id')
+        .single();
 
       if (error) {
         if (isRlsInsertError(error)) {
@@ -269,15 +258,11 @@ export const notificationService = {
         throw error;
       }
 
-      void dispatchPushNotification({
-        user_id,
-        title,
-        message,
-        link,
-        type,
-      });
+      if (inserted?.id != null) {
+        void dispatchPushNotification({ notification_id: inserted.id, type });
+      }
 
-      return null;
+      return inserted?.id ?? null;
     } catch (error) {
       console.error('Error creating notification:', error);
       throw error;
@@ -313,9 +298,8 @@ export const notificationService = {
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
-      .from('profiles')
+      .rpc('get_my_profile')
       .select('email_notifications, push_notifications, marketing_consent, notification_email_prefs')
-      .eq('id', user.id)
       .single();
 
     if (error) throw error;

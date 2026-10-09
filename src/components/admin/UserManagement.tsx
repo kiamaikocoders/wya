@@ -260,7 +260,7 @@ const UserManagement: React.FC = () => {
                       >
                         Activate
                       </span>
-                    ) : u.username !== 'admin' ? (
+                    ) : u.role !== 'admin' ? (
                       <span
                         role="button"
                         tabIndex={0}

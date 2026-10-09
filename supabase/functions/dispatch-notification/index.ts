@@ -4,14 +4,18 @@
  * RLS INSERT policy is restrictive.
  *
  * Caller must send Authorization: Bearer <user JWT>.
+ * Admins may notify anyone. Other callers may notify themselves, or another user only when
+ * the relationship behind the notification type exists (see authorizeRecipient).
  *
  * Body: CreateNotificationData fields + optional send_push (default true)
+ * Admin inbox: { "to_admins": true, ... } fans out to every platform admin (ops types only).
  * Test mode: { "seed_test": true, "target_user_id": "<uuid>" } — admin only, inserts sample types.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendNotificationEmail } from "../_shared/resend.ts";
 import { sendFcmToTokens } from "../_shared/fcm.ts";
+import { isPlatformAdmin, listPlatformAdminIds } from "../_shared/admin.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -34,6 +38,100 @@ interface NotificationPayload {
   send_email?: boolean;
   seed_test?: boolean;
   target_user_id?: string;
+  to_admins?: boolean;
+}
+
+/** Types a user may send to someone else, each backed by a relationship check. */
+const CROSS_USER_TYPES = new Set([
+  "follow",
+  "marketplace_buyer",
+  "marketplace_seller",
+  "event_update",
+  "event_cancelled",
+  "survey_invite",
+]);
+
+/** Types a user may send to the admin inbox. */
+const ADMIN_INBOX_TYPES = new Set(["proposal_submitted", "admin_action"]);
+
+function isInternalLink(link: string | undefined): boolean {
+  if (!link) return true;
+  return link.startsWith("/") && !link.startsWith("//") && !link.startsWith("/\\");
+}
+
+async function callerOrganizesEventWithTicketHolder(
+  serviceClient: ReturnType<typeof createClient>,
+  callerId: string,
+  eventId: number,
+  recipientId: string
+): Promise<boolean> {
+  const { data: event } = await serviceClient
+    .from("events")
+    .select("organizer_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!event || event.organizer_id !== callerId) return false;
+
+  const { count } = await serviceClient
+    .from("tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", eventId)
+    .eq("user_id", recipientId);
+  return (count ?? 0) > 0;
+}
+
+/** Whether a non-admin caller may send this notification to recipientId. */
+async function authorizeRecipient(
+  serviceClient: ReturnType<typeof createClient>,
+  callerId: string,
+  recipientId: string,
+  body: NotificationPayload
+): Promise<boolean> {
+  if (recipientId === callerId) return true;
+  const type = body.type ?? "";
+  if (!CROSS_USER_TYPES.has(type)) return false;
+
+  if (type === "follow") {
+    const { count } = await serviceClient
+      .from("follows")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", callerId)
+      .eq("following_id", recipientId);
+    return (count ?? 0) > 0;
+  }
+
+  if (type === "marketplace_buyer" || type === "marketplace_seller") {
+    const transferId = Number(body.data?.transfer_id);
+    if (!Number.isFinite(transferId)) return false;
+    const { data: transfer } = await serviceClient
+      .from("marketplace_transfers")
+      .select("buyer_id, seller_id")
+      .eq("id", transferId)
+      .maybeSingle();
+    if (!transfer) return false;
+    const parties = [transfer.buyer_id, transfer.seller_id];
+    return parties.includes(callerId) && parties.includes(recipientId);
+  }
+
+  if (type === "event_update" || type === "event_cancelled") {
+    const eventId = Number(body.resource_id);
+    if (!Number.isFinite(eventId)) return false;
+    return callerOrganizesEventWithTicketHolder(serviceClient, callerId, eventId, recipientId);
+  }
+
+  if (type === "survey_invite") {
+    const surveyId = Number(body.resource_id);
+    if (!Number.isFinite(surveyId)) return false;
+    const { data: survey } = await serviceClient
+      .from("surveys")
+      .select("event_id")
+      .eq("id", surveyId)
+      .maybeSingle();
+    if (!survey?.event_id) return false;
+    return callerOrganizesEventWithTicketHolder(serviceClient, callerId, survey.event_id, recipientId);
+  }
+
+  return false;
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
@@ -70,15 +168,6 @@ async function getAuthUser(req: Request) {
     return { user: null, error: error?.message ?? "Invalid session" };
   }
   return { user: data.user, error: null };
-}
-
-async function isAdminUser(userId: string, serviceClient: ReturnType<typeof createClient>): Promise<boolean> {
-  const { data } = await serviceClient
-    .from("profiles")
-    .select("username")
-    .eq("id", userId)
-    .maybeSingle();
-  return data?.username === "admin";
 }
 
 async function sendOneSignalPush(params: {
@@ -244,9 +333,10 @@ serve(async (req) => {
   const sendEmail = body.send_email !== false;
 
   try {
+    const callerIsAdmin = await isPlatformAdmin(serviceClient, user.id);
+
     if (body.seed_test) {
-      const admin = await isAdminUser(user.id, serviceClient);
-      if (!admin) {
+      if (!callerIsAdmin) {
         return jsonResponse({ error: "Admin only" }, 403);
       }
 
@@ -303,75 +393,106 @@ serve(async (req) => {
     const { user_id, type, title, message, resource_id, resource_type, resource_uuid, link, data } =
       body;
 
-    if (!user_id || !type || !title || !message) {
+    if ((!user_id && !body.to_admins) || !type || !title || !message) {
       return jsonResponse(
         { error: "Missing required fields: user_id, type, title, message" },
         400
       );
     }
 
-    const { data: inserted, error: insertError } = await serviceClient
-      .from("notifications")
-      .insert({
-        user_id,
-        type,
-        title,
-        message,
-        resource_id,
-        resource_type,
-        resource_uuid,
-        link,
-        data,
-        read: false,
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      console.error("dispatch-notification insert failed:", insertError.message);
-      return jsonResponse({ error: insertError.message }, 500);
+    let recipients: string[];
+    if (body.to_admins) {
+      if (!callerIsAdmin && !ADMIN_INBOX_TYPES.has(type)) {
+        return jsonResponse({ error: "Forbidden" }, 403);
+      }
+      recipients = await listPlatformAdminIds(serviceClient);
+    } else {
+      recipients = [user_id!];
     }
 
-    let pushResult: Record<string, unknown> | null = null;
-    if (sendPush && inserted?.id != null) {
-      const pushArgs = {
-        user_id,
-        title,
-        message,
-        link,
-        notification_id: inserted.id,
-        type,
-        siteOrigin,
-        serviceClient,
-      };
-      const [onesignal, fcm] = await Promise.all([
-        sendOneSignalPush(pushArgs),
-        sendFcmPush(pushArgs),
-      ]);
-      pushResult = { onesignal, fcm };
+    if (!callerIsAdmin) {
+      if (!isInternalLink(link)) {
+        return jsonResponse({ error: "Link must be a path on this site" }, 400);
+      }
+      if (!body.to_admins && !(await authorizeRecipient(serviceClient, user.id, user_id!, body))) {
+        return jsonResponse({ error: "Forbidden" }, 403);
+      }
     }
 
-    let emailResult: Record<string, unknown> | null = null;
-    if (sendEmail && inserted?.id != null) {
-      const result = await sendNotificationEmail({
-        admin: serviceClient,
-        userId: user_id,
-        type,
-        title,
-        message,
-        link,
-        data,
-        sendEmail: body.send_email,
-      });
-      emailResult = result;
+    const deliver = async (recipientId: string) => {
+      const { data: inserted, error: insertError } = await serviceClient
+        .from("notifications")
+        .insert({
+          user_id: recipientId,
+          type,
+          title,
+          message,
+          resource_id,
+          resource_type,
+          resource_uuid,
+          link,
+          data,
+          read: false,
+        })
+        .select("id")
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      let pushResult: Record<string, unknown> | null = null;
+      if (sendPush && inserted?.id != null) {
+        const pushArgs = {
+          user_id: recipientId,
+          title,
+          message,
+          link,
+          notification_id: inserted.id,
+          type,
+          siteOrigin,
+          serviceClient,
+        };
+        const [onesignal, fcm] = await Promise.all([
+          sendOneSignalPush(pushArgs),
+          sendFcmPush(pushArgs),
+        ]);
+        pushResult = { onesignal, fcm };
+      }
+
+      let emailResult: Record<string, unknown> | null = null;
+      if (sendEmail && inserted?.id != null) {
+        emailResult = await sendNotificationEmail({
+          admin: serviceClient,
+          userId: recipientId,
+          type,
+          title,
+          message,
+          link,
+          data,
+          sendEmail: body.send_email,
+        });
+      }
+
+      return { notification_id: inserted?.id ?? null, push: pushResult, email: emailResult };
+    };
+
+    if (body.to_admins) {
+      const results = await Promise.allSettled(recipients.map(deliver));
+      const delivered = results.filter((r) => r.status === "fulfilled").length;
+      return jsonResponse({ success: true, delivered });
     }
 
-    return jsonResponse({
-      success: true,
-      notification_id: inserted?.id ?? null,
-      push: pushResult,
-      email: emailResult,
-    });
+    let result: Awaited<ReturnType<typeof deliver>>;
+    try {
+      result = await deliver(recipients[0]);
+    } catch (insertError) {
+      const msg = insertError instanceof Error ? insertError.message : "insert failed";
+      console.error("dispatch-notification insert failed:", msg);
+      return jsonResponse({ error: msg }, 500);
+    }
+
+    return jsonResponse({ success: true, ...result });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error("Unknown error");
     console.error("dispatch-notification:", err.message);

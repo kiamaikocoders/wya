@@ -3,6 +3,7 @@ import { resolveAvatarUrl } from './avatar-url';
 import { toast } from 'sonner';
 import { getDeleteMyAccountUrl } from '@/lib/supabase-functions-url';
 import { MEDIA_CONSENT_VERSION } from '@/legal/policy-versions';
+import { PUBLIC_PROFILE_COLUMNS } from './profile-columns';
 
 export interface User {
   id: string;
@@ -52,6 +53,8 @@ export interface Profile {
   two_factor_auth?: boolean;
   /** System-managed ghost accounts; exempt from attendee legal consent gate. */
   is_ghost?: boolean | null;
+  /** Platform admin (`admin_users`); only populated for the signed-in user's own profile. */
+  is_admin?: boolean;
 }
 
 export interface UpdateProfilePayload {
@@ -87,11 +90,10 @@ export const userService = {
       if (!user) return null;
       
       const { data: profile } = await supabase
-        .from('profiles')
+        .rpc('get_my_profile')
         .select(
           'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, phone, date_of_birth, marketing_consent, location_consent, organizer_content_sharing_opt_in, email_notifications, push_notifications, profile_visibility, two_factor_auth'
         )
-        .eq('id', user.id)
         .single();
       
       return {
@@ -207,15 +209,31 @@ export const userService = {
     }
   },
   
+  /** Full profile for the signed-in user; public columns only for anyone else. */
   getUserProfile: async (userId: string): Promise<Profile | null> => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(
-          'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, location_source, location_confirm_needed, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth, is_ghost'
-        )
-        .eq('id', userId)
-        .single();
+      if (!userId) return null;
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session?.user.id !== userId) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select(PUBLIC_PROFILE_COLUMNS)
+          .eq('id', userId)
+          .single();
+        if (error) throw error;
+        return data ? { ...data, name: data.full_name || '' } : null;
+      }
+
+      const [{ data, error }, { data: adminFlag }] = await Promise.all([
+        supabase
+          .rpc('get_my_profile')
+          .select(
+            'id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at, phone, date_of_birth, terms_version_accepted, terms_accepted_at, privacy_version_accepted, privacy_accepted_at, marketing_consent, marketing_consent_at, location_consent, location_consent_at, location_source, location_confirm_needed, organizer_content_sharing_opt_in, media_consent, media_consent_at, media_consent_version, email_notifications, push_notifications, profile_visibility, two_factor_auth, is_ghost'
+          )
+          .single(),
+        supabase.rpc('is_admin'),
+      ]);
       
       if (error) throw error;
       
@@ -223,7 +241,8 @@ export const userService = {
       if (data) {
         return {
           ...data,
-          name: data.full_name || ''
+          name: data.full_name || '',
+          is_admin: adminFlag === true,
         };
       }
       
@@ -256,7 +275,7 @@ export const userService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, location, latitude, longitude, created_at, updated_at')
+        .select(PUBLIC_PROFILE_COLUMNS)
         .eq('username', username)
         .single();
 

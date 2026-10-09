@@ -229,7 +229,7 @@ export async function loadAdminAtlas(
       .order('date', { ascending: false })
       .limit(1200),
     supabase
-      .from('profiles')
+      .rpc('admin_profiles')
       .select(
         'id, location, latitude, longitude, location_consent, location_source, is_ghost, created_at'
       )

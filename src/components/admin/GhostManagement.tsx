@@ -144,7 +144,7 @@ const GhostManagement: React.FC = () => {
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .rpc('admin_profiles')
           .select('id, username, full_name, avatar_url')
           .neq('is_ghost', true) // Exclude ghost users
           .order('full_name', { ascending: true })

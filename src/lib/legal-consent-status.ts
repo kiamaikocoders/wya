@@ -6,9 +6,9 @@ import {
 import type { Profile } from '@/lib/user-service';
 import { bootLocation, isPasswordRecoveryLanding } from '@/lib/auth-recovery';
 
-/** Matches primary DB admin check (username = 'admin'); exempt from media posting gate like ghost accounts. */
+/** Platform admins are exempt from the media posting gate like ghost accounts. */
 export function isPrimaryAdminProfile(profile: Profile | null | undefined): boolean {
-  return profile?.username === 'admin';
+  return profile?.is_admin === true;
 }
 
 /**

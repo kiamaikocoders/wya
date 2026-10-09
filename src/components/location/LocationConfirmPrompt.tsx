@@ -21,9 +21,8 @@ export function LocationConfirmPrompt() {
 
     void (async () => {
       const { data, error } = await supabase
-        .from('profiles')
+        .rpc('get_my_profile')
         .select('location, location_confirm_needed, is_ghost')
-        .eq('id', user.id)
         .maybeSingle();
 
       if (cancelled || error || !data) return;

@@ -118,7 +118,7 @@ export const ghostService = {
   getGhostUsers: async (personaGroupId?: number): Promise<GhostUser[]> => {
     try {
       let query = supabase
-        .from('profiles')
+        .rpc('admin_profiles')
         .select('id, username, full_name, avatar_url, bio, location, is_ghost, created_at')
         .eq('is_ghost', true)
         .order('created_at', { ascending: false });
@@ -150,7 +150,7 @@ export const ghostService = {
       
       const userIds = data.map((u: any) => u.id);
       const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
+        .rpc('admin_profiles')
         .select('id, username, full_name, avatar_url, bio, location, is_ghost, created_at')
         .in('id', userIds);
 
@@ -344,7 +344,7 @@ export const ghostService = {
     try {
       // Get ghost users using the same method as getGhostUsers to ensure counts match
       const { data: ghostUsers, error: ghostError } = await supabase
-        .from('profiles')
+        .rpc('admin_profiles')
         .select('id')
         .eq('is_ghost', true);
 
@@ -352,8 +352,8 @@ export const ghostService = {
         console.error('Error fetching ghost users for statistics:', ghostError);
         // Fallback to count query
         const { count: ghostCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .rpc('admin_profiles', {}, { count: 'exact', head: true })
+          .select('*')
           .eq('is_ghost', true);
         
         return {

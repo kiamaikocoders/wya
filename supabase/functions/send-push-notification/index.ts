@@ -1,5 +1,8 @@
 /**
- * Supabase Edge Function: send a OneSignal web push when an in-app notification is created.
+ * Supabase Edge Function: send a push for an existing in-app notification.
+ *
+ * Auth: Bearer user JWT (recipient of the notification, or a platform admin) or service role key.
+ * Body: { notification_id } — title, message, and link are taken from the stored notification.
  *
  * Secrets (Supabase Dashboard → Edge Functions):
  * - ONESIGNAL_APP_ID
@@ -9,9 +12,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isFcmConfigured, sendFcmToTokens } from "../_shared/fcm.ts";
+import { isPlatformAdmin } from "../_shared/admin.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const oneSignalAppId = Deno.env.get("ONESIGNAL_APP_ID") ?? "";
 const oneSignalApiKey = Deno.env.get("ONESIGNAL_REST_API_KEY") ?? "";
 
@@ -58,31 +63,50 @@ serve(async (req) => {
     return jsonResponse({ error: "Server misconfigured" }, 503);
   }
 
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!bearer) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+
   try {
     const body = (await req.json().catch(() => ({}))) as PushPayload;
-    const { user_id, title, message, link, notification_id, type } = body;
+    const { notification_id, type } = body;
 
-    if (!user_id || !title || !message) {
-      return jsonResponse({ error: "Missing required fields: user_id, title, message" }, 400);
+    if (notification_id == null) {
+      return jsonResponse({ error: "Missing required field: notification_id" }, 400);
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (notification_id != null) {
-      const { data: row, error: rowError } = await supabase
-        .from("notifications")
-        .select("id, user_id, title, message, link")
-        .eq("id", notification_id)
-        .maybeSingle();
-
-      if (rowError || !row) {
-        return jsonResponse({ error: "Notification not found" }, 404);
+    let callerId: string | null = null;
+    if (bearer !== supabaseServiceKey) {
+      const authClient = createClient(supabaseUrl, supabaseAnonKey || supabaseServiceKey);
+      const { data: authData, error: authError } = await authClient.auth.getUser(bearer);
+      if (authError || !authData.user) {
+        return jsonResponse({ error: "Unauthorized" }, 401);
       }
-
-      if (row.user_id !== user_id) {
-        return jsonResponse({ error: "Notification user mismatch" }, 403);
-      }
+      callerId = authData.user.id;
     }
+
+    const { data: row, error: rowError } = await supabase
+      .from("notifications")
+      .select("id, user_id, title, message, link")
+      .eq("id", notification_id)
+      .maybeSingle();
+
+    if (rowError || !row) {
+      return jsonResponse({ error: "Notification not found" }, 404);
+    }
+
+    if (callerId && row.user_id !== callerId && !(await isPlatformAdmin(supabase, callerId))) {
+      return jsonResponse({ error: "Forbidden" }, 403);
+    }
+
+    const user_id: string = row.user_id;
+    const title: string = row.title;
+    const message: string = row.message;
+    const link: string | undefined = row.link ?? undefined;
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")

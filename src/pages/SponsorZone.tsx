@@ -46,9 +46,8 @@ const SponsorZone: React.FC = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error: qErr } = await supabase
-        .from('profiles')
+        .rpc('get_my_profile')
         .select('date_of_birth')
-        .eq('id', user.id)
         .single();
       if (qErr) return null;
       return data;

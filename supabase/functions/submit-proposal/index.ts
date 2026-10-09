@@ -15,6 +15,7 @@ import {
   getResendApiKey,
 } from "../_shared/resend.ts";
 import { renderTransactionalTemplate } from "../_shared/email-templates.ts";
+import { isPlatformAdmin } from "../_shared/admin.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -45,18 +46,6 @@ async function resolveAuthUserId(
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user) return null;
   return data.user.id;
-}
-
-async function isAdmin(
-  admin: ReturnType<typeof createClient>,
-  userId: string
-): Promise<boolean> {
-  const { data } = await admin
-    .from("profiles")
-    .select("username")
-    .eq("id", userId)
-    .maybeSingle();
-  return data?.username === "admin";
 }
 
 async function sendProposalTemplateEmail(opts: {
@@ -259,7 +248,7 @@ serve(async (req) => {
 
     if (action === "notify_decision") {
       const callerId = await resolveAuthUserId(admin, req);
-      if (!callerId || !(await isAdmin(admin, callerId))) {
+      if (!callerId || !(await isPlatformAdmin(admin, callerId))) {
         return json({ error: "Admin only" }, 403);
       }
 

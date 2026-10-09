@@ -1,6 +1,6 @@
 /**
  * Admin System ops — health probes + Resend test send.
- * Auth: Bearer JWT of profiles.username === 'admin'.
+ * Auth: Bearer JWT of a platform admin (public.admin_users).
  *
  * POST body:
  *   { action: "health" }
@@ -10,6 +10,7 @@
  * Secrets: RESEND_API_KEY (required for test send). Optional EMAIL_FROM / EMAIL_FROM_NAME overrides.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isPlatformAdmin, listPlatformAdminIds } from "../_shared/admin.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getResendApiKey, loadEmailSettings as loadSharedEmailSettings, sendRawEmail, logEmailSend } from "../_shared/resend.ts";
 import { renderTransactionalTemplate } from "../_shared/email-templates.ts";
@@ -59,13 +60,7 @@ async function requireAdmin(req: Request) {
     return { error: "Unauthorized", status: 401 as const };
   }
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.username !== "admin") {
+  if (!(await isPlatformAdmin(admin, user.id))) {
     return { error: "Forbidden", status: 403 as const };
   }
 
@@ -118,8 +113,7 @@ async function resolveAnnouncementRecipients(
   const { audience, locations, limit } = opts;
 
   if (audience === "admins") {
-    const { data } = await admin.from("profiles").select("id").eq("username", "admin");
-    return (data ?? []).map((r) => r.id).slice(0, limit);
+    return (await listPlatformAdminIds(admin)).slice(0, limit);
   }
 
   if (audience === "organizers") {
@@ -178,14 +172,13 @@ async function resolveAnnouncementRecipients(
   // all | attendees (attendees ≈ everyone except username admin)
   let q = admin
     .from("profiles")
-    .select("id, username")
+    .select("id")
     .or("is_ghost.is.null,is_ghost.eq.false")
     .limit(limit * 2);
   const { data, error } = await q;
   if (error) throw error;
-  const rows = (data ?? []).filter((r) =>
-    audience === "attendees" ? r.username !== "admin" : true
-  );
+  const adminIds = audience === "attendees" ? new Set(await listPlatformAdminIds(admin)) : null;
+  const rows = (data ?? []).filter((r) => !adminIds?.has(r.id));
   return rows.map((r) => r.id).slice(0, limit);
 }
 

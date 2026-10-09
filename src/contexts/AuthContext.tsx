@@ -111,17 +111,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Fetch profile data to determine admin status before unblocking UI
         try {
-          let { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, full_name, username, avatar_url, bio, created_at, account_status, account_status_reason')
-            .eq('id', session.user.id)
-            .single();
+          const [profileResult, adminResult] = await Promise.all([
+            supabase
+              .rpc('get_my_profile')
+              .select('id, full_name, username, avatar_url, bio, created_at, account_status, account_status_reason')
+              .single(),
+            supabase.rpc('is_admin'),
+          ]);
+          let { data: profile, error: profileError } = profileResult;
+          const profileIsAdmin = adminResult.data === true;
 
           if (profileError && isUndefinedColumnError(profileError, 'account_status')) {
             ({ data: profile, error: profileError } = await supabase
-              .from('profiles')
+              .rpc('get_my_profile')
               .select('id, full_name, username, avatar_url, bio, created_at')
-              .eq('id', session.user.id)
               .single());
           }
 
@@ -150,7 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               'account_status' in profile && profile.account_status != null
                 ? profile.account_status
                 : 'active';
-            if (acct !== 'active' && profile.username !== 'admin') {
+            if (acct !== 'active' && !profileIsAdmin) {
               await supabase.auth.signOut();
               setUser(null);
               setIsAdmin(false);
@@ -166,8 +169,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
 
             // Profile exists, update user and admin status
-            const userType: User['user_type'] =
-              profile.username === 'admin' ? 'admin' : 'attendee';
+            const userType: User['user_type'] = profileIsAdmin ? 'admin' : 'attendee';
 
             setUser((prev) => {
               if (!prev) return prev;
@@ -184,7 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               };
             });
 
-            setIsAdmin(profile.username === 'admin');
+            setIsAdmin(profileIsAdmin);
           }
         } catch (err) {
           console.warn('Profile fetch failed:', err);
@@ -250,9 +252,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Check last login time (non-blocking - run in background)
             supabase
-              .from('profiles')
+              .rpc('get_my_profile')
               .select('last_login')
-              .eq('id', session.user.id)
               .single()
               .then(({ data: profile }) => {
                 setLastLoginTime(profile?.last_login || null);
@@ -338,9 +339,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     navigate(postLoginPath);
 
     supabase
-      .from('profiles')
+      .rpc('get_my_profile')
       .select('full_name, last_login')
-      .eq('id', opts.userId)
       .single()
       .then(({ data: profile }) => {
         const userName = profile?.full_name || opts.email.split('@')[0];
@@ -385,17 +385,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (error) throw error;
 
-      let { data: lockProfile, error: lockErr } = await supabase
-        .from('profiles')
-        .select('account_status, username')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      const [lockResult, adminResult] = await Promise.all([
+        supabase.rpc('get_my_profile').select('account_status, username').maybeSingle(),
+        supabase.rpc('is_admin'),
+      ]);
+      let { data: lockProfile, error: lockErr } = lockResult;
+      const isAdminUser = adminResult.data === true;
 
       if (lockErr && isUndefinedColumnError(lockErr, 'account_status')) {
         ({ data: lockProfile, error: lockErr } = await supabase
-          .from('profiles')
+          .rpc('get_my_profile')
           .select('username')
-          .eq('id', data.user.id)
           .maybeSingle());
         if (lockProfile) {
           lockProfile = { ...lockProfile, account_status: 'active' as const };
@@ -407,7 +407,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           'account_status' in lockProfile && lockProfile.account_status != null
             ? lockProfile.account_status
             : 'active';
-        if (acct !== 'active' && lockProfile.username !== 'admin') {
+        if (acct !== 'active' && !isAdminUser) {
           await supabase.auth.signOut();
           const msg =
             acct === 'suspended'
@@ -419,8 +419,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           throw new Error(msg);
         }
       }
-
-      const isAdminUser = lockProfile?.username === 'admin';
 
       const { needsMfaChallenge } = await import('@/lib/mfa-service');
       if (await needsMfaChallenge()) {
@@ -484,13 +482,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (error) throw error;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      const { data: adminFlag } = await supabase.rpc('is_admin');
 
-      if (profile?.username !== 'admin') {
+      if (adminFlag !== true) {
         await supabase.auth.signOut();
         throw new Error('Unauthorized: Admin access required');
       }

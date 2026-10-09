@@ -19,7 +19,7 @@ import { AdminAiInlineNote } from '@/components/admin/AdminAiAssist';
 import { analyzeUserForAdmin } from '@/lib/admin-ai-analysis';
 
 export function adminUserRoleLabel(u: AdminUser): string {
-  if (u.role === 'admin' || u.username === 'admin') return 'Admin';
+  if (u.role === 'admin') return 'Admin';
   if (u.role === 'organizer') return 'Organizer';
   return 'Attendee';
 }
@@ -82,7 +82,7 @@ export function AdminUserDetailDialog({
 
   useEffect(() => {
     if (!user) return;
-    setRoleDraft(user.username === 'admin' || user.role === 'admin' ? 'admin' : 'attendee');
+    setRoleDraft(user.role === 'admin' ? 'admin' : 'attendee');
     setAvatarBroken(false);
   }, [user]);
 
@@ -103,7 +103,7 @@ export function AdminUserDetailDialog({
   if (!open || !user) return null;
 
   const suspended = user.status === 'suspended' || user.status === 'inactive';
-  const isAdminUser = user.username === 'admin' || user.role === 'admin';
+  const isAdminUser = user.role === 'admin';
   const displayRole = adminUserRoleLabel(user);
   const joined = (() => {
     try {
