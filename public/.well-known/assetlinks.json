@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.wya254.app",
+      "sha256_cert_fingerprints": [
+        "51:F1:16:85:A3:88:B6:AF:08:69:AF:E2:3E:4E:48:5C:0B:76:9A:67:11:FD:17:8D:25:2B:46:AA:73:BB:63:70",
+        "88:B2:EE:24:9E:59:5F:8B:DF:96:6F:58:CF:0C:0D:0E:08:0C:DE:69:BF:F0:7F:D8:DC:AE:25:8F:84:54:E2:1A"
+      ]
+    }
+  }
+]

@@ -96,13 +96,8 @@ const AuthCallback = () => {
               ? 'Opening the WYA app so you can set a new password…'
               : 'Opening the WYA app to finish setup…',
           );
-          // Try Intent URL first (Android), then custom scheme — preserves ?code=
+          // Open once: a second automatic link delivers the single-use code twice.
           window.location.href = nativeLinks[0];
-          if (nativeLinks[1]) {
-            window.setTimeout(() => {
-              window.location.href = nativeLinks[1];
-            }, 900);
-          }
           return;
         }
 
